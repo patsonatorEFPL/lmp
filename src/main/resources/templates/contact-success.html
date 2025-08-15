@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Message Envoyé - LMP</title>
+    <meta name="description" content="Votre message a été envoyé avec succès">
+    
+    <!-- Global Styles -->
+    <div th:replace="fragments/styles :: global-styles"></div>
+</head>
+<body class="min-h-screen bg-white">
+    <!-- Navigation -->
+    <div th:replace="fragments/navigation :: navigation"></div>
+
+    <!-- Success Section -->
+    <section class="py-16 bg-gradient-to-br from-[#f7f8fa] to-white">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto text-center">
+                <div class="mb-8">
+                    <div class="text-8xl text-green-500 mb-6">✅</div>
+                    <h1 class="text-4xl lg:text-5xl font-bold text-dark mb-4" th:text="${title}">Message Envoyé</h1>
+                    <p class="text-lg text-secondary mb-8" th:text="${subtitle}">Merci de nous avoir contacté</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-8 shadow-lg mb-8">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl text-green-500 mb-4">🎉</div>
+                        <p class="text-lg text-secondary" th:text="${successMessage}">
+                            Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.
+                        </p>
+                    </div>
+                    
+                    <!-- Affichage du récapitulatif si le formulaire est disponible -->
+                    <div th:if="${contactForm}" class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold text-dark mb-4">Récapitulatif de votre message</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                                <strong class="text-dark">Nom :</strong>
+                                <span class="text-secondary" th:text="${contactForm.name}">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                                <strong class="text-dark">Email :</strong>
+                                <span class="text-secondary" th:text="${contactForm.email}">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-white rounded-lg">
+                                <strong class="text-dark">Sujet :</strong>
+                                <span class="text-secondary" th:text="${contactForm.subject}">-</span>
+                            </div>
+                            <div class="p-3 bg-white rounded-lg">
+                                <strong class="text-dark block mb-2">Message :</strong>
+                                <p class="text-secondary" th:text="${contactForm.message}">-</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Message de suivi -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                            <div>
+                                <h4 class="font-semibold text-blue-800 mb-1">Et maintenant ?</h4>
+                                <p class="text-blue-700 text-sm">
+                                    Notre équipe va analyser votre demande et vous contactera sous 24-48h. 
+                                    En attendant, n'hésitez pas à explorer nos services et solutions.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/" class="bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-home"></i>
+                        <span>Retour à l'accueil</span>
+                    </a>
+                    <a href="/map" class="border-2 border-primary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-map"></i>
+                        <span>Explorer la carte</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div th:replace="fragments/footer :: footer"></div>
+
+    <!-- Booking Modal -->
+    <div th:replace="fragments/booking-modal :: booking-modal"></div>
+
+    <!-- Navigation Scripts -->
+    <div th:replace="fragments/scripts :: navigation-scripts"></div>
+</body>
+</html> 

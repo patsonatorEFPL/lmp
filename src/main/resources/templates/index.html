@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMP - Local Map Profil | Visibilité Locale</title>
+    <meta name="description" content="Nous prenons soin de votre visibilité locale. Expertise en référencement, gestion d'avis et présence digitale.">
+    
+    <!-- Global Styles -->
+    <div th:replace="fragments/styles :: global-styles"></div>
+</head>
+<body class="min-h-screen bg-white">
+    <!-- Header -->
+    <div th:replace="fragments/navigation :: navigation"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="bg-gradient-to-br from-[#f7f8fa] to-white py-16 lg:py-24">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-12">
+                    <!-- Hero Text -->
+                    <div class="flex-1 lg:max-w-2xl">
+                        <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-dark mb-6 leading-tight">
+                            Nous prenons soin de votre
+                            <span class="text-primary"> visibilité locale</span>
+                        </h1>
+                        <p class="text-lg lg:text-xl text-secondary mb-8 leading-relaxed">
+                            Nous nous engageons pour la réussite de votre entreprise sur Google et les plateformes locales. 
+                            Expertise en référencement, gestion d'avis et présence digitale.
+                        </p>
+                        
+                        <!-- Email Form -->
+                        <form onsubmit="handleEmailSubmit(event)" class="flex flex-col sm:flex-row gap-4 mb-8">
+                            <input
+                                type="email"
+                                placeholder="Votre email professionnel"
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                required
+                            />
+                            <button type="submit" class="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200">
+                                Commencer
+                            </button>
+                        </form>
+
+                        <!-- Trust Indicators -->
+                        <div class="flex flex-wrap items-center gap-6 text-sm text-secondary">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span>Consultation gratuite</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span>Résultats garantis</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span>Support dédié</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hero Visual -->
+                    <div class="flex-1 lg:max-w-lg">
+                        <div class="relative">
+                            <!-- Main Visual Container -->
+                            <div class="bg-gradient-to-br from-primary to-[#4c63ff] rounded-2xl p-8 shadow-2xl">
+                                <div class="text-center text-white">
+                                    <div class="text-6xl mb-4">📊</div>
+                                    <h3 class="text-xl font-semibold mb-2">Croissance Digitale</h3>
+                                    <p class="text-blue-100">Optimisation & Performance</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Floating Stats -->
+                            <div class="absolute -top-4 -right-4 bg-yellow text-dark px-4 py-2 rounded-lg font-bold shadow-lg floating-element">
+                                245% ROI
+                            </div>
+                            <div class="absolute -bottom-4 -left-4 bg-white px-4 py-2 rounded-lg font-bold shadow-lg text-primary floating-element floating-element-delayed">
+                                130K+ Clients
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="py-16 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary mb-2">500+</div>
+                        <div class="text-secondary">Clients satisfaits</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary mb-2">95%</div>
+                        <div class="text-secondary">Taux de réussite</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary mb-2">24/7</div>
+                        <div class="text-secondary">Support disponible</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-primary mb-2">10+</div>
+                        <div class="text-secondary">Années d'expérience</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="py-16 bg-white">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4">
+                        Nos Services Experts
+                    </h2>
+                    <p class="text-lg text-secondary max-w-2xl mx-auto">
+                        Solutions complètes pour votre visibilité digitale et votre croissance en ligne.
+                        Expertise reconnue dans le marketing digital et le référencement.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Service 1 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">📍</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                Référencement Local
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Sécurisations et Accès Google My Business</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Protégez et optimisez votre profil Google My Business. Accès sécurisé, gestion des droits et protection contre les modifications malveillantes.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">353,89 $</div>
+                            <div class="text-sm text-secondary">Durée: 60 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Sécurisations et Accès Google My Business', 353.89)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 2 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">⭐</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                Référencement Premium
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Référencement Optimale avec Sécurisations Garantie VIP+</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Service premium avec garantie de résultats. Référencement avancé, maintenance du profil et support prioritaire.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">750,79 $</div>
+                            <div class="text-sm text-secondary">Durée: 90 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 3 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">💬</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                Réputation en Ligne
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Gestion des Avis</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Améliorez votre réputation en ligne avec notre service de gestion des avis. Multipliez les avis positifs et gérez efficacement les commentaires.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">747,43 $</div>
+                            <div class="text-sm text-secondary">Durée: 75 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Gestion des Avis', 747.43)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 4 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">🏪</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                Marketing Local
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Présence Locales</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Boostez votre visibilité locale avec une présence optimisée dans tous les annuaires locaux et sur Google Maps.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">2200,00 $</div>
+                            <div class="text-sm text-secondary">Durée: 120 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Présence Locales', 2200.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 5 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">💻</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                                Développement Web
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Création Site Web</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Création de site web professionnel avec protocole SSL, référencement optimisé et promotion incluse.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">100,99 $</div>
+                            <div class="text-sm text-secondary">Durée: 180 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Création Site Web', 100.99)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 6 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">🔍</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+                                SEO Avancé
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">SEO et Référencement Naturel</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Service SEO complet pour améliorer votre positionnement sur les moteurs de recherche et Google Maps.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">5500,00 $</div>
+                            <div class="text-sm text-secondary">Durée: 240 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('SEO et Référencement Naturel', 5500.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 7 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">🚀</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                Google Premium
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Optimisations Google+</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Optimisation premium de votre présence Google avec mise à jour régulière et positionnement garanti.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">11121,00 $</div>
+                            <div class="text-sm text-secondary">Durée: 300 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Optimisations Google+', 11121.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Service 8 -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="text-3xl">🛠️</div>
+                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                Support
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Assistance Technique</h3>
+                        <p class="text-secondary text-sm mb-4">
+                            Support technique dédié pour vous aider à rester devant vos concurrents avec une maintenance de votre profil.
+                        </p>
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-primary mb-1">402,00 $</div>
+                            <div class="text-sm text-secondary">Durée: 45 minutes</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="selectService('Assistance Technique', 402.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                                Acheter
+                            </button>
+                            <button onclick="scrollToContact()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
+                                Info
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- About Section -->
+        <section id="about" class="py-16 bg-gradient-to-br from-white to-[#f7f8fa]">
+            <div class="container mx-auto px-4">
+                <div class="max-w-4xl mx-auto text-center">
+                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6">
+                        Pourquoi choisir LMP ?
+                    </h2>
+                    <p class="text-lg text-secondary mb-12 leading-relaxed">
+                        Avec plus de 10 ans d'expérience dans le marketing digital, 
+                        nous avons aidé des milliers d'entreprises à améliorer leur visibilité locale 
+                        et à attirer plus de clients qualifiés.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="text-center">
+                            <div class="text-4xl mb-4">🏆</div>
+                            <h3 class="text-xl font-semibold text-dark mb-2">Expertise Reconnue</h3>
+                            <p class="text-secondary">Certifiés Google Partner et spécialistes du référencement local</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl mb-4">🔍</div>
+                            <h3 class="text-xl font-semibold text-dark mb-2">Résultats Mesurés</h3>
+                            <p class="text-secondary">Suivi transparent avec rapports détaillés de performance</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl mb-4">📞</div>
+                            <h3 class="text-xl font-semibold text-dark mb-2">Support Dédié</h3>
+                            <p class="text-secondary">Accompagnement personnalisé avec votre conseiller attribué</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Contact Section -->
+        <section id="contact" class="py-16 bg-primary text-white">
+            <div class="container mx-auto px-4 text-center">
+                <h2 class="text-3xl lg:text-4xl font-bold mb-6">
+                    Prêt à booster votre visibilité ?
+                </h2>
+                <p class="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+                    Contactez-nous dès aujourd'hui pour une consultation gratuite et découvrez 
+                    comment nous pouvons transformer votre présence digitale.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="openBookingModal()" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200">
+                        Prendre un rendez-vous
+                    </button>
+                    <a href="mailto:contact@lmp-digital.ca" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all duration-200">
+                        Nous contacter
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <div th:replace="fragments/footer :: footer"></div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-8 max-w-md w-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-dark">Prendre un rendez-vous</h3>
+                    <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form onsubmit="handleBookingSubmit(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nom complet</label>
+                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                        <input type="tel" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                        <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all">
+                            Envoyer
+                        </button>
+                        <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-all">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-8 max-w-md w-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-dark">Paiement sécurisé</h3>
+                    <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="paymentDetails" class="mb-6">
+                    <!-- Les détails du service seront affichés ici -->
+                </div>
+                <div class="text-center">
+                    <p class="text-gray-600 mb-4">Paiement sécurisé via Stripe</p>
+                    <button onclick="processPayment()" class="bg-green-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-green-700 transition-all">
+                        Payer maintenant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Smooth scroll to section
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Scroll to contact
+        function scrollToContact() {
+            scrollToSection('contact');
+        }
+
+        // Booking modal functions
+        function openBookingModal() {
+            document.getElementById('bookingModal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.add('hidden');
+        }
+
+        // Payment modal functions
+        function openPaymentModal() {
+            document.getElementById('paymentModal').classList.remove('hidden');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+        }
+
+        // Service selection
+        function selectService(serviceName, price) {
+            const paymentDetails = document.getElementById('paymentDetails');
+            paymentDetails.innerHTML = `
+                <h4 class="font-semibold text-lg mb-2">${serviceName}</h4>
+                <p class="text-2xl font-bold text-primary mb-2">$${price}</p>
+                <p class="text-gray-600">Service professionnel avec garantie de résultats</p>
+            `;
+            openPaymentModal();
+        }
+
+        // Form handlers
+        function handleEmailSubmit(event) {
+            event.preventDefault();
+            openBookingModal();
+        }
+
+        function handleBookingSubmit(event) {
+            event.preventDefault();
+            alert('Demande envoyée ! Nous vous contacterons dans les 24h.');
+            closeBookingModal();
+        }
+
+        function processPayment() {
+            alert('Paiement traité avec succès !');
+            closePaymentModal();
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(event) {
+            const bookingModal = document.getElementById('bookingModal');
+            const paymentModal = document.getElementById('paymentModal');
+            
+            if (event.target === bookingModal) {
+                closeBookingModal();
+            }
+            if (event.target === paymentModal) {
+                closePaymentModal();
+            }
+        });
+    </script>
+</body>
+</html> 

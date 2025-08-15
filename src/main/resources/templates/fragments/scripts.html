@@ -1,0 +1,32 @@
+<!-- JavaScript Functions Fragment -->
+<script th:fragment="navigation-scripts">
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobileMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    // Booking modal functions
+    function openBookingModal() {
+        document.getElementById('bookingModal').classList.remove('hidden');
+    }
+
+    function closeBookingModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+    }
+
+    // Form handler for booking
+    function handleBookingSubmit(event) {
+        event.preventDefault();
+        alert('Demande envoyée ! Nous vous contacterons dans les 24h.');
+        closeBookingModal();
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const bookingModal = document.getElementById('bookingModal');
+        if (event.target === bookingModal) {
+            closeBookingModal();
+        }
+    });
+</script>
