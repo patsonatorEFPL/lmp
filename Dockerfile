@@ -68,5 +68,5 @@ EXPOSE 8080
 # HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 #     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Point d'entrée simplifié avec optimisations essentielles
-ENTRYPOINT ["java", "-Xmx512m", "-XX:+UseG1GC", "-jar", "app.jar"]
+# Point d'entrée avec profil production pour utiliser application-prod.properties
+ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-Xmx512m", "-XX:+UseG1GC", "-jar", "app.jar"]
