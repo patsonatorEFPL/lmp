@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de commande</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .order-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .order-status {
+            background-color: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .order-details {
+            margin: 15px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-status {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>✅ Commande Confirmée</h1>
+            <p th:text="${companyName}">LMP Digital Services</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p>Bonjour <span th:text="${customerName}">Client</span>,</p>
+            
+            <p>Nous avons bien reçu votre commande et le paiement a été traité avec succès. Voici les détails de votre commande :</p>
+
+            <!-- Order Information -->
+            <div class="order-info">
+                <div class="order-header">
+                    <div class="order-number">
+                        Commande #<span th:text="${order.id}">12345</span>
+                    </div>
+                    <div class="order-status">
+                        Confirmée
+                    </div>
+                </div>
+
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span>Date de commande :</span>
+                        <span th:text="${currentDate}">22/08/2025 à 14:30</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Service :</span>
+                        <span th:text="${order.serviceName}">Service Web</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Description :</span>
+                        <span th:text="${order.description}">Développement site web</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Montant :</span>
+                        <span th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</span>
+                    </div>
+                </div>
+            </div>
+
+            <p><strong>Prochaines étapes :</strong></p>
+            <ul>
+                <li>Notre équipe va examiner votre demande dans les 24 heures</li>
+                <li>Vous recevrez une confirmation avec les détails du projet</li>
+                <li>Un responsable vous contactera pour planifier le démarrage</li>
+            </ul>
+
+            <div style="text-align: center;">
+                <a href="#" class="btn">Voir ma commande</a>
+            </div>
+
+            <p>Si vous avez des questions concernant votre commande, n'hésitez pas à nous contacter.</p>
+
+            <p>Merci de faire confiance à LMP Digital Services !</p>
+
+            <p>Cordialement,<br>
+            L'équipe <span th:text="${companyName}">LMP Digital Services</span></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong th:text="${companyName}">LMP Digital Services</strong></p>
+            <p>123 Rue Principale, Ville, Province, Code Postal</p>
+            <p>Téléphone : +1 (555) 123-4567 | Email : contact@lmp-digital.ca</p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                Cet email a été envoyé automatiquement, merci de ne pas répondre directement.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

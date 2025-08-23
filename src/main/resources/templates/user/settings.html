@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres - LMP</title>
+    
+    <!-- CSRF Token for AJAX requests -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- Global Styles -->
+    <div th:replace="fragments/styles :: global-styles"></div>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .settings-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border: none;
+        }
+        
+        .settings-nav {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .nav-pills .nav-link {
+            border-radius: 0;
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 1rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-pills .nav-link.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .nav-pills .nav-link:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+        
+        .settings-content {
+            padding: 2rem;
+        }
+        
+        .setting-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid #667eea;
+        }
+        
+        .setting-section h6 {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-info {
+            flex: 1;
+        }
+        
+        .setting-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.25rem;
+        }
+        
+        .setting-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        
+        .form-check-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .sidebar-menu i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary-custom:hover {
+            background: linear-gradient(45deg, #5a6fd8, #6a3f87);
+            transform: translateY(-1px);
+            color: white;
+        }
+        
+        .btn-danger-custom {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            border: none;
+            color: white;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger-custom:hover {
+            background: linear-gradient(45deg, #c82333, #a02622);
+            transform: translateY(-1px);
+            color: white;
+        }
+        
+        .danger-zone {
+            background: linear-gradient(45deg, #fff5f5, #ffe5e5);
+            border: 2px solid #fecaca;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .danger-zone h6 {
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .security-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #28a745;
+        }
+        
+        .security-item.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .security-item.danger {
+            border-left-color: #dc3545;
+        }
+        
+        .notification-frequency {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .frequency-btn {
+            padding: 0.375rem 0.75rem;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            background: white;
+            color: #6c757d;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .frequency-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        
+        .frequency-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .language-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .language-flag {
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .language-flag.active {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .language-flag:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+        
+        .storage-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .storage-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        
+        .storage-used {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .settings-content {
+                padding: 1rem;
+            }
+            
+            .setting-section {
+                padding: 1rem;
+            }
+            
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .nav-pills .nav-link {
+                padding: 0.75rem 1rem;
+            }
+            
+            .frequency-btn,
+            .language-flag {
+                flex: 1;
+                min-width: 80px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <div th:replace="fragments/navigation :: navigation"></div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-cog me-3"></i>
+                        Paramètres
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">Personnalisez votre expérience et gérez vos préférences</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-light text-dark fs-6 px-3 py-2">
+                        <i class="fas fa-save me-2"></i>
+                        Sauvegarde automatique
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-3">
+                <div class="sidebar">
+                    <div class="text-center mb-3">
+                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="fas fa-user fs-2 text-white"></i>
+                        </div>
+                        <h5 class="mt-2 mb-1" th:text="${user.getDisplayName()}">Nom Utilisateur</h5>
+                        <small class="text-muted" th:text="${user.email}">email@example.com</small>
+                    </div>
+                    
+                    <ul class="sidebar-menu">
+                        <li><a th:href="@{/dashboard}">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Tableau de bord
+                        </a></li>
+                        <li><a th:href="@{/dashboard/orders}">
+                            <i class="fas fa-shopping-cart"></i>
+                            Mes commandes
+                        </a></li>
+                        <li><a th:href="@{/dashboard/reviews}">
+                            <i class="fas fa-star"></i>
+                            Mes avis
+                        </a></li>
+                        <li><a th:href="@{/profile}">
+                            <i class="fas fa-user"></i>
+                            Mon profil
+                        </a></li>
+                        <li><a href="#" class="active">
+                            <i class="fas fa-cog"></i>
+                            Paramètres
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="col-lg-9">
+                <div class="settings-container">
+                    <!-- Settings Header -->
+                    <div class="settings-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-sliders-h me-2"></i>
+                            Préférences et paramètres
+                        </h4>
+                    </div>
+
+                    <!-- Settings Navigation -->
+                    <div class="settings-nav">
+                        <ul class="nav nav-pills" id="settingsTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="notifications-tab" data-bs-toggle="pill" 
+                                        data-bs-target="#notifications" type="button" role="tab">
+                                    <i class="fas fa-bell me-2"></i>
+                                    Notifications
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="preferences-tab" data-bs-toggle="pill" 
+                                        data-bs-target="#preferences" type="button" role="tab">
+                                    <i class="fas fa-palette me-2"></i>
+                                    Préférences
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="security-tab" data-bs-toggle="pill" 
+                                        data-bs-target="#security" type="button" role="tab">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Sécurité
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="privacy-tab" data-bs-toggle="pill" 
+                                        data-bs-target="#privacy" type="button" role="tab">
+                                    <i class="fas fa-user-shield me-2"></i>
+                                    Confidentialité
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Settings Content -->
+                    <div class="settings-content">
+                        <div class="tab-content" id="settingsTabContent">
+                            <!-- Notifications Tab -->
+                            <div class="tab-pane fade show active" id="notifications" role="tabpanel">
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-envelope"></i>
+                                        Notifications par email
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Nouvelles commandes</div>
+                                            <div class="setting-description">Recevoir un email lors d'une nouvelle commande</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" checked onchange="updateSetting('email_orders', this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Mises à jour de commande</div>
+                                            <div class="setting-description">Notifications sur les changements de statut</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" checked onchange="updateSetting('email_updates', this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Newsletter</div>
+                                            <div class="setting-description">Actualités et offres spéciales</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" onchange="updateSetting('email_newsletter', this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Fréquence des notifications</div>
+                                            <div class="setting-description">À quelle fréquence recevoir les résumés</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="notification-frequency">
+                                                <button class="frequency-btn active" onclick="setFrequency(this, 'instant')">Instantané</button>
+                                                <button class="frequency-btn" onclick="setFrequency(this, 'daily')">Quotidien</button>
+                                                <button class="frequency-btn" onclick="setFrequency(this, 'weekly')">Hebdomadaire</button>
+                                                <button class="frequency-btn" onclick="setFrequency(this, 'never')">Jamais</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-mobile-alt"></i>
+                                        Notifications push
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Notifications push du navigateur</div>
+                                            <div class="setting-description">Recevoir des notifications directement dans votre navigateur</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <button class="btn btn-primary-custom btn-sm" onclick="enablePushNotifications()">
+                                                <i class="fas fa-bell me-1"></i>
+                                                Activer
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preferences Tab -->
+                            <div class="tab-pane fade" id="preferences" role="tabpanel">
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-language"></i>
+                                        Langue et région
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Langue de l'interface</div>
+                                            <div class="setting-description">Choisissez votre langue préférée</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="language-selector">
+                                                <div class="language-flag active" onclick="setLanguage('fr')" title="Français">🇫🇷</div>
+                                                <div class="language-flag" onclick="setLanguage('en')" title="English">🇺🇸</div>
+                                                <div class="language-flag" onclick="setLanguage('es')" title="Español">🇪🇸</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Fuseau horaire</div>
+                                            <div class="setting-description">Affichage des dates et heures</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <select class="form-select" style="width: auto;">
+                                                <option value="America/Montreal" selected>America/Montreal (UTC-5)</option>
+                                                <option value="Europe/Paris">Europe/Paris (UTC+1)</option>
+                                                <option value="America/New_York">America/New_York (UTC-5)</option>
+                                                <option value="UTC">UTC (UTC+0)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-eye"></i>
+                                        Affichage
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Thème sombre</div>
+                                            <div class="setting-description">Basculer entre le thème clair et sombre</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" onchange="toggleDarkMode(this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Affichage compact</div>
+                                            <div class="setting-description">Réduire l'espacement pour afficher plus de contenu</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" onchange="toggleCompactMode(this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Animations</div>
+                                            <div class="setting-description">Activer les animations et transitions</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" checked onchange="toggleAnimations(this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-table"></i>
+                                        Données par défaut
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Éléments par page</div>
+                                            <div class="setting-description">Nombre d'éléments à afficher dans les listes</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <select class="form-select" style="width: auto;">
+                                                <option value="10">10</option>
+                                                <option value="25" selected>25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Tab -->
+                            <div class="tab-pane fade" id="security" role="tabpanel">
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-key"></i>
+                                        Authentification
+                                    </h6>
+                                    
+                                    <div class="security-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="setting-title">Mot de passe</div>
+                                                <div class="setting-description">Dernière modification : Il y a 30 jours</div>
+                                            </div>
+                                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#passwordChangeModal">
+                                                <i class="fas fa-edit me-1"></i>
+                                                Modifier
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="security-item warning">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="setting-title">Authentification à deux facteurs (2FA)</div>
+                                                <div class="setting-description">Sécurisez votre compte avec une double authentification</div>
+                                            </div>
+                                            <button class="btn btn-warning btn-sm" onclick="setup2FA()">
+                                                <i class="fas fa-shield-alt me-1"></i>
+                                                Configurer
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-history"></i>
+                                        Sessions actives
+                                    </h6>
+                                    
+                                    <div class="security-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="setting-title">
+                                                    <i class="fas fa-desktop me-2 text-success"></i>
+                                                    Session actuelle (Chrome - Windows)
+                                                </div>
+                                                <div class="setting-description">IP: 192.168.1.100 • Aujourd'hui à 14:30</div>
+                                            </div>
+                                            <span class="badge bg-success">Active</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="security-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div class="setting-title">
+                                                    <i class="fas fa-mobile-alt me-2 text-warning"></i>
+                                                    Mobile Safari - iPhone
+                                                </div>
+                                                <div class="setting-description">IP: 192.168.1.101 • Hier à 09:15</div>
+                                            </div>
+                                            <button class="btn btn-outline-danger btn-sm" onclick="terminateSession('mobile')">
+                                                <i class="fas fa-sign-out-alt me-1"></i>
+                                                Terminer
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <button class="btn btn-outline-danger" onclick="terminateAllSessions()">
+                                            <i class="fas fa-power-off me-2"></i>
+                                            Terminer toutes les autres sessions
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-clock"></i>
+                                        Déconnexion automatique
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Délai d'inactivité</div>
+                                            <div class="setting-description">Se déconnecter automatiquement après une période d'inactivité</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <select class="form-select" style="width: auto;">
+                                                <option value="15">15 minutes</option>
+                                                <option value="30" selected>30 minutes</option>
+                                                <option value="60">1 heure</option>
+                                                <option value="120">2 heures</option>
+                                                <option value="0">Jamais</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Privacy Tab -->
+                            <div class="tab-pane fade" id="privacy" role="tabpanel">
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-database"></i>
+                                        Mes données
+                                    </h6>
+                                    
+                                    <div class="storage-info">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-semibold">Espace utilisé</span>
+                                            <span class="text-muted">2.3 GB / 5 GB</span>
+                                        </div>
+                                        <div class="storage-bar">
+                                            <div class="storage-used" style="width: 46%;"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-2 text-muted small">
+                                            <span>Commandes: 1.2 GB</span>
+                                            <span>Documents: 0.8 GB</span>
+                                            <span>Médias: 0.3 GB</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Télécharger mes données</div>
+                                            <div class="setting-description">Exporter toutes vos données dans un fichier ZIP</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="exportData()">
+                                                <i class="fas fa-download me-1"></i>
+                                                Télécharger
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-section">
+                                    <h6>
+                                        <i class="fas fa-eye-slash"></i>
+                                        Confidentialité
+                                    </h6>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Profil public</div>
+                                            <div class="setting-description">Permettre aux autres utilisateurs de voir votre profil</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" onchange="updateSetting('public_profile', this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Cookies d'analyse</div>
+                                            <div class="setting-description">Autoriser les cookies pour améliorer nos services</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" checked onchange="updateSetting('analytics_cookies', this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <div class="setting-title">Cookies marketing</div>
+                                            <div class="setting-description">Autoriser les cookies pour personnaliser les publicités</div>
+                                        </div>
+                                        <div class="setting-control">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" onchange="updateSetting('marketing_cookies', this.checked)">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Danger Zone -->
+                                <div class="danger-zone">
+                                    <h6>
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Zone dangereuse
+                                    </h6>
+                                    <p class="mb-3">Les actions suivantes sont irréversibles. Procédez avec prudence.</p>
+                                    
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button class="btn btn-outline-warning btn-sm" onclick="clearAllData()">
+                                            <i class="fas fa-trash-alt me-1"></i>
+                                            Effacer toutes les données
+                                        </button>
+                                        <button class="btn btn-danger-custom btn-sm" onclick="deleteAccount()">
+                                            <i class="fas fa-user-times me-1"></i>
+                                            Supprimer le compte
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordChangeModalLabel">
+                        <i class="fas fa-key me-2"></i>
+                        Changer le mot de passe
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordChangeForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Mot de passe actuel</label>
+                            <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Nouveau mot de passe</label>
+                            <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                            <div class="form-text">Minimum 8 caractères avec lettres et chiffres</div>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirmer le nouveau mot de passe</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="submitPasswordChange()">
+                        <i class="fas fa-save me-1"></i>
+                        Changer le mot de passe
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Settings object to store current settings
+        const settings = {
+            email_orders: true,
+            email_updates: true,
+            email_newsletter: false,
+            notification_frequency: 'instant',
+            language: 'fr',
+            dark_mode: false,
+            compact_mode: false,
+            animations: true,
+            public_profile: false,
+            analytics_cookies: true,
+            marketing_cookies: false
+        };
+
+        // Update setting and save
+        function updateSetting(key, value) {
+            settings[key] = value;
+            console.log('Updated setting:', key, '=', value);
+            
+            // Show save confirmation
+            showNotification('Paramètre sauvegardé', 'success');
+            
+            // Save to localStorage (in real app, this would be saved to server)
+            localStorage.setItem('userSettings', JSON.stringify(settings));
+        }
+
+        // Set notification frequency
+        function setFrequency(element, frequency) {
+            // Remove active class from all buttons
+            document.querySelectorAll('.frequency-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to clicked button
+            element.classList.add('active');
+            
+            updateSetting('notification_frequency', frequency);
+        }
+
+        // Set language
+        function setLanguage(lang) {
+            // Remove active class from all flags
+            document.querySelectorAll('.language-flag').forEach(flag => {
+                flag.classList.remove('active');
+            });
+            
+            // Add active class to selected flag
+            event.target.classList.add('active');
+            
+            updateSetting('language', lang);
+            
+            // In real app, this would reload the page with new language
+            showNotification('Langue mise à jour', 'success');
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode(enabled) {
+            updateSetting('dark_mode', enabled);
+            
+            // Apply dark mode styles (simplified example)
+            if (enabled) {
+                document.body.classList.add('dark-mode');
+                showNotification('Mode sombre activé', 'success');
+            } else {
+                document.body.classList.remove('dark-mode');
+                showNotification('Mode sombre désactivé', 'success');
+            }
+        }
+
+        // Toggle compact mode
+        function toggleCompactMode(enabled) {
+            updateSetting('compact_mode', enabled);
+            
+            if (enabled) {
+                document.body.classList.add('compact-mode');
+                showNotification('Affichage compact activé', 'success');
+            } else {
+                document.body.classList.remove('compact-mode');
+                showNotification('Affichage compact désactivé', 'success');
+            }
+        }
+
+        // Toggle animations
+        function toggleAnimations(enabled) {
+            updateSetting('animations', enabled);
+            
+            if (enabled) {
+                document.body.classList.remove('no-animations');
+                showNotification('Animations activées', 'success');
+            } else {
+                document.body.classList.add('no-animations');
+                showNotification('Animations désactivées', 'success');
+            }
+        }
+
+        // Enable push notifications
+        function enablePushNotifications() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === 'granted') {
+                        showNotification('Notifications push activées', 'success');
+                    } else {
+                        showNotification('Permission refusée pour les notifications', 'warning');
+                    }
+                });
+            } else {
+                showNotification('Les notifications ne sont pas supportées', 'error');
+            }
+        }
+
+        // Security functions - Real password change with AJAX
+        function submitPasswordChange() {
+            console.log('🔐 DEBUG: *** FONCTION submitPasswordChange() APPELÉE ***');
+            console.log('🔐 DEBUG: Timestamp:', new Date().toISOString());
+            
+            const form = document.getElementById('passwordChangeForm');
+            const formData = new FormData(form);
+            
+            const currentPassword = formData.get('currentPassword');
+            const newPassword = formData.get('newPassword');
+            const confirmPassword = formData.get('confirmPassword');
+            
+            // Validation côté client
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showNotification('Tous les champs sont requis', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showNotification('Les nouveaux mots de passe ne correspondent pas', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                showNotification('Le nouveau mot de passe doit contenir au moins 8 caractères', 'error');
+                return;
+            }
+            
+            // Récupération du token CSRF
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+            
+            console.log('🔐 DEBUG: Token CSRF trouvé:', !!csrfToken);
+            
+            // Préparation des données
+            const requestData = {
+                currentPassword: currentPassword,
+                newPassword: newPassword,
+                confirmPassword: confirmPassword
+            };
+            
+            console.log('🔐 DEBUG: Envoi de la requête AJAX vers /user/password/change');
+            
+            // Appel AJAX vers le backend
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            headers[csrfHeader] = csrfToken;
+            
+            fetch('/user/password/change', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                console.log('🔐 DEBUG: Réponse reçue:', response.status, response.statusText);
+                return response.json();
+            })
+            .then(data => {
+                console.log('🔐 DEBUG: Données reçues:', data);
+                
+                if (data.success) {
+                    showNotification('Mot de passe changé avec succès !', 'success');
+                    
+                    // Fermer le modal et réinitialiser le formulaire
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('passwordChangeModal'));
+                    modal.hide();
+                    form.reset();
+                    
+                    // 🔐 SÉCURITÉ: Déconnexion automatique et redirection vers login
+                    console.log('🔐 DEBUG: Déconnexion automatique requise - requiresReauth:', data.requiresReauth);
+                    console.log('🔐 DEBUG: Redirection vers login requise - redirectToLogin:', data.redirectToLogin);
+                    
+                    if (data.requiresReauth || data.redirectToLogin) {
+                        // Notification de déconnexion imminente
+                        showNotification('Session invalidée. Redirection vers la page de connexion...', 'info');
+                        
+                        // Redirection directe vers login après 2 secondes (pas besoin de /logout)
+                        setTimeout(() => {
+                            console.log('🔐 DEBUG: Redirection directe vers /login (session déjà invalidée côté serveur)');
+                            window.location.href = '/login?passwordChanged=true&message=' + encodeURIComponent('Mot de passe changé avec succès. Veuillez vous reconnecter.');
+                        }, 2000);
+                    } else {
+                        // Fallback: redirection simple si les flags ne sont pas présents
+                        setTimeout(() => {
+                            showNotification('Veuillez vous reconnecter avec votre nouveau mot de passe', 'info');
+                            window.location.href = '/login?passwordChanged=true';
+                        }, 3000);
+                    }
+                } else {
+                    showNotification(data.message || 'Erreur lors du changement de mot de passe', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('🔐 DEBUG: Erreur AJAX:', error);
+                showNotification('Erreur de connexion au serveur', 'error');
+            });
+        }
+
+        function setup2FA() {
+            showNotification('Configuration de l\'authentification à deux facteurs...', 'info');
+            // In real app, open 2FA setup modal
+        }
+
+        function terminateSession(sessionId) {
+            if (confirm('Êtes-vous sûr de vouloir terminer cette session ?')) {
+                console.log('Terminating session:', sessionId);
+                showNotification('Session terminée', 'success');
+                // Remove session from UI
+                event.target.closest('.security-item').remove();
+            }
+        }
+
+        function terminateAllSessions() {
+            if (confirm('Êtes-vous sûr de vouloir terminer toutes les autres sessions ?')) {
+                console.log('Terminating all other sessions');
+                showNotification('Toutes les autres sessions ont été terminées', 'success');
+            }
+        }
+
+        // Privacy functions
+        function exportData() {
+            showNotification('Préparation de l\'export de vos données...', 'info');
+            
+            // Simulate data export
+            setTimeout(() => {
+                showNotification('Export terminé ! Le téléchargement va commencer.', 'success');
+                // In real app, trigger file download
+            }, 2000);
+        }
+
+        function clearAllData() {
+            if (confirm('ATTENTION : Cette action supprimera toutes vos données de façon irréversible. Êtes-vous sûr ?')) {
+                console.log('Clearing all user data');
+                showNotification('Toutes les données ont été supprimées', 'success');
+            }
+        }
+
+        function deleteAccount() {
+            const confirmation = prompt('Pour confirmer la suppression de votre compte, tapez "SUPPRIMER" :');
+            if (confirmation === 'SUPPRIMER') {
+                console.log('Deleting user account');
+                showNotification('Compte supprimé. Redirection...', 'success');
+                // In real app, redirect to goodbye page
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else if (confirmation !== null) {
+                showNotification('Confirmation incorrecte. Suppression annulée.', 'error');
+            }
+        }
+
+        // Utility function to show notifications
+        function showNotification(message, type = 'info') {
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            }[type] || 'alert-info';
+            
+            const icon = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-circle',
+                'warning': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle'
+            }[type] || 'fas fa-info-circle';
+            
+            const alert = document.createElement('div');
+            alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alert.innerHTML = `
+                <i class="${icon} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // Load saved settings on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔐 DEBUG: Page loaded, checking submitPasswordChange function availability');
+            console.log('🔐 DEBUG: submitPasswordChange function type:', typeof submitPasswordChange);
+            console.log('🔐 DEBUG: Password change button exists:', !!document.querySelector('[onclick="submitPasswordChange()"]'));
+            
+            const savedSettings = localStorage.getItem('userSettings');
+            if (savedSettings) {
+                Object.assign(settings, JSON.parse(savedSettings));
+                console.log('Loaded saved settings:', settings);
+            }
+            
+            // Add event listener to password change button to detect clicks
+            const passwordButton = document.querySelector('[onclick="submitPasswordChange()"]');
+            if (passwordButton) {
+                console.log('🔐 DEBUG: Found password change button, adding click event listener');
+                passwordButton.addEventListener('click', function(event) {
+                    console.log('🔐 DEBUG: *** BUTTON CLICKED DETECTED ***');
+                    console.log('🔐 DEBUG: Event type:', event.type);
+                    console.log('🔐 DEBUG: Event target:', event.target);
+                    console.log('🔐 DEBUG: About to call submitPasswordChange()');
+                });
+            } else {
+                console.log('🔐 DEBUG: ERROR - Password change button not found!');
+            }
+        });
+
+        // Auto-save settings every 30 seconds
+        setInterval(() => {
+            localStorage.setItem('userSettings', JSON.stringify(settings));
+            console.log('Auto-saved settings');
+        }, 30000);
+    </script>
+</body>
+</html>

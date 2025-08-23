@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Administrateur</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .priority-high {
+            background-color: #dc3545;
+        }
+        .priority-medium {
+            background-color: #fd7e14;
+        }
+        .priority-low {
+            background-color: #20c997;
+        }
+        .priority-info {
+            background-color: #0dcaf0;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .alert-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #721c24;
+        }
+        .alert-box.success {
+            background-color: #d1e7dd;
+            border-color: #badbcc;
+            color: #0f5132;
+        }
+        .alert-box.warning {
+            background-color: #fff3cd;
+            border-color: #ffecb5;
+            color: #664d03;
+        }
+        .alert-box.info {
+            background-color: #cff4fc;
+            border-color: #b6effb;
+            color: #055160;
+        }
+        .notification-type {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 0 0 15px 0;
+        }
+        .notification-details {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .detail-value {
+            text-align: right;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+        .action-required {
+            background-color: #ffe6e6;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .action-required h4 {
+            margin: 0 0 10px 0;
+            color: #dc3545;
+        }
+        .system-info {
+            background-color: #e2e3e5;
+            border: 1px solid #d3d3d4;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .system-info h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 5px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #bb2d3b;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5c636a;
+        }
+        .btn-success {
+            background-color: #198754;
+        }
+        .btn-success:hover {
+            background-color: #157347;
+        }
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-left: 10px;
+        }
+        .priority-badge.high {
+            background-color: #dc3545;
+        }
+        .priority-badge.medium {
+            background-color: #fd7e14;
+        }
+        .priority-badge.low {
+            background-color: #20c997;
+        }
+        .priority-badge.info {
+            background-color: #0dcaf0;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            .detail-row {
+                flex-direction: column;
+            }
+            .detail-value {
+                text-align: left;
+                max-width: 100%;
+                margin-top: 5px;
+            }
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Dynamic Priority Color -->
+        <div class="header" th:classappend="${priority == 'HIGH' ? 'priority-high' : (priority == 'MEDIUM' ? 'priority-medium' : (priority == 'LOW' ? 'priority-low' : 'priority-info'))}">
+            <h1>🚨 Notification Administrateur</h1>
+            <p th:text="${companyName}">LMP Digital Services</p>
+            <span class="priority-badge" th:classappend="${priority == 'HIGH' ? 'high' : (priority == 'MEDIUM' ? 'medium' : (priority == 'LOW' ? 'low' : 'info'))}" th:text="${priority}">HIGH</span>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p>Notification système pour l'équipe administrative :</p>
+            
+            <!-- Alert Box with Dynamic Type -->
+            <div class="alert-box" th:classappend="${alertType == 'success' ? 'success' : (alertType == 'warning' ? 'warning' : (alertType == 'info' ? 'info' : ''))}">
+                <div class="notification-type" th:text="${notificationTitle}">Nouvelle Commande Reçue</div>
+                <p th:text="${notificationMessage}">Une nouvelle commande a été reçue et nécessite votre attention pour validation et traitement.</p>
+            </div>
+
+            <!-- Notification Details -->
+            <div class="notification-details">
+                <h4>📋 Détails de la notification</h4>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Type d'événement :</span>
+                    <span class="detail-value" th:text="${eventType}">NEW_ORDER</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Date/Heure :</span>
+                    <span class="detail-value" th:text="${currentDateTime}">22/08/2025 à 14:30:15</span>
+                </div>
+                
+                <!-- Order-specific details if applicable -->
+                <div th:if="${order != null}">
+                    <div class="detail-row">
+                        <span class="detail-label">N° Commande :</span>
+                        <span class="detail-value" th:text="${order.id}">#12345</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Client :</span>
+                        <span class="detail-value" th:text="${order.user.email}">client@exemple.com</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Service :</span>
+                        <span class="detail-value" th:text="${order.serviceName}">Service Web</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Montant :</span>
+                        <span class="detail-value" th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Statut :</span>
+                        <span class="detail-value" th:text="${order.status}">PENDING</span>
+                    </div>
+                </div>
+
+                <!-- User-specific details if applicable -->
+                <div th:if="${user != null}">
+                    <div class="detail-row">
+                        <span class="detail-label">Utilisateur :</span>
+                        <span class="detail-value" th:text="${user.email}">user@exemple.com</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Rôle :</span>
+                        <span class="detail-value" th:text="${user.role}">USER</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">Statut compte :</span>
+                        <span class="detail-value" th:text="${user.active ? 'Actif' : 'Inactif'}">Actif</span>
+                    </div>
+                </div>
+
+                <!-- Additional details if provided -->
+                <div th:if="${additionalInfo != null}">
+                    <div class="detail-row">
+                        <span class="detail-label">Informations :</span>
+                        <span class="detail-value" th:text="${additionalInfo}">Informations supplémentaires</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics if provided -->
+            <div th:if="${metrics != null}">
+                <h4>📊 Métriques système</h4>
+                <div class="metrics-grid">
+                    <div class="metric-card" th:each="metric : ${metrics}">
+                        <div class="metric-value" th:text="${metric.value}">42</div>
+                        <div class="metric-label" th:text="${metric.label}">Commandes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Required Section -->
+            <div th:if="${actionRequired}" class="action-required">
+                <h4>⚠️ Action requise</h4>
+                <p th:text="${actionMessage}">Cette notification nécessite une action immédiate de votre part. Veuillez consulter le dashboard administrateur pour plus de détails.</p>
+                
+                <ul th:if="${actionSteps != null}">
+                    <li th:each="step : ${actionSteps}" th:text="${step}">Étape d'action</li>
+                </ul>
+            </div>
+
+            <!-- System Information -->
+            <div class="system-info">
+                <h5>🖥️ Informations système</h5>
+                <div class="detail-row">
+                    <span class="detail-label">Serveur :</span>
+                    <span class="detail-value">LMP Production Server</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Application :</span>
+                    <span class="detail-value" th:text="${companyName + ' - Admin System'}">LMP Digital Services - Admin System</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Environnement :</span>
+                    <span class="detail-value">Production</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Version :</span>
+                    <span class="detail-value">v1.0.0</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="#" class="btn">Voir Dashboard Admin</a>
+                <a href="#" class="btn btn-secondary">Voir Détails</a>
+                <a href="#" class="btn btn-success" th:if="${order != null}">Traiter Commande</a>
+            </div>
+
+            <!-- Important Notes -->
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #856404;">📝 Notes importantes</h4>
+                <ul style="margin: 0; color: #856404;">
+                    <li>Cette notification a été générée automatiquement par le système</li>
+                    <li>Vérifiez le dashboard administrateur pour les détails complets</li>
+                    <li>En cas d'urgence, contactez l'équipe technique immédiatement</li>
+                    <li>Conservez cette notification pour vos archives</li>
+                </ul>
+            </div>
+
+            <p style="margin-top: 30px;">Cette notification administrative vous est envoyée pour vous tenir informé des événements importants du système.</p>
+
+            <p>Cordialement,<br>
+            Système de notification automatique<br>
+            <span th:text="${companyName}">LMP Digital Services</span></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong th:text="${companyName}">LMP Digital Services</strong> - Dashboard Administrateur</p>
+            <p>123 Rue Principale, Ville, Province, Code Postal</p>
+            <p>Support Technique : +1 (555) 123-4567 | admin@lmp-digital.ca</p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                Cette notification administrative a été envoyée automatiquement.<br>
+                Ne pas répondre - Utiliser les liens d'action ci-dessus.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

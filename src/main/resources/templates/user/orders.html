@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Commandes - LMP</title>
+    
+    <!-- Global Styles -->
+    <div th:replace="fragments/styles :: global-styles"></div>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .orders-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .orders-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border: none;
+        }
+        
+        .search-filters {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .order-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .order-header {
+            background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .order-body {
+            padding: 1.5rem;
+        }
+        
+        .order-number {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+        
+        .order-date {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .order-amount {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-pending {
+            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-in_progress {
+            background: linear-gradient(45deg, #cce5ff, #74b9ff);
+            color: #004085;
+            border: 1px solid #74b9ff;
+        }
+        
+        .status-completed {
+            background: linear-gradient(45deg, #d4edda, #00b894);
+            color: #155724;
+            border: 1px solid #00b894;
+        }
+        
+        .status-cancelled {
+            background: linear-gradient(45deg, #f8d7da, #e17055);
+            color: #721c24;
+            border: 1px solid #e17055;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background: linear-gradient(45deg, #5a6fd8, #6a3f87);
+            transform: translateY(-1px);
+            color: white;
+        }
+        
+        .btn-outline-custom {
+            background: transparent;
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+        
+        .btn-outline-custom:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .filter-btn {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: #dee2e6;
+            margin-bottom: 1rem;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box .form-control {
+            padding-left: 2.5rem;
+            border-radius: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .sidebar-menu i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .pagination-custom .page-link {
+            border-radius: 20px;
+            margin: 0 0.2rem;
+            border: none;
+            color: #667eea;
+        }
+        
+        .pagination-custom .page-item.active .page-link {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+        }
+        
+        .order-timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+        
+        .order-timeline::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dee2e6;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.25rem;
+            top: 0.25rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            background: #667eea;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .order-actions {
+                justify-content: center;
+                margin-top: 1rem;
+            }
+            
+            .search-filters {
+                padding: 1rem;
+            }
+            
+            .order-card {
+                margin-bottom: 1rem;
+            }
+            
+            .order-body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Interactive Components -->
+    <div th:replace="fragments/dashboard-components :: interactive-modals"></div>
+    <div th:replace="fragments/dashboard-components :: toast-notifications"></div>
+    <div th:replace="fragments/dashboard-components :: loading-overlays"></div>
+    <div th:replace="fragments/dashboard-components :: component-styles"></div>
+    
+    <!-- Navigation -->
+    <div th:replace="fragments/navigation :: navigation"></div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-shopping-cart me-3"></i>
+                        Mes Commandes
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">Gérez et suivez toutes vos commandes</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="badge bg-light text-dark fs-6 px-3 py-2">
+                        <i class="fas fa-list me-2"></i>
+                        <span th:text="${orders.size()}">0</span> commande(s)
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-3">
+                <div class="sidebar">
+                    <div class="text-center mb-3">
+                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="fas fa-user fs-2 text-white"></i>
+                        </div>
+                        <h5 class="mt-2 mb-1" th:text="${user.getDisplayName()}">Nom Utilisateur</h5>
+                        <small class="text-muted" th:text="${user.email}">email@example.com</small>
+                    </div>
+                    
+                    <ul class="sidebar-menu">
+                        <li><a th:href="@{/dashboard}">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Tableau de bord
+                        </a></li>
+                        <li><a href="#" class="active">
+                            <i class="fas fa-shopping-cart"></i>
+                            Mes commandes
+                        </a></li>
+                        <li><a th:href="@{/dashboard/reviews}">
+                            <i class="fas fa-star"></i>
+                            Mes avis
+                        </a></li>
+                        <li><a th:href="@{/profile}">
+                            <i class="fas fa-user"></i>
+                            Mon profil
+                        </a></li>
+                        <li><a th:href="@{/dashboard/settings}">
+                            <i class="fas fa-cog"></i>
+                            Paramètres
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Orders Content -->
+            <div class="col-lg-9">
+                <div class="orders-container">
+                    <!-- Orders Header -->
+                    <div class="orders-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                Liste de vos commandes
+                            </h4>
+                            <button class="btn btn-light btn-sm" onclick="location.reload()">
+                                <i class="fas fa-sync-alt me-1"></i>
+                                Actualiser
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters -->
+                    <div class="search-filters">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" class="form-control" id="searchOrders" 
+                                           placeholder="Rechercher par numéro, montant...">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex flex-wrap">
+                                    <button class="btn btn-outline-primary btn-sm filter-btn active" data-filter="all">
+                                        <i class="fas fa-list me-1"></i>Toutes
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm filter-btn" data-filter="PENDING">
+                                        <i class="fas fa-clock me-1"></i>En attente
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm filter-btn" data-filter="IN_PROGRESS">
+                                        <i class="fas fa-spinner me-1"></i>En cours
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm filter-btn" data-filter="COMPLETED">
+                                        <i class="fas fa-check me-1"></i>Terminées
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm filter-btn" data-filter="CANCELLED">
+                                        <i class="fas fa-times me-1"></i>Annulées
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div class="p-3">
+                        <!-- Empty State -->
+                        <div th:if="${#lists.isEmpty(orders)}" class="empty-state">
+                            <i class="fas fa-shopping-cart"></i>
+                            <h5>Aucune commande trouvée</h5>
+                            <p>Vous n'avez pas encore passé de commande.</p>
+                            <a th:href="@{/services}" class="btn btn-primary-custom">
+                                <i class="fas fa-plus me-2"></i>
+                                Passer ma première commande
+                            </a>
+                        </div>
+
+                        <!-- Orders Cards -->
+                        <div th:each="order : ${orders}" class="order-card" th:data-status="${order.status.name()}">
+                            <div class="order-header">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <div class="order-number">
+                                            <i class="fas fa-hashtag me-1"></i>
+                                            Commande #<span th:text="${order.id}">001</span>
+                                        </div>
+                                        <div class="order-date">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy à HH:mm')}">01/01/2024 à 10:00</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-md-end">
+                                        <div class="order-amount mb-2">
+                                            <i class="fas fa-dollar-sign me-1"></i>
+                                            <span th:text="${order.totalAmount + ' CAD'}">150.00 CAD</span>
+                                        </div>
+                                        <span class="status-badge" 
+                                              th:classappend="${order.status.name() == 'PENDING'} ? 'status-pending' : 
+                                                             (${order.status.name() == 'IN_PROGRESS'} ? 'status-in_progress' : 
+                                                             (${order.status.name() == 'COMPLETED'} ? 'status-completed' : 'status-cancelled'))"
+                                              th:text="${order.status.name() == 'PENDING'} ? 'En attente' : 
+                                                       (${order.status.name() == 'IN_PROGRESS'} ? 'En cours' : 
+                                                       (${order.status.name() == 'COMPLETED'} ? 'Terminée' : 'Annulée'))">En attente</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="order-body">
+                                <!-- Order Details -->
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="mb-3">
+                                            <h6 class="text-muted mb-2">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Détails de la commande
+                                            </h6>
+                                            <p class="mb-1" th:text="${order.notes ?: 'Aucune note disponible'}">Service: Consultation, Currency: CAD</p>
+                                        </div>
+                                        
+                                        <!-- Order Timeline (for completed/in-progress orders) -->
+                                        <div th:if="${order.status.name() != 'PENDING'}" class="mb-3">
+                                            <h6 class="text-muted mb-2">
+                                                <i class="fas fa-history me-1"></i>
+                                                Progression
+                                            </h6>
+                                            <div class="order-timeline">
+                                                <div class="timeline-item">
+                                                    <small class="text-muted">Commande créée</small>
+                                                    <div class="fw-medium" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</div>
+                                                </div>
+                                                <div th:if="${order.status.name() != 'PENDING'}" class="timeline-item">
+                                                    <small class="text-muted">Traitement en cours</small>
+                                                    <div class="fw-medium" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</div>
+                                                </div>
+                                                <div th:if="${order.status.name() == 'COMPLETED'}" class="timeline-item">
+                                                    <small class="text-muted">Commande terminée</small>
+                                                    <div class="fw-medium" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 12:00</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="order-actions">
+                                            <a href="#" class="action-btn btn-primary-custom" th:data-order-id="${order.id}" onclick="showOrderDetails(this)">
+                                                <i class="fas fa-eye"></i>
+                                                Voir détails
+                                            </a>
+                                            <a th:if="${order.status.name() == 'COMPLETED'}" href="#" class="action-btn btn-outline-custom">
+                                                <i class="fas fa-download"></i>
+                                                Facture
+                                            </a>
+                                            <a th:if="${order.status.name() == 'COMPLETED'}" th:href="@{/dashboard/reviews?order=} + ${order.id}" class="action-btn btn-outline-custom">
+                                                <i class="fas fa-star"></i>
+                                                Donner un avis
+                                            </a>
+                                            <a th:if="${order.status.name() == 'PENDING'}" href="#" class="action-btn btn-outline-custom text-danger" th:data-order-id="${order.id}" onclick="cancelOrder(this)">
+                                                <i class="fas fa-times"></i>
+                                                Annuler
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Espace personnel Components Scripts -->
+    <div th:replace="fragments/dashboard-components :: component-scripts"></div>
+    
+    <script>
+        // Search functionality
+        document.getElementById('searchOrders').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const orderCards = document.querySelectorAll('.order-card');
+            
+            orderCards.forEach(card => {
+                const orderNumber = card.querySelector('.order-number').textContent.toLowerCase();
+                const orderAmount = card.querySelector('.order-amount').textContent.toLowerCase();
+                const orderNotes = card.querySelector('.order-body p').textContent.toLowerCase();
+                
+                if (orderNumber.includes(searchTerm) || 
+                    orderAmount.includes(searchTerm) || 
+                    orderNotes.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Filter functionality
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                const filter = this.dataset.filter;
+                const orderCards = document.querySelectorAll('.order-card');
+                
+                orderCards.forEach(card => {
+                    if (filter === 'all' || card.dataset.status === filter) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Enhanced show order details using new components
+        function showOrderDetails(element) {
+            const orderId = element.dataset.orderId;
+            window.dashboardComponents.showModal('orderDetailsModal', { orderId });
+        }
+
+        // Enhanced cancel order with confirmation modal
+        function cancelOrder(element) {
+            const orderId = element.dataset.orderId;
+            
+            window.dashboardComponents.showConfirmation(
+                'Annuler la commande',
+                `Êtes-vous sûr de vouloir annuler la commande #${orderId} ? Cette action est irréversible.`,
+                function() {
+                    window.dashboardComponents.showLoading('action', 'Annulation de la commande...');
+                    
+                    // Simulate API call
+                    setTimeout(() => {
+                        window.dashboardComponents.hideLoading('action');
+                        window.dashboardComponents.showToast('success', `Commande #${orderId} annulée avec succès`);
+                        
+                        // Update UI
+                        const card = element.closest('.order-card');
+                        if (card) {
+                            card.dataset.status = 'CANCELLED';
+                            const statusBadge = card.querySelector('.status-badge');
+                            statusBadge.className = 'status-badge status-cancelled';
+                            statusBadge.textContent = 'Annulée';
+                            
+                            // Remove cancel button
+                            element.remove();
+                        }
+                    }, 2000);
+                },
+                'danger'
+            );
+        }
+
+        // Add tooltip functionality
+        function initializeTooltips() {
+            // Add tooltips to action buttons
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                const tooltipText = btn.querySelector('i').className.includes('fa-eye') ? 'Afficher les détails de cette commande' :
+                                  btn.querySelector('i').className.includes('fa-download') ? 'Télécharger la facture PDF' :
+                                  btn.querySelector('i').className.includes('fa-star') ? 'Donner votre avis sur ce service' :
+                                  btn.querySelector('i').className.includes('fa-times') ? 'Annuler cette commande' : '';
+                
+                if (tooltipText) {
+                    btn.setAttribute('data-bs-toggle', 'tooltip');
+                    btn.setAttribute('data-bs-placement', 'top');
+                    btn.setAttribute('title', tooltipText);
+                }
+            });
+
+            // Add tooltips to status badges
+            document.querySelectorAll('.status-badge').forEach(badge => {
+                const status = badge.textContent.trim();
+                let tooltipText = '';
+                
+                switch(status) {
+                    case 'En attente':
+                        tooltipText = 'Commande en attente de traitement';
+                        break;
+                    case 'En cours':
+                        tooltipText = 'Service en cours d\'exécution';
+                        break;
+                    case 'Terminée':
+                        tooltipText = 'Service terminé avec succès';
+                        break;
+                    case 'Annulée':
+                        tooltipText = 'Commande annulée';
+                        break;
+                }
+                
+                if (tooltipText) {
+                    badge.setAttribute('data-bs-toggle', 'tooltip');
+                    badge.setAttribute('data-bs-placement', 'top');
+                    badge.setAttribute('title', tooltipText);
+                }
+            });
+        }
+
+        // Enhanced search with real-time feedback
+        function enhancedSearch() {
+            const searchInput = document.getElementById('searchOrders');
+            const orderCards = document.querySelectorAll('.order-card');
+            
+            searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                let visibleCount = 0;
+                
+                orderCards.forEach(card => {
+                    const orderNumber = card.querySelector('.order-number').textContent.toLowerCase();
+                    const orderAmount = card.querySelector('.order-amount').textContent.toLowerCase();
+                    const orderNotes = card.querySelector('.order-body p').textContent.toLowerCase();
+                    
+                    const isVisible = orderNumber.includes(searchTerm) ||
+                                     orderAmount.includes(searchTerm) ||
+                                     orderNotes.includes(searchTerm);
+                    
+                    card.style.display = isVisible ? 'block' : 'none';
+                    if (isVisible) visibleCount++;
+                });
+                
+                // Show feedback
+                if (searchTerm && visibleCount === 0) {
+                    window.dashboardComponents.showToast('warning', 'Aucune commande ne correspond à votre recherche');
+                }
+            });
+        }
+
+        // Download invoice with feedback
+        function downloadInvoice(orderId) {
+            window.dashboardComponents.showLoading('action', 'Génération de la facture...');
+            
+            setTimeout(() => {
+                window.dashboardComponents.hideLoading('action');
+                window.dashboardComponents.showToast('success', 'Facture téléchargée avec succès');
+            }, 2000);
+        }
+
+        // Initialize enhanced features
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTooltips();
+            enhancedSearch();
+            
+            // Initialize Bootstrap tooltips
+            setTimeout(() => {
+                window.dashboardComponents.initializeTooltips();
+            }, 500);
+        });
+
+        // Auto-refresh every 30 seconds for status updates
+        setInterval(() => {
+            // Only refresh if there are pending orders
+            if (document.querySelector('[data-status="PENDING"]') || document.querySelector('[data-status="IN_PROGRESS"]')) {
+                console.log('Auto-refreshing order status...');
+                // location.reload();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Booking Modal Fragment -->
+    <div th:fragment="booking-modal" id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-8 max-w-2xl w-full relative z-[10000] max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-dark">Commander un service</h3>
+                    <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="registerAndCheckoutForm" onsubmit="handleRegisterAndCheckout(event)">
+                    <!-- Inscription rapide -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Inscription rapide</h4>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Créez votre compte en quelques secondes ! Votre nom d'affichage sera automatiquement généré depuis votre email.
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                <input type="email" name="email" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                       placeholder="votre.email@exemple.com">
+                                <p class="text-xs text-gray-500 mt-1">Votre identifiant de connexion</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                                <input type="tel" name="phone"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                       placeholder="+1 (555) 123-4567">
+                                <p class="text-xs text-gray-500 mt-1">Optionnel pour la commande</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Champs noms optionnels (repliables) -->
+                        <div class="mt-4">
+                            <button type="button" onclick="toggleOptionalFields()"
+                                    class="text-sm text-primary hover:text-primary/80 underline flex items-center">
+                                <span id="toggleText">+ Ajouter prénom et nom (optionnel)</span>
+                                <i id="toggleIcon" class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            
+                            <div id="optionalFields" class="hidden mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Prénom</label>
+                                    <input type="text" name="firstName"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                           placeholder="Jean">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nom</label>
+                                    <input type="text" name="lastName"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                           placeholder="Dupont">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mot de passe -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Sécurité du compte</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
+                                <input type="password" name="password" required minlength="6"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                <p class="text-xs text-gray-500 mt-1">Minimum 6 caractères</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Confirmer le mot de passe *</label>
+                                <input type="password" name="confirmPassword" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Adresse de facturation (optionnelle) -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Informations de facturation</h4>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Vous pourrez ajouter ces informations plus tard dans votre profil si nécessaire.
+                        </p>
+                        
+                        <!-- Bouton pour afficher/masquer l'adresse -->
+                        <div class="mb-4">
+                            <button type="button" onclick="toggleBillingAddress()"
+                                    class="text-sm text-primary hover:text-primary/80 underline flex items-center">
+                                <span id="billingToggleText">+ Ajouter une adresse de facturation (optionnel)</span>
+                                <i id="billingToggleIcon" class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Champs d'adresse repliables -->
+                        <div id="billingFields" class="hidden">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
+                                <input type="text" name="address"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Ville</label>
+                                    <input type="text" name="city"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Code postal</label>
+                                    <input type="text" name="postalCode"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Pays</label>
+                                    <select name="country"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="">Sélectionner...</option>
+                                        <option value="Canada" selected>Canada</option>
+                                        <option value="France">France</option>
+                                        <option value="Belgique">Belgique</option>
+                                        <option value="Suisse">Suisse</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nom de l'entreprise (optionnel)</label>
+                                <input type="text" name="companyName"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations du service (cachées, seront remplies par JavaScript) -->
+                    <input type="hidden" name="serviceName" id="modalServiceName">
+                    <input type="hidden" name="amount" id="modalAmount">
+                    <input type="hidden" name="currency" value="CAD">
+
+                    <!-- Résumé de la commande -->
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-2">Résumé de la commande</h4>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600" id="orderSummaryService">Service sélectionné</span>
+                            <span class="font-semibold text-gray-800" id="orderSummaryAmount">0,00 CAD</span>
+                        </div>
+                    </div>
+
+                    <!-- Conditions d'utilisation -->
+                    <div class="mb-6">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acceptTerms" required
+                                   class="mr-2 text-primary focus:ring-primary border-gray-300 rounded">
+                            <span class="text-sm text-gray-700">
+                                J'accepte les <a href="#" class="text-primary underline">conditions d'utilisation</a>
+                                et la <a href="#" class="text-primary underline">politique de confidentialité</a> *
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- Messages d'erreur -->
+                    <div id="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+                    
+                    <!-- Messages de succès -->
+                    <div id="successMessage" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg hidden"></div>
+
+                    <!-- Boutons d'action -->
+                    <div class="flex gap-3">
+                        <button type="submit" id="submitButton"
+                                class="flex-1 bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all">
+                            <span id="submitButtonText">Créer mon compte et payer</span>
+                            <span id="submitButtonSpinner" class="hidden">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Traitement...
+                            </span>
+                        </button>
+                        <button type="button" onclick="closeBookingModal()"
+                                class="px-4 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-all">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

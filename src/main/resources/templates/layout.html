@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - LMP'">LMP - Local Map Profil</title>
+    
+    <!-- Meta tags pour SEO -->
+    <meta name="description" th:content="${description ?: 'LMP vous connecte aux meilleures solutions locales. Trouvez des services, des entreprises et des opportunités près de chez vous.'}">
+    <meta name="keywords" content="local, map, profil, solutions, services, entreprises, cartographie">
+    <meta name="author" content="LMP">
+    
+    <!-- CSRF Token pour les requêtes AJAX -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- Open Graph tags pour les réseaux sociaux -->
+    <meta property="og:title" th:content="${title} + ' - LMP'">
+    <meta property="og:description" th:content="${description ?: 'Découvrez les solutions locales qui vous entourent'}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lmp.ca">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/images/Logo_LMP.ico">
+    
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts - Inter et Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a3cff',
+                        secondary: '#6c757d',
+                        dark: '#212529',
+                        yellow: '#FFD60A',
+                        darkBg: '#1E1E24'
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- CSS personnalisé -->
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <!-- Styles spécifiques à la page -->
+    <th:block th:replace="${pageStyles} ?: ~{}">
+        <!-- Styles spécifiques à la page (optionnel) -->
+    </th:block>
+</head>
+<body class="min-h-screen bg-white">
+    <!-- Navigation -->
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold text-primary tracking-wider">LMP</a>
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/' ? 'text-primary' : ''}">Accueil</a>
+                    <a href="/services" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/services' ? 'text-primary' : ''}">Services</a>
+                    <a href="/map" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/map' ? 'text-primary' : ''}">Carte</a>
+                    <a href="/about" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/about' ? 'text-primary' : ''}">À propos</a>
+                    <a href="/contact" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/contact' ? 'text-primary' : ''}">Contact</a>
+                    <button onclick="openServiceModal('Consultation', 150.00)" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Commander</button>
+                </nav>
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-primary transition-colors">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="mobileMenu" class="md:hidden hidden mt-4 pb-4 border-t border-gray-100 pt-4">
+                <div class="flex flex-col space-y-4">
+                    <a href="/" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/' ? 'text-primary' : ''}">Accueil</a>
+                    <a href="/services" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/services' ? 'text-primary' : ''}">Services</a>
+                    <a href="/map" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/map' ? 'text-primary' : ''}">Carte</a>
+                    <a href="/about" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/about' ? 'text-primary' : ''}">À propos</a>
+                    <a href="/contact" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/contact' ? 'text-primary' : ''}">Contact</a>
+                    <button onclick="openServiceModal('Consultation', 150.00)" class="w-full bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Commander</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <main>
+        <!-- Contenu spécifique à chaque page -->
+        <th:block th:replace="${content}">
+            <!-- Le contenu sera remplacé par chaque page -->
+        </th:block>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-darkBg text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <!-- Logo et Description -->
+                <div class="md:col-span-2">
+                    <div class="text-2xl font-bold text-white mb-4 tracking-wider">
+                        LMP
+                    </div>
+                    <p class="text-gray-300 mb-4 leading-relaxed">
+                        Votre plateforme de découverte des solutions locales. Connectez-vous aux meilleures opportunités près de chez vous.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-4">Navigation</h5>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-white transition-colors">Accueil</a></li>
+                        <li><a href="/services" class="text-gray-300 hover:text-white transition-colors">Services</a></li>
+                        <li><a href="/map" class="text-gray-300 hover:text-white transition-colors">Carte</a></li>
+                        <li><a href="/about" class="text-gray-300 hover:text-white transition-colors">À propos</a></li>
+                        <li><a href="/contact" class="text-gray-300 hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-4">Contact</h5>
+                    <div class="space-y-2 text-gray-300">
+                        <p>📧 lmp.assistance@gmail.com</p>
+                        <p>📞 +1 (514) 123-4567</p>
+                        <p>📍 Montréal, QC, Canada</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="border-t border-gray-700 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-400 text-sm mb-4 md:mb-0">
+                        &copy; 2024 LMP (Local Map Profil). Tous droits réservés.
+                    </div>
+                    <div class="flex space-x-6 text-sm">
+                        <a href="/privacy" class="text-gray-400 hover:text-white transition-colors">Politique de confidentialité</a>
+                        <a href="/terms" class="text-gray-400 hover:text-white transition-colors">Conditions d'utilisation</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts JavaScript -->
+    <script src="/js/map.js"></script>
+    <script src="/js/register-checkout.js"></script>
+    
+    <!-- Scripts spécifiques à la page -->
+    <th:block th:replace="${pageScripts} ?: ~{}">
+        <!-- Scripts spécifiques à la page (optionnel) -->
+    </th:block>
+
+    <!-- Nouveau Booking Modal avec inscription complète -->
+    <div th:replace="fragments/booking-modal :: booking-modal"></div>
+
+    <!-- Scripts de navigation et helpers -->
+    <div th:replace="fragments/scripts :: navigation-scripts"></div>
+    <div th:replace="fragments/scripts :: booking-helpers"></div>
+</body>
+</html> 
