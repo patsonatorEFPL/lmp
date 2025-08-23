@@ -9,9 +9,9 @@ builder = "dockerfile"
 
 [deploy]
 # Port sur lequel l'application écoute
-startCommand = "java $JAVA_OPTS -jar app.jar"
-healthcheckPath = "/actuator/health"
-healthcheckTimeout = 300
+startCommand = "java -Xmx512m -XX:+UseG1GC -jar app.jar"
+# healthcheckPath = "/actuator/health"
+# healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
@@ -25,7 +25,6 @@ cpu = "1"
 [environments.production]
 # Ces variables seront surchargées par celles définies dans Railway Dashboard
 APP_BASE_URL = "${{RAILWAY_STATIC_URL}}"
-SPRING_PROFILES_ACTIVE = "prod"
 PORT = "${{PORT}}"
 
 # Configuration des services
