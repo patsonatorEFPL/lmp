@@ -65,9 +65,9 @@ ENV SERVER_PORT=8080
 # Port exposé (Railway utilisera la variable PORT)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
+# Health check désactivé pour Railway (Railway utilise ses propres mécanismes)
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+#     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # Point d'entrée simplifié avec optimisations essentielles
 ENTRYPOINT ["java", "-Xmx512m", "-XX:+UseG1GC", "-jar", "app.jar"]
