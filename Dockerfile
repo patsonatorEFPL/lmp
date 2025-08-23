@@ -14,6 +14,9 @@ COPY .mvn .mvn
 COPY mvnw .
 COPY mvnw.cmd .
 
+# Donner les permissions d'exécution au wrapper Maven
+RUN chmod +x mvnw
+
 # Télécharger les dépendances (mise en cache des layers Docker)
 RUN ./mvnw dependency:go-offline -B
 
@@ -55,9 +58,6 @@ RUN mkdir -p /app/invoices /app/logs && \
 # Basculer vers l'utilisateur non-root
 USER spring
 
-# Configuration JVM optimisée pour Railway
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom"
-
 # Variables d'environnement Spring Boot
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV SERVER_PORT=8080
@@ -69,5 +69,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Point d'entrée avec gestion gracieuse des signaux
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
+# Point d'entrée simplifié avec optimisations essentielles
+ENTRYPOINT ["java", "-Xmx512m", "-XX:+UseG1GC", "-jar", "app.jar"]

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Message Envoyé - LMP</title>
+    <meta name="description" content="Votre message a été envoyé avec succès">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a3cff',
+                        secondary: '#6c757d',
+                        dark: '#212529',
+                        yellow: '#FFD60A',
+                        darkBg: '#1E1E24'
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- CSS personnalisé -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="min-h-screen bg-white">
+    <!-- Navigation -->
+    <header class="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="text-2xl font-bold text-primary tracking-wider">LMP</a>
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="text-gray-700 hover:text-primary font-medium transition-colors">Accueil</a>
+                    <a href="/services" class="text-gray-700 hover:text-primary font-medium transition-colors">Services</a>
+                    <a href="/map" class="text-gray-700 hover:text-primary font-medium transition-colors">Carte</a>
+                    <a href="/about" class="text-gray-700 hover:text-primary font-medium transition-colors">À propos</a>
+                    <a href="/contact" class="text-primary font-medium transition-colors">Contact</a>
+                    <button onclick="openBookingModal()" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Prendre RDV</button>
+                </nav>
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-primary transition-colors">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="mobileMenu" class="md:hidden hidden mt-4 pb-4 border-t border-gray-100 pt-4">
+                <div class="flex flex-col space-y-4">
+                    <a href="/" class="text-left text-gray-700 hover:text-primary font-medium transition-colors">Accueil</a>
+                    <a href="/services" class="text-left text-gray-700 hover:text-primary font-medium transition-colors">Services</a>
+                    <a href="/map" class="text-left text-gray-700 hover:text-primary font-medium transition-colors">Carte</a>
+                    <a href="/about" class="text-left text-gray-700 hover:text-primary font-medium transition-colors">À propos</a>
+                    <a href="/contact" class="text-left text-primary font-medium transition-colors">Contact</a>
+                    <button onclick="openBookingModal()" class="w-full bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Prendre RDV</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Success Section -->
+    <section class="py-16 bg-gradient-to-br from-[#f7f8fa] to-white">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto text-center">
+                <div class="mb-8">
+                    <div class="text-8xl text-green-500 mb-6">✅</div>
+                    <h1 class="text-4xl lg:text-5xl font-bold text-dark mb-4" th:text="${title}">Message Envoyé</h1>
+                    <p class="text-lg text-secondary mb-8" th:text="${subtitle}">Merci de nous avoir contacté</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-8 shadow-lg mb-8">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl text-green-500 mb-4">🎉</div>
+                        <p class="text-lg text-secondary" th:text="${successMessage}">
+                            Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold text-dark mb-4">Récapitulatif de votre message</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex justify-between items-center p-3 bg-white rounded-lg" th:each="info : ${messageInfo}">
+                                <strong class="text-dark" th:text="${info[0]}">Champ</strong>
+                                <span class="text-secondary" th:text="${info[1]}">Valeur</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/" class="bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-home"></i>
+                        <span>Retour à l'accueil</span>
+                    </a>
+                    <a href="/map" class="border-2 border-primary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all duration-200 flex items-center justify-center space-x-2">
+                        <i class="fas fa-map"></i>
+                        <span>Explorer la carte</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-darkBg text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <!-- Logo et Description -->
+                <div class="md:col-span-2">
+                    <div class="text-2xl font-bold text-white mb-4 tracking-wider">
+                        LMP
+                    </div>
+                    <p class="text-gray-300 mb-4 leading-relaxed">
+                        Votre plateforme de découverte des solutions locales. Connectez-vous aux meilleures opportunités près de chez vous.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-4">Navigation</h5>
+                    <ul class="space-y-2">
+                        <li><a href="/" class="text-gray-300 hover:text-white transition-colors">Accueil</a></li>
+                        <li><a href="/services" class="text-gray-300 hover:text-white transition-colors">Services</a></li>
+                        <li><a href="/map" class="text-gray-300 hover:text-white transition-colors">Carte</a></li>
+                        <li><a href="/about" class="text-gray-300 hover:text-white transition-colors">À propos</a></li>
+                        <li><a href="/contact" class="text-gray-300 hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div>
+                    <h5 class="text-lg font-semibold mb-4">Contact</h5>
+                    <div class="space-y-2 text-gray-300">
+                        <p>📧 contact@lmp-digital.ca</p>
+                        <p>📞 +1 (514) 123-4567</p>
+                        <p>📍 Montréal, QC, Canada</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="border-t border-gray-700 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-gray-400 text-sm mb-4 md:mb-0">
+                        &copy; 2024 LMP (Local Map Profil). Tous droits réservés.
+                    </div>
+                    <div class="flex space-x-6 text-sm">
+                        <a href="/privacy" class="text-gray-400 hover:text-white transition-colors">Politique de confidentialité</a>
+                        <a href="/terms" class="text-gray-400 hover:text-white transition-colors">Conditions d'utilisation</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl p-8 max-w-md w-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-dark">Prendre un rendez-vous</h3>
+                    <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <form onsubmit="handleBookingSubmit(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nom complet</label>
+                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                        <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all">
+                            Envoyer
+                        </button>
+                        <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-all">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function openBookingModal() {
+            document.getElementById('bookingModal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.add('hidden');
+        }
+
+        function handleBookingSubmit(event) {
+            event.preventDefault();
+            alert('Demande envoyée ! Nous vous contacterons dans les 24h.');
+            closeBookingModal();
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(event) {
+            const bookingModal = document.getElementById('bookingModal');
+            if (event.target === bookingModal) {
+                closeBookingModal();
+            }
+        });
+    </script>
+</body>
+</html> 
