@@ -59,7 +59,6 @@ RUN mkdir -p /app/invoices /app/logs && \
 USER spring
 
 # Variables d'environnement Spring Boot
-ENV SPRING_PROFILES_ACTIVE=prod
 ENV SERVER_PORT=8080
 
 # Port exposé (Railway utilisera la variable PORT)
