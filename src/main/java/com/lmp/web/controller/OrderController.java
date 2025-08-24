@@ -29,7 +29,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = {"http://localhost:3000", "https://lmp-digital.ca"})
 public class OrderController {
     
     private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
