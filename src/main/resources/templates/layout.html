@@ -6,19 +6,28 @@
     <title th:text="${title} + ' - LMP'">LMP - Local Map Profil</title>
     
     <!-- Meta tags pour SEO -->
-    <meta name="description" th:content="${description ?: 'LMP vous connecte aux meilleures solutions locales. Trouvez des services, des entreprises et des opportunités près de chez vous.'}">
-    <meta name="keywords" content="local, map, profil, solutions, services, entreprises, cartographie">
-    <meta name="author" content="LMP">
+    <meta name="description" th:content="${description ?: 'LMP - Services de marketing digital et référencement local. Améliorez votre visibilité sur Google Maps et attirez plus de clients locaux.'}">
+    <meta name="keywords" content="marketing digital local, référencement Google Maps, visibilité locale, SEO local, gestion réputation ligne, consultant digital">
+    <meta name="author" content="LMP Local Map Profil">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" th:href="'https://lmp.up.railway.app' + ${#httpServletRequest.requestURI}">
     
     <!-- CSRF Token pour les requêtes AJAX -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     
     <!-- Open Graph tags pour les réseaux sociaux -->
-    <meta property="og:title" th:content="${title} + ' - LMP'">
-    <meta property="og:description" th:content="${description ?: 'Découvrez les solutions locales qui vous entourent'}">
+    <meta property="og:title" th:content="${title} + ' - LMP | Marketing Digital Local'">
+    <meta property="og:description" th:content="${description ?: 'Services experts en marketing digital et référencement local. Boostez votre visibilité sur Google Maps et attirez plus de clients.'}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://lmp.ca">
+    <meta property="og:url" th:content="'https://lmp.up.railway.app' + ${#httpServletRequest.requestURI}">
+    <meta property="og:site_name" content="LMP - Local Map Profil">
+    <meta property="og:locale" content="fr_CA">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" th:content="${title} + ' - LMP'">
+    <meta name="twitter:description" th:content="${description ?: 'Services de marketing digital et référencement local'}">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/images/Logo_LMP.ico">
