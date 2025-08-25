@@ -150,7 +150,8 @@ public class SecurityConfig {
                 corsConfig.setAllowedOriginPatterns(java.util.List.of(
                     "http://localhost:*",
                     "https://lmp.up.railway.app",
-                    "https://lmp-digital.ca"
+                    "https://lmp-digital.ca",
+                    "https://lmp.run.place"
                 ));
                 corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfig.setAllowedHeaders(java.util.List.of("*"));
