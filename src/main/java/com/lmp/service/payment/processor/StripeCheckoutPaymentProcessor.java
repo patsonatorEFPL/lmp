@@ -329,6 +329,10 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
      */
     public CheckoutSessionResponseDto createCheckoutSession(Order order, PaymentRequestDto paymentRequest) throws StripeException {
         
+        // LOG DE DIAGNOSTIC : Tracer la configuration actuelle
+        logger.info("STRIPE_CONFIG_DEBUG - Creating checkout session for order {} with baseUrl: '{}'",
+                   order.getId(), baseUrl);
+        
         // Construire les URLs de succès et d'annulation
         String successUrl = buildCallbackUrl(defaultSuccessUrl, order.getId(), "success");
         String cancelUrl = buildCallbackUrl(defaultCancelUrl, order.getId(), "cancel");
@@ -417,8 +421,14 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
      * Construit les URLs de callback avec les paramètres appropriés
      */
     private String buildCallbackUrl(String basePath, Long orderId, String type) {
-        return String.format("%s%s?order_id=%d&session_id={CHECKOUT_SESSION_ID}&type=%s", 
+        String fullUrl = String.format("%s%s?order_id=%d&session_id={CHECKOUT_SESSION_ID}&type=%s",
                            baseUrl, basePath, orderId, type);
+        
+        // LOG DE DIAGNOSTIC : Tracer la construction des URLs de redirection
+        logger.info("STRIPE_URL_DEBUG - Building {} URL for order {}: baseUrl='{}', basePath='{}', fullUrl='{}'",
+                   type, orderId, baseUrl, basePath, fullUrl);
+        
+        return fullUrl;
     }
     
     /**
