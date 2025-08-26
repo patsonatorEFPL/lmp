@@ -67,6 +67,13 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
                 
+                // Endpoints SEO - accès public pour les moteurs de recherche
+                .requestMatchers(
+                    "/sitemap.xml",
+                    "/robots.txt",
+                    "/googleb72d4c095922c4a8.html"
+                ).permitAll()
+                
                 // Endpoints Stripe Checkout - accès public pour le processus de paiement
                 .requestMatchers(
                     "/api/payments/**",
