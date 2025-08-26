@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement annulé - LMP</title>
+    <meta name="description" content="Votre paiement a été annulé.">
+    
+    <!-- Global Styles -->
+    <div th:replace="fragments/styles :: global-styles"></div>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div th:replace="fragments/navigation :: navigation"></div>
+
+    <main class="py-16">
+        <div class="container mx-auto px-4 max-w-2xl">
+            <!-- Cancel Card -->
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                <!-- Cancel Icon -->
+                <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-times text-orange-600 text-3xl"></i>
+                </div>
+                
+                <!-- Cancel Title -->
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                    Paiement annulé
+                </h1>
+                
+                <!-- Cancel Message -->
+                <p class="text-lg text-gray-600 mb-8">
+                    Votre paiement a été annulé. Aucun montant n'a été débité de votre compte.
+                </p>
+                
+                <!-- Order Details -->
+                <div class="bg-gray-50 rounded-lg p-6 mb-8 text-left" th:if="${order}">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Détails de la commande annulée</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Numéro de commande :</span>
+                            <span class="font-semibold" th:text="${order.id}">123456</span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Montant :</span>
+                            <span class="font-semibold text-gray-900" 
+                                  th:text="${#numbers.formatCurrency(totalAmount)} + ' CAD'">$750.79 CAD</span>
+                        </div>
+                        
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Statut :</span>
+                            <span class="text-orange-600 font-semibold">Annulé</span>
+                        </div>
+                        
+                        <div class="flex justify-between" th:if="${sessionId}">
+                            <span class="text-gray-600">Session ID :</span>
+                            <span class="font-mono text-sm text-gray-500" th:text="${sessionId}">cs_123456</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Why was it cancelled -->
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 text-left">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-semibold text-yellow-900">Paiement annulé</h4>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p>Votre paiement a été annulé et aucun montant n'a été débité. Les raisons possibles :</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li>Vous avez cliqué sur le bouton "Annuler" pendant le processus</li>
+                                    <li>Vous avez fermé la fenêtre de paiement</li>
+                                    <li>La session de paiement a expiré (1 heure maximum)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- What to do next -->
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8 text-left">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-semibold text-blue-900">Que faire maintenant ?</h4>
+                            <div class="mt-2 text-sm text-blue-700">
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Vous pouvez réessayer le paiement à tout moment</li>
+                                    <li>Votre panier a été sauvegardé</li>
+                                    <li>Contactez-nous si vous rencontrez des difficultés</li>
+                                    <li>Nos services restent disponibles pour vous</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="retryPayment()" 
+                            class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200">
+                        Réessayer le paiement
+                    </button>
+                    
+                    <a href="/services" 
+                       class="border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all duration-200">
+                        Retour aux services
+                    </a>
+                </div>
+                
+                <!-- Additional Help -->
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <p class="text-sm text-gray-500 mb-4">
+                        Besoin d'aide avec votre paiement ?
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center text-sm">
+                        <a href="mailto:lmp.assistance@gmail.com"
+                           class="text-primary hover:underline flex items-center justify-center gap-2">
+                            <i class="fas fa-envelope"></i>
+                            lmp.assistance@gmail.com
+                        </a>
+                        
+                        <a href="tel:+1234567890" 
+                           class="text-primary hover:underline flex items-center justify-center gap-2">
+                            <i class="fas fa-phone"></i>
+                            +1 (234) 567-8900
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ Section -->
+            <div class="mt-8 bg-white rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-6 text-center">Questions fréquentes</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Mon argent a-t-il été débité ?</h4>
+                        <p class="text-gray-600 text-sm">Non, aucun montant n'a été débité de votre compte. Le paiement a été annulé avant tout prélèvement.</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Puis-je réessayer immédiatement ?</h4>
+                        <p class="text-gray-600 text-sm">Oui, vous pouvez réessayer le paiement immédiatement en cliquant sur "Réessayer le paiement".</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Mes informations de commande sont-elles conservées ?</h4>
+                        <p class="text-gray-600 text-sm">Oui, votre sélection de services a été sauvegardée. Vous n'avez pas besoin de tout recommencer.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <div th:replace="fragments/footer :: footer"></div>
+
+    <!-- Scripts -->
+    <script>
+        // Auto-scroll to top on page load
+        window.scrollTo(0, 0);
+        
+        // Retry payment function
+        function retryPayment() {
+            const orderId = /*[[${order?.id}]]*/ null;
+            if (orderId) {
+                // Redirect back to services with the order in context
+                window.location.href = '/services?retry=' + orderId;
+            } else {
+                // Fallback to services page
+                window.location.href = '/services';
+            }
+        }
+        
+        // Analytics tracking for cancelled payment
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'checkout_progress', {
+                'checkout_step': 3,
+                'checkout_option': 'cancelled'
+            });
+        }
+    </script>
+</body>
+</html>

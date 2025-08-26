@@ -11,11 +11,11 @@ let markers = [];
  * Initialise la carte interactive
  */
 function initMap() {
-    // Coordonnées de Montréal (centre par défaut)
-    const montrealCoords = [45.5017, -73.5673];
+    // Coordonnées exactes de LMP - 1085 rue de la Rivière Québec (Québec) G1Y2A3 Canada
+    const quebecCoords = [46.7586954, -71.3541517];
     
     // Création de la carte Leaflet
-    map = L.map('map').setView(montrealCoords, 13);
+    map = L.map('map').setView(quebecCoords, 13);
     
     // Ajout de la couche de tuiles OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

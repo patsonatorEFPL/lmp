@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveau message de contact</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .contact-notice {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #0d47a1;
+        }
+        .contact-notice h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        .contact-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .contact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .contact-subject {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .contact-timestamp {
+            background-color: #007bff;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .contact-details {
+            margin: 15px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #495057;
+            min-width: 120px;
+        }
+        .detail-value {
+            text-align: right;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        .message-content {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .message-content h4 {
+            margin: 0 0 15px 0;
+            color: #856404;
+        }
+        .message-text {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+            font-style: italic;
+            line-height: 1.8;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 5px;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .priority-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .system-info {
+            background-color: #e2e3e5;
+            border: 1px solid #d3d3d4;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .system-info h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            .contact-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .contact-timestamp {
+                margin-top: 10px;
+            }
+            .detail-row {
+                flex-direction: column;
+            }
+            .detail-value {
+                text-align: left;
+                max-width: 100%;
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📧 Nouveau Message de Contact</h1>
+            <p th:text="${companyName}">LMP Digital Services</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p>Un nouveau message de contact a été reçu via le formulaire du site web :</p>
+            
+            <!-- Contact Notice -->
+            <div class="contact-notice">
+                <h3>🔔 Nouvelle demande de contact</h3>
+                <p>Un visiteur du site web a soumis un formulaire de contact et attend une réponse de votre part. Veuillez traiter cette demande dans les plus brefs délais.</p>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="contact-info">
+                <div class="contact-header">
+                    <div class="contact-subject">
+                        <span th:text="${contactForm.subject}">Demande de renseignements</span>
+                        <span class="priority-tag">NOUVEAU</span>
+                    </div>
+                    <div class="contact-timestamp">
+                        <span th:text="${currentDateTime}">22/08/2025 à 14:30</span>
+                    </div>
+                </div>
+
+                <div class="contact-details">
+                    <div class="detail-row">
+                        <span class="detail-label">👤 Nom complet :</span>
+                        <span class="detail-value" th:text="${contactForm.name}">Jean Dupont</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">📧 Email :</span>
+                        <span class="detail-value" th:text="${contactForm.email}">jean.dupont@exemple.com</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">📱 Téléphone :</span>
+                        <span class="detail-value" th:text="${contactForm.phone ?: 'Non fourni'}">+1 (514) 555-0123</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">🏢 Entreprise :</span>
+                        <span class="detail-value" th:text="${contactForm.company ?: 'Non fournie'}">ABC Corporation</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">📝 Sujet :</span>
+                        <span class="detail-value" th:text="${contactForm.subject}">Demande de devis</span>
+                    </div>
+                    
+                    <div class="detail-row">
+                        <span class="detail-label">📅 Date de réception :</span>
+                        <span class="detail-value" th:text="${currentDateTime}">22 août 2025 à 14:30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Content -->
+            <div class="message-content">
+                <h4>💬 Message du client :</h4>
+                <div class="message-text" th:text="${contactForm.message}">
+                    Bonjour, je suis intéressé par vos services de développement web. 
+                    Pourriez-vous me fournir un devis pour la création d'un site e-commerce ? 
+                    J'aimerais également connaître vos délais de livraison.
+                    
+                    Merci de me recontacter rapidement.
+                </div>
+            </div>
+
+            <!-- System Information -->
+            <div class="system-info">
+                <h5>🖥️ Informations système</h5>
+                <div class="detail-row">
+                    <span class="detail-label">Source :</span>
+                    <span class="detail-value">Formulaire de contact du site web</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">IP du visiteur :</span>
+                    <span class="detail-value" th:text="${userIP ?: '127.0.0.1'}">192.168.1.100</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">User Agent :</span>
+                    <span class="detail-value" th:text="${userAgent ?: 'Non disponible'}">Mozilla/5.0...</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Page de référence :</span>
+                    <span class="detail-value" th:text="${referrer ?: 'Accès direct'}">https://lmp-digital.ca/services</span>
+                </div>
+            </div>
+
+            <!-- Action Required -->
+            <div style="background-color: #ffe6e6; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #dc3545;">⚠️ Action requise</h4>
+                <ul style="margin: 0; color: #721c24;">
+                    <li>Répondre au client dans les 24 heures</li>
+                    <li>Évaluer la demande et préparer une proposition</li>
+                    <li>Ajouter le contact à votre CRM si pertinent</li>
+                    <li>Programmer un appel de suivi si nécessaire</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="mailto:{{contactForm.email}}" class="btn">📧 Répondre par Email</a>
+                <a href="#" class="btn btn-success">📞 Planifier un Appel</a>
+            </div>
+
+            <!-- Response Template -->
+            <div style="background-color: #d1ecf1; border-left: 4px solid #17a2b8; padding: 15px; margin: 20px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #0c5460;">💡 Suggestion de réponse</h4>
+                <p style="margin: 0; color: #0c5460; font-style: italic;">
+                    "Bonjour <span th:text="${contactForm.name}">{{nom}}</span>,<br><br>
+                    Merci pour votre message. Nous avons bien reçu votre demande concernant <span th:text="${contactForm.subject}">{{sujet}}</span>.<br><br>
+                    Notre équipe va analyser vos besoins et vous fournir une réponse détaillée dans les prochaines 24 heures.<br><br>
+                    Cordialement,<br>
+                    L'équipe LMP Digital Services"
+                </p>
+            </div>
+
+            <p style="margin-top: 30px;">Cette notification a été générée automatiquement suite à la soumission du formulaire de contact.</p>
+
+            <p>Cordialement,<br>
+            Système de notification automatique<br>
+            <span th:text="${companyName}">LMP Digital Services</span></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong th:text="${companyName}">LMP Digital Services</strong> - Notification de Contact</p>
+            <p>123 Rue Principale, Ville, Province, Code Postal</p>
+            <p>Support : +1 (555) 123-4567 | Email : contact@lmp-digital.ca</p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                Cette notification a été envoyée automatiquement.<br>
+                Ne pas répondre à cette adresse - Utiliser l'email du client directement.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

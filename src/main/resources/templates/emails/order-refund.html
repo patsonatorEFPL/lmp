@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remboursement traité</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #28a745;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .refund-notice {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #155724;
+        }
+        .refund-notice h3 {
+            margin: 0 0 10px 0;
+            color: #28a745;
+        }
+        .refund-amount {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            color: #28a745;
+            margin: 20px 0;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .order-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .order-status {
+            background-color: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .order-details {
+            margin: 15px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .refund-details {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .refund-details h4 {
+            margin: 0 0 15px 0;
+            color: #856404;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #218838;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-status {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>💰 Remboursement Traité</h1>
+            <p th:text="${companyName}">LMP Digital Services</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p>Bonjour <span th:text="${customerName}">Client</span>,</p>
+            
+            <!-- Refund Notice -->
+            <div class="refund-notice">
+                <h3>✅ Votre remboursement a été traité avec succès</h3>
+                <p>Nous vous confirmons que le remboursement pour votre commande a été effectué. Les détails sont présentés ci-dessous.</p>
+            </div>
+
+            <!-- Refund Amount -->
+            <div class="refund-amount">
+                <span th:text="${refundAmount}">1,500.00 CAD</span>
+            </div>
+
+            <!-- Order Information -->
+            <div class="order-info">
+                <div class="order-header">
+                    <div class="order-number">
+                        Commande #<span th:text="${order.id}">12345</span>
+                    </div>
+                    <div class="order-status">
+                        Remboursée
+                    </div>
+                </div>
+
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span>Date de commande :</span>
+                        <span th:text="${order.createdAt}">22/08/2025</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Service :</span>
+                        <span th:text="${order.serviceName}">Service Web</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Description :</span>
+                        <span th:text="${order.description}">Développement site web</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Montant original :</span>
+                        <span th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Date de remboursement :</span>
+                        <span th:text="${currentDate}">22/08/2025 à 14:30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refund Details -->
+            <div class="refund-details">
+                <h4>📋 Détails du remboursement</h4>
+                <div class="detail-row">
+                    <span>Numéro de référence :</span>
+                    <span th:text="${refundId}">REF123456789</span>
+                </div>
+                <div class="detail-row">
+                    <span>Montant remboursé :</span>
+                    <span th:text="${refundAmount}">1,500.00 CAD</span>
+                </div>
+                <div class="detail-row">
+                    <span>Méthode de remboursement :</span>
+                    <span>Carte de crédit originale</span>
+                </div>
+                <div class="detail-row">
+                    <span>Délai d'apparition :</span>
+                    <span>3-5 jours ouvrables</span>
+                </div>
+            </div>
+
+            <!-- Important Information -->
+            <div>
+                <h4>📌 Information importante</h4>
+                <ul>
+                    <li><strong>Délai de traitement :</strong> Le remboursement apparaîtra sur votre relevé dans 3-5 jours ouvrables</li>
+                    <li><strong>Référence :</strong> Conservez le numéro de référence <strong th:text="${refundId}">REF123456789</strong> pour vos dossiers</li>
+                    <li><strong>Montant :</strong> Le montant exact de <strong th:text="${refundAmount}">1,500.00 CAD</strong> sera crédité</li>
+                    <li><strong>Carte :</strong> Le remboursement sera effectué sur la carte utilisée pour le paiement original</li>
+                </ul>
+            </div>
+
+            <!-- What to expect -->
+            <div style="background-color: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;">
+                <h4 style="margin: 0 0 10px 0; color: #007bff;">🔍 À quoi s'attendre</h4>
+                <p style="margin: 0;">Le remboursement apparaîtra sur votre relevé bancaire sous le nom "<strong>LMP Digital Services</strong>" ou "<strong>Remboursement</strong>". Si vous ne voyez pas le crédit après 5 jours ouvrables, contactez votre banque ou notre service clientèle.</p>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="#" class="btn">Repasser une commande</a>
+            </div>
+
+            <p>Si vous avez des questions concernant ce remboursement, n'hésitez pas à nous contacter en mentionnant le numéro de référence.</p>
+
+            <p>Nous vous remercions de votre compréhension et espérons avoir l'opportunité de mieux vous servir dans le futur.</p>
+
+            <p>Cordialement,<br>
+            L'équipe <span th:text="${companyName}">LMP Digital Services</span></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong th:text="${companyName}">LMP Digital Services</strong></p>
+            <p>123 Rue Principale, Ville, Province, Code Postal</p>
+            <p>Téléphone : +1 (555) 123-4567 | Email : contact@lmp-digital.ca</p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                Cet email a été envoyé automatiquement, merci de ne pas répondre directement.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

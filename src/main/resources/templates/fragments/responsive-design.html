@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Responsive Design</title>
+</head>
+<body>
+
+<!-- Responsive Utilities Fragment -->
+<div th:fragment="responsive-utilities">
+    <!-- Mobile Navigation Toggle -->
+    <div class="mobile-nav-toggle d-lg-none">
+        <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" 
+                data-bs-target="#mobileSidebar" aria-controls="mobileSidebar">
+            <i class="fas fa-bars"></i>
+            <span class="ms-2">Menu</span>
+        </button>
+    </div>
+
+    <!-- Mobile Sidebar Offcanvas -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="mobileSidebarLabel">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                Espace personnel
+            </h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <!-- Mobile menu content will be populated dynamically -->
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="breadcrumb-nav">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/dashboard">
+                    <i class="fas fa-home me-1"></i>
+                    Accueil
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <span id="currentPageTitle">Espace personnel</span>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Quick Actions Floating Button (Mobile) -->
+    <div class="quick-actions-fab d-lg-none">
+        <div class="fab-container">
+            <button class="fab-trigger" id="fabTrigger">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div class="fab-menu" id="fabMenu">
+                <a href="#" class="fab-action" onclick="showOrderForm()">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Nouvelle commande</span>
+                </a>
+                <a href="#" class="fab-action" onclick="showReviewForm()">
+                    <i class="fas fa-star"></i>
+                    <span>Donner un avis</span>
+                </a>
+                <a href="/profile" class="fab-action">
+                    <i class="fas fa-user"></i>
+                    <span>Mon profil</span>
+                </a>
+                <a href="/dashboard/settings" class="fab-action">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Responsive Grid System Fragment -->
+<div th:fragment="responsive-grid">
+    <!-- Dynamic Grid Container -->
+    <div class="responsive-grid-container">
+        <!-- Grid items will be added dynamically -->
+    </div>
+</div>
+
+<!-- Mobile-First Styles Fragment -->
+<div th:fragment="responsive-styles">
+    <style>
+        /* Base Mobile-First Styles */
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --mobile-padding: 1rem;
+            --desktop-padding: 2rem;
+            --mobile-font-size: 0.9rem;
+            --desktop-font-size: 1rem;
+        }
+
+        /* Mobile Navigation Toggle */
+        .mobile-nav-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1040;
+            background: white;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 0.5rem 1rem;
+            display: none; /* Caché par défaut */
+        }
+        
+        /* Afficher seulement sur mobile */
+        @media (max-width: 991.98px) {
+            .mobile-nav-toggle {
+                display: block;
+            }
+        }
+
+        .mobile-nav-toggle .btn {
+            border: none;
+            background: transparent;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* Mobile Sidebar */
+        .offcanvas {
+            width: var(--sidebar-width);
+        }
+
+        .offcanvas-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: none;
+        }
+
+        .offcanvas-title {
+            font-weight: 600;
+        }
+
+        .offcanvas-body {
+            padding: 1.5rem;
+        }
+
+        /* Breadcrumb Navigation */
+        .breadcrumb-nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .breadcrumb {
+            margin-bottom: 0;
+            background: transparent;
+            padding: 0;
+        }
+
+        .breadcrumb-item a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .breadcrumb-item a:hover {
+            color: #5a6fd8;
+        }
+
+        .breadcrumb-item.active {
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        /* Floating Action Button */
+        .quick-actions-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .fab-container {
+            position: relative;
+        }
+
+        .fab-trigger {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab-trigger:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .fab-trigger.active {
+            transform: rotate(45deg);
+        }
+
+        .fab-menu {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 200px;
+        }
+
+        .fab-menu.active {
+            display: flex;
+            animation: fabMenuSlideIn 0.3s ease;
+        }
+
+        .fab-action {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: white;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .fab-action:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .fab-action i {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        @keyframes fabMenuSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Grid System */
+        .responsive-grid-container {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: 1fr;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 575.98px) {
+            .container {
+                padding-left: var(--mobile-padding);
+                padding-right: var(--mobile-padding);
+            }
+
+            .page-header {
+                padding: 1.5rem 0;
+            }
+
+            .page-header h1 {
+                font-size: 1.75rem;
+            }
+
+            .card {
+                border-radius: 10px;
+                margin-bottom: 1rem;
+            }
+
+            .btn {
+                font-size: var(--mobile-font-size);
+                padding: 0.5rem 1rem;
+            }
+
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+
+            .table-responsive {
+                border-radius: 8px;
+            }
+
+            /* Hide less important columns on mobile */
+            .table .d-none-mobile {
+                display: none !important;
+            }
+
+            /* Stack form elements vertically */
+            .form-group .row {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .form-group .row > [class*="col-"] {
+                padding-left: 0;
+                padding-right: 0;
+                margin-bottom: 1rem;
+            }
+
+            /* Adjust sidebar for mobile */
+            .sidebar {
+                margin-bottom: 1rem;
+                padding: 1rem;
+            }
+
+            /* Optimize dashboard cards */
+            .dashboard-card {
+                margin-bottom: 1rem;
+            }
+
+            .dashboard-card .card-body {
+                padding: 1rem;
+            }
+
+            /* Timeline adjustments */
+            .order-timeline {
+                padding-left: 1.5rem;
+            }
+
+            .timeline-item {
+                padding: 0.75rem 0;
+            }
+        }
+
+        /* Tablet Styles */
+        @media (min-width: 576px) and (max-width: 991.98px) {
+            .responsive-grid-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            .container {
+                max-width: 100%;
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+
+            .page-header {
+                padding: 2rem 0;
+            }
+
+            /* Optimize sidebar layout */
+            .sidebar {
+                margin-bottom: 2rem;
+            }
+
+            /* Adjust modal size */
+            .modal-dialog.modal-lg {
+                max-width: 90%;
+            }
+
+            /* Table optimizations */
+            .table-responsive {
+                border-radius: 10px;
+            }
+
+            /* Dashboard grid for tablets */
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
+        /* Desktop Styles */
+        @media (min-width: 992px) {
+            .mobile-nav-toggle {
+                display: none !important;
+            }
+
+            .quick-actions-fab {
+                display: none !important;
+            }
+            
+            .breadcrumb-nav {
+                display: none !important; /* Cacher les breadcrumbs sur desktop dashboard */
+            }
+
+            .responsive-grid-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+
+            .container {
+                padding-left: var(--desktop-padding);
+                padding-right: var(--desktop-padding);
+            }
+
+            .page-header {
+                padding: 2.5rem 0;
+            }
+
+            .page-header h1 {
+                font-size: 2.5rem;
+            }
+
+            /* Optimize sidebar for desktop */
+            .sidebar {
+                position: sticky;
+                top: 2rem;
+                height: fit-content;
+            }
+
+            /* Dashboard grid for desktop */
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
+
+            /* Advanced hover effects */
+            .card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            }
+
+            /* Multi-column forms */
+            .form-multi-column {
+                column-count: 2;
+                column-gap: 2rem;
+            }
+        }
+
+        /* Large Desktop Styles */
+        @media (min-width: 1200px) {
+            .responsive-grid-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .container {
+                max-width: 1320px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            /* Ultra-wide optimizations */
+            .dashboard-main-content {
+                max-width: calc(100% - var(--sidebar-width) - 4rem);
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .mobile-nav-toggle,
+            .quick-actions-fab,
+            .sidebar,
+            .breadcrumb-nav,
+            .btn,
+            .navbar {
+                display: none !important;
+            }
+
+            .page-header {
+                background: none !important;
+                color: black !important;
+                padding: 1rem 0;
+            }
+
+            .card {
+                border: 1px solid #ddd !important;
+                box-shadow: none !important;
+            }
+
+            .container {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+        }
+
+        /* Dark Mode Support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a1a;
+                --text-color: #e0e0e0;
+                --card-bg: #2d2d2d;
+                --border-color: #404040;
+            }
+
+            .bg-light {
+                background-color: var(--bg-color) !important;
+            }
+
+            .card,
+            .sidebar,
+            .breadcrumb-nav {
+                background-color: var(--card-bg) !important;
+                color: var(--text-color) !important;
+                border-color: var(--border-color) !important;
+            }
+
+            .text-muted {
+                color: #999 !important;
+            }
+        }
+
+        /* Accessibility Improvements */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* High Contrast Mode */
+        @media (prefers-contrast: high) {
+            .card,
+            .btn,
+            .form-control {
+                border-width: 2px !important;
+            }
+
+            .btn-primary {
+                background-color: #000 !important;
+                border-color: #000 !important;
+            }
+
+            .text-muted {
+                color: #666 !important;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .btn,
+            .fab-action,
+            .sidebar-menu a {
+                min-height: 44px;
+                padding: 0.75rem 1rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 1rem 0.75rem;
+            }
+
+            /* Larger touch targets */
+            .form-check-input {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+
+            .form-range {
+                height: 2rem;
+            }
+        }
+
+        /* Loading States */
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Utility Classes for Responsive Design */
+        .text-responsive {
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+        }
+
+        .padding-responsive {
+            padding: clamp(1rem, 3vw, 2rem);
+        }
+
+        .margin-responsive {
+            margin: clamp(0.5rem, 2vw, 1.5rem);
+        }
+
+        .gap-responsive {
+            gap: clamp(0.5rem, 2vw, 1.5rem);
+        }
+
+        /* Animation Classes */
+        .slide-in {
+            animation: slideIn 0.5s ease;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.6s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</div>
+
+<!-- Responsive JavaScript Fragment -->
+<div th:fragment="responsive-scripts">
+    <script>
+        // Responsive Design Handler
+        class ResponsiveDesignHandler {
+            constructor() {
+                this.initializeResponsiveFeatures();
+                this.setupEventListeners();
+            }
+
+            initializeResponsiveFeatures() {
+                this.setupMobileNavigation();
+                this.setupFloatingActionButton();
+                this.setupResponsiveGrid();
+                this.setupBreadcrumbs();
+                this.handleViewportChanges();
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', this.handleResize.bind(this));
+                window.addEventListener('orientationchange', this.handleOrientationChange.bind(this));
+                
+                // Setup intersection observer for animations
+                this.setupIntersectionObserver();
+            }
+
+            // Mobile Navigation
+            setupMobileNavigation() {
+                const mobileSidebar = document.getElementById('mobileSidebar');
+                if (mobileSidebar) {
+                    // Copy desktop sidebar content to mobile
+                    const desktopSidebar = document.querySelector('.sidebar-menu');
+                    if (desktopSidebar) {
+                        const mobileContent = mobileSidebar.querySelector('.offcanvas-body');
+                        const clonedMenu = desktopSidebar.cloneNode(true);
+                        clonedMenu.classList.add('mobile-sidebar-menu');
+                        mobileContent.appendChild(clonedMenu);
+                    }
+                }
+            }
+
+            // Floating Action Button
+            setupFloatingActionButton() {
+                const fabTrigger = document.getElementById('fabTrigger');
+                const fabMenu = document.getElementById('fabMenu');
+                
+                if (fabTrigger && fabMenu) {
+                    fabTrigger.addEventListener('click', () => {
+                        fabTrigger.classList.toggle('active');
+                        fabMenu.classList.toggle('active');
+                    });
+
+                    // Close FAB menu when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!fabTrigger.contains(e.target) && !fabMenu.contains(e.target)) {
+                            fabTrigger.classList.remove('active');
+                            fabMenu.classList.remove('active');
+                        }
+                    });
+                }
+            }
+
+            // Responsive Grid
+            setupResponsiveGrid() {
+                const gridContainer = document.querySelector('.responsive-grid-container');
+                if (gridContainer) {
+                    this.adjustGridLayout();
+                }
+            }
+
+            adjustGridLayout() {
+                const containers = document.querySelectorAll('.responsive-grid-container');
+                containers.forEach(container => {
+                    const items = container.children.length;
+                    const viewportWidth = window.innerWidth;
+                    
+                    let columns;
+                    if (viewportWidth < 576) {
+                        columns = 1;
+                    } else if (viewportWidth < 992) {
+                        columns = Math.min(2, items);
+                    } else if (viewportWidth < 1200) {
+                        columns = Math.min(3, items);
+                    } else {
+                        columns = Math.min(4, items);
+                    }
+                    
+                    container.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+                });
+            }
+
+            // Breadcrumbs
+            setupBreadcrumbs() {
+                this.updateBreadcrumbs();
+            }
+
+            updateBreadcrumbs() {
+                const currentPageTitle = document.getElementById('currentPageTitle');
+                if (currentPageTitle) {
+                    const pageTitle = document.title.split(' - ')[0];
+                    currentPageTitle.textContent = pageTitle;
+                }
+            }
+
+            // Viewport Changes
+            handleViewportChanges() {
+                // Handle mobile/desktop switching
+                const mediaQuery = window.matchMedia('(max-width: 991.98px)');
+                mediaQuery.addListener(this.handleMediaQueryChange.bind(this));
+                this.handleMediaQueryChange(mediaQuery);
+            }
+
+            handleMediaQueryChange(mediaQuery) {
+                if (mediaQuery.matches) {
+                    // Mobile view
+                    this.enableMobileFeatures();
+                } else {
+                    // Desktop view
+                    this.enableDesktopFeatures();
+                }
+            }
+
+            enableMobileFeatures() {
+                // Show mobile navigation toggle
+                const mobileToggle = document.querySelector('.mobile-nav-toggle');
+                if (mobileToggle) {
+                    mobileToggle.style.display = 'block';
+                }
+
+                // Show floating action button
+                const fab = document.querySelector('.quick-actions-fab');
+                if (fab) {
+                    fab.style.display = 'block';
+                }
+
+                // Hide desktop sidebar
+                const desktopSidebar = document.querySelector('.col-lg-3');
+                if (desktopSidebar) {
+                    desktopSidebar.style.display = 'none';
+                }
+
+                // Adjust main content
+                const mainContent = document.querySelector('.col-lg-9');
+                if (mainContent) {
+                    mainContent.className = 'col-12';
+                }
+            }
+
+            enableDesktopFeatures() {
+                // Hide mobile navigation toggle
+                const mobileToggle = document.querySelector('.mobile-nav-toggle');
+                if (mobileToggle) {
+                    mobileToggle.style.display = 'none';
+                }
+
+                // Hide floating action button
+                const fab = document.querySelector('.quick-actions-fab');
+                if (fab) {
+                    fab.style.display = 'none';
+                }
+
+                // Show desktop sidebar
+                const desktopSidebar = document.querySelector('.col-12');
+                if (desktopSidebar && window.innerWidth >= 992) {
+                    const parent = desktopSidebar.parentElement;
+                    if (parent.classList.contains('row')) {
+                        // Restore original layout
+                        const sidebarCol = document.createElement('div');
+                        sidebarCol.className = 'col-lg-3';
+                        const sidebar = document.querySelector('.sidebar');
+                        if (sidebar) {
+                            sidebarCol.appendChild(sidebar);
+                            parent.insertBefore(sidebarCol, desktopSidebar);
+                            desktopSidebar.className = 'col-lg-9';
+                        }
+                    }
+                }
+            }
+
+            // Resize Handler
+            handleResize() {
+                this.adjustGridLayout();
+                this.adjustTableResponsiveness();
+                this.adjustModalSizes();
+            }
+
+            // Orientation Change Handler
+            handleOrientationChange() {
+                setTimeout(() => {
+                    this.handleResize();
+                }, 100);
+            }
+
+            // Table Responsiveness
+            adjustTableResponsiveness() {
+                const tables = document.querySelectorAll('table');
+                tables.forEach(table => {
+                    if (window.innerWidth < 768) {
+                        // Add responsive wrapper if not exists
+                        if (!table.parentElement.classList.contains('table-responsive')) {
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'table-responsive';
+                            table.parentNode.insertBefore(wrapper, table);
+                            wrapper.appendChild(table);
+                        }
+                    }
+                });
+            }
+
+            // Modal Size Adjustments
+            adjustModalSizes() {
+                const modals = document.querySelectorAll('.modal-dialog');
+                modals.forEach(modal => {
+                    if (window.innerWidth < 576) {
+                        modal.style.margin = '0.5rem';
+                        modal.style.maxWidth = 'calc(100% - 1rem)';
+                    } else {
+                        modal.style.margin = '';
+                        modal.style.maxWidth = '';
+                    }
+                });
+            }
+
+            // Intersection Observer for Animations
+            setupIntersectionObserver() {
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('slide-in');
+                        }
+                    });
+                }, observerOptions);
+
+                // Observe cards and important elements
+                const elements = document.querySelectorAll('.card, .info-section, .dashboard-card');
+                elements.forEach(el => {
+                    observer.observe(el);
+                });
+            }
+
+            // Touch Gestures
+            setupTouchGestures() {
+                let startX, startY, endX, endY;
+
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                });
+
+                document.addEventListener('touchend', (e) => {
+                    endX = e.changedTouches[0].clientX;
+                    endY = e.changedTouches[0].clientY;
+                    this.handleSwipeGesture(startX, startY, endX, endY);
+                });
+            }
+
+            handleSwipeGesture(startX, startY, endX, endY) {
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                const minSwipeDistance = 50;
+
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+                    if (deltaX > 0) {
+                        // Swipe right - open mobile sidebar
+                        const mobileSidebar = document.getElementById('mobileSidebar');
+                        if (mobileSidebar && window.innerWidth < 992) {
+                            const offcanvas = new bootstrap.Offcanvas(mobileSidebar);
+                            offcanvas.show();
+                        }
+                    } else {
+                        // Swipe left - close mobile sidebar
+                        const mobileSidebar = document.getElementById('mobileSidebar');
+                        if (mobileSidebar) {
+                            const offcanvas = bootstrap.Offcanvas.getInstance(mobileSidebar);
+                            if (offcanvas) {
+                                offcanvas.hide();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Performance Optimizations
+            optimizePerformance() {
+                // Lazy load images
+                const images = document.querySelectorAll('img[data-src]');
+                const imageObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                            imageObserver.unobserve(img);
+                        }
+                    });
+                });
+
+                images.forEach(img => imageObserver.observe(img));
+
+                // Debounce resize events
+                let resizeTimer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(this.handleResize.bind(this), 250);
+                });
+            }
+        }
+
+        // Initialize responsive design handler
+        document.addEventListener('DOMContentLoaded', function() {
+            window.responsiveHandler = new ResponsiveDesignHandler();
+        });
+    </script>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+# ========================================
+# Configuration Railway.com
+# Application Spring Boot LMP
+# ========================================
+
+[build]
+# Commande de build (utilise le Dockerfile)
+builder = "dockerfile"
+
+[deploy]
+# Port sur lequel l'application écoute
+startCommand = "java -Xmx512m -XX:+UseG1GC -jar app.jar"
+# healthcheckPath = "/actuator/health"
+# healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Configuration des ressources
+[deploy.resources]
+# Limitation des ressources pour optimiser les coûts
+memory = "1GB"
+cpu = "1"
+
+# Variables d'environnement par défaut
+[environments.production]
+# Ces variables seront surchargées par celles définies dans Railway Dashboard
+APP_BASE_URL = "${{RAILWAY_STATIC_URL}}"
+PORT = "${{PORT}}"
+
+# Configuration des services
+[services.app]
+source = "."

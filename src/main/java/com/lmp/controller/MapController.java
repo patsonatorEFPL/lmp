@@ -24,16 +24,9 @@ public class MapController {
      */
     @GetMapping("/map")
     public String map(Model model) {
-        // Création de données fictives pour les localisations
+        // Localisation principale LMP uniquement
         List<Location> locations = Arrays.asList(
-            new Location("Restaurant Le Gourmet", "Restaurant français", 45.5017, -73.5673, "restaurant"),
-            new Location("Café Central", "Café et pâtisserie", 45.5020, -73.5670, "coffee"),
-            new Location("Boutique Mode Plus", "Vêtements et accessoires", 45.5015, -73.5675, "shopping-bag"),
-            new Location("Clinique Santé", "Services de santé", 45.5025, -73.5668, "heartbeat"),
-            new Location("Banque Nationale", "Services bancaires", 45.5018, -73.5672, "university"),
-            new Location("Parc Municipal", "Espace vert public", 45.5022, -73.5665, "tree"),
-            new Location("Station de Métro", "Transport en commun", 45.5013, -73.5678, "subway"),
-            new Location("Bibliothèque Centrale", "Livre et ressources", 45.5028, -73.5662, "book")
+            new Location("LMP - Siège Social", "1085 rue de la Rivière Québec (Québec) G1Y2A3 Canada", 46.7586954, -71.3541517, "university")
         );
         
         model.addAttribute("title", "Carte Interactive");

@@ -5,19 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title} + ' - LMP'">LMP - Local Map Profil</title>
     
+    <!-- Google Site Verification -->
+    <meta name="google-site-verification" content="5ICimQ9yWyvCDq05y2_imwj2GChLmAf2r-P0a-w9gtk" />
+    
     <!-- Meta tags pour SEO -->
-    <meta name="description" th:content="${description ?: 'LMP vous connecte aux meilleures solutions locales. Trouvez des services, des entreprises et des opportunités près de chez vous.'}">
-    <meta name="keywords" content="local, map, profil, solutions, services, entreprises, cartographie">
-    <meta name="author" content="LMP">
+    <meta name="description" th:content="${description ?: 'LMP - Services de marketing digital et référencement local. Améliorez votre visibilité sur Google Maps et attirez plus de clients locaux.'}">
+    <meta name="keywords" content="marketing digital local, référencement Google Maps, visibilité locale, SEO local, gestion réputation ligne, consultant digital">
+    <meta name="author" content="LMP Local Map Profil">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" th:href="'https://lmp.run.place' + ${#httpServletRequest.requestURI}">
+    
+    <!-- CSRF Token pour les requêtes AJAX -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     
     <!-- Open Graph tags pour les réseaux sociaux -->
-    <meta property="og:title" th:content="${title} + ' - LMP'">
-    <meta property="og:description" th:content="${description ?: 'Découvrez les solutions locales qui vous entourent'}">
+    <meta property="og:title" th:content="${title} + ' - LMP | Marketing Digital Local'">
+    <meta property="og:description" th:content="${description ?: 'Services experts en marketing digital et référencement local. Boostez votre visibilité sur Google Maps et attirez plus de clients.'}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://lmp.ca">
+    <meta property="og:url" th:content="'https://lmp.run.place' + ${#httpServletRequest.requestURI}">
+    <meta property="og:site_name" content="LMP - Local Map Profil">
+    <meta property="og:locale" content="fr_CA">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" th:content="${title} + ' - LMP'">
+    <meta name="twitter:description" th:content="${description ?: 'Services de marketing digital et référencement local'}">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/images/Logo_LMP.ico">
     
     <!-- Font Awesome pour les icônes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -56,6 +72,43 @@
     <th:block th:replace="${pageStyles} ?: ~{}">
         <!-- Styles spécifiques à la page (optionnel) -->
     </th:block>
+    
+    <!-- Schema.org LocalBusiness JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "LMP - Local Map Profil",
+      "description": "Services de marketing digital et référencement local au Québec. Spécialistes en optimisation Google Maps, création de sites web et stratégies digitales pour entreprises locales.",
+      "url": "https://lmp.run.place",
+      "telephone": "+1 (514) 123-4567",
+      "email": "lmp.assistance@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "1085 rue de la Rivière",
+        "addressLocality": "Québec",
+        "addressRegion": "Québec",
+        "postalCode": "G1Y2A3",
+        "addressCountry": "CA"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "46.7586954",
+        "longitude": "-71.3541517"
+      },
+      "priceRange": "$$$",
+      "currenciesAccepted": "CAD",
+      "areaServed": {
+        "@type": "State",
+        "name": "Québec"
+      },
+      "openingHours": ["Mo-Fr 09:00-17:00"],
+      "sameAs": [
+        "https://lmp.run.place",
+        "https://lmp.run.place"
+      ]
+    }
+    </script>
 </head>
 <body class="min-h-screen bg-white">
     <!-- Navigation -->
@@ -69,7 +122,7 @@
                     <a href="/map" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/map' ? 'text-primary' : ''}">Carte</a>
                     <a href="/about" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/about' ? 'text-primary' : ''}">À propos</a>
                     <a href="/contact" class="text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/contact' ? 'text-primary' : ''}">Contact</a>
-                    <button onclick="openBookingModal()" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Prendre RDV</button>
+                    <button onclick="openServiceModal('Consultation', 150.00)" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Commander</button>
                 </nav>
                 <div class="md:hidden">
                     <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-primary transition-colors">
@@ -84,7 +137,7 @@
                     <a href="/map" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/map' ? 'text-primary' : ''}">Carte</a>
                     <a href="/about" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/about' ? 'text-primary' : ''}">À propos</a>
                     <a href="/contact" class="text-left text-gray-700 hover:text-primary font-medium transition-colors" th:classappend="${#httpServletRequest.requestURI == '/contact' ? 'text-primary' : ''}">Contact</a>
-                    <button onclick="openBookingModal()" class="w-full bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Prendre RDV</button>
+                    <button onclick="openServiceModal('Consultation', 150.00)" class="w-full bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all">Commander</button>
                 </div>
             </div>
         </div>
@@ -139,9 +192,9 @@
                 <div>
                     <h5 class="text-lg font-semibold mb-4">Contact</h5>
                     <div class="space-y-2 text-gray-300">
-                        <p>📧 contact@lmp-digital.ca</p>
-                        <p>📞 +1 (514) 123-4567</p>
-                        <p>📍 Montréal, QC, Canada</p>
+                        <p><span aria-label="Email LMP services marketing digital Québec">📧</span> lmp.assistance@gmail.com</p>
+                        <p><span aria-label="Téléphone LMP consultation marketing local">📞</span> +1 (514) 123-4567</p>
+                        <p><span aria-label="Adresse LMP bureau Québec Canada">📍</span> Québec (Québec), Canada</p>
                     </div>
                 </div>
             </div>
@@ -163,76 +216,18 @@
 
     <!-- Scripts JavaScript -->
     <script src="/js/map.js"></script>
+    <script src="/js/register-checkout.js"></script>
     
     <!-- Scripts spécifiques à la page -->
     <th:block th:replace="${pageScripts} ?: ~{}">
         <!-- Scripts spécifiques à la page (optionnel) -->
     </th:block>
 
-    <!-- Booking Modal -->
-    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-xl p-8 max-w-md w-full">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold text-dark">Prendre un rendez-vous</h3>
-                    <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                <form onsubmit="handleBookingSubmit(event)">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Nom complet</label>
-                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                        <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
-                    </div>
-                    <div class="flex gap-3">
-                        <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all">
-                            Envoyer
-                        </button>
-                        <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-all">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- Nouveau Booking Modal avec inscription complète -->
+    <div th:replace="fragments/booking-modal :: booking-modal"></div>
 
-    <!-- JavaScript -->
-    <script>
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('hidden');
-        }
-
-        function openBookingModal() {
-            document.getElementById('bookingModal').classList.remove('hidden');
-        }
-
-        function closeBookingModal() {
-            document.getElementById('bookingModal').classList.add('hidden');
-        }
-
-        function handleBookingSubmit(event) {
-            event.preventDefault();
-            alert('Demande envoyée ! Nous vous contacterons dans les 24h.');
-            closeBookingModal();
-        }
-
-        // Close modals when clicking outside
-        document.addEventListener('click', function(event) {
-            const bookingModal = document.getElementById('bookingModal');
-            if (event.target === bookingModal) {
-                closeBookingModal();
-            }
-        });
-    </script>
+    <!-- Scripts de navigation et helpers -->
+    <div th:replace="fragments/scripts :: navigation-scripts"></div>
+    <div th:replace="fragments/scripts :: booking-helpers"></div>
 </body>
 </html> 

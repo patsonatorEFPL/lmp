@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Components</title>
+</head>
+<body>
+
+<!-- Interactive Modals Fragment -->
+<div th:fragment="interactive-modals">
+    <!-- Order Details Modal -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary text-white">
+                    <h5 class="modal-title" id="orderDetailsModalLabel">
+                        <i class="fas fa-receipt me-2"></i>
+                        Détails de la commande
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="orderDetailsContent">
+                    <!-- Dynamic content loaded here -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Chargement des détails...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>
+                        Fermer
+                    </button>
+                    <button type="button" class="btn btn-primary" id="downloadInvoiceBtn">
+                        <i class="fas fa-download me-1"></i>
+                        Télécharger la facture
+                    </button>
+                    <button type="button" class="btn btn-success" id="trackOrderBtn">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        Suivre la commande
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-warning text-white">
+                    <h5 class="modal-title" id="reviewModalLabel">
+                        <i class="fas fa-star me-2"></i>
+                        Donner un avis
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reviewModalForm">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Votre évaluation</label>
+                            <div class="star-rating-large d-flex justify-content-center gap-2 mb-3">
+                                <i class="fas fa-star star-rate" data-rating="1"></i>
+                                <i class="fas fa-star star-rate" data-rating="2"></i>
+                                <i class="fas fa-star star-rate" data-rating="3"></i>
+                                <i class="fas fa-star star-rate" data-rating="4"></i>
+                                <i class="fas fa-star star-rate" data-rating="5"></i>
+                            </div>
+                            <div class="text-center">
+                                <span id="ratingText" class="badge bg-secondary">Sélectionnez une note</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reviewComment" class="form-label fw-bold">Votre commentaire</label>
+                            <textarea class="form-control" id="reviewComment" rows="4" 
+                                      placeholder="Partagez votre expérience avec ce service..."></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="recommendService">
+                                <label class="form-check-label" for="recommendService">
+                                    Je recommande ce service à d'autres clients
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>
+                        Annuler
+                    </button>
+                    <button type="button" class="btn btn-warning" id="submitReviewBtn">
+                        <i class="fas fa-paper-plane me-1"></i>
+                        Publier l'avis
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Modal -->
+    <div class="modal fade" id="statsModal" tabindex="-1" aria-labelledby="statsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-info text-white">
+                    <h5 class="modal-title" id="statsModalLabel">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Statistiques détaillées
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="chart-container mb-4">
+                                <canvas id="detailedStatsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container mb-4">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Métriques de performance</h6>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Métrique</th>
+                                            <th>Valeur actuelle</th>
+                                            <th>Objectif</th>
+                                            <th>Progression</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="metricsTableBody">
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-info" onclick="exportStats()">
+                        <i class="fas fa-download me-1"></i>
+                        Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" id="confirmationHeader">
+                    <h5 class="modal-title" id="confirmationModalLabel">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Confirmation
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirmationBody">
+                    <!-- Dynamic content -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notifications Fragment -->
+<div th:fragment="toast-notifications">
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <!-- Success Toast -->
+        <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">Succès</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="successToastBody">
+                <!-- Dynamic message -->
+            </div>
+        </div>
+
+        <!-- Error Toast -->
+        <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-auto">Erreur</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="errorToastBody">
+                <!-- Dynamic message -->
+            </div>
+        </div>
+
+        <!-- Warning Toast -->
+        <div id="warningToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-warning text-dark">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong class="me-auto">Attention</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="warningToastBody">
+                <!-- Dynamic message -->
+            </div>
+        </div>
+
+        <!-- Info Toast -->
+        <div id="infoToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-info text-white">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong class="me-auto">Information</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="infoToastBody">
+                <!-- Dynamic message -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlays Fragment -->
+<div th:fragment="loading-overlays">
+    <!-- Page Loading Overlay -->
+    <div id="pageLoadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <h5 class="text-primary">Chargement en cours...</h5>
+            <p class="text-muted mb-0">Veuillez patienter</p>
+        </div>
+    </div>
+
+    <!-- Action Loading Overlay -->
+    <div id="actionLoadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner-grow text-success mb-3" style="width: 2rem; height: 2rem;" role="status">
+                <span class="visually-hidden">Traitement...</span>
+            </div>
+            <h6 class="text-success">Traitement en cours...</h6>
+            <p class="text-muted mb-0" id="actionLoadingText">Veuillez patienter</p>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Tooltips Fragment -->
+<div th:fragment="interactive-tooltips">
+    <!-- Custom tooltips will be dynamically generated -->
+    <div id="customTooltip" class="custom-tooltip">
+        <div class="tooltip-arrow"></div>
+        <div class="tooltip-content"></div>
+    </div>
+</div>
+
+<!-- Styles for Components -->
+<div th:fragment="component-styles">
+    <style>
+        /* Loading Overlays */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+            backdrop-filter: blur(5px);
+        }
+
+        .loading-content {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Star Rating */
+        .star-rating-large {
+            font-size: 2.5rem;
+        }
+
+        .star-rating-large .star-rate {
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .star-rating-large .star-rate:hover,
+        .star-rating-large .star-rate.active {
+            color: #ffc107;
+            transform: scale(1.1);
+        }
+
+        /* Custom Tooltip */
+        .custom-tooltip {
+            position: absolute;
+            background: #333;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            max-width: 250px;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .tooltip-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #333;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .tooltip-arrow.top {
+            border-top: none;
+            border-bottom: 8px solid #333;
+            top: -8px;
+            bottom: auto;
+        }
+
+        /* Modal Enhancements */
+        .modal-content {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header.bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        .modal-header.bg-gradient-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%) !important;
+        }
+
+        .modal-header.bg-gradient-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+        }
+
+        /* Toast Enhancements */
+        .toast {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .toast-header {
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .toast-body {
+            background: white;
+            border-radius: 0 0 10px 10px;
+        }
+
+        /* Chart Container Enhancements */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* Interactive Elements */
+        .interactive-element {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .interactive-element:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Progress Bars */
+        .progress-modern {
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+
+        .progress-modern .progress-bar {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .modal-dialog.modal-xl {
+                margin: 0.5rem;
+            }
+
+            .star-rating-large {
+                font-size: 2rem;
+            }
+
+            .loading-content {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</div>
+
+<!-- JavaScript for Components -->
+<div th:fragment="component-scripts">
+    <script>
+        // Dashboard Components JavaScript Library
+        class DashboardComponents {
+            constructor() {
+                this.initializeComponents();
+            }
+
+            initializeComponents() {
+                this.initializeTooltips();
+                this.initializeStarRating();
+                this.initializeModals();
+                this.initializeToasts();
+            }
+
+            // Toast Management
+            showToast(type, message, duration = 5000) {
+                const toast = document.getElementById(`${type}Toast`);
+                const toastBody = document.getElementById(`${type}ToastBody`);
+                
+                toastBody.textContent = message;
+                
+                const bsToast = new bootstrap.Toast(toast, {
+                    delay: duration
+                });
+                
+                bsToast.show();
+            }
+
+            // Loading Overlay Management
+            showLoading(type = 'page', message = '') {
+                const overlay = document.getElementById(`${type}LoadingOverlay`);
+                if (overlay) {
+                    if (message && type === 'action') {
+                        const textElement = document.getElementById('actionLoadingText');
+                        if (textElement) {
+                            textElement.textContent = message;
+                        }
+                    }
+                    overlay.style.display = 'flex';
+                }
+            }
+
+            hideLoading(type = 'page') {
+                const overlay = document.getElementById(`${type}LoadingOverlay`);
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+            }
+
+            // Modal Management
+            showModal(modalId, data = {}) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    const bsModal = new bootstrap.Modal(modal);
+                    
+                    // Populate modal with data if provided
+                    if (modalId === 'orderDetailsModal' && data.orderId) {
+                        this.loadOrderDetails(data.orderId);
+                    } else if (modalId === 'reviewModal' && data.orderId) {
+                        this.setupReviewModal(data.orderId);
+                    } else if (modalId === 'statsModal') {
+                        this.loadDetailedStats();
+                    }
+                    
+                    bsModal.show();
+                }
+            }
+
+            // Confirmation Dialog
+            showConfirmation(title, message, onConfirm, type = 'danger') {
+                const modal = document.getElementById('confirmationModal');
+                const header = document.getElementById('confirmationHeader');
+                const body = document.getElementById('confirmationBody');
+                const confirmBtn = document.getElementById('confirmActionBtn');
+                
+                header.className = `modal-header bg-${type} text-white`;
+                body.innerHTML = `<p>${message}</p>`;
+                confirmBtn.className = `btn btn-${type}`;
+                
+                confirmBtn.onclick = () => {
+                    bootstrap.Modal.getInstance(modal).hide();
+                    if (typeof onConfirm === 'function') {
+                        onConfirm();
+                    }
+                };
+                
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            }
+
+            // Star Rating
+            initializeStarRating() {
+                document.querySelectorAll('.star-rate').forEach(star => {
+                    star.addEventListener('click', (e) => {
+                        const rating = parseInt(e.target.dataset.rating);
+                        this.setStarRating(rating);
+                    });
+
+                    star.addEventListener('mouseover', (e) => {
+                        const rating = parseInt(e.target.dataset.rating);
+                        this.highlightStars(rating);
+                    });
+                });
+
+                const starContainer = document.querySelector('.star-rating-large');
+                if (starContainer) {
+                    starContainer.addEventListener('mouseleave', () => {
+                        this.resetStarHighlight();
+                    });
+                }
+            }
+
+            setStarRating(rating) {
+                document.querySelectorAll('.star-rate').forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.add('active');
+                    } else {
+                        star.classList.remove('active');
+                    }
+                });
+
+                const ratingText = document.getElementById('ratingText');
+                if (ratingText) {
+                    const texts = ['Très mauvais', 'Mauvais', 'Correct', 'Bon', 'Excellent'];
+                    const colors = ['bg-danger', 'bg-warning', 'bg-secondary', 'bg-info', 'bg-success'];
+                    
+                    ratingText.textContent = texts[rating - 1];
+                    ratingText.className = `badge ${colors[rating - 1]}`;
+                }
+            }
+
+            highlightStars(rating) {
+                document.querySelectorAll('.star-rate').forEach((star, index) => {
+                    if (index < rating) {
+                        star.style.color = '#ffc107';
+                    } else {
+                        star.style.color = '#ddd';
+                    }
+                });
+            }
+
+            resetStarHighlight() {
+                document.querySelectorAll('.star-rate').forEach(star => {
+                    if (!star.classList.contains('active')) {
+                        star.style.color = '#ddd';
+                    }
+                });
+            }
+
+            // Tooltips
+            initializeTooltips() {
+                // Enable Bootstrap tooltips
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+
+            // Custom tooltip
+            showCustomTooltip(element, content, position = 'top') {
+                const tooltip = document.getElementById('customTooltip');
+                const tooltipContent = tooltip.querySelector('.tooltip-content');
+                const arrow = tooltip.querySelector('.tooltip-arrow');
+                
+                tooltipContent.innerHTML = content;
+                arrow.className = `tooltip-arrow ${position}`;
+                
+                // Position tooltip
+                const rect = element.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                
+                let top, left;
+                
+                if (position === 'top') {
+                    top = rect.top - tooltipRect.height - 10;
+                    left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                } else if (position === 'bottom') {
+                    top = rect.bottom + 10;
+                    left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                }
+                
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+                tooltip.classList.add('show');
+            }
+
+            hideCustomTooltip() {
+                const tooltip = document.getElementById('customTooltip');
+                tooltip.classList.remove('show');
+            }
+
+            // Load order details - CORRIGÉ: utilise les vraies données de l'API
+            loadOrderDetails(orderId) {
+                const content = document.getElementById('orderDetailsContent');
+                
+                // LOG DE VALIDATION: Tracer l'appel API
+                console.log('DEBUG - Loading order details for orderId:', orderId);
+                
+                // Appel API réel vers le nouveau endpoint avec logs de validation
+                fetch(`/api/orders/${orderId}/details`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    console.log('DEBUG - API response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // LOG DE VALIDATION: Tracer les données reçues
+                    console.log('DEBUG - Order details received:', data);
+                    console.log('DEBUG - Service name from API:', data.serviceName);
+                    console.log('DEBUG - Amount from API:', data.amount);
+                    console.log('DEBUG - Created date from API:', data.createdAt);
+                    
+                    // Formatter les dates
+                    const createdAt = new Date(data.createdAt);
+                    const formattedCreatedAt = createdAt.toLocaleDateString('fr-FR') + ' ' +
+                                             createdAt.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                    
+                    // Formater les dates de la timeline (si disponibles)
+                    const timelineItems = [];
+                    if (data.timeline.created) {
+                        const created = new Date(data.timeline.created);
+                        timelineItems.push(`<div class="timeline-item"><strong>Commande créée</strong> - ${created.toLocaleDateString('fr-FR')} ${created.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
+                    }
+                    if (data.timeline.paid) {
+                        const paid = new Date(data.timeline.paid);
+                        timelineItems.push(`<div class="timeline-item"><strong>Paiement confirmé</strong> - ${paid.toLocaleDateString('fr-FR')} ${paid.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
+                    }
+                    if (data.timeline.inProgress) {
+                        const inProgress = new Date(data.timeline.inProgress);
+                        timelineItems.push(`<div class="timeline-item"><strong>Service en cours</strong> - ${inProgress.toLocaleDateString('fr-FR')} ${inProgress.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
+                    }
+                    if (data.timeline.completed) {
+                        const completed = new Date(data.timeline.completed);
+                        timelineItems.push(`<div class="timeline-item"><strong>Service terminé</strong> - ${completed.toLocaleDateString('fr-FR')} ${completed.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}</div>`);
+                    }
+                    
+                    // ✅ CORRECTION: Utiliser les vraies données au lieu des données statiques
+                    content.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Informations de commande</h6>
+                                <table class="table table-borderless">
+                                    <tr><td><strong>Numéro:</strong></td><td>${data.orderNumber}</td></tr>
+                                    <tr><td><strong>Date:</strong></td><td>${formattedCreatedAt}</td></tr>
+                                    <tr><td><strong>Statut:</strong></td><td><span class="badge bg-success">${data.status}</span></td></tr>
+                                    <tr><td><strong>Montant:</strong></td><td>${data.amount} ${data.currency}</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Détails du service</h6>
+                                <table class="table table-borderless">
+                                    <tr><td><strong>Service:</strong></td><td>${data.serviceName}</td></tr>
+                                    <tr><td><strong>Durée:</strong></td><td>${data.serviceDetails.duration}</td></tr>
+                                    <tr><td><strong>Technicien:</strong></td><td>${data.serviceDetails.technician}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="progress-modern mb-3">
+                            <div class="progress-bar" style="width: 100%"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Historique</h6>
+                                <div class="timeline">
+                                    ${timelineItems.join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('DEBUG - Order details modal updated with real data');
+                })
+                .catch(error => {
+                    console.error('ERROR - Failed to load order details:', error);
+                    // Fallback en cas d'erreur
+                    content.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Erreur lors du chargement des détails de la commande.
+                            <br><small>Erreur: ${error.message}</small>
+                        </div>
+                    `;
+                });
+            }
+
+            // Setup review modal
+            setupReviewModal(orderId) {
+                // Populate with order-specific data
+                console.log('Setting up review modal for order:', orderId);
+            }
+
+            // Load detailed stats
+            loadDetailedStats() {
+                // Implementation for detailed statistics
+                console.log('Loading detailed statistics...');
+            }
+
+            // Initialize modals
+            initializeModals() {
+                // Add any modal-specific initialization here
+            }
+
+            // Initialize toasts
+            initializeToasts() {
+                // Add any toast-specific initialization here
+            }
+        }
+
+        // Initialize dashboard components when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.dashboardComponents = new DashboardComponents();
+        });
+
+        // Global helper functions
+        function showOrderDetails(orderId) {
+            window.dashboardComponents.showModal('orderDetailsModal', { orderId });
+        }
+
+        function showReviewModal(orderId) {
+            window.dashboardComponents.showModal('reviewModal', { orderId });
+        }
+
+        function showStatsModal() {
+            window.dashboardComponents.showModal('statsModal');
+        }
+
+        function exportStats() {
+            window.dashboardComponents.showLoading('action', 'Préparation de l\'export...');
+            
+            setTimeout(() => {
+                window.dashboardComponents.hideLoading('action');
+                window.dashboardComponents.showToast('success', 'Statistiques exportées avec succès !');
+            }, 2000);
+        }
+    </script>
+</div>
+
+</body>
+</html>

@@ -6,8 +6,22 @@
     <title>Services - LMP | Solutions Digitales</title>
     <meta name="description" content="Découvrez nos services experts en marketing digital, référencement local et gestion de réputation en ligne.">
     
+    <!-- CSRF Token pour les appels API -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
+    
+    <!-- Authentication Info for JavaScript -->
+    <script th:inline="javascript">
+        // Information d'authentification pour le JavaScript
+        window.AUTH_INFO = {
+            isAuthenticated: /*[[${#authorization.expression('isAuthenticated()')}]]*/ false,
+            currentUser: /*[[${#authentication.name}]]*/ null
+        };
+        console.log('DEBUG: AUTH_INFO défini:', window.AUTH_INFO);
+    </script>
 </head>
 <body class="min-h-screen bg-white">
     <!-- Header -->
@@ -19,7 +33,7 @@
             <div class="container mx-auto px-4">
                 <div class="text-center max-w-4xl mx-auto">
                     <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-dark mb-6 leading-tight">
-                        Nos <span class="text-primary">Services Experts</span>
+                        Services Marketing Digital <span class="text-primary">Québec</span>
                     </h1>
                     <p class="text-lg lg:text-xl text-secondary mb-8 leading-relaxed">
                         Solutions complètes pour votre visibilité digitale et votre croissance en ligne.
@@ -32,22 +46,29 @@
         <!-- Services Grid -->
         <section class="py-16 bg-white">
             <div class="container mx-auto px-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Section Référencement Local -->
+                <div class="mb-12">
+                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 text-center">
+                        Référencement Local Google Maps
+                    </h2>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
                     <!-- Service 1 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="securisations-gmb" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">📍</div>
+                            <div class="text-3xl" aria-label="Sécurisations Google My Business référencement local Québec">📍</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                                 Référencement Local
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Sécurisations et Accès Google My Business</h3>
+                        <h3 class="text-xl font-semibold mb-2">Optimisation Google My Business Québec</h3>
                         <p class="text-secondary text-sm mb-4">
                             Protégez et optimisez votre profil Google My Business. Accès sécurisé, gestion des droits et protection contre les modifications malveillantes.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">353,89 $</div>
-                            <div class="text-sm text-secondary">Durée: 60 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$353,89 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -67,7 +88,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Sécurisations et Accès Google My Business', 353.89)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Sécurisations et Accès Google My Business')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -77,20 +98,20 @@
                     </div>
 
                     <!-- Service 2 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="referencement-vip" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">⭐</div>
+                            <div class="text-3xl" aria-label="Référencement optimal VIP+ service premium garantie">⭐</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
                                 Référencement Premium
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Référencement Optimale avec Sécurisations Garantie VIP+</h3>
+                        <h3 class="text-xl font-semibold mb-2">SEO Premium Garantie Québec</h3>
                         <p class="text-secondary text-sm mb-4">
                             Service premium avec garantie de résultats. Référencement avancé, maintenance du profil et support prioritaire.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">750,79 $</div>
-                            <div class="text-sm text-secondary">Durée: 90 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$750,79 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -110,7 +131,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Référencement Optimale avec Sécurisations Garantie VIP+')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -120,20 +141,20 @@
                     </div>
 
                     <!-- Service 3 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="gestion-avis" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">💬</div>
+                            <div class="text-3xl" aria-label="Gestion avis clients réputation Google My Business">💬</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                                 Réputation en Ligne
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Gestion des Avis</h3>
+                        <h3 class="text-xl font-semibold mb-2">Gestion Avis Google Maps</h3>
                         <p class="text-secondary text-sm mb-4">
                             Améliorez votre réputation en ligne avec notre service de gestion des avis. Multipliez les avis positifs et gérez efficacement les commentaires.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">747,43 $</div>
-                            <div class="text-sm text-secondary">Durée: 75 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$747,43 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -153,7 +174,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Gestion des Avis', 747.43)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Gestion des Avis', 747.43)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Gestion des Avis')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -163,20 +184,20 @@
                     </div>
 
                     <!-- Service 4 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="presence-locales" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">🏪</div>
+                            <div class="text-3xl" aria-label="Présence locales annuaires Google Maps visibilité">🏪</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
                                 Marketing Local
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Présence Locales</h3>
+                        <h3 class="text-xl font-semibold mb-2">Visibilité Locale Québec</h3>
                         <p class="text-secondary text-sm mb-4">
                             Boostez votre visibilité locale avec une présence optimisée dans tous les annuaires locaux et sur Google Maps.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">2200,00 $</div>
-                            <div class="text-sm text-secondary">Durée: 120 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$2200,00 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -196,7 +217,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Présence Locales', 2200.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Présence Locales', 2200.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Présence Locales')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -206,20 +227,20 @@
                     </div>
 
                     <!-- Service 5 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="creation-site-web" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">💻</div>
+                            <div class="text-3xl" aria-label="Création site web professionnel SSL référencement">💻</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
                                 Développement Web
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Création Site Web</h3>
+                        <h3 class="text-xl font-semibold mb-2">Site Web Professionnel Québec</h3>
                         <p class="text-secondary text-sm mb-4">
                             Création de site web professionnel avec protocole SSL, référencement optimisé et promotion incluse.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">100,99 $</div>
-                            <div class="text-sm text-secondary">Durée: 180 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$550,00 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -239,7 +260,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Création Site Web', 100.99)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Création Site Web', 100.99)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Création Site Web')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -249,20 +270,20 @@
                     </div>
 
                     <!-- Service 6 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="seo-referencement-naturel" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">🔍</div>
+                            <div class="text-3xl" aria-label="SEO référencement naturel moteurs recherche Google Maps">🔍</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
                                 SEO Avancé
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">SEO et Référencement Naturel</h3>
+                        <h3 class="text-xl font-semibold mb-2">SEO Référencement Naturel Québec</h3>
                         <p class="text-secondary text-sm mb-4">
                             Service SEO complet pour améliorer votre positionnement sur les moteurs de recherche et Google Maps.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">5500,00 $</div>
-                            <div class="text-sm text-secondary">Durée: 240 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$5500,00 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -282,7 +303,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('SEO et Référencement Naturel', 5500.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('SEO et Référencement Naturel', 5500.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('SEO et Référencement Naturel')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -292,20 +313,20 @@
                     </div>
 
                     <!-- Service 7 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="mise-a-jour-2026" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">🚀</div>
+                            <div class="text-3xl" aria-label="Optimisations Google+ premium mise à jour 2026">🚀</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                                 Google Premium
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Optimisations Google+</h3>
+                        <h3 class="text-xl font-semibold mb-2">Assistance Marketing Québec</h3>
                         <p class="text-secondary text-sm mb-4">
                             Optimisation premium de votre présence Google avec mise à jour régulière et positionnement garanti.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">11121,00 $</div>
-                            <div class="text-sm text-secondary">Durée: 300 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$1000,00 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -325,7 +346,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Optimisations Google+', 11121.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Optimisations Google+', 11121.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Optimisations Google+')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -335,20 +356,20 @@
                     </div>
 
                     <!-- Service 8 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="assistance-technique" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl">🛠️</div>
+                            <div class="text-3xl" aria-label="Assistance technique maintenance profil concurrents">🛠️</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                                 Support
                             </div>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">Assistance Technique</h3>
+                        <h3 class="text-xl font-semibold mb-2">Support Technique Local</h3>
                         <p class="text-secondary text-sm mb-4">
                             Support technique dédié pour vous aider à rester devant vos concurrents avec une maintenance de votre profil.
                         </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">402,00 $</div>
-                            <div class="text-sm text-secondary">Durée: 45 minutes</div>
+                            <div class="text-2xl font-bold text-primary mb-1">$475,00 CAD</div>
+                            <div class="text-sm text-secondary">Paiement Unique</div>
                         </div>
                         <div class="mb-6">
                             <h4 class="font-semibold text-sm text-dark mb-2">Inclus:</h4>
@@ -368,7 +389,7 @@
                             </ul>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="selectService('Assistance Technique', 402.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
+                            <button onclick="openBookingModal('Assistance Technique', 402.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
                                 Acheter
                             </button>
                             <button onclick="showServiceDetails('Assistance Technique')" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all">
@@ -377,8 +398,15 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+                
+                <!-- Section Développement Web -->
+                <div class="mb-12">
+                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 text-center">
+                        Développement Web et SEO Avancé
+                    </h2>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
 
         <!-- CTA Section -->
         <section class="py-16 bg-gradient-to-br from-primary to-[#4c63ff] text-white">
@@ -391,7 +419,7 @@
                     Contactez-nous pour une consultation gratuite.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="openBookingModal()" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200">
+                    <button onclick="openBookingModal('Consultation Gratuite', 0.00)" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200">
                         Prendre un rendez-vous
                     </button>
                     <a href="/contact" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all duration-200">
@@ -402,118 +430,86 @@
         </section>
     </main>
 
-    <!-- Modals -->
-    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-xl p-8 max-w-md w-full">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold text-dark">Prendre un rendez-vous</h3>
-                    <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                <form onsubmit="handleBookingSubmit(event)">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Nom complet</label>
-                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
-                        <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
-                    </div>
-                    <div class="flex gap-3">
-                        <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-primary/90 transition-all">
-                            Envoyer
-                        </button>
-                        <button type="button" onclick="closeBookingModal()" class="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-all">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- Include Booking Modal from fragment -->
+    <div th:replace="fragments/booking-modal :: booking-modal"></div>
 
-    <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-xl p-8 max-w-md w-full">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-2xl font-bold text-dark">Paiement sécurisé</h3>
-                    <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                <div id="paymentDetails" class="mb-6"></div>
-                <div class="text-center">
-                    <p class="text-gray-600 mb-4">Paiement sécurisé via Stripe</p>
-                    <button onclick="processPayment()" class="bg-green-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-green-700 transition-all">
-                        Payer maintenant
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript -->
+    <!-- Include Register Checkout Script -->
+    <script src="/js/register-checkout.js"></script>
+    
+    <!-- Services Page Specific JavaScript -->
     <script>
+        // Mobile menu toggle
         function toggleMobileMenu() {
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
         }
 
-        function openBookingModal() {
-            document.getElementById('bookingModal').classList.remove('hidden');
-        }
-
-        function closeBookingModal() {
-            document.getElementById('bookingModal').classList.add('hidden');
-        }
-
-        function openPaymentModal() {
-            document.getElementById('paymentModal').classList.remove('hidden');
-        }
-
-        function closePaymentModal() {
-            document.getElementById('paymentModal').classList.add('hidden');
-        }
-
-        function selectService(serviceName, price) {
-            const paymentDetails = document.getElementById('paymentDetails');
-            paymentDetails.innerHTML = `
-                <h4 class="font-semibold text-lg mb-2">${serviceName}</h4>
-                <p class="text-2xl font-bold text-primary mb-2">$${price.toFixed(2)} CAD</p>
-                <p class="text-gray-600">Service professionnel avec garantie de résultats</p>
-            `;
-            openPaymentModal();
-        }
-
+        // Fonction pour afficher les détails d'un service
         function showServiceDetails(serviceName) {
             alert(`Détails pour ${serviceName}\n\nCette fonctionnalité sera implémentée dans une version future.`);
         }
 
-        function handleBookingSubmit(event) {
-            event.preventDefault();
-            alert('Demande envoyée ! Nous vous contacterons dans les 24h.');
-            closeBookingModal();
+        // Scroll fluide vers l'ancre et mise en évidence du service
+        function scrollToServiceAndHighlight() {
+            const hash = window.location.hash;
+            if (hash) {
+                const targetElement = document.querySelector(hash);
+                if (targetElement) {
+                    // Scroll fluide vers l'élément
+                    setTimeout(() => {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                        
+                        // Ajouter l'effet de mise en évidence
+                        targetElement.classList.add('service-highlight');
+                        
+                        // Retirer l'effet après 3 secondes
+                        setTimeout(() => {
+                            targetElement.classList.remove('service-highlight');
+                        }, 3000);
+                    }, 100);
+                }
+            }
         }
 
-        function processPayment() {
-            alert('Paiement traité avec succès !');
-            closePaymentModal();
-        }
+        // Exécuter au chargement de la page
+        document.addEventListener('DOMContentLoaded', scrollToServiceAndHighlight);
+        
+        // Exécuter quand l'URL change (navigation via les liens)
+        window.addEventListener('hashchange', scrollToServiceAndHighlight);
     </script>
+
+    <!-- CSS pour l'effet de mise en évidence -->
+    <style>
+        .service-highlight {
+            animation: highlightService 3s ease-in-out;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3) !important;
+            border-color: #3b82f6 !important;
+        }
+
+        @keyframes highlightService {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+            }
+            25% {
+                transform: scale(1.02);
+                box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3);
+            }
+            50% {
+                transform: scale(1.01);
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+            }
+        }
+    </style>
 
     <!-- Footer -->
     <div th:replace="fragments/footer :: footer"></div>
-
-    <!-- Booking Modal -->
-    <div th:replace="fragments/booking-modal :: booking-modal"></div>
-
-    <!-- Navigation Scripts -->
-    <div th:replace="fragments/scripts :: navigation-scripts"></div>
 </body>
 </html>

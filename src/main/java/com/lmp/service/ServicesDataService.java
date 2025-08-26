@@ -56,30 +56,32 @@ public class ServicesDataService {
         return List.of(
             new ServiceInfo(
                 "Sécurisations et Accès Google My Business",
-                "Protégez et optimisez votre profil Google My Business. Accès sécurisé, gestion des droits et protection contre les modifications malveillantes.",
+                "Protégez et sécurisez votre profil Google My Business avec un accès propriétaire garanti. Synchronisation complète du profil avec votre courriel professionnel et sécurisation avancée contre toute modification non autorisée.",
                 "📍",
                 List.of(
-                    "Rapports mensuels de votre technicien",
-                    "Assistance (12 mois)",
-                    "Sécurisation du profil"
+                    "Remise des accès propriétaire principal",
+                    "Synchronisation du profil Google avec votre courriel",
+                    "Sécurisation du Google My Business"
                 ),
                 "353,89 $",
                 353.89,
-                "60 minutes",
+                "Paiement Unique",
                 "Référencement Local"
             ),
             new ServiceInfo(
                 "Référencement Optimale avec Sécurisations Garantie VIP+",
-                "Service premium avec garantie de résultats. Référencement avancé, maintenance du profil et support prioritaire.",
+                "Service premium exclusif avec garantie de résultats exceptionnels. Bénéficiez de 8 mots clés stratégiques et 8 zones de services optimisées pour dominer votre marché local.",
                 "⭐",
                 List.of(
-                    "5 mots clés garantis",
-                    "Maintenance du profile",
-                    "QR code compte publicitaire Facebook"
+                    "8 mots clés garantis",
+                    "8 zones de services",
+                    "Remise et sécurisation des accès garanti",
+                    "Remise des accès propriétaire principal",
+                    "Validation du profil Google"
                 ),
                 "750,79 $",
                 750.79,
-                "90 minutes",
+                "Paiement Unique",
                 "Référencement Premium"
             ),
             new ServiceInfo(
@@ -93,7 +95,7 @@ public class ServicesDataService {
                 ),
                 "747,43 $",
                 747.43,
-                "75 minutes",
+                "Paiement Unique",
                 "Réputation en Ligne"
             ),
             new ServiceInfo(
@@ -107,7 +109,7 @@ public class ServicesDataService {
                 ),
                 "2200,00 $",
                 2200.00,
-                "120 minutes",
+                "Paiement Unique",
                 "Marketing Local"
             ),
             new ServiceInfo(
@@ -119,9 +121,9 @@ public class ServicesDataService {
                     "Référencement parmi les meilleurs résultats",
                     "Boost des pages (publicité)"
                 ),
-                "100,99 $",
-                100.99,
-                "180 minutes",
+                "550,00 $",
+                550.00,
+                "Paiement Unique",
                 "Développement Web"
             ),
             new ServiceInfo(
@@ -135,35 +137,40 @@ public class ServicesDataService {
                 ),
                 "5500,00 $",
                 5500.00,
-                "240 minutes",
+                "Paiement Unique",
                 "SEO Avancé"
             ),
             new ServiceInfo(
-                "Optimisations Google+",
-                "Optimisation premium de votre présence Google avec mise à jour régulière et positionnement garanti.",
+                "Mise à jour 2026",
+                "Solution complète et révolutionnaire intégrant tous nos services premium avec les dernières innovations 2026. Sécurisation garantie, immatriculation et validation du profil Google avec mises à jour automatiques.",
                 "🚀",
                 List.of(
-                    "Améliorez votre positionnement sur les moteurs",
-                    "Mise à jour régulière des données GMB",
-                    "Résultats garantis / idéal pour entreprises"
+                    "Tous les autres services inclus",
+                    "Sécurisation garantie",
+                    "Immatriculation du profil Google",
+                    "Validation du profil Google",
+                    "Mise à jour automatique du profil Google",
+                    "Remise des accès propriétaire principal",
+                    "Fusion des profils doubles"
                 ),
-                "11121,00 $",
-                11121.00,
-                "300 minutes",
+                "1000,00 $",
+                1000.00,
+                "Paiement Unique",
                 "Google Premium"
             ),
             new ServiceInfo(
                 "Assistance Technique",
-                "Support technique dédié pour vous aider à rester devant vos concurrents avec une maintenance de votre profil.",
+                "Support technique avancé avec intelligence artificielle 2026 pour dominer votre marché. Rapport détaillé sur les performances de votre entreprise et activation du numéro d'identification.",
                 "🛠️",
                 List.of(
-                    "Mettez vous devant vos concurrents",
-                    "Soyez en tête des recherches",
-                    "Maintenance de votre profil"
+                    "Rapport sur les performances de son entreprise sur Google",
+                    "Intelligence artificielle 2026",
+                    "Interactions avec les clients",
+                    "Activation du numéro d'identification"
                 ),
-                "402,00 $",
-                402.00,
-                "45 minutes",
+                "475,00 $",
+                475.00,
+                "Paiement Unique",
                 "Support"
             )
         );

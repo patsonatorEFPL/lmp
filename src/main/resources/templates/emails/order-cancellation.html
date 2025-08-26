@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annulation de commande</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .cancellation-notice {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #721c24;
+        }
+        .cancellation-notice h3 {
+            margin: 0 0 10px 0;
+            color: #dc3545;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .order-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .order-status {
+            background-color: #dc3545;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .order-details {
+            margin: 15px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .reason-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .reason-box h4 {
+            margin: 0 0 10px 0;
+            color: #f39c12;
+        }
+        .refund-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #0c5460;
+        }
+        .refund-info h4 {
+            margin: 0 0 10px 0;
+            color: #17a2b8;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #17a2b8;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #138496;
+        }
+        .contact-info {
+            background-color: #e2e3e5;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-status {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>❌ Commande Annulée</h1>
+            <p th:text="${companyName}">LMP Digital Services</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <p>Bonjour <span th:text="${customerName}">Client</span>,</p>
+            
+            <!-- Cancellation Notice -->
+            <div class="cancellation-notice">
+                <h3>🚫 Votre commande a été annulée</h3>
+                <p>Nous vous informons que votre commande mentionnée ci-dessous a été annulée. Nous nous excusons pour tout désagrément que cela pourrait causer.</p>
+            </div>
+
+            <!-- Order Information -->
+            <div class="order-info">
+                <div class="order-header">
+                    <div class="order-number">
+                        Commande #<span th:text="${order.id}">12345</span>
+                    </div>
+                    <div class="order-status">
+                        Annulée
+                    </div>
+                </div>
+
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span>Date de commande :</span>
+                        <span th:text="${order.createdAt}">22/08/2025</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Service :</span>
+                        <span th:text="${order.serviceName}">Service Web</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Description :</span>
+                        <span th:text="${order.description}">Développement site web</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Montant :</span>
+                        <span th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</span>
+                    </div>
+                    <div class="detail-row">
+                        <span>Date d'annulation :</span>
+                        <span th:text="${currentDate}">22/08/2025 à 14:30</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason for Cancellation -->
+            <div class="reason-box" th:if="${reason}">
+                <h4>📝 Motif de l'annulation</h4>
+                <p th:text="${reason}">Annulation à la demande du client</p>
+            </div>
+
+            <!-- Refund Information -->
+            <div class="refund-info">
+                <h4>💰 Information sur le remboursement</h4>
+                <div th:if="${order.paymentStatus == 'PAID'}">
+                    <p><strong>Un remboursement sera traité automatiquement :</strong></p>
+                    <ul>
+                        <li>Le montant de <strong th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</strong> sera remboursé</li>
+                        <li>Le remboursement apparaîtra sur votre carte dans 3-5 jours ouvrables</li>
+                        <li>Vous recevrez un email de confirmation du remboursement</li>
+                        <li>Le numéro de référence du remboursement vous sera fourni</li>
+                    </ul>
+                </div>
+                <div th:unless="${order.paymentStatus == 'PAID'}">
+                    <p>Aucun montant n'a été débité pour cette commande, aucun remboursement n'est nécessaire.</p>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div>
+                <h4>🔄 Prochaines étapes</h4>
+                <ul>
+                    <li>Vous n'avez aucune action à effectuer de votre côté</li>
+                    <li>Si un remboursement est dû, il sera traité automatiquement</li>
+                    <li>Vous êtes libre de repasser une commande à tout moment</li>
+                    <li>Notre équipe reste à votre disposition pour toute question</li>
+                </ul>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="contact-info">
+                <h4>📞 Besoin d'aide ?</h4>
+                <p>Si vous avez des questions concernant cette annulation ou si vous souhaitez repasser une commande, n'hésitez pas à nous contacter :</p>
+                <p>
+                    <strong>Email :</strong> contact@lmp-digital.ca<br>
+                    <strong>Téléphone :</strong> +1 (555) 123-4567
+                </p>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="#" class="btn">Repasser une commande</a>
+            </div>
+
+            <p>Nous espérons avoir l'opportunité de vous servir dans le futur et nous excusons encore pour cette annulation.</p>
+
+            <p>Cordialement,<br>
+            L'équipe <span th:text="${companyName}">LMP Digital Services</span></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong th:text="${companyName}">LMP Digital Services</strong></p>
+            <p>123 Rue Principale, Ville, Province, Code Postal</p>
+            <p>Téléphone : +1 (555) 123-4567 | Email : contact@lmp-digital.ca</p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                Cet email a été envoyé automatiquement, merci de ne pas répondre directement.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
