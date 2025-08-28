@@ -13,7 +13,7 @@
     <meta name="keywords" content="marketing digital local, référencement Google Maps, visibilité locale, SEO local, gestion réputation ligne, consultant digital">
     <meta name="author" content="LMP Local Map Profil">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" th:href="'https://lmp.run.place' + ${#httpServletRequest.requestURI}">
+    <link rel="canonical" th:href="${@environment.getProperty('app.base.url')} + ${#httpServletRequest.requestURI}">
     
     <!-- CSRF Token pour les requêtes AJAX -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
@@ -23,7 +23,7 @@
     <meta property="og:title" th:content="${title} + ' - LMP | Marketing Digital Local'">
     <meta property="og:description" th:content="${description ?: 'Services experts en marketing digital et référencement local. Boostez votre visibilité sur Google Maps et attirez plus de clients.'}">
     <meta property="og:type" content="website">
-    <meta property="og:url" th:content="'https://lmp.run.place' + ${#httpServletRequest.requestURI}">
+    <meta property="og:url" th:content="${@environment.getProperty('app.base.url')} + ${#httpServletRequest.requestURI}">
     <meta property="og:site_name" content="LMP - Local Map Profil">
     <meta property="og:locale" content="fr_CA">
     
@@ -80,7 +80,7 @@
       "@type": "LocalBusiness",
       "name": "LMP - Local Map Profil",
       "description": "Services de marketing digital et référencement local au Québec. Spécialistes en optimisation Google Maps, création de sites web et stratégies digitales pour entreprises locales.",
-      "url": "https://lmp.run.place",
+      "url": "[(${@environment.getProperty('app.base.url')})]",
       "email": "lmp.assistance@gmail.com",
       "address": {
         "@type": "PostalAddress",
