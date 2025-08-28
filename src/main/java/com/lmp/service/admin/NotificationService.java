@@ -31,7 +31,7 @@ public class NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
     
-    private static final String FROM_EMAIL = "noreply@lmp-digital.com";
+    private static final String FROM_EMAIL = "lmp.assistance@gmail.com";
     private static final String COMPANY_NAME = "LMP Digital Services";
 
     @Autowired
@@ -39,6 +39,15 @@ public class NotificationService {
 
     @Autowired
     private TemplateEngine templateEngine;
+    
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.host:NON_CONFIGURÉ}")
+    private String mailHost;
+    
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.username:NON_CONFIGURÉ}")
+    private String mailUsername;
+    
+    @org.springframework.beans.factory.annotation.Value("${spring.mail.password:NON_CONFIGURÉ}")
+    private String mailPassword;
 
     /**
      * Envoie une notification de changement de statut
@@ -331,12 +340,39 @@ public class NotificationService {
      * Envoie un email de test
      */
     public void sendTestEmail(String toEmail) throws Exception {
+        logger.info("=== DIAGNOSTIC EMAIL AUTHENTICATION ===");
+        logger.info("FROM_EMAIL configuré: {}", FROM_EMAIL);
+        logger.info("SMTP Host: {}", mailHost);
+        logger.info("SMTP Username: {}", mailUsername);
+        logger.info("SMTP Password: {}", maskPassword(mailPassword));
+        logger.info("Destinataire: {}", toEmail);
+        logger.info("Tentative d'authentification SMTP...");
+        
         String subject = "Test Email - " + COMPANY_NAME;
-        String content = "Ceci est un email de test envoyé le " + 
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")) + 
+        String content = "Ceci est un email de test envoyé le " +
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")) +
             "\n\nSi vous recevez cet email, la configuration fonctionne correctement.";
         
-        sendTextEmail(toEmail, subject, content);
-        logger.info("Email de test envoyé à {}", toEmail);
+        try {
+            sendTextEmail(toEmail, subject, content);
+            logger.info("✅ Email de test envoyé avec succès à {}", toEmail);
+        } catch (Exception e) {
+            logger.error("❌ ÉCHEC envoi email - Erreur: {}", e.getMessage());
+            logger.error("❌ Type d'exception: {}", e.getClass().getSimpleName());
+            if (e.getCause() != null) {
+                logger.error("❌ Cause racine: {}", e.getCause().getMessage());
+            }
+            throw e;
+        }
+    }
+    
+    private String maskPassword(String password) {
+        if (password == null || password.equals("NON_CONFIGURÉ")) {
+            return password;
+        }
+        if (password.length() <= 4) {
+            return "****";
+        }
+        return password.substring(0, 2) + "****" + password.substring(password.length() - 2);
     }
 }
