@@ -27,9 +27,23 @@ public class SeoInterceptor implements HandlerInterceptor {
         String requestUrl = request.getRequestURL().toString();
         String requestUri = request.getRequestURI();
         
-        // Log pour diagnostic SEO
-        logger.debug("SEO Interceptor - Request: {}, URI: {}, Canonical base: {}", 
-                    requestUrl, requestUri, canonicalBaseUrl);
+        // DIAGNOSTIC LOGS DÉTAILLÉS pour troubleshooting indexation
+        String scheme = request.getScheme();
+        String host = request.getHeader("Host");
+        String xfProto = request.getHeader("X-Forwarded-Proto");
+        String xfHost = request.getHeader("X-Forwarded-Host");
+        String xfPort = request.getHeader("X-Forwarded-Port");
+        String userAgent = request.getHeader("User-Agent");
+        
+        logger.info("=== SEO INTERCEPTOR DEBUG ===");
+        logger.info("Request URL: {}", requestUrl);
+        logger.info("Request URI: {}", requestUri);
+        logger.info("Canonical base: {}", canonicalBaseUrl);
+        logger.info("Scheme: {}, Host: {}", scheme, host);
+        logger.info("X-Forwarded-Proto: {}", xfProto);
+        logger.info("X-Forwarded-Host: {}", xfHost);
+        logger.info("X-Forwarded-Port: {}", xfPort);
+        logger.info("User-Agent: {}", userAgent != null ? userAgent.substring(0, Math.min(userAgent.length(), 100)) + "..." : "null");
         
         // Ajouter des headers SEO
         response.setHeader("X-Robots-Tag", "index, follow");
@@ -37,11 +51,17 @@ public class SeoInterceptor implements HandlerInterceptor {
         // Gérer les redirections pour contenu dupliqué seulement pour les pages principales
         if (shouldRedirectToCanonical(request, requestUrl)) {
             String canonicalUrl = canonicalBaseUrl + requestUri;
-            logger.info("SEO Redirect 301 - From: {} To: {}", requestUrl, canonicalUrl);
+            logger.info("SEO REDIRECT TRIGGERED:");
+            logger.info("  From: {}", requestUrl);
+            logger.info("  To: {}", canonicalUrl);
+            logger.info("  Method: sendRedirect (302 temporary)");
+            logger.info("  Reason: URL mismatch with canonical base");
+            
             response.sendRedirect(canonicalUrl);
             return false;
         }
         
+        logger.info("=== NO REDIRECT - REQUEST CONTINUES ===");
         return true;
     }
     
