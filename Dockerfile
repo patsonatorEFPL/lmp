@@ -8,9 +8,23 @@ FROM maven:3.9.5-eclipse-temurin-21-alpine AS build
 
 WORKDIR /app
 
-# build phase
-COPY . /app/.
-RUN --mount=type=cache,id=mcc4sw48okw8wcossc8ckksk-m2/repository,target=/app/.m2/repository chmod +x ./mvnw && ./mvnw -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install
+# Copier les fichiers de configuration Maven
+COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+COPY mvnw.cmd .
+
+# Donner les permissions d'exécution au wrapper Maven
+RUN chmod +x mvnw
+
+# Télécharger les dépendances (mise en cache des layers Docker)
+RUN ./mvnw dependency:go-offline -B
+
+# Copier le code source
+COPY src ./src
+
+# Compiler l'application
+RUN ./mvnw clean package -DskipTests -B
 
 # ========================================
 # Étape 2: Runtime optimisé
