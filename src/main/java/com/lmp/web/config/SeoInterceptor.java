@@ -71,19 +71,28 @@ public class SeoInterceptor implements HandlerInterceptor {
     private boolean shouldRedirectToCanonical(HttpServletRequest request, String requestUrl) {
         String uri = request.getRequestURI();
         
+        // DÉSACTIVER TEMPORAIREMENT TOUTES LES REDIRECTIONS pour diagnostiquer la boucle
+        logger.info("REDIRECT CHECK - URI: {}, RequestURL: {}, CanonicalBase: {}", uri, requestUrl, canonicalBaseUrl);
+        logger.info("REDIRECT CHECK - StartsWith canonical: {}", requestUrl.startsWith(canonicalBaseUrl));
+        
         // Exclure les APIs, admin, et ressources statiques
-        if (uri.startsWith("/api/") || 
-            uri.startsWith("/admin/") || 
-            uri.startsWith("/css/") || 
-            uri.startsWith("/js/") || 
+        if (uri.startsWith("/api/") ||
+            uri.startsWith("/admin/") ||
+            uri.startsWith("/css/") ||
+            uri.startsWith("/js/") ||
             uri.startsWith("/images/") ||
             uri.startsWith("/favicon.ico")) {
+            logger.info("REDIRECT CHECK - Excluded path: {}", uri);
             return false;
         }
         
-        // Seulement pour les pages principales qui ne correspondent pas au domaine canonique
-        return !requestUrl.startsWith(canonicalBaseUrl) && 
-               (uri.equals("/") || uri.equals("/services") || uri.equals("/contact") || 
-                uri.equals("/about") || uri.equals("/privacy") || uri.equals("/terms"));
+        // DÉSACTIVER TOUTES LES REDIRECTIONS TEMPORAIREMENT
+        logger.info("REDIRECT CHECK - Would redirect: {} (DISABLED)", !requestUrl.startsWith(canonicalBaseUrl));
+        return false; // Temporairement désactivé pour éviter la boucle
+        
+        // Code original commenté:
+        // return !requestUrl.startsWith(canonicalBaseUrl) &&
+        //        (uri.equals("/") || uri.equals("/services") || uri.equals("/contact") ||
+        //         uri.equals("/about") || uri.equals("/privacy") || uri.equals("/terms"));
     }
 }
