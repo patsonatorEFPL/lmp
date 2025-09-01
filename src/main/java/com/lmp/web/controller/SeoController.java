@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
 public class SeoController {
     
     private static final Logger logger = LoggerFactory.getLogger(SeoController.class);
-    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter ISO_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     
     @Value("${app.base.url}")
     private String baseUrl;
@@ -37,7 +37,7 @@ public class SeoController {
         response.setContentType("application/xml");
         response.setCharacterEncoding("UTF-8");
         
-        String currentDate = LocalDateTime.now().format(ISO_FORMATTER);
+        String currentDate = LocalDate.now().format(ISO_DATE_FORMATTER);
         
         StringBuilder sitemap = new StringBuilder();
         sitemap.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
