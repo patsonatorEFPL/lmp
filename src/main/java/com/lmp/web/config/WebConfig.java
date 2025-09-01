@@ -17,10 +17,10 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Ajouter l'intercepteur SEO pour toutes les routes sauf les ressources statiques
-        registry.addInterceptor(seoInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/favicon.ico", 
-                                   "/api/**", "/admin/**", "/error/**");
+        // SEO Interceptor DÉSACTIVÉ temporairement pour debugging
+        // registry.addInterceptor(seoInterceptor)
+        //         .addPathPatterns("/**")
+        //         .excludePathPatterns("/css/**", "/js/**", "/images/**", "/favicon.ico",
+        //                            "/api/**", "/admin/**", "/error/**");
     }
 }
