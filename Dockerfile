@@ -3,8 +3,8 @@
 # Application Spring Boot LMP - Java 21
 # ========================================
 
-# Étape 1: Build de l'application
-FROM maven:3.9.5-eclipse-temurin-21-alpine AS build
+# Étape 1: Build de l'application avec Java 17 (compatible Coolify)
+FROM maven:3.9.5-eclipse-temurin-17-alpine AS build
 
 WORKDIR /app
 
@@ -23,12 +23,12 @@ RUN ./mvnw dependency:go-offline -B
 # Copier le code source
 COPY src ./src
 
-# Compiler l'application
+# Compiler l'application avec Java 17
 RUN ./mvnw clean package -DskipTests -B
 
 # ========================================
-# Étape 2: Runtime optimisé
-FROM eclipse-temurin:21-jre-alpine
+# Étape 2: Runtime optimisé avec Java 17
+FROM eclipse-temurin:17-jre-alpine
 
 # Installation des outils nécessaires
 RUN apk add --no-cache \
