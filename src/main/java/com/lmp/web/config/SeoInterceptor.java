@@ -54,10 +54,12 @@ public class SeoInterceptor implements HandlerInterceptor {
             logger.info("SEO REDIRECT TRIGGERED:");
             logger.info("  From: {}", requestUrl);
             logger.info("  To: {}", canonicalUrl);
-            logger.info("  Method: sendRedirect (302 temporary)");
+            logger.info("  Method: Permanent Redirect (301)");
             logger.info("  Reason: URL mismatch with canonical base");
             
-            response.sendRedirect(canonicalUrl);
+            // Utiliser 301 (permanent) au lieu de 302 (temporaire) pour le SEO
+            response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY);
+            response.setHeader("Location", canonicalUrl);
             return false;
         }
         
@@ -71,10 +73,6 @@ public class SeoInterceptor implements HandlerInterceptor {
     private boolean shouldRedirectToCanonical(HttpServletRequest request, String requestUrl) {
         String uri = request.getRequestURI();
         
-        // DÉSACTIVER TEMPORAIREMENT TOUTES LES REDIRECTIONS pour diagnostiquer la boucle
-        logger.info("REDIRECT CHECK - URI: {}, RequestURL: {}, CanonicalBase: {}", uri, requestUrl, canonicalBaseUrl);
-        logger.info("REDIRECT CHECK - StartsWith canonical: {}", requestUrl.startsWith(canonicalBaseUrl));
-        
         // Exclure les APIs, admin, et ressources statiques
         if (uri.startsWith("/api/") ||
             uri.startsWith("/admin/") ||
@@ -82,17 +80,34 @@ public class SeoInterceptor implements HandlerInterceptor {
             uri.startsWith("/js/") ||
             uri.startsWith("/images/") ||
             uri.startsWith("/favicon.ico")) {
-            logger.info("REDIRECT CHECK - Excluded path: {}", uri);
             return false;
         }
         
-        // DÉSACTIVER TOUTES LES REDIRECTIONS TEMPORAIREMENT
-        logger.info("REDIRECT CHECK - Would redirect: {} (DISABLED)", !requestUrl.startsWith(canonicalBaseUrl));
-        return false; // Temporairement désactivé pour éviter la boucle
+        // Construire l'URL correcte basée sur X-Forwarded-Proto et X-Forwarded-Host
+        String xfProto = request.getHeader("X-Forwarded-Proto");
+        String xfHost = request.getHeader("X-Forwarded-Host");
         
-        // Code original commenté:
-        // return !requestUrl.startsWith(canonicalBaseUrl) &&
-        //        (uri.equals("/") || uri.equals("/services") || uri.equals("/contact") ||
-        //         uri.equals("/about") || uri.equals("/privacy") || uri.equals("/terms"));
+        String actualUrl;
+        if (xfProto != null && xfHost != null) {
+            // Utiliser les en-têtes proxy pour l'URL réelle
+            actualUrl = xfProto + "://" + xfHost + uri;
+        } else {
+            // Fallback sur l'URL de requête originale
+            actualUrl = requestUrl;
+        }
+        
+        logger.debug("SEO Redirect Check - Actual URL: {}, Canonical: {}", actualUrl, canonicalBaseUrl + uri);
+        
+        // Rediriger seulement si l'URL actuelle ne correspond pas à la canonique
+        // ET que c'est une page principale
+        boolean shouldRedirect = !actualUrl.equals(canonicalBaseUrl + uri) &&
+               (uri.equals("/") || uri.equals("/services") || uri.equals("/contact") ||
+                uri.equals("/about") || uri.equals("/privacy") || uri.equals("/terms"));
+        
+        if (shouldRedirect) {
+            logger.info("SEO Redirect needed from {} to {}", actualUrl, canonicalBaseUrl + uri);
+        }
+        
+        return shouldRedirect;
     }
 }
