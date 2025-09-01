@@ -1,0 +1,80 @@
+# ========================================
+# Docker Compose pour Coolify Deployment
+# Application Spring Boot LMP - Production
+# ========================================
+
+version: '3.8'
+
+services:
+  lmp-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lmp-spring-app
+    restart: unless-stopped
+    
+    # Configuration des ports
+    ports:
+      - "${PORT:-8080}:8080"
+    
+    # Variables d'environnement pour Coolify
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8080
+      - PORT=${PORT:-8080}
+      
+      # Configuration base de données (à adapter selon Coolify)
+      - SPRING_DATASOURCE_URL=${DATABASE_URL}
+      - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
+      
+      # Configuration Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      
+      # Configuration application
+      - APP_BASE_URL=${APP_BASE_URL:-https://lmp.run.place}
+      
+      # Configuration emails
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
+      
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Limites de ressources
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    
+    # Volumes pour persistance
+    volumes:
+      - app-logs:/app/logs
+      - app-invoices:/app/invoices
+    
+    # Réseau
+    networks:
+      - lmp-network
+
+# Volumes nommés
+volumes:
+  app-logs:
+    driver: local
+  app-invoices:
+    driver: local
+
+# Réseau
+networks:
+  lmp-network:
+    driver: bridge

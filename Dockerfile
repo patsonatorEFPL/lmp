@@ -1,5 +1,5 @@
 # ========================================
-# Dockerfile pour Railway.com
+# Dockerfile pour Coolify Deployment
 # Application Spring Boot LMP - Java 21
 # ========================================
 
@@ -64,9 +64,9 @@ ENV SERVER_PORT=8080
 # Port exposé (Railway utilisera la variable PORT)
 EXPOSE 8080
 
-# Health check désactivé pour Railway (Railway utilise ses propres mécanismes)
-# HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-#     CMD curl -f http://localhost:8080/actuator/health || exit 1
+# Health check pour Coolify
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Point d'entrée utilisant application.properties par défaut
-ENTRYPOINT ["java", "-Xmx512m", "-XX:+UseG1GC", "-jar", "app.jar"]
+# Point d'entrée avec profil production pour Coolify
+ENTRYPOINT ["java", "-Xmx1024m", "-XX:+UseG1GC", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
