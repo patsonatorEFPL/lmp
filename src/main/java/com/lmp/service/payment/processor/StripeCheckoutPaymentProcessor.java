@@ -337,6 +337,16 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         String successUrl = buildCallbackUrl(defaultSuccessUrl, order.getId(), "success");
         String cancelUrl = buildCallbackUrl(defaultCancelUrl, order.getId(), "cancel");
         
+        // LOG DE DIAGNOSTIC DÉTAILLÉ : URLs exactes générées pour Stripe
+        logger.info("STRIPE_CALLBACK_DEBUG - Generated URLs for order {}: successUrl='{}', cancelUrl='{}'",
+                   order.getId(), successUrl, cancelUrl);
+        
+        // Vérification de sécurité des URLs générées
+        if (!successUrl.startsWith("https://") || !cancelUrl.startsWith("https://")) {
+            logger.error("STRIPE_SECURITY_ERROR - Non-HTTPS URLs generated! successUrl='{}', cancelUrl='{}'",
+                        successUrl, cancelUrl);
+        }
+        
         // Créer les paramètres de session
         SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
             .setMode(SessionCreateParams.Mode.PAYMENT)
@@ -427,6 +437,18 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         // LOG DE DIAGNOSTIC : Tracer la construction des URLs de redirection
         logger.info("STRIPE_URL_DEBUG - Building {} URL for order {}: baseUrl='{}', basePath='{}', fullUrl='{}'",
                    type, orderId, baseUrl, basePath, fullUrl);
+        
+        // LOG DE DIAGNOSTIC AVANCÉ : Validation des composants URL
+        logger.info("STRIPE_URL_VALIDATION - URL components check: baseUrl.length={}, basePath='{}', orderId={}, type='{}'",
+                   baseUrl != null ? baseUrl.length() : 0, basePath, orderId, type);
+        
+        // Vérification de la cohérence des URLs
+        if (baseUrl == null || baseUrl.trim().isEmpty()) {
+            logger.error("STRIPE_URL_ERROR - baseUrl is null or empty! This will cause malformed callback URLs");
+        }
+        if (!baseUrl.startsWith("https://")) {
+            logger.warn("STRIPE_URL_WARNING - baseUrl does not start with https://: '{}'", baseUrl);
+        }
         
         return fullUrl;
     }

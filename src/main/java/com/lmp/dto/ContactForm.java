@@ -28,6 +28,12 @@ public class ContactForm {
     @Size(max = 2000, message = "Le message ne peut pas dépasser 2000 caractères")
     private String message;
     
+    @Size(max = 20, message = "Le téléphone ne peut pas dépasser 20 caractères")
+    private String phone;
+    
+    @Size(max = 100, message = "Le nom de l'entreprise ne peut pas dépasser 100 caractères")
+    private String company;
+    
     // Constructeurs
     public ContactForm() {}
     
@@ -36,6 +42,15 @@ public class ContactForm {
         this.email = email;
         this.subject = subject;
         this.message = message;
+    }
+    
+    public ContactForm(String name, String email, String subject, String message, String phone, String company) {
+        this.name = name;
+        this.email = email;
+        this.subject = subject;
+        this.message = message;
+        this.phone = phone;
+        this.company = company;
     }
     
     // Getters et Setters
@@ -71,6 +86,22 @@ public class ContactForm {
         this.message = message;
     }
     
+    public String getPhone() {
+        return phone;
+    }
+    
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    public String getCompany() {
+        return company;
+    }
+    
+    public void setCompany(String company) {
+        this.company = company;
+    }
+    
     @Override
     public String toString() {
         return "ContactForm{" +
@@ -78,6 +109,8 @@ public class ContactForm {
                 ", email='" + email + '\'' +
                 ", subject='" + subject + '\'' +
                 ", message='" + message + '\'' +
+                ", phone='" + phone + '\'' +
+                ", company='" + company + '\'' +
                 '}';
     }
 }

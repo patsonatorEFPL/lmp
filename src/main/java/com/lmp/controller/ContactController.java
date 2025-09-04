@@ -30,12 +30,15 @@ public class ContactController {
 
     /**
      * Affiche la page de contact avec un formulaire vierge
-     * 
+     *
      * @param model L'objet Model pour passer des données à la vue
      * @return Le nom du template à utiliser
      */
     @GetMapping("/contact")
     public String contact(Model model) {
+        
+        // LOG DE DIAGNOSTIC : Vérifier que la page de contact est bien accédée
+        logger.info("CONTACT_DEBUG - Page contact accédée via GET");
         // Ajout d'un objet ContactForm vide pour le formulaire
         model.addAttribute("contactForm", new ContactForm());
         
@@ -70,6 +73,10 @@ public class ContactController {
             BindingResult bindingResult,
             Model model,
             RedirectAttributes redirectAttributes) {
+        
+        // LOG DE DIAGNOSTIC : Confirmer que le POST arrive au serveur
+        logger.info("CONTACT_DEBUG - POST /contact reçu ! Email: {}, Nom: {}, Sujet: '{}'",
+                   contactForm.getEmail(), contactForm.getName(), contactForm.getSubject());
         
         logger.info("Réception d'un formulaire de contact de : {}", contactForm.getEmail());
         

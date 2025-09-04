@@ -52,6 +52,7 @@ public class SecurityConfig {
                     "/about",
                     "/services",
                     "/contact",
+                    "/contact/success",
                     "/map",
                     "/privacy",
                     "/terms",
@@ -156,7 +157,7 @@ public class SecurityConfig {
                 var corsConfig = new org.springframework.web.cors.CorsConfiguration();
                 corsConfig.setAllowedOriginPatterns(java.util.List.of(
                     "http://localhost:*",
-                    "https://lmp.run.place"
+                    "https://lmp-services.ca"
                 ));
                 corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfig.setAllowedHeaders(java.util.List.of("*"));

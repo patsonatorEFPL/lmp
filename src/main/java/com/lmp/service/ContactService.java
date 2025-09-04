@@ -44,7 +44,7 @@ public class ContactService {
     @Value("${mail.from.name:LMP Digital Services}")
     private String fromName;
     
-    @Value("${company.email:contact@lmp-digital.ca}")
+    @Value("${company.email:lmp.assistance@gmail.com}")
     private String adminEmail;
     
     @Value("${company.name:LMP Digital Services}")
@@ -61,20 +61,37 @@ public class ContactService {
      */
     public boolean processContact(ContactForm contactForm) {
         try {
-            // Log de l'opération
-            logger.info("Traitement d'un nouveau contact de : {}", contactForm.getEmail());
+            // LOG DE DIAGNOSTIC : Début du traitement
+            logger.info("CONTACT_PROCESSING_DEBUG - Début traitement contact : nom='{}', email='{}', sujet='{}'",
+                       contactForm.getName(), contactForm.getEmail(), contactForm.getSubject());
             
             // Sauvegarde du contact
+            logger.info("CONTACT_PROCESSING_DEBUG - Sauvegarde du contact...");
             saveContact(contactForm);
+            logger.info("CONTACT_PROCESSING_DEBUG - Contact sauvegardé avec succès");
             
-            // Envoi de l'email (simulation)
-            sendNotificationEmail(contactForm);
+            // Envoi des emails
+            logger.info("CONTACT_PROCESSING_DEBUG - Tentative d'envoi des emails...");
+            sendAdminNotification(contactForm);
+            sendUserConfirmation(contactForm);
+            logger.info("CONTACT_PROCESSING_DEBUG - Emails envoyés avec succès");
             
             logger.info("Contact traité avec succès pour : {}", contactForm.getEmail());
             return true;
             
         } catch (Exception e) {
-            logger.error("Erreur lors du traitement du contact pour : {}", contactForm.getEmail(), e);
+            logger.error("CONTACT_PROCESSING_ERROR - Erreur lors du traitement du contact pour '{}': Type={}, Message='{}'",
+                        contactForm.getEmail(), e.getClass().getSimpleName(), e.getMessage(), e);
+            
+            // Diagnostic spécifique selon le type d'erreur
+            if (e instanceof MessagingException) {
+                logger.error("CONTACT_EMAIL_ERROR - Problème d'envoi d'email : {}", e.getMessage());
+            } else if (e.getCause() instanceof MessagingException) {
+                logger.error("CONTACT_EMAIL_ERROR - Problème d'envoi d'email (cause) : {}", e.getCause().getMessage());
+            } else {
+                logger.error("CONTACT_OTHER_ERROR - Autre type d'erreur : {}", e.getClass().getSimpleName());
+            }
+            
             return false;
         }
     }
@@ -96,48 +113,127 @@ public class ContactService {
     }
     
     /**
-     * Envoie un email de notification pour un nouveau contact
+     * Envoie un email de notification détaillé à l'administrateur
      */
-    private void sendNotificationEmail(ContactForm contactForm) {
+    private void sendAdminNotification(ContactForm contactForm) {
         try {
-            logger.info("Envoi d'un email de notification pour le contact de : {}", contactForm.getEmail());
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Début envoi email admin pour : {}", contactForm.getEmail());
             
-            // Création du contexte Thymeleaf
+            // LOG DE DIAGNOSTIC : Configuration email
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Config: fromEmail='{}', fromName='{}', adminEmail='{}', companyName='{}'",
+                       fromEmail, fromName, adminEmail, companyName);
+            
+            // Création du contexte Thymeleaf pour l'admin
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Création contexte Thymeleaf admin...");
             Context context = new Context();
             context.setVariable("contactForm", contactForm);
             context.setVariable("companyName", companyName);
             context.setVariable("currentDateTime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")));
             
-            // Rendu du template HTML
+            // Rendu du template HTML pour l'admin
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Rendu template 'emails/contact-notification'...");
             String htmlContent = templateEngine.process("emails/contact-notification", context);
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Template rendu avec succès, taille: {} caractères", htmlContent.length());
             
-            // Création du message email
+            // Création du message email pour l'admin
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Création message MIME admin...");
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // Configuration du message
+            // Configuration du message admin
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Configuration message admin...");
             helper.setFrom(fromEmail, fromName);
             helper.setTo(adminEmail);
             helper.setSubject("🔔 Nouveau contact reçu de " + contactForm.getName());
             helper.setText(htmlContent, true);
             
-            // Copie à l'expéditeur pour confirmation
-            if (contactForm.getEmail() != null && !contactForm.getEmail().isEmpty()) {
-                helper.setBcc(contactForm.getEmail());
-            }
-            
-            // Envoi de l'email
+            // Envoi de l'email admin
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Tentative d'envoi admin via JavaMailSender...");
             javaMailSender.send(message);
             
-            logger.info("Email de notification envoyé avec succès pour le contact de : {}", contactForm.getEmail());
+            logger.info("Email de notification admin envoyé avec succès pour le contact de : {}", contactForm.getEmail());
             
         } catch (MessagingException e) {
-            logger.error("Erreur lors de l'envoi de l'email de notification pour : {}", contactForm.getEmail(), e);
-            throw new RuntimeException("Échec de l'envoi de l'email de notification", e);
+            logger.error("CONTACT_ADMIN_EMAIL_ERROR - MessagingException lors de l'envoi admin pour '{}': {}",
+                        contactForm.getEmail(), e.getMessage(), e);
+            throw new RuntimeException("Échec de l'envoi de l'email de notification admin", e);
         } catch (Exception e) {
-            logger.error("Erreur inattendue lors de l'envoi de l'email pour : {}", contactForm.getEmail(), e);
-            throw new RuntimeException("Erreur lors du traitement de l'email", e);
+            logger.error("CONTACT_ADMIN_EMAIL_ERROR - Exception inattendue lors de l'envoi admin pour '{}': Type={}, Message='{}'",
+                        contactForm.getEmail(), e.getClass().getSimpleName(), e.getMessage(), e);
+            throw new RuntimeException("Erreur lors du traitement de l'email admin", e);
         }
+    }
+    
+    /**
+     * Envoie un email de confirmation à l'utilisateur
+     */
+    private void sendUserConfirmation(ContactForm contactForm) {
+        try {
+            // Vérification que l'utilisateur a un email valide
+            if (contactForm.getEmail() == null || contactForm.getEmail().isEmpty()) {
+                logger.warn("CONTACT_USER_EMAIL_WARN - Pas d'email utilisateur pour envoyer la confirmation");
+                return;
+            }
+            
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Début envoi email confirmation pour : {}", contactForm.getEmail());
+            
+            // Création du contexte Thymeleaf pour l'utilisateur
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Création contexte Thymeleaf utilisateur...");
+            Context context = new Context();
+            
+            // Création d'un objet contact avec les informations nécessaires
+            ContactService.ContactConfirmation contact = new ContactService.ContactConfirmation();
+            contact.setFirstName(extractFirstName(contactForm.getName()));
+            contact.setSubject(contactForm.getSubject());
+            contact.setSubmittedAt(LocalDateTime.now());
+            
+            context.setVariable("contact", contact);
+            context.setVariable("companyName", companyName);
+            
+            // Rendu du template HTML pour l'utilisateur
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Rendu template 'emails/contact-confirmation'...");
+            String htmlContent = templateEngine.process("emails/contact-confirmation", context);
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Template confirmation rendu avec succès, taille: {} caractères", htmlContent.length());
+            
+            // Création du message email pour l'utilisateur
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Création message MIME utilisateur...");
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            // Configuration du message utilisateur
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Configuration message utilisateur...");
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(contactForm.getEmail());
+            helper.setSubject("✅ Confirmation de réception - " + companyName);
+            helper.setText(htmlContent, true);
+            
+            // Envoi de l'email utilisateur
+            logger.info("CONTACT_USER_EMAIL_DEBUG - Tentative d'envoi confirmation via JavaMailSender...");
+            javaMailSender.send(message);
+            
+            logger.info("Email de confirmation utilisateur envoyé avec succès à : {}", contactForm.getEmail());
+            
+        } catch (MessagingException e) {
+            logger.error("CONTACT_USER_EMAIL_ERROR - MessagingException lors de l'envoi confirmation pour '{}': {}",
+                        contactForm.getEmail(), e.getMessage(), e);
+            throw new RuntimeException("Échec de l'envoi de l'email de confirmation utilisateur", e);
+        } catch (Exception e) {
+            logger.error("CONTACT_USER_EMAIL_ERROR - Exception inattendue lors de l'envoi confirmation pour '{}': Type={}, Message='{}'",
+                        contactForm.getEmail(), e.getClass().getSimpleName(), e.getMessage(), e);
+            throw new RuntimeException("Erreur lors du traitement de l'email de confirmation", e);
+        }
+    }
+    
+    /**
+     * Extrait le prénom d'un nom complet
+     */
+    private String extractFirstName(String fullName) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            return "Client";
+        }
+        
+        String[] parts = fullName.trim().split("\\s+");
+        return parts[0];
     }
     
     /**
@@ -152,6 +248,25 @@ public class ContactService {
      */
     public int getContactCount() {
         return contacts.size();
+    }
+    
+    /**
+     * Classe interne pour les données de confirmation email
+     */
+    public static class ContactConfirmation {
+        private String firstName;
+        private String subject;
+        private LocalDateTime submittedAt;
+        
+        // Getters et setters
+        public String getFirstName() { return firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+        
+        public String getSubject() { return subject; }
+        public void setSubject(String subject) { this.subject = subject; }
+        
+        public LocalDateTime getSubmittedAt() { return submittedAt; }
+        public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
     }
     
     /**

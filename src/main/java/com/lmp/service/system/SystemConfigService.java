@@ -40,10 +40,10 @@ public class SystemConfigService {
             
             // Configuration Entreprise
             settings.setCompanyName(environment.getProperty("company.name", "LMP Digital Services"));
-            settings.setCompanyEmail(environment.getProperty("company.email", "contact@lmp-digital.ca"));
+            settings.setCompanyEmail(environment.getProperty("company.email", "lmp.assistance@gmail.com"));
             settings.setCompanyPhone(environment.getProperty("company.phone", "+1 (555) 123-4567"));
             settings.setCompanyAddress(environment.getProperty("company.address", "123 Rue Principale"));
-            settings.setCompanyWebsite(environment.getProperty("company.website", "https://lmp-digital.ca"));
+            settings.setCompanyWebsite(environment.getProperty("company.website", "https://lmp-services.ca"));
             
             // Configuration Stripe
             settings.setStripePublishableKey(environment.getProperty("stripe.publishable.key", ""));
@@ -186,10 +186,10 @@ public class SystemConfigService {
             defaults.setAppVersion("1.0.0");
             defaults.setAppBaseUrl("http://localhost:8080");
             defaults.setCompanyName("LMP Digital Services");
-            defaults.setCompanyEmail("contact@lmp-digital.ca");
+            defaults.setCompanyEmail("lmp.assistance@gmail.com");
             defaults.setCompanyPhone("+1 (555) 123-4567");
             defaults.setCompanyAddress("123 Rue Principale, Ville, Province, Code Postal");
-            defaults.setCompanyWebsite("https://lmp-digital.ca");
+            defaults.setCompanyWebsite("https://lmp-services.ca");
             defaults.setMailHost("smtp.gmail.com");
             defaults.setMailPort("587");
             defaults.setMailUsername("");

@@ -12,13 +12,14 @@ let selectedService = {
 
 /**
  * Ouvre le modal de commande avec les informations du service
- * @param {string} serviceName - Nom du service
- * @param {number} amount - Montant du service
+ * @param {string} serviceName - Nom du service (optionnel, défaut: "Consultation")
+ * @param {number} amount - Montant du service (optionnel, défaut: 0)
  * @param {string} currency - Devise (par défaut CAD)
  */
-function openBookingModal(serviceName, amount, currency = 'CAD') {
+function openBookingModal(serviceName = "Consultation", amount = 0, currency = 'CAD') {
     // DEBUG: Ajouter des logs pour diagnostiquer le problème d'authentification
     console.log('DEBUG: openBookingModal appelé pour service:', serviceName);
+    console.log('DEBUG: Paramètres reçus - service:', serviceName, 'amount:', amount, 'currency:', currency);
     console.log('DEBUG: Vérification état d\'authentification...');
     console.log('DEBUG: AUTH_INFO disponible:', window.AUTH_INFO);
     
@@ -275,7 +276,7 @@ function validateForm(formData) {
     }
     
     // Vérifier que les informations de service sont disponibles
-    if (!selectedService.name || !selectedService.amount || selectedService.amount <= 0) {
+    if (!selectedService.name || selectedService.amount === null || selectedService.amount === undefined || selectedService.amount < 0) {
         showMessage('errorMessage', 'Informations du service manquantes. Veuillez recharger la page.');
         return false;
     }

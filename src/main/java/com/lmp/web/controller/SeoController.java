@@ -27,7 +27,7 @@ public class SeoController {
     
     /**
      * Génère le sitemap.xml dynamique avec toutes les pages importantes
-     * Accessible via : https://lmp.run.place/sitemap.xml
+     * Accessible via : https://lmp-services.ca/sitemap.xml
      */
     @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
     @ResponseBody
@@ -71,7 +71,7 @@ public class SeoController {
     
     /**
      * Génère le robots.txt optimisé pour SEO
-     * Accessible via : https://lmp.run.place/robots.txt
+     * Accessible via : https://lmp-services.ca/robots.txt
      */
     @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody

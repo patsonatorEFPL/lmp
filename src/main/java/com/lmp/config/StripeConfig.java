@@ -62,7 +62,7 @@ public class StripeConfig {
             Stripe.setAppInfo(
                 "LMP-Payment-System",
                 "1.0.0",
-                "https://lmp-digital.ca",
+                "https://lmp-services.ca",
                 "pp_partner_LMP"
             );
             

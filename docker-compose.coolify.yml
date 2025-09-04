@@ -1,6 +1,11 @@
 # ========================================
 # Docker Compose pour Coolify Deployment
 # Application Spring Boot LMP - Production
+# Domaine: https://lmp-services.ca
+#
+# Architecture supportée:
+# 1. Déploiement direct: Internet → Coolify (SSL) → Spring Boot
+# 2. Avec reverse proxy: Internet → Nginx/Traefik → Coolify → Spring Boot
 # ========================================
 
 version: '3.8'
@@ -23,6 +28,10 @@ services:
       - SERVER_PORT=8080
       - PORT=${PORT:-8080}
       
+      # Configuration des headers pour reverse proxy (si nécessaire)
+      - SERVER_FORWARD_HEADERS_STRATEGY=${SERVER_FORWARD_HEADERS_STRATEGY:-framework}
+      - SERVER_USE_FORWARD_HEADERS=${SERVER_USE_FORWARD_HEADERS:-true}
+      
       # Configuration base de données (à adapter selon Coolify)
       - SPRING_DATASOURCE_URL=${DATABASE_URL}
       - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME}
@@ -33,8 +42,8 @@ services:
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       
-      # Configuration application
-      - APP_BASE_URL=${APP_BASE_URL:-https://lmp.run.place}
+      # Configuration application - Nouveau domaine
+      - APP_BASE_URL=${APP_BASE_URL:-https://lmp-services.ca}
       
       # Configuration emails
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
@@ -63,18 +72,22 @@ services:
       - app-logs:/app/logs
       - app-invoices:/app/invoices
     
-    # Réseau
+    # Réseau pour communication interne
     networks:
       - lmp-network
 
-# Volumes nommés
+# Volumes nommés pour persistance des données
 volumes:
   app-logs:
     driver: local
+    # Stockage des logs d'application
   app-invoices:
     driver: local
+    # Stockage des factures générées
 
-# Réseau
+# Réseau pour communication entre services
+# Utilisé pour isoler l'application si déployée avec reverse proxy
 networks:
   lmp-network:
     driver: bridge
+    # Réseau bridge pour communication interne
