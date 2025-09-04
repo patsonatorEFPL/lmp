@@ -12,6 +12,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -29,18 +30,38 @@ public class ContactController {
     private ContactService contactService;
 
     /**
-     * Affiche la page de contact avec un formulaire vierge
+     * Affiche la page de contact avec un formulaire vierge ou prérempli
      *
      * @param model L'objet Model pour passer des données à la vue
+     * @param email Email prérempli (optionnel)
+     * @param service Type de service (optionnel)
      * @return Le nom du template à utiliser
      */
     @GetMapping("/contact")
-    public String contact(Model model) {
+    public String contact(Model model,
+                         @RequestParam(value = "email", required = false) String email,
+                         @RequestParam(value = "service", required = false) String service) {
         
         // LOG DE DIAGNOSTIC : Vérifier que la page de contact est bien accédée
-        logger.info("CONTACT_DEBUG - Page contact accédée via GET");
-        // Ajout d'un objet ContactForm vide pour le formulaire
-        model.addAttribute("contactForm", new ContactForm());
+        logger.info("CONTACT_DEBUG - Page contact accédée via GET avec email: {} et service: {}", email, service);
+        
+        // Créer le formulaire avec ou sans préremplissage
+        ContactForm contactForm = new ContactForm();
+        
+        // Préremplir l'email si fourni
+        if (email != null && !email.trim().isEmpty()) {
+            contactForm.setEmail(email.trim());
+            logger.info("CONTACT_DEBUG - Email prérempli: {}", email);
+        }
+        
+        // Préremplir le sujet selon le service si fourni
+        if (service != null && !service.trim().isEmpty()) {
+            String subjectPrefix = "Demande de consultation - " + service.trim();
+            contactForm.setSubject(subjectPrefix);
+            logger.info("CONTACT_DEBUG - Sujet prérempli: {}", subjectPrefix);
+        }
+        
+        model.addAttribute("contactForm", contactForm);
         
         model.addAttribute("title", "Contactez-nous");
         model.addAttribute("subtitle", "Nous sommes là pour vous aider");
