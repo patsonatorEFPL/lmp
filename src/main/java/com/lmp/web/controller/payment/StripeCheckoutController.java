@@ -220,13 +220,34 @@ public class StripeCheckoutController {
                                @RequestParam(value = "session_id", required = false) String sessionId,
                                @RequestParam(defaultValue = "cancel") String type,
                                Model model,
-                               RedirectAttributes redirectAttributes) {
+                               RedirectAttributes redirectAttributes,
+                               HttpServletRequest request) {
+        
+        // 🔍 LOGS DE DIAGNOSTIC - Validation des paramètres reçus
+        logger.warn("🔍 DIAGNOSTIC ALERTE CHROME - Cancel callback appelé");
+        logger.warn("🔍 Parameters reçus - orderId: {}, sessionId: {}, type: {}", orderId, sessionId, type);
+        logger.warn("🔍 Request URL complète: {}", request.getRequestURL() + "?" + request.getQueryString());
+        logger.warn("🔍 Headers User-Agent: {}", request.getHeader("User-Agent"));
+        logger.warn("🔍 Headers Referer: {}", request.getHeader("Referer"));
         
         logger.info("Processing Stripe Checkout cancel callback - Order: {}, Session: {}", orderId, sessionId);
         auditLogger.info("Payment cancel callback - Order: {}, Session: {}, Type: {}",
                          orderId, sessionId, type);
         
         try {
+            // Validation des paramètres critiques
+            if (orderId == null) {
+                logger.warn("🔍 DIAGNOSTIC - orderId est null, redirection vers /services");
+                redirectAttributes.addFlashAttribute("info", "Paiement annulé. Vous pouvez réessayer à tout moment.");
+                return "redirect:/services";
+            }
+            
+            if (sessionId == null || sessionId.trim().isEmpty()) {
+                logger.warn("🔍 DIAGNOSTIC - sessionId est null/vide, redirection vers /services");
+                redirectAttributes.addFlashAttribute("info", "Paiement annulé. Vous pouvez réessayer à tout moment.");
+                return "redirect:/services";
+            }
+            
             // Récupérer la commande
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée: " + orderId));
@@ -234,14 +255,37 @@ public class StripeCheckoutController {
             // Récupérer la page source depuis les métadonnées de la session Stripe
             String sourcePage = getSourcePageFromStripeSession(sessionId);
             
+            // 🔍 LOGS DE DIAGNOSTIC - Analyse de la sourcePage
+            logger.warn("🔍 DIAGNOSTIC - sourcePage récupérée: '{}'", sourcePage);
+            if (sourcePage != null) {
+                logger.warn("🔍 DIAGNOSTIC - sourcePage validation:");
+                logger.warn("🔍   - Commence par http: {}", sourcePage.startsWith("http"));
+                logger.warn("🔍   - Commence par /: {}", sourcePage.startsWith("/"));
+                logger.warn("🔍   - Contient domaine externe: {}", sourcePage.contains("://") && !sourcePage.contains("lmp-services.ca"));
+                logger.warn("🔍   - Longueur: {}", sourcePage.length());
+            }
+            
             auditLogger.info("Payment cancel callback - Order: {}, Amount: {} CAD, Source: {}",
                            orderId, order.getTotalAmount(), sourcePage);
             
             redirectAttributes.addFlashAttribute("info",
                 "Paiement annulé. Vous pouvez réessayer à tout moment.");
             
-            // Rediriger vers la page source ou vers services par défaut
-            return "redirect:" + (sourcePage != null ? sourcePage : "/services");
+            // 🔒 SÉCURISATION - Validation stricte de la redirection
+            String redirectUrl;
+            if (sourcePage != null && isValidInternalUrl(sourcePage)) {
+                redirectUrl = sourcePage;
+                logger.warn("🔍 DIAGNOSTIC - Redirection vers sourcePage validée: {}", redirectUrl);
+            } else {
+                redirectUrl = "/services";
+                logger.warn("🔍 DIAGNOSTIC - Redirection sécurisée vers /services");
+                if (sourcePage != null) {
+                    logger.warn("🔍 DIAGNOSTIC - sourcePage rejetée car non valide: {}", sourcePage);
+                }
+            }
+            
+            // Rediriger vers la page validée
+            return "redirect:" + redirectUrl;
             
         } catch (ResourceNotFoundException e) {
             logger.warn("Order not found in cancel callback: {}", orderId);
@@ -259,6 +303,49 @@ public class StripeCheckoutController {
                 "Paiement annulé. Vous pouvez réessayer à tout moment.");
             return "redirect:/services";
         }
+    }
+    
+    /**
+     * 🔒 Valide qu'une URL est interne et sécurisée
+     */
+    private boolean isValidInternalUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+        
+        // 🔍 LOGS DE DIAGNOSTIC - Validation URL
+        logger.warn("🔍 DIAGNOSTIC - Validation URL: '{}'", url);
+        
+        // Nettoyer l'URL
+        String cleanUrl = url.trim();
+        
+        // Rejeter les URLs absolues externes
+        if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+            if (!cleanUrl.contains("lmp-services.ca") && !cleanUrl.contains("localhost")) {
+                logger.warn("🔍 DIAGNOSTIC - URL externe rejetée: {}", cleanUrl);
+                return false;
+            }
+        }
+        
+        // Autoriser seulement les URLs relatives valides
+        if (cleanUrl.startsWith("/")) {
+            // Listes des chemins autorisés
+            String[] allowedPaths = {"/services", "/", "/contact", "/about", "/legal", "/terms", "/privacy"};
+            
+            for (String allowedPath : allowedPaths) {
+                if (cleanUrl.equals(allowedPath) || cleanUrl.startsWith(allowedPath + "/") || cleanUrl.startsWith(allowedPath + "?")) {
+                    logger.warn("🔍 DIAGNOSTIC - URL autorisée: {}", cleanUrl);
+                    return true;
+                }
+            }
+            
+            logger.warn("🔍 DIAGNOSTIC - URL relative non autorisée: {}", cleanUrl);
+            return false;
+        }
+        
+        // Rejeter tout le reste
+        logger.warn("🔍 DIAGNOSTIC - URL format invalide: {}", cleanUrl);
+        return false;
     }
     
     /**
