@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Test Modal Rendez-vous</title>
+    
+    <!-- CSRF Tokens pour Spring Security -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- Tailwind CSS depuis CDN (remplacer par version de production plus tard) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <style>
+        /* Animation de rotation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Indicateur BD */
+        .db-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+        }
+        
+        .db-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .db-status.connected {
+            background-color: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .db-status.error {
+            background-color: #ef4444;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Indicateur de statut BD -->
+    <div id="dbIndicator" class="db-indicator">
+        <span class="db-status" id="dbStatus"></span>
+        <span id="dbText">Connexion BD...</span>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="min-h-screen flex items-center justify-center p-8">
+        <div class="max-w-2xl w-full">
+            <!-- Carte principale -->
+            <div class="bg-white rounded-xl shadow-xl p-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-4">
+                    🧪 Test Modal Rendez-vous
+                </h1>
+                
+                <p class="text-gray-600 mb-8">
+                    Page de test pour le système de prise de rendez-vous avec calendrier interactif.
+                    Les créneaux horaires sont fixes : 9h, 10h, 11h, 13h, 14h, 15h, 16h.
+                </p>
+
+                <!-- Boutons de test -->
+                <div class="space-y-4">
+                    <button 
+                        onclick="AppointmentModal.open()" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                        📅 Ouvrir le Modal Simple
+                    </button>
+                    
+                    <button 
+                        onclick="AppointmentModal.open({service: 'Consultation'})" 
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                        🩺 Prendre RDV Consultation
+                    </button>
+                    
+                    <button 
+                        onclick="AppointmentModal.open({service: 'Référencement SEO', name: 'Jean Dupont', email: 'jean@example.com', phone: '+1 555 1234'})" 
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
+                        🚀 Test avec Pré-remplissage
+                    </button>
+                </div>
+
+                <!-- Statistiques BD -->
+                <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">📊 Statistiques BD</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500">Rendez-vous actifs:</span>
+                            <span id="statsTotal" class="font-bold ml-2">-</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Créneaux libres demain:</span>
+                            <span id="statsTomorrow" class="font-bold ml-2">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs console -->
+                <div class="mt-4 text-xs text-gray-500 text-center">
+                    📋 Ouvrez la console pour voir les logs détaillés
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Rendez-vous -->
+    <div id="appointmentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <!-- Centre le modal -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <!-- Contenu du modal -->
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-white" id="modal-title">
+                            📅 Prendre un Rendez-vous
+                        </h3>
+                        <button type="button" class="text-white hover:text-gray-200 transition-colors" onclick="AppointmentModal.close()">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Body avec deux colonnes -->
+                <div class="bg-white px-6 py-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Colonne gauche : Formulaire -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Vos informations</h4>
+                            
+                            <!-- Zone de message -->
+                            <div id="appointmentMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+                            
+                            <form id="appointmentForm" class="space-y-4">
+                                <!-- Nom -->
+                                <div>
+                                    <label for="appointmentName" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Nom complet <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="appointmentName" name="name" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <div id="appointmentNameError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Email -->
+                                <div>
+                                    <label for="appointmentEmail" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Email <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="email" id="appointmentEmail" name="email" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <div id="appointmentEmailError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Téléphone -->
+                                <div>
+                                    <label for="appointmentPhone" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Téléphone <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="tel" id="appointmentPhone" name="phone" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <div id="appointmentPhoneError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Service -->
+                                <div>
+                                    <label for="appointmentService" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Service <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="appointmentService" name="service" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="">Sélectionnez un service...</option>
+                                        <option value="Consultation">Consultation générale</option>
+                                        <option value="Développement Web">Développement Web</option>
+                                        <option value="Référencement SEO">Référencement SEO</option>
+                                        <option value="Formation">Formation</option>
+                                        <option value="Audit">Audit technique</option>
+                                        <option value="Marketing Digital">Marketing Digital</option>
+                                        <option value="Sécurité Web">Sécurité Web</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                    <div id="appointmentServiceError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Message -->
+                                <div>
+                                    <label for="appointmentMessageField" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Message (optionnel)
+                                    </label>
+                                    <textarea id="appointmentMessageField" name="message" rows="3"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Décrivez brièvement votre besoin..."></textarea>
+                                    <div id="appointmentMessageFieldError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Champs cachés pour date et heure -->
+                                <input type="hidden" id="appointmentDate" name="date">
+                                <input type="hidden" id="appointmentTime" name="time">
+                            </form>
+                        </div>
+
+                        <!-- Colonne droite : Calendrier et créneaux -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Choisissez votre créneau</h4>
+                            
+                            <!-- Calendrier -->
+                            <div id="calendar" class="mb-4">
+                                <!-- En-tête du calendrier -->
+                                <div class="flex items-center justify-between mb-4">
+                                    <button type="button" id="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <h4 id="currentMonth" class="text-lg font-semibold text-gray-900"></h4>
+                                    <button type="button" id="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Grille du calendrier -->
+                                <div class="grid grid-cols-7 gap-1 mb-2">
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Dim</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Lun</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mar</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mer</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Jeu</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Ven</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Sam</div>
+                                </div>
+                                <div id="calendarDays" class="grid grid-cols-7 gap-1">
+                                    <!-- Les jours seront générés dynamiquement ici -->
+                                </div>
+                            </div>
+
+                            <!-- Créneaux horaires -->
+                            <div id="timeSlotsContainer" class="mt-4">
+                                <!-- Les créneaux seront générés dynamiquement ici -->
+                                <div class="text-gray-500 text-center py-4">Sélectionnez une date pour voir les créneaux disponibles</div>
+                            </div>
+
+                            <!-- Résumé de la sélection -->
+                            <div id="appointmentSummary" class="mt-4 p-3 bg-blue-50 rounded-lg hidden">
+                                <h5 class="text-sm font-semibold text-blue-800 mb-1">📌 Votre sélection</h5>
+                                <div id="summaryContent" class="text-sm text-blue-700">
+                                    <!-- Le contenu sera généré dynamiquement -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="AppointmentModal.close()"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition-colors">
+                        Annuler
+                    </button>
+                    <button type="button" id="appointmentSubmitBtn" onclick="AppointmentModal.submitAppointment()"
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <span id="appointmentSubmitText">Confirmer le rendez-vous</span>
+                        <span id="appointmentSubmitLoader" class="hidden">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Envoi en cours...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script du modal v3 avec validation améliorée -->
+    <script th:src="@{/js/appointment-modal-v3.js}"></script>
+    
+    <!-- Script de debug pour les créneaux -->
+    <script th:src="@{/js/test-slots.js}"></script>
+    
+    <!-- Script de test et monitoring BD -->
+    <script>
+        // Configuration des endpoints
+        const API_BASE = '/appointments-test';
+        
+        // État de la page
+        let dbConnected = false;
+        let refreshInterval = null;
+        
+        // Fonction pour charger les statistiques BD
+        async function loadDbStats() {
+            console.log('🔄 Chargement des statistiques BD...');
+            
+            try {
+                // Récupérer la liste des rendez-vous
+                const response = await fetch(`${API_BASE}/list-appointments`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    dbConnected = true;
+                    updateDbIndicator(true, `${data.total} RDV`);
+                    document.getElementById('statsTotal').textContent = data.total;
+                    
+                    console.log(`✅ BD connectée - ${data.total} rendez-vous trouvés`);
+                    console.log('📅 Rendez-vous:', data.appointments);
+                } else {
+                    throw new Error('Erreur BD');
+                }
+                
+                // Récupérer les créneaux de demain
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                
+                const slotsResponse = await fetch(`${API_BASE}/available-slots?date=${tomorrowStr}`);
+                const slots = await slotsResponse.json();
+                
+                document.getElementById('statsTomorrow').textContent = slots.length;
+                console.log(`📅 ${slots.length} créneaux disponibles demain:`, slots);
+                
+            } catch (error) {
+                dbConnected = false;
+                updateDbIndicator(false, 'BD non accessible');
+                document.getElementById('statsTotal').textContent = 'Erreur';
+                document.getElementById('statsTomorrow').textContent = 'Erreur';
+                
+                console.error('❌ Erreur BD:', error);
+            }
+        }
+        
+        // Fonction pour mettre à jour l'indicateur BD
+        function updateDbIndicator(connected, text) {
+            const status = document.getElementById('dbStatus');
+            const textEl = document.getElementById('dbText');
+            
+            if (connected) {
+                status.classList.remove('error');
+                status.classList.add('connected');
+            } else {
+                status.classList.remove('connected');
+                status.classList.add('error');
+            }
+            
+            textEl.textContent = text;
+        }
+        
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Page de test chargée - Modal disponible:', typeof AppointmentModal !== 'undefined');
+            
+            // Charger les stats immédiatement
+            loadDbStats();
+            
+            // Rafraîchir toutes les 10 secondes
+            refreshInterval = setInterval(loadDbStats, 10000);
+            
+            // Écouter les événements du modal
+            document.addEventListener('modalOpened', function() {
+                console.log('📂 Modal ouvert');
+            });
+            
+            document.addEventListener('modalClosed', function() {
+                console.log('📁 Modal fermé');
+            });
+            
+            document.addEventListener('appointmentCreated', function(e) {
+                console.log('✅ Rendez-vous créé:', e.detail);
+                // Recharger les stats après création
+                setTimeout(loadDbStats, 1000);
+            });
+        });
+        
+        // Nettoyage à la fermeture de la page
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

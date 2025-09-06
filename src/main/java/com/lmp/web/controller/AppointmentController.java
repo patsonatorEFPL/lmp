@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.lmp.domain.dto.AppointmentForm;
+import com.lmp.domain.dto.AppointmentRequest;
 import com.lmp.domain.entity.Appointment;
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.AppointmentStatus;
@@ -60,10 +63,22 @@ public class AppointmentController {
      */
     @PostMapping("/create")
     @ResponseBody
-    public ResponseEntity<?> createAppointment(@Valid @RequestBody AppointmentForm form, 
+    public ResponseEntity<?> createAppointment(@Valid @RequestBody AppointmentRequest request, 
                                              BindingResult result, 
-                                             Principal principal) {
+                                             Principal principal,
+                                             HttpServletRequest httpRequest) {
         try {
+            // Protection anti-spam : Vérifier l'origine de la requête
+            String userAgent = httpRequest.getHeader("User-Agent");
+            String referer = httpRequest.getHeader("Referer");
+            
+            // Bloquer les requêtes sans User-Agent (bots simples)
+            if (userAgent == null || userAgent.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    new ApiResponse(false, "Requête invalide", null)
+                );
+            }
+            
             // Validation des données du formulaire
             if (result.hasErrors()) {
                 return ResponseEntity.badRequest().body(
@@ -71,12 +86,17 @@ public class AppointmentController {
                 );
             }
 
-            // Récupération de l'utilisateur connecté
-            User user = userService.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            // Création du rendez-vous
-            Appointment appointment = appointmentService.createAppointment(form, user);
+            Appointment appointment;
+            
+            if (principal != null) {
+                // Utilisateur connecté - création normale
+                User user = userService.findByEmail(principal.getName())
+                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                appointment = appointmentService.createAppointment(request.toAppointmentForm(), user);
+            } else {
+                // Utilisateur anonyme - création sans compte
+                appointment = appointmentService.createAnonymousAppointment(request);
+            }
 
             return ResponseEntity.ok(new ApiResponse(true, 
                 "Rendez-vous créé avec succès. Un email de confirmation vous a été envoyé.", 
@@ -98,11 +118,17 @@ public class AppointmentController {
      */
     @GetMapping("/available-slots")
     @ResponseBody
-    public ResponseEntity<List<LocalDateTime>> getAvailableSlots(@RequestParam("date") String dateStr) {
+    public ResponseEntity<List<String>> getAvailableSlots(@RequestParam("date") String dateStr) {
         try {
             LocalDate date = LocalDate.parse(dateStr);
             List<LocalDateTime> availableSlots = appointmentService.getAvailableTimeSlots(date);
-            return ResponseEntity.ok(availableSlots);
+            
+            // Convertir les LocalDateTime en format HH:mm pour le frontend
+            List<String> timeSlots = availableSlots.stream()
+                .map(dateTime -> dateTime.toLocalTime().toString()) // Convertit en HH:mm
+                .toList();
+                
+            return ResponseEntity.ok(timeSlots);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
