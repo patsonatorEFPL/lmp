@@ -266,24 +266,24 @@ class AdminAppointmentControllerTest {
     }
 
     @Test
-    void testDeleteAppointment_Success() {
+    void testDeleteAppointmentPermanent_Success() {
         // Arrange
-        when(appointmentService.cancelAppointment(eq(1L), anyString()))
-            .thenReturn(testAppointment);
+        doNothing().when(appointmentService).deleteAppointment(eq(1L), anyString());
 
         // Act
-        String result = controller.deleteAppointment(1L, redirectAttributes, createMockAuthentication());
+        String result = controller.deleteAppointmentPermanent(1L, redirectAttributes, createMockAuthentication());
 
         // Assert
         assertEquals("redirect:/admin/appointments", result);
         verify(redirectAttributes).addFlashAttribute(eq("successMessage"), anyString());
+        verify(appointmentService).deleteAppointment(eq(1L), anyString());
     }
 
     @Test
     void testConfirmAppointment_Success() {
         // Arrange
         testAppointment.setStatus(AppointmentStatus.CONFIRMED);
-        when(appointmentService.confirmAppointment(1L)).thenReturn(testAppointment);
+        when(appointmentService.confirmAppointment(eq(1L), eq("admin@test.com"))).thenReturn(testAppointment);
 
         // Act
         Map<String, Object> result = controller.confirmAppointment(1L, createMockAuthentication());
@@ -291,13 +291,13 @@ class AdminAppointmentControllerTest {
         // Assert
         assertTrue((Boolean) result.get("success"));
         assertEquals("Confirmé", result.get("newStatus"));
-        verify(appointmentService).confirmAppointment(1L);
+        verify(appointmentService).confirmAppointment(eq(1L), eq("admin@test.com"));
     }
 
     @Test
     void testConfirmAppointment_Error() {
         // Arrange
-        when(appointmentService.confirmAppointment(1L))
+        when(appointmentService.confirmAppointment(eq(1L), eq("admin@test.com")))
             .thenThrow(new IllegalStateException("Cannot confirm"));
 
         // Act
@@ -312,7 +312,7 @@ class AdminAppointmentControllerTest {
     void testCancelAppointment_Success() {
         // Arrange
         testAppointment.setStatus(AppointmentStatus.CANCELLED);
-        when(appointmentService.cancelAppointment(eq(1L), eq("Test reason")))
+        when(appointmentService.cancelAppointment(eq(1L), eq("Test reason"), eq("admin@test.com")))
             .thenReturn(testAppointment);
 
         // Act

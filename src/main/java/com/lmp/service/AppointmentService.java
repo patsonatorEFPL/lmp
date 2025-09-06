@@ -176,7 +176,7 @@ public class AppointmentService {
      * Annule un rendez-vous
      */
     public Appointment cancelAppointment(Long appointmentId, String reason) {
-        return cancelAppointment(appointmentId, reason, null);
+        return cancelAppointment(appointmentId, reason, (String) null);
     }
     
     /**
