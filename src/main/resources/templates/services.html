@@ -13,6 +13,9 @@
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
     
+    <!-- CSS pour Modal Responsive -->
+    <link rel="stylesheet" th:href="@{/css/appointment-modal-responsive.css}">
+    
     <!-- Authentication Info for JavaScript -->
     <script th:inline="javascript">
         // Information d'authentification pour le JavaScript
@@ -399,42 +402,42 @@
                     </div>
                 </div>
                 
-                <!-- Section Développement Web -->
-                <div class="mb-12">
-                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 text-center">
-                        Développement Web et SEO Avancé
-                    </h2>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            </div>
+        </section>
 
         <!-- CTA Section -->
         <section class="py-16 bg-gradient-to-br from-primary to-[#4c63ff] text-white">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-3xl lg:text-4xl font-bold mb-6">
-                    Prêt à transformer votre présence digitale ?
+                    Démarrer Votre Projet SEO Québec
                 </h2>
                 <p class="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
-                    Nos experts sont là pour vous accompagner dans votre croissance en ligne.
-                    Contactez-nous pour une consultation gratuite.
+                    Rejoignez des centaines d'entreprises qui ont déjà transformé leur présence en ligne avec LMP.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="openBookingModal('Consultation Gratuite', 0.00)" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200">
-                        Prendre un rendez-vous
-                    </button>
-                    <a href="/contact" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all duration-200">
-                        Nous contacter
+                    <a href="mailto:lmp.assistance@gmail.com" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200 text-center">
+                        📧 Nous contacter par email
                     </a>
                 </div>
             </div>
         </section>
     </main>
 
+
     <!-- Include Booking Modal from fragment -->
     <div th:replace="fragments/booking-modal :: booking-modal"></div>
+    
+    <!-- Modal de prise de rendez-vous -->
+    <div th:replace="fragments/appointment-modal-global :: appointment-modal-global"></div>
 
     <!-- Include Register Checkout Script -->
     <script src="/js/register-checkout.js"></script>
+    
+    <!-- jQuery nécessaire pour le modal de rendez-vous -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Script du modal de rendez-vous -->
+    <script th:src="@{/js/appointment-modal-v3.js}"></script>
     
     <!-- Services Page Specific JavaScript -->
     <script>
@@ -475,7 +478,15 @@
         }
 
         // Exécuter au chargement de la page
-        document.addEventListener('DOMContentLoaded', scrollToServiceAndHighlight);
+        document.addEventListener('DOMContentLoaded', function() {
+            scrollToServiceAndHighlight();
+            
+            // Initialiser le modal de rendez-vous si disponible
+            if (typeof AppointmentModal !== 'undefined') {
+                AppointmentModal.init();
+                console.log('Modal de rendez-vous initialisé sur la page services');
+            }
+        });
         
         // Exécuter quand l'URL change (navigation via les liens)
         window.addEventListener('hashchange', scrollToServiceAndHighlight);
@@ -509,6 +520,9 @@
         }
     </style>
 
+    <!-- Bouton flottant CONTACTEZ-NOUS -->
+    <div th:replace="fragments/floating-contact-button :: floating-contact-button"></div>
+    
     <!-- Footer -->
     <div th:replace="fragments/footer :: footer"></div>
 </body>

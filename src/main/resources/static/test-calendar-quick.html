@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Rapide Calendrier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Test Rapide du Calendrier</h1>
+        
+        <!-- Bouton pour ouvrir le modal -->
+        <div class="text-center">
+            <button onclick="testCalendar()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                Ouvrir le Calendrier
+            </button>
+        </div>
+        
+        <!-- Container pour le calendrier -->
+        <div class="max-w-2xl mx-auto mt-8 bg-white p-6 rounded-lg shadow-lg">
+            <div id="calendar">
+                <!-- En-tête du calendrier -->
+                <div class="flex items-center justify-between mb-4">
+                    <button type="button" id="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h4 id="currentMonth" class="text-lg font-semibold text-gray-900"></h4>
+                    <button type="button" id="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Grille du calendrier -->
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Dim</div>
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Lun</div>
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mar</div>
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mer</div>
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Jeu</div>
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Ven</div>
+                    <div class="p-2 text-center text-xs font-medium text-gray-500">Sam</div>
+                </div>
+                <div id="calendarDays" class="grid grid-cols-7 gap-1">
+                    <!-- Les jours seront générés ici -->
+                </div>
+            </div>
+            
+            <!-- Zone de debug -->
+            <div class="mt-6 p-4 bg-gray-100 rounded">
+                <h3 class="font-semibold mb-2">Debug Info:</h3>
+                <div id="debugInfo" class="text-sm text-gray-700"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Test simple du calendrier
+        function testCalendar() {
+            console.log('🚀 Test du calendrier');
+            
+            const today = new Date();
+            let currentMonth = today.getMonth();
+            let currentYear = today.getFullYear();
+            
+            const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                              'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+            
+            function renderCalendar() {
+                const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+                const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
+                
+                $('#currentMonth').text(monthNames[currentMonth] + ' ' + currentYear);
+                $('#debugInfo').html(`
+                    <p>Mois actuel: ${monthNames[currentMonth]} ${currentYear}</p>
+                    <p>Premier jour: ${firstDay} (0=Dim, 6=Sam)</p>
+                    <p>Nombre de jours: ${lastDate}</p>
+                `);
+                
+                let html = '';
+                
+                // Jours vides avant le premier jour
+                for (let i = 0; i < firstDay; i++) {
+                    html += '<div></div>';
+                }
+                
+                // Jours du mois
+                for (let day = 1; day <= lastDate; day++) {
+                    const date = new Date(currentYear, currentMonth, day);
+                    const isToday = date.toDateString() === today.toDateString();
+                    const isPast = date < today && !isToday;
+                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                    
+                    let classes = 'p-2 text-center cursor-pointer rounded-lg transition-colors ';
+                    
+                    if (isPast || isWeekend) {
+                        classes += 'bg-gray-100 text-gray-400 cursor-not-allowed';
+                    } else if (isToday) {
+                        classes += 'bg-blue-500 text-white font-bold hover:bg-blue-600';
+                    } else {
+                        classes += 'hover:bg-blue-100';
+                    }
+                    
+                    html += `<div class="${classes}" onclick="selectDate(${day})">${day}</div>`;
+                }
+                
+                $('#calendarDays').html(html);
+                console.log('✅ Calendrier rendu avec succès');
+            }
+            
+            // Navigation
+            $('#prevMonth').off('click').on('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+            
+            $('#nextMonth').off('click').on('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+            
+            // Rendu initial
+            renderCalendar();
+        }
+        
+        function selectDate(day) {
+            console.log('📅 Date sélectionnée:', day);
+            alert('Date sélectionnée: ' + day);
+        }
+        
+        // Auto-test au chargement
+        $(document).ready(() => {
+            console.log('✅ jQuery chargé');
+            testCalendar();
+        });
+    </script>
+</body>
+</html>

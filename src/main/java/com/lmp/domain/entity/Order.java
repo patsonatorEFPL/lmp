@@ -29,7 +29,7 @@ public class Order {
     private Long id;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true) // Permet l'anonymisation lors du hard delete
     private User user;
     
     @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)

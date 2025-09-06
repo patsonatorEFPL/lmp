@@ -135,6 +135,31 @@ public class EmailTestController {
         return "redirect:/admin/email-test";
     }
     
+    @PostMapping("/test-welcome")
+    public String sendTestWelcomeEmail(@RequestParam String testEmail, RedirectAttributes redirectAttributes) {
+        logger.info("=== TEST ENVOI EMAIL DE BIENVENUE ===");
+        logger.info("Tentative d'envoi email de bienvenue à: {}", testEmail);
+        
+        try {
+            if (notificationService != null) {
+                notificationService.sendTestWelcomeEmail(testEmail);
+                redirectAttributes.addFlashAttribute("successMessage", 
+                    "Email de bienvenue de test envoyé avec succès à " + testEmail);
+                logger.info("Email de bienvenue de test envoyé avec succès à {}", testEmail);
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "NotificationService non disponible");
+                logger.error("NotificationService non disponible pour test email de bienvenue");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "Erreur lors de l'envoi de l'email de bienvenue: " + e.getMessage());
+            logger.error("Erreur envoi email de bienvenue de test à {}: {}", testEmail, e.getMessage(), e);
+        }
+        
+        return "redirect:/admin/email-test";
+    }
+    
     private String maskPassword(String password) {
         if (password == null || password.equals("NON_CONFIGURÉ")) {
             return password;

@@ -54,9 +54,17 @@ public interface UserService {
     User save(User user);
 
     /**
-     * Supprime un utilisateur (soft delete).
+     * Supprime définitivement un utilisateur de la base de données (hard delete).
+     * Cette opération est irréversible et gère les dépendances de manière sécurisée :
+     * - Invalide les sessions actives
+     * - Supprime les rôles utilisateur
+     * - Anonymise les commandes, avis et rendez-vous
+     * - Préserve l'historique pour l'audit
+     * 
+     * ATTENTION : Cette action est irréversible !
      *
-     * @param id L'ID de l'utilisateur à supprimer
+     * @param id L'ID de l'utilisateur à supprimer définitivement
+     * @throws RuntimeException si l'utilisateur n'existe pas ou en cas d'erreur
      */
     void deleteUser(Long id);
 
@@ -201,4 +209,19 @@ public interface UserService {
      * @return Le nombre total d'utilisateurs
      */
     long count();
+    
+    /**
+     * Supprime définitivement un utilisateur de la base de données (hard delete).
+     * Cette opération est irréversible et gère les dépendances de manière sécurisée :
+     * - Supprime les rôles utilisateur
+     * - Anonymise les commandes (user_id = NULL)
+     * - Anonymise les reviews
+     * - Préserve l'historique des statuts de commandes pour l'audit
+     * 
+     * ATTENTION : Cette action est irréversible !
+     *
+     * @param id L'ID de l'utilisateur à supprimer définitivement
+     * @throws RuntimeException si l'utilisateur n'existe pas ou en cas d'erreur
+     */
+    void hardDeleteUser(Long id);
 }

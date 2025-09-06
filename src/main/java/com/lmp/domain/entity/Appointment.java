@@ -33,11 +33,29 @@ public class Appointment {
     private Long id;
     
     /**
-     * Utilisateur qui a pris le rendez-vous
+     * Utilisateur qui a pris le rendez-vous (optionnel pour les rendez-vous anonymes)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
+    
+    /**
+     * Nom du client (pour les rendez-vous anonymes)
+     */
+    @Column(name = "client_name", length = 100)
+    private String clientName;
+    
+    /**
+     * Email du client (pour les rendez-vous anonymes)
+     */
+    @Column(name = "client_email", length = 100)
+    private String clientEmail;
+    
+    /**
+     * Téléphone du client (pour les rendez-vous anonymes)
+     */
+    @Column(name = "client_phone", length = 20)
+    private String clientPhone;
     
     /**
      * Date et heure du rendez-vous
@@ -190,6 +208,30 @@ public class Appointment {
     
     public void setUser(User user) {
         this.user = user;
+    }
+    
+    public String getClientName() {
+        return clientName;
+    }
+    
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+    
+    public String getClientEmail() {
+        return clientEmail;
+    }
+    
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+    
+    public String getClientPhone() {
+        return clientPhone;
+    }
+    
+    public void setClientPhone(String clientPhone) {
+        this.clientPhone = clientPhone;
     }
     
     public LocalDateTime getAppointmentDate() {
@@ -362,6 +404,43 @@ public class Appointment {
     }
     
     // Méthodes utilitaires
+    
+    /**
+     * Retourne le nom du client (utilisateur connecté ou anonyme)
+     */
+    public String getEffectiveClientName() {
+        if (user != null) {
+            return user.getFirstName() + " " + user.getLastName();
+        }
+        return clientName;
+    }
+    
+    /**
+     * Retourne l'email du client (utilisateur connecté ou anonyme)
+     */
+    public String getEffectiveClientEmail() {
+        if (user != null) {
+            return user.getEmail();
+        }
+        return clientEmail;
+    }
+    
+    /**
+     * Retourne le téléphone du client (utilisateur connecté ou anonyme)
+     */
+    public String getEffectiveClientPhone() {
+        if (user != null) {
+            return user.getPhone();
+        }
+        return clientPhone;
+    }
+    
+    /**
+     * Retourne true si c'est un rendez-vous anonyme
+     */
+    public boolean isAnonymous() {
+        return user == null;
+    }
     
     /**
      * Retourne true si le rendez-vous peut être modifié

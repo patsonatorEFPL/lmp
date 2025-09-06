@@ -90,6 +90,12 @@ public class SecurityConfig {
                     "/api/orders/clear-purchase-intent"
                 ).permitAll()
                 
+                // Endpoints de rendez-vous publics (consultation créneaux et création)
+                .requestMatchers(
+                    "/appointments/available-slots",
+                    "/appointments/create"
+                ).permitAll()
+                
                 // Endpoints d'API sécurisés - authentification requise
                 .requestMatchers(
                     "/api/orders/**"
@@ -147,9 +153,17 @@ public class SecurityConfig {
                 .sessionRegistry(sessionRegistry()) // Ajout du SessionRegistry
             )
             
-            // Désactiver CSRF pour les webhooks et endpoints de paiement
+            // Désactiver CSRF pour les webhooks et endpoints de paiement + appointments temporairement
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/webhook/**", "/api/**", "/stripe/**", "/register-and-checkout", "/auth/register-and-checkout")
+                .ignoringRequestMatchers(
+                    "/webhook/**", 
+                    "/api/**", 
+                    "/stripe/**", 
+                    "/register-and-checkout", 
+                    "/auth/register-and-checkout",
+                    "/appointments/create",  // Temporaire pour debug
+                    "/appointments/available-slots"
+                )
             )
             
             // Configuration CORS globale

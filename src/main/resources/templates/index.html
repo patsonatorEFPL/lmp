@@ -437,6 +437,12 @@
     <!-- Modal unifié pour l'achat de services -->
     <div th:replace="fragments/booking-modal :: booking-modal"></div>
     
+    <!-- Modal de prise de rendez-vous -->
+    <div th:replace="fragments/appointment-modal-global :: appointment-modal-global"></div>
+    
+    <!-- Bouton flottant CONTACTEZ-NOUS -->
+    <div th:replace="fragments/floating-contact-button :: floating-contact-button"></div>
+    
     <!-- Footer -->
     <div th:replace="fragments/footer :: footer"></div>
 
@@ -480,14 +486,19 @@
         function openAppointmentModal(serviceType = 'Consultation Gratuite', prefilledEmail = '') {
             console.log('DEBUG: Ouverture modal de rendez-vous pour:', serviceType, 'avec email:', prefilledEmail);
             
-            // Pour l'instant, rediriger vers la page de contact avec l'email en paramètre
-            // TODO: Remplacer par le vrai modal de rendez-vous une fois créé
-            const contactUrl = prefilledEmail ?
-                `/contact?email=${encodeURIComponent(prefilledEmail)}&service=${encodeURIComponent(serviceType)}` :
-                '/contact';
-            
-            console.log('DEBUG: Redirection vers:', contactUrl);
-            window.location.href = contactUrl;
+            // Utiliser le vrai modal de rendez-vous
+            if (typeof AppointmentModal !== 'undefined' && AppointmentModal.open) {
+                AppointmentModal.open({
+                    service: serviceType,
+                    email: prefilledEmail
+                });
+            } else {
+                console.warn('Modal de rendez-vous non disponible, redirection vers /contact');
+                const contactUrl = prefilledEmail ?
+                    `/contact?email=${encodeURIComponent(prefilledEmail)}&service=${encodeURIComponent(serviceType)}` :
+                    '/contact';
+                window.location.href = contactUrl;
+            }
         }
 
         // Close modals when clicking outside (adapté pour le nouveau modal)
@@ -502,5 +513,21 @@
     
     <!-- Script unifié pour la logique d'achat -->
     <script th:src="@{/js/register-checkout.js}"></script>
+    
+    <!-- jQuery nécessaire pour le modal de rendez-vous -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Script du modal de rendez-vous -->
+    <script th:src="@{/js/appointment-modal-v3.js}"></script>
+    
+    <!-- Initialisation du modal -->
+    <script>
+        $(document).ready(function() {
+            if (typeof AppointmentModal !== 'undefined') {
+                AppointmentModal.init();
+                console.log('Modal de rendez-vous initialisé sur la page d\'accueil');
+            }
+        });
+    </script>
 </body>
 </html>

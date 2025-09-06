@@ -365,6 +365,47 @@ public class NotificationService {
             throw e;
         }
     }
+
+    /**
+     * Teste l'email de bienvenue avec des données fictives
+     */
+    public void sendTestWelcomeEmail(String toEmail) throws Exception {
+        logger.info("=== TEST EMAIL DE BIENVENUE ===");
+        logger.info("Destinataire: {}", toEmail);
+        
+        try {
+            // Création d'un utilisateur fictif pour le test
+            Context context = new Context();
+            
+            // Simulation d'un objet User avec les propriétés nécessaires
+            Map<String, Object> testUser = new HashMap<>();
+            testUser.put("firstName", "Utilisateur Test");
+            testUser.put("email", toEmail);
+            
+            context.setVariable("user", testUser);
+            context.setVariable("companyName", COMPANY_NAME);
+            context.setVariable("baseUrl", "https://lmp-services.ca");
+            
+            // Rendu du template HTML de bienvenue final
+            logger.info("WELCOME_TEST - Rendu template 'emails/welcome-minimal-clean'...");
+            String htmlContent = templateEngine.process("emails/welcome-minimal-clean", context);
+            logger.info("WELCOME_TEST - Template rendu avec succès, taille: {} caractères", htmlContent.length());
+            
+            // Envoi de l'email de test
+            String subject = "🎉 Test Email de Bienvenue - " + COMPANY_NAME;
+            sendHtmlEmail(toEmail, subject, htmlContent);
+            
+            logger.info("✅ Email de bienvenue de test envoyé avec succès à {}", toEmail);
+            
+        } catch (Exception e) {
+            logger.error("❌ ÉCHEC test email de bienvenue - Erreur: {}", e.getMessage());
+            logger.error("❌ Type d'exception: {}", e.getClass().getSimpleName());
+            if (e.getCause() != null) {
+                logger.error("❌ Cause racine: {}", e.getCause().getMessage());
+            }
+            throw e;
+        }
+    }
     
     private String maskPassword(String password) {
         if (password == null || password.equals("NON_CONFIGURÉ")) {

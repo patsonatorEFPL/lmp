@@ -21,7 +21,7 @@ public class Review {
     private Long id;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true) // Permet l'anonymisation lors du hard delete
     private User user;
     
     @ManyToOne(fetch = FetchType.LAZY)

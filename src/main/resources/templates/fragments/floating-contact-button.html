@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Fragment du bouton flottant CONTACTEZ-NOUS -->
+    <div th:fragment="floating-contact-button">
+        <!-- Styles du bouton flottant -->
+        <style>
+            .floating-contact-button {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                z-index: 1000;
+                background: linear-gradient(135deg, #1a3cff 0%, #4c63ff 100%);
+                color: white;
+                padding: 13px 21px;
+                border-radius: 42px;
+                box-shadow: 0 7px 28px rgba(26, 60, 255, 0.4);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+                font-size: 11px;
+                transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                cursor: pointer;
+                border: none;
+                text-decoration: none;
+                font-family: 'Poppins', 'Inter', sans-serif;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                animation: pulse-glow 2s infinite;
+                overflow: hidden;
+            }
+            
+            .floating-contact-button::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                transform: translate(-50%, -50%);
+                transition: width 0.6s, height 0.6s;
+            }
+            
+            .floating-contact-button:hover::before {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .floating-contact-button:hover {
+                transform: translateY(-6px) scale(1.05);
+                box-shadow: 0 14px 42px rgba(26, 60, 255, 0.5);
+                background: linear-gradient(135deg, #1533cc 0%, #3d52ff 100%);
+            }
+            
+            .floating-contact-button:active {
+                transform: translateY(-3px) scale(1.02);
+            }
+            
+            .contact-icon {
+                font-size: 17px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                animation: shake 2s infinite;
+                animation-delay: 0.5s;
+                z-index: 2;
+                position: relative;
+            }
+            
+            .contact-text {
+                z-index: 2;
+                position: relative;
+                display: inline-block;
+            }
+            
+            @keyframes pulse-glow {
+                0% {
+                    box-shadow: 0 10px 40px rgba(26, 60, 255, 0.4),
+                                0 0 0 0 rgba(26, 60, 255, 0.4);
+                }
+                50% {
+                    box-shadow: 0 10px 40px rgba(26, 60, 255, 0.6),
+                                0 0 0 20px rgba(26, 60, 255, 0);
+                }
+                100% {
+                    box-shadow: 0 10px 40px rgba(26, 60, 255, 0.4),
+                                0 0 0 0 rgba(26, 60, 255, 0);
+                }
+            }
+            
+            @keyframes shake {
+                0%, 100% {
+                    transform: rotate(0deg);
+                }
+                10% {
+                    transform: rotate(-10deg);
+                }
+                20% {
+                    transform: rotate(10deg);
+                }
+                30% {
+                    transform: rotate(-10deg);
+                }
+                40% {
+                    transform: rotate(10deg);
+                }
+                50% {
+                    transform: rotate(0deg);
+                }
+            }
+            
+            /* Animation d'entrée */
+            .floating-contact-button {
+                animation: slideInRight 0.8s ease-out forwards, pulse-glow 2s infinite;
+            }
+            
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(200%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            /* Responsive design */
+            @media (max-width: 768px) {
+                .floating-contact-button {
+                    bottom: 20px;
+                    right: 20px;
+                    padding: 10px 17px;
+                    font-size: 10px;
+                }
+                
+                .contact-icon {
+                    font-size: 14px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .floating-contact-button {
+                    bottom: 15px;
+                    right: 15px;
+                    padding: 8px 14px;
+                }
+                
+                .contact-text {
+                    display: none;
+                }
+                
+                .floating-contact-button {
+                    width: 42px;
+                    height: 42px;
+                    padding: 0;
+                    justify-content: center;
+                    border-radius: 50%;
+                }
+            }
+            
+            /* Effet de brillance */
+            .floating-contact-button::after {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(
+                    45deg,
+                    transparent 30%,
+                    rgba(255, 255, 255, 0.1) 50%,
+                    transparent 70%
+                );
+                transform: rotate(45deg);
+                animation: shine 3s infinite;
+            }
+            
+            @keyframes shine {
+                0% {
+                    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+                }
+                100% {
+                    transform: translateX(100%) translateY(100%) rotate(45deg);
+                }
+            }
+        </style>
+        
+        <!-- Bouton flottant -->
+        <button onclick="openAppointmentModal()" class="floating-contact-button" id="floatingContactBtn">
+            <span class="contact-icon">💬</span>
+            <span class="contact-text">Contactez-nous</span>
+        </button>
+        
+        <!-- Script pour améliorer l'interaction -->
+        <script>
+            (function() {
+                const button = document.getElementById('floatingContactBtn');
+                
+                // Ajouter un effet de vibration au survol sur mobile
+                if ('vibrate' in navigator) {
+                    button.addEventListener('touchstart', function() {
+                        navigator.vibrate(50);
+                    });
+                }
+                
+                // S'assurer que le bouton reste toujours visible
+                // Nettoyage des styles inline qui pourraient avoir été ajoutés
+                button.style.transform = '';
+                button.style.opacity = '';
+                
+                // Fonction globale pour ouvrir le modal de rendez-vous
+                window.openAppointmentModal = function() {
+                    if (typeof AppointmentModal !== 'undefined' && AppointmentModal.open) {
+                        AppointmentModal.open({service: 'Consultation'});
+                    } else {
+                        console.warn('Modal de rendez-vous non disponible, redirection vers /contact');
+                        window.location.href = '/contact';
+                    }
+                };
+            })();
+        </script>
+    </div>
+</body>
+</html>

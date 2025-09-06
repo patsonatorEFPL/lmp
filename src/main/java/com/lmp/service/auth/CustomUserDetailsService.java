@@ -76,11 +76,8 @@ public class CustomUserDetailsService implements UserDetailsService {
     private UserDetails createUserPrincipal(User user) {
         logger.info("🔍 [SESSION-SECURITY] Création UserPrincipal pour: {} (Statut: {})", user.getEmail(), user.getStatus());
         
-        // VÉRIFICATION CRITIQUE: Bloquer absolument les utilisateurs supprimés
-        if (user.getStatus() == UserStatus.DELETED) {
-            logger.error("🚨 [SESSION-SECURITY] BLOCAGE IMMÉDIAT: Utilisateur {} a le statut DELETED", user.getEmail());
-            throw new UsernameNotFoundException("Compte utilisateur supprimé");
-        }
+        // Note: Les utilisateurs supprimés sont maintenant physiquement effacés de la base (hard delete)
+        // Cette vérification n'est plus nécessaire
         
         // VÉRIFICATION: Bloquer les comptes verrouillés
         if (user.getAccountLocked()) {
