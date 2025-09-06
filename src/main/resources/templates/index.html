@@ -16,9 +16,9 @@
     <!-- Authentication Info pour JavaScript -->
     <script th:inline="javascript">
         window.AUTH_INFO = {
-            isAuthenticated: /*[[${#authorization.expression('isAuthenticated()')}]]*/ false,
-            currentUser: /*[[${#authentication.name}]]*/ null,
-            roles: /*[[${#authentication.authorities}]]*/ []
+            isAuthenticated: false,
+            currentUser: null,
+            roles: []
         };
     </script>
 </head>
@@ -423,11 +423,8 @@
                     comment nous pouvons transformer votre présence digitale.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="openBookingModal('Consultation Gratuite', 0)" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200">
-                        Prendre un rendez-vous
-                    </button>
                     <a href="mailto:lmp.assistance@gmail.com" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all duration-200">
-                        Nous contacter
+                        📧 Nous contacter par email
                     </a>
                 </div>
             </div>
@@ -436,6 +433,12 @@
     
     <!-- Modal unifié pour l'achat de services -->
     <div th:replace="fragments/booking-modal :: booking-modal"></div>
+    
+    <!-- Modal de prise de rendez-vous -->
+    <div th:replace="fragments/appointment-modal-global :: appointment-modal-global"></div>
+    
+    <!-- Bouton flottant CONTACTEZ-NOUS -->
+    <div th:replace="fragments/floating-contact-button :: floating-contact-button"></div>
     
     <!-- Footer -->
     <div th:replace="fragments/footer :: footer"></div>
@@ -480,5 +483,21 @@
     
     <!-- Script unifié pour la logique d'achat -->
     <script th:src="@{/js/register-checkout.js}"></script>
+    
+    <!-- jQuery nécessaire pour le modal de rendez-vous -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Script du modal de rendez-vous -->
+    <script th:src="@{/js/appointment-modal-v3.js}"></script>
+    
+    <!-- Initialisation du modal -->
+    <script>
+        $(document).ready(function() {
+            if (typeof AppointmentModal !== 'undefined') {
+                AppointmentModal.init();
+                console.log('Modal de rendez-vous initialisé sur la page d\'accueil');
+            }
+        });
+    </script>
 </body>
 </html>

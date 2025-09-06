@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Fragment du Modal de Prise de Rendez-vous avec Calendrier -->
+<div th:fragment="appointment-modal" id="appointmentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- En-tête du Modal -->
+        <div class="sticky top-0 bg-white rounded-t-lg border-b border-gray-200 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-gray-900">📅 Prendre Rendez-vous</h2>
+                <button type="button" onclick="AppointmentModal.close()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Corps du Modal avec Layout en 2 colonnes -->
+        <div class="flex flex-col lg:flex-row">
+            <!-- Colonne de gauche : Informations personnelles et service -->
+            <div class="flex-1 px-6 py-6 border-r border-gray-200">
+                <!-- Message de succès/erreur -->
+                <div id="appointmentMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+
+                <!-- Formulaire de Rendez-vous -->
+                <form id="appointmentForm" class="space-y-6">
+                    <!-- Token CSRF pour Spring Security -->
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">👤 Vos informations</h3>
+                        
+                        <!-- Nom -->
+                        <div class="mb-4">
+                            <label for="appointmentName" class="block text-sm font-medium text-gray-700 mb-2">
+                                Nom complet <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="appointmentName" name="name" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                   placeholder="Votre nom complet">
+                            <div class="text-red-500 text-sm mt-1 hidden" id="appointmentNameError"></div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-4">
+                            <label for="appointmentEmail" class="block text-sm font-medium text-gray-700 mb-2">
+                                Email <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email" id="appointmentEmail" name="email" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                   placeholder="votre.email@exemple.com">
+                            <div class="text-red-500 text-sm mt-1 hidden" id="appointmentEmailError"></div>
+                        </div>
+
+                        <!-- Téléphone -->
+                        <div class="mb-4">
+                            <label for="appointmentPhone" class="block text-sm font-medium text-gray-700 mb-2">
+                                Téléphone <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" id="appointmentPhone" name="phone" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                   placeholder="+1 (555) 123-4567">
+                            <div class="text-red-500 text-sm mt-1 hidden" id="appointmentPhoneError"></div>
+                        </div>
+                    </div>
+
+                    <!-- Service -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">💼 Service demandé</h3>
+                        <label for="appointmentService" class="block text-sm font-medium text-gray-700 mb-2">
+                            Service souhaité <span class="text-red-500">*</span>
+                        </label>
+                        <select id="appointmentService" name="service" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                            <option value="">Sélectionnez un service</option>
+                            <option value="Référencement SEO">Référencement SEO</option>
+                            <option value="Google My Business">Google My Business</option>
+                            <option value="Marketing Digital">Marketing Digital</option>
+                            <option value="Gestion d'avis">Gestion d'avis</option>
+                            <option value="Audit Digital">Audit Digital</option>
+                            <option value="Formation">Formation</option>
+                            <option value="Consultation">Consultation</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                        <div class="text-red-500 text-sm mt-1 hidden" id="appointmentServiceError"></div>
+                    </div>
+
+                    <!-- Message -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">💬 Détails supplémentaires</h3>
+                        <label for="appointmentMessageField" class="block text-sm font-medium text-gray-700 mb-2">
+                            Message (optionnel)
+                        </label>
+                        <textarea id="appointmentMessageField" name="message" rows="4"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+                                  placeholder="Décrivez brièvement votre projet ou vos besoins spécifiques..."></textarea>
+                    </div>
+                    
+                    <!-- Champs cachés pour la date et l'heure sélectionnées -->
+                    <input type="hidden" id="appointmentDate" name="date" />
+                    <input type="hidden" id="appointmentTime" name="time" />
+
+                </form>
+            </div>
+            
+            <!-- Colonne de droite : Calendrier et créneaux -->
+            <div class="flex-1 px-6 py-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">📅 Choisir une date et heure</h3>
+                
+                <!-- Calendrier -->
+                <div id="appointmentCalendar" class="mb-6">
+                    <!-- En-tête du calendrier -->
+                    <div class="flex items-center justify-between mb-4">
+                        <button type="button" id="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <h4 id="currentMonth" class="text-lg font-semibold text-gray-900"></h4>
+                        <button type="button" id="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Grille du calendrier -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Dim</div>
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Lun</div>
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Mar</div>
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Mer</div>
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Jeu</div>
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Ven</div>
+                        <div class="p-2 text-center text-xs font-medium text-gray-500">Sam</div>
+                    </div>
+                    <div id="calendarDays" class="grid grid-cols-7 gap-1">
+                        <!-- Les jours seront générés par JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Créneaux horaires disponibles -->
+                <div id="appointmentTimeSlots" class="mb-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-3">⏰ Créneaux disponibles</h4>
+                    <div id="timeSlotsContainer" class="text-gray-500 text-sm text-center py-4">
+                        Sélectionnez une date pour voir les créneaux disponibles
+                    </div>
+                    <input type="hidden" id="selectedDateTime" name="selectedDateTime" />
+                </div>
+                
+                <!-- Résumé de la sélection -->
+                <div id="appointmentSummary" class="bg-blue-50 border border-blue-200 rounded-lg p-4 hidden">
+                    <h4 class="text-md font-semibold text-blue-900 mb-2">✨ Résumé du rendez-vous</h4>
+                    <div id="summaryContent" class="text-sm text-blue-800 space-y-1">
+                        <!-- Le contenu sera généré par JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pied du Modal -->
+        <div class="sticky bottom-0 bg-gray-50 rounded-b-lg border-t border-gray-200 px-6 py-4">
+            <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                <button type="button" onclick="AppointmentModal.close()"
+                        class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-white transition-colors font-medium">
+                    ❌ Annuler
+                </button>
+                <button type="button" id="appointmentSubmitBtn" onclick="AppointmentModal.submitAppointment()"
+                        class="px-8 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                    <span id="appointmentSubmitText">💾 Confirmer le rendez-vous</span>
+                    <span id="appointmentSubmitLoader" class="hidden">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Envoi en cours...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -66,25 +66,34 @@ public class AppointmentForm {
 
         String subjectLower = subject.toLowerCase().trim();
         
-        // Liste des mots-clés professionnels acceptés
-        List<String> professionalKeywords = Arrays.asList(
-            "consultation", "conseil", "formation", "audit", "expertise",
-            "analyse", "évaluation", "diagnostic", "stratégie", "développement",
-            "optimisation", "assistance", "support", "accompagnement", "suivi",
-            "présentation", "démonstration", "formation", "workshop", "séminaire",
-            "réunion", "entretien", "négociation", "contrat", "partenariat",
-            "projet", "planification", "coordination", "gestion", "supervision",
-            "technique", "technologie", "innovation", "recherche", "étude",
-            "marketing", "communication", "vente", "commercial", "business",
-            "finance", "comptabilité", "juridique", "legal", "conformité",
-            "qualité", "sécurité", "performance", "amélioration", "processus",
-            "service", "prestation", "solution", "produit", "application",
-            "système", "infrastructure", "réseau", "données", "information"
+        // Liste des services valides de la liste déroulante
+        List<String> validServices = Arrays.asList(
+            "création de site web", "référencement seo", "maintenance",
+            "design graphique", "développement application", "consultation",
+            "audit seo", "optimisation performance", "sécurité web",
+            "formation", "support technique", "marketing digital",
+            "e-commerce", "hébergement", "nom de domaine", "autre"
         );
-
-        // Vérification qu'au moins un mot-clé professionnel est présent
-        return professionalKeywords.stream()
-                .anyMatch(keyword -> subjectLower.contains(keyword));
+        
+        // Liste des mots inappropriés à filtrer
+        List<String> inappropriateWords = Arrays.asList(
+            "gratuit", "urgent", "rapide", "immédiat", "arnaque",
+            "scam", "hack", "crack", "pirate", "illegal",
+            "casino", "pari", "jeu", "poker", "sexe",
+            "drogue", "alcool", "cigarette", "violence", "arme"
+        );
+        
+        // Vérifier que le sujet ne contient pas de mots inappropriés
+        for (String word : inappropriateWords) {
+            if (subjectLower.contains(word)) {
+                return false;
+            }
+        }
+        
+        // Si le sujet contient un service valide ou "autre", c'est acceptable
+        // On accepte aussi tout sujet qui contient un nom (pour "Service - Nom du client")
+        return validServices.stream().anyMatch(service -> subjectLower.contains(service)) ||
+               subjectLower.contains(" - "); // Format "Service - Nom"
     }
 
     /**

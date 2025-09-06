@@ -38,9 +38,6 @@
                 <div class="hidden md:flex items-center space-x-4">
                     <!-- Authentification - Utilisateur non connecté -->
                     <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-4">
-                        <button onclick="openBookingModal()" class="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all duration-200">
-                            Prendre RDV
-                        </button>
                         <a href="/login" class="text-gray-700 hover:text-primary font-medium transition-colors">
                             Connexion
                         </a>
@@ -108,9 +105,6 @@
                     
                     <!-- Mobile - Utilisateur non connecté -->
                     <div sec:authorize="!isAuthenticated()" class="space-y-2 pt-2 border-t border-gray-100">
-                        <button onclick="openBookingModal()" class="w-full bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all duration-200">
-                            Prendre RDV
-                        </button>
                         <a href="/login" class="block w-full text-center border border-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200">
                             Connexion
                         </a>

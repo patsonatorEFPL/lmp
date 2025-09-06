@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <!-- Fragment du Modal de Rendez-vous Global -->
+    <div th:fragment="appointment-modal-global" id="appointmentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+            <!-- Centre le modal -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <!-- Contenu du modal -->
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-white" id="modal-title">
+                            📅 Prendre un Rendez-vous
+                        </h3>
+                        <button type="button" class="text-white hover:text-gray-200 transition-colors" onclick="AppointmentModal.close()">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Body avec deux colonnes -->
+                <div class="bg-white px-6 py-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Colonne gauche : Formulaire -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Vos informations</h4>
+                            
+                            <!-- Zone de message -->
+                            <div id="appointmentMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+                            
+                            <form id="appointmentForm" class="space-y-4">
+                                <!-- Nom -->
+                                <div>
+                                    <label for="appointmentName" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Nom complet <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="appointmentName" name="name" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <div id="appointmentNameError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Email -->
+                                <div>
+                                    <label for="appointmentEmail" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Email <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="email" id="appointmentEmail" name="email" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <div id="appointmentEmailError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Téléphone -->
+                                <div>
+                                    <label for="appointmentPhone" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Téléphone <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="tel" id="appointmentPhone" name="phone" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <div id="appointmentPhoneError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Service -->
+                                <div>
+                                    <label for="appointmentService" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Service <span class="text-red-500">*</span>
+                                    </label>
+                                    <select id="appointmentService" name="service" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="">Sélectionnez un service...</option>
+                                        <option value="Consultation">Consultation générale</option>
+                                        <option value="Développement Web">Développement Web</option>
+                                        <option value="Référencement SEO">Référencement SEO</option>
+                                        <option value="Formation">Formation</option>
+                                        <option value="Audit">Audit technique</option>
+                                        <option value="Marketing Digital">Marketing Digital</option>
+                                        <option value="Sécurité Web">Sécurité Web</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                    <div id="appointmentServiceError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Message -->
+                                <div>
+                                    <label for="appointmentMessageField" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Message (optionnel)
+                                    </label>
+                                    <textarea id="appointmentMessageField" name="message" rows="3"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="Décrivez brièvement votre besoin..."></textarea>
+                                    <div id="appointmentMessageFieldError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                </div>
+
+                                <!-- Champs cachés pour date et heure -->
+                                <input type="hidden" id="appointmentDate" name="date">
+                                <input type="hidden" id="appointmentTime" name="time">
+                            </form>
+                        </div>
+
+                        <!-- Colonne droite : Calendrier et créneaux -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Choisissez votre créneau</h4>
+                            
+                            <!-- Calendrier -->
+                            <div id="calendar" class="mb-4">
+                                <!-- En-tête du calendrier -->
+                                <div class="flex items-center justify-between mb-4">
+                                    <button type="button" id="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <h4 id="currentMonth" class="text-lg font-semibold text-gray-900"></h4>
+                                    <button type="button" id="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Grille du calendrier -->
+                                <div class="grid grid-cols-7 gap-1 mb-2">
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Dim</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Lun</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mar</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mer</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Jeu</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Ven</div>
+                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Sam</div>
+                                </div>
+                                <div id="calendarDays" class="grid grid-cols-7 gap-1">
+                                    <!-- Les jours seront générés dynamiquement ici -->
+                                </div>
+                            </div>
+
+                            <!-- Créneaux horaires -->
+                            <div id="timeSlotsContainer" class="mt-4">
+                                <!-- Les créneaux seront générés dynamiquement ici -->
+                                <div class="text-gray-500 text-center py-4">Sélectionnez une date pour voir les créneaux disponibles</div>
+                            </div>
+
+                            <!-- Résumé de la sélection -->
+                            <div id="appointmentSummary" class="mt-4 p-3 bg-blue-50 rounded-lg hidden">
+                                <h5 class="text-sm font-semibold text-blue-800 mb-1">📌 Votre sélection</h5>
+                                <div id="summaryContent" class="text-sm text-blue-700">
+                                    <!-- Le contenu sera généré dynamiquement -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                    <button type="button" onclick="AppointmentModal.close()"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition-colors">
+                        Annuler
+                    </button>
+                    <button type="button" id="appointmentSubmitBtn" onclick="AppointmentModal.submitAppointment()"
+                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <span id="appointmentSubmitText">Confirmer le rendez-vous</span>
+                        <span id="appointmentSubmitLoader" class="hidden">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Envoi en cours...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
