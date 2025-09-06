@@ -105,10 +105,6 @@
             color: #856404;
         }
         
-        .status-deleted {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
         
         .locked-badge {
             background-color: #f8d7da;
@@ -344,7 +340,6 @@
                             <option value="">Tous les statuts</option>
                             <option value="ACTIVE" th:selected="${currentStatus == 'ACTIVE'}">Actif</option>
                             <option value="INACTIVE" th:selected="${currentStatus == 'INACTIVE'}">Inactif</option>
-                            <option value="DELETED" th:selected="${currentStatus == 'DELETED'}">Supprimé</option>
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -433,7 +428,7 @@
                             </td>
                             <td>
                                 <span class="status-badge" 
-                                      th:classappend="${user.status.name() == 'ACTIVE'} ? 'status-active' : (${user.status.name() == 'INACTIVE'} ? 'status-inactive' : 'status-deleted')"
+                                      th:classappend="${user.status.name() == 'ACTIVE'} ? 'status-active' : 'status-inactive'"
                                       th:text="${user.status.name()}">Actif</span>
                                 <div th:if="${user.accountLocked}">
                                     <span class="status-badge locked-badge mt-1">
@@ -484,11 +479,10 @@
                                         <i class="fas fa-lock"></i>
                                     </button>
                                     
-                                    <!-- Bouton Supprimer -->
-                                    <button th:if="${user.status.name() != 'DELETED'}"
-                                            type="button" class="btn btn-outline-danger action-btn"
+                                    <!-- Bouton Supprimer (Hard Delete) -->
+                                    <button type="button" class="btn btn-outline-danger action-btn"
                                             th:onclick="'deleteUser(' + ${user.id} + ')'"
-                                            title="Supprimer">
+                                            title="Supprimer définitivement (irréversible)">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -756,43 +750,55 @@
         }
 
         function deleteUser(userId) {
-            if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.')) {
-                console.log('🔍 ADMIN DEBUG - Suppression utilisateur:', userId);
+            // Double confirmation pour hard delete
+            if (confirm('⚠️ ATTENTION: Voulez-vous supprimer DÉFINITIVEMENT cet utilisateur ?\n\n' +
+                       '🚨 Cette action est IRRÉVERSIBLE !\n' +
+                       '• L\'utilisateur sera complètement supprimé\n' +
+                       '• Les commandes et avis seront anonymisés\n' +
+                       '• Les rendez-vous seront anonymisés\n' +
+                       '• Les sessions seront invalidées\n\n' +
+                       'Continuer avec la suppression définitive ?')) {
                 
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
-                if (csrfToken && csrfHeader) {
-                    headers[csrfHeader] = csrfToken;
+                if (confirm('🔴 DERNIÈRE CONFIRMATION\n\nÊtes-vous ABSOLUMENT sûr de vouloir supprimer définitivement cet utilisateur ?\n\nCette action ne peut pas être annulée !')) {
+                    
+                    console.log('🚨 ADMIN DEBUG - Suppression DÉFINITIVE utilisateur:', userId);
+                    
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    
+                    if (csrfToken && csrfHeader) {
+                        headers[csrfHeader] = csrfToken;
+                    }
+                    
+                    fetch(`/admin/users/${userId}/delete`, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                    .then(response => {
+                        console.log('🔍 ADMIN DEBUG - Response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('🔍 ADMIN DEBUG - Response data:', data);
+                        if (data.success) {
+                            showToast(data.message, 'success');
+                            setTimeout(() => location.reload(), 2000);
+                        } else {
+                            showToast(data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ ADMIN DEBUG - Erreur suppression DÉFINITIVE:', error);
+                        showToast('Erreur lors de la suppression définitive: ' + error.message, 'error');
+                    });
                 }
-                
-                fetch(`/admin/users/${userId}/delete`, {
-                    method: 'POST',
-                    headers: headers
-                })
-                .then(response => {
-                    console.log('🔍 ADMIN DEBUG - Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('🔍 ADMIN DEBUG - Response data:', data);
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showToast(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ ADMIN DEBUG - Erreur suppression:', error);
-                    showToast('Erreur lors de la suppression: ' + error.message, 'error');
-                });
             }
         }
+
 
         function showUserDetails(userId) {
             const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));

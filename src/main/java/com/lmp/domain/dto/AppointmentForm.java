@@ -3,6 +3,7 @@ package com.lmp.domain.dto;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
@@ -64,36 +65,46 @@ public class AppointmentForm {
             return false;
         }
 
-        String subjectLower = subject.toLowerCase().trim();
+        String subjectNormalized = normalizeString(subject.toLowerCase().trim());
         
-        // Liste des services valides de la liste déroulante
+        // Liste des services valides de la liste déroulante (normalisés)
         List<String> validServices = Arrays.asList(
-            "création de site web", "référencement seo", "maintenance",
-            "design graphique", "développement application", "consultation",
-            "audit seo", "optimisation performance", "sécurité web",
-            "formation", "support technique", "marketing digital",
-            "e-commerce", "hébergement", "nom de domaine", "autre"
-        );
+            "consultation", "développement web", "developpement web", "référencement seo", "referencement seo", "formation",
+            "audit", "marketing digital", "sécurité web", "securite web", "autre",
+            // Anciens services pour compatibilité
+            "création de site web", "creation de site web", "maintenance", "design graphique", 
+            "développement application", "developpement application", "audit seo", "optimisation performance",
+            "optimisation performance", "support technique", "e-commerce", "hébergement", "hebergement", "nom de domaine"
+        ).stream().map(this::normalizeString).collect(Collectors.toList());
         
         // Liste des mots inappropriés à filtrer
         List<String> inappropriateWords = Arrays.asList(
-            "gratuit", "urgent", "rapide", "immédiat", "arnaque",
-            "scam", "hack", "crack", "pirate", "illegal",
+            "gratuit", "urgent", "rapide", "immédiat", "immediat", "arnaque",
+            "scam", "hack", "crack", "pirate", "illegal", "illégal",
             "casino", "pari", "jeu", "poker", "sexe",
             "drogue", "alcool", "cigarette", "violence", "arme"
-        );
+        ).stream().map(this::normalizeString).collect(Collectors.toList());
         
         // Vérifier que le sujet ne contient pas de mots inappropriés
         for (String word : inappropriateWords) {
-            if (subjectLower.contains(word)) {
+            if (subjectNormalized.contains(word)) {
                 return false;
             }
         }
         
         // Si le sujet contient un service valide ou "autre", c'est acceptable
         // On accepte aussi tout sujet qui contient un nom (pour "Service - Nom du client")
-        return validServices.stream().anyMatch(service -> subjectLower.contains(service)) ||
-               subjectLower.contains(" - "); // Format "Service - Nom"
+        return validServices.stream().anyMatch(service -> subjectNormalized.contains(service)) ||
+               subjectNormalized.contains(" - "); // Format "Service - Nom"
+    }
+    
+    /**
+     * Normalise une chaîne en supprimant les accents et caractères spéciaux
+     */
+    private String normalizeString(String input) {
+        if (input == null) return "";
+        return java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+                .replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
     }
 
     /**

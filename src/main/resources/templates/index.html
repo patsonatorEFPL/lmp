@@ -16,10 +16,13 @@
     <!-- Authentication Info pour JavaScript -->
     <script th:inline="javascript">
         window.AUTH_INFO = {
-            isAuthenticated: false,
-            currentUser: null,
+            isAuthenticated: /*[[${isAuthenticated}]]*/ false,
+            user: /*[[${currentUser}]]*/ null,
             roles: []
         };
+        
+        // Debug
+        console.log('Auth Info:', window.AUTH_INFO);
     </script>
 </head>
 <body class="min-h-screen bg-white">

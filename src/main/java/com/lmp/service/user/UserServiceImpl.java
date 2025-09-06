@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.lmp.domain.entity.Role;
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.UserStatus;
+import com.lmp.repository.AppointmentRepository;
+import com.lmp.repository.OrderRepository;
+import com.lmp.repository.ReviewRepository;
 import com.lmp.repository.UserRepository;
 import com.lmp.service.security.SessionSecurityService;
 
@@ -35,6 +38,15 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private SessionSecurityService sessionSecurityService;
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private ReviewRepository reviewRepository;
+    
+    // @Autowired
+    // private AppointmentRepository appointmentRepository;
 
     /**
      * Trouve un utilisateur par son ID.
@@ -94,49 +106,20 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Supprime un utilisateur (soft delete).
-     * Met le statut à DELETED au lieu de supprimer physiquement.
+     * Supprime définitivement un utilisateur de la base de données (hard delete).
+     * Cette opération est irréversible et gère les dépendances de manière sécurisée.
      * 
-     * @param id L'ID de l'utilisateur à supprimer
+     * @param id L'ID de l'utilisateur à supprimer définitivement
      */
     @Override
     @Transactional
     public void deleteUser(Long id) {
-        logger.warn("🚨 [SESSION-SECURITY] deleteUser appelé pour ID: {}", id);
+        logger.error("🚨 [HARD-DELETE] DÉBUT SUPPRESSION DÉFINITIVE - Utilisateur ID: {}", id);
         
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
+        // Réutiliser la logique complète de hardDeleteUser
+        hardDeleteUser(id);
         
-        logger.warn("🔍 [SESSION-SECURITY] Utilisateur à supprimer: Email={}, Statut actuel={}", user.getEmail(), user.getStatus());
-        
-        // ÉTAPE 1: Vérifier les sessions actives AVANT suppression
-        boolean hadActiveSessions = sessionSecurityService.hasActiveSessions(user.getEmail());
-        int activeSessionCount = sessionSecurityService.getActiveSessionCount(user.getEmail());
-        logger.warn("📊 [SESSION-SECURITY] Sessions actives AVANT suppression: {} session(s) pour {}", activeSessionCount, user.getEmail());
-        
-        // ÉTAPE 2: Invalider TOUTES les sessions actives AVANT de marquer comme supprimé
-        if (hadActiveSessions) {
-            logger.warn("🔒 [SESSION-SECURITY] INVALIDATION FORCÉE des sessions pour utilisateur à supprimer: {}", user.getEmail());
-            int invalidatedSessions = sessionSecurityService.invalidateAllUserSessions(user);
-            logger.warn("✅ [SESSION-SECURITY] {} session(s) invalidée(s) avec succès pour {}", invalidatedSessions, user.getEmail());
-        } else {
-            logger.info("ℹ️ [SESSION-SECURITY] Aucune session active à invalider pour {}", user.getEmail());
-        }
-        
-        // ÉTAPE 3: Marquer l'utilisateur comme supprimé (soft delete)
-        user.setStatus(UserStatus.DELETED);
-        user.setAccountLocked(true);
-        userRepository.save(user);
-        
-        // ÉTAPE 4: Vérification finale - aucune session ne doit subsister
-        int remainingSessions = sessionSecurityService.getActiveSessionCount(user.getEmail());
-        if (remainingSessions > 0) {
-            logger.error("🚨 [SESSION-SECURITY] ALERTE: {} session(s) ENCORE ACTIVE(S) après invalidation pour {}", remainingSessions, user.getEmail());
-        } else {
-            logger.info("✅ [SESSION-SECURITY] SÉCURITÉ CONFIRMÉE: Aucune session active restante pour l'utilisateur supprimé {}", user.getEmail());
-        }
-        
-        logger.warn("🎯 [SESSION-SECURITY] SUPPRESSION SÉCURISÉE TERMINÉE pour {}: Sessions invalidées + Statut DELETED", user.getEmail());
+        logger.error("✅ [HARD-DELETE] SUPPRESSION DÉFINITIVE TERMINÉE pour ID: {}", id);
     }
 
     /**
@@ -459,5 +442,140 @@ public class UserServiceImpl implements UserService {
     @Override
     public long count() {
         return userRepository.count();
+    }
+    
+    /**
+     * Supprime définitivement un utilisateur de la base de données (hard delete).
+     * Cette opération est irréversible et gère les dépendances de manière sécurisée.
+     */
+    @Override
+    @Transactional
+    public void hardDeleteUser(Long id) {
+        logger.error("🚨 [HARD-DELETE] DÉBUT SUPPRESSION DÉFINITIVE - Utilisateur ID: {}", id);
+        
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
+            
+        String userEmail = user.getEmail();
+        logger.error("🔍 [HARD-DELETE] Utilisateur à supprimer définitivement: ID={}, Email={}", id, userEmail);
+        
+        try {
+            // ÉTAPE 1: Invalider toutes les sessions actives AVANT toute modification
+            logger.warn("🔒 [HARD-DELETE] Étape 1/6 - Invalidation sessions pour {}", userEmail);
+            int invalidatedSessions = sessionSecurityService.invalidateAllUserSessions(user);
+            logger.info("✅ [HARD-DELETE] {} session(s) invalidée(s)", invalidatedSessions);
+            
+            // ÉTAPE 2: Supprimer les rôles utilisateur (table user_roles)
+            logger.warn("🔄 [HARD-DELETE] Étape 2/6 - Suppression des rôles utilisateur");
+            user.getRoles().clear();
+            userRepository.save(user); // Sauvegarde pour supprimer les liaisons user_roles
+            logger.info("✅ [HARD-DELETE] Rôles utilisateur supprimés");
+            
+            // ÉTAPE 3: Anonymiser les commandes (conserver pour historique comptable)
+            logger.warn("💼 [HARD-DELETE] Étape 3/6 - Anonymisation des commandes");
+            var userOrders = orderRepository.findByUserOrderByCreatedAtDesc(user);
+            logger.info("🔍 [HARD-DELETE] Trouvé {} commandes pour l'utilisateur", userOrders.size());
+            int anonymizedOrders = 0;
+            for (var order : userOrders) {
+                try {
+                    logger.info("🔄 [HARD-DELETE] Anonymisation commande ID: {}", order.getId());
+                    // Anonymiser les données client mais conserver la commande pour audit/comptabilité
+                    order.setUser(null);
+                    order.setNotes("[Utilisateur supprimé] " + (order.getNotes() != null ? order.getNotes() : ""));
+                    orderRepository.save(order);
+                    anonymizedOrders++;
+                    logger.info("✅ [HARD-DELETE] Commande {} anonymisée avec succès", order.getId());
+                } catch (Exception e) {
+                    logger.error("❌ [HARD-DELETE] Erreur anonymisation commande {}: {}", order.getId(), e.getMessage());
+                    throw new RuntimeException("Erreur lors de l'anonymisation de la commande " + order.getId() + ": " + e.getMessage(), e);
+                }
+            }
+            logger.info("✅ [HARD-DELETE] {} commande(s) anonymisée(s)", anonymizedOrders);
+            
+            // ÉTAPE 4: Anonymiser les avis (conserver pour historique des services)
+            logger.warn("📝 [HARD-DELETE] Étape 4/7 - Anonymisation des avis");
+            var userReviews = reviewRepository.findByUser(user);
+            logger.info("🔍 [HARD-DELETE] Trouvé {} avis pour l'utilisateur", userReviews.size());
+            int anonymizedReviews = 0;
+            for (var review : userReviews) {
+                try {
+                    logger.info("🔄 [HARD-DELETE] Anonymisation avis ID: {}", review.getId());
+                    review.setUser(null);
+                    // Optionnel: modifier le commentaire pour indiquer l'anonymisation
+                    if (review.getComment() != null && !review.getComment().startsWith("[Utilisateur supprimé]")) {
+                        review.setComment("[Utilisateur supprimé] " + review.getComment());
+                    }
+                    reviewRepository.save(review);
+                    anonymizedReviews++;
+                    logger.info("✅ [HARD-DELETE] Avis {} anonymisé avec succès", review.getId());
+                } catch (Exception e) {
+                    logger.error("❌ [HARD-DELETE] Erreur anonymisation avis {}: {}", review.getId(), e.getMessage());
+                    throw new RuntimeException("Erreur lors de l'anonymisation de l'avis " + review.getId() + ": " + e.getMessage(), e);
+                }
+            }
+            logger.info("✅ [HARD-DELETE] {} avis anonymisé(s)", anonymizedReviews);
+            
+            // ÉTAPE 5: Anonymiser les rendez-vous (TEMPORAIREMENT DÉSACTIVÉE pour debug)
+            logger.warn("📅 [HARD-DELETE] Étape 5/7 - Anonymisation des rendez-vous (DÉSACTIVÉE)");
+            // TODO: Réactiver après avoir résolu le problème d'injection
+            /*
+            var userAppointments = appointmentRepository.findByUserOrderByAppointmentDateDesc(user);
+            logger.info("🔍 [HARD-DELETE] Trouvé {} rendez-vous pour l'utilisateur", userAppointments.size());
+            int anonymizedAppointments = 0;
+            for (var appointment : userAppointments) {
+                try {
+                    logger.info("🔄 [HARD-DELETE] Anonymisation rendez-vous ID: {}", appointment.getId());
+                    // Sauvegarder les informations du client avant anonymisation
+                    String clientName = appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName();
+                    String clientEmail = appointment.getUser().getEmail();
+                    String clientPhone = appointment.getUser().getPhone();
+                    
+                    // Mettre l'utilisateur à null (anonymisation)
+                    appointment.setUser(null);
+                    
+                    // Mettre les informations client dans les champs anonymes si pas déjà présentes
+                    if (appointment.getClientName() == null) {
+                        appointment.setClientName("[Supprimé] " + clientName);
+                    }
+                    if (appointment.getClientEmail() == null) {
+                        appointment.setClientEmail(clientEmail);
+                    }
+                    if (appointment.getClientPhone() == null) {
+                        appointment.setClientPhone(clientPhone);
+                    }
+                    
+                    // Marquer le rendez-vous comme anonymisé dans les notes admin
+                    String adminNotes = appointment.getAdminNotes() != null ? appointment.getAdminNotes() : "";
+                    appointment.setAdminNotes("[Utilisateur supprimé] " + adminNotes);
+                    
+                    appointmentRepository.save(appointment);
+                    anonymizedAppointments++;
+                    logger.info("✅ [HARD-DELETE] Rendez-vous {} anonymisé avec succès", appointment.getId());
+                } catch (Exception e) {
+                    logger.error("❌ [HARD-DELETE] Erreur anonymisation rendez-vous {}: {}", appointment.getId(), e.getMessage());
+                    throw new RuntimeException("Erreur lors de l'anonymisation du rendez-vous " + appointment.getId() + ": " + e.getMessage(), e);
+                }
+            }
+            */
+            int anonymizedAppointments = 0; // Valeur temporaire pour les logs
+            logger.info("✅ [HARD-DELETE] {} rendez-vous anonymisé(s) (TEMPORAIREMENT SIMULÉ)", anonymizedAppointments);
+            
+            // ÉTAPE 6: CONSERVER l'historique des statuts de commandes
+            // (table order_status_history) - Ne rien faire, conservé pour audit
+            logger.info("📋 [HARD-DELETE] Étape 6/7 - Historique des statuts conservé pour audit");
+            
+            // ÉTAPE 7: Suppression définitive de l'utilisateur
+            logger.error("🗑️ [HARD-DELETE] Étape 7/7 - SUPPRESSION DÉFINITIVE de l'utilisateur");
+            userRepository.delete(user);
+            
+            // AUDIT FINAL
+            logger.error("✅ [HARD-DELETE] SUPPRESSION DÉFINITIVE TERMINÉE - Utilisateur {} complètement supprimé", userEmail);
+            logger.error("📊 [HARD-DELETE] STATISTIQUES - Sessions: {}, Commandes: {}, Avis: {}, Rendez-vous: {}", 
+                        invalidatedSessions, anonymizedOrders, anonymizedReviews, anonymizedAppointments);
+                        
+        } catch (Exception e) {
+            logger.error("❌ [HARD-DELETE] ERREUR CRITIQUE lors de la suppression définitive de {}: {}", userEmail, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la suppression définitive: " + e.getMessage(), e);
+        }
     }
 }

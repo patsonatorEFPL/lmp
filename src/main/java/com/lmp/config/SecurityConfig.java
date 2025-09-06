@@ -153,15 +153,16 @@ public class SecurityConfig {
                 .sessionRegistry(sessionRegistry()) // Ajout du SessionRegistry
             )
             
-            // Désactiver CSRF pour les webhooks et endpoints de paiement uniquement
+            // Désactiver CSRF pour les webhooks et endpoints de paiement + appointments temporairement
             .csrf(csrf -> csrf
                 .ignoringRequestMatchers(
                     "/webhook/**", 
                     "/api/**", 
                     "/stripe/**", 
                     "/register-and-checkout", 
-                    "/auth/register-and-checkout"
-                    // Les endpoints appointments utilisent maintenant CSRF normalement
+                    "/auth/register-and-checkout",
+                    "/appointments/create",  // Temporaire pour debug
+                    "/appointments/available-slots"
                 )
             )
             

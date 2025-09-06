@@ -9,6 +9,7 @@ const AppointmentModal = {
     // État du modal
     selectedDate: null,
     selectedTime: null,
+    hasUserInteracted: false, // Pour savoir si l'utilisateur a commencé à remplir le formulaire
     
     // Initialisation
     init() {
@@ -29,10 +30,15 @@ const AppointmentModal = {
     // Ouvrir le modal
     open() {
         console.log('[AppointmentModal] 📂 Ouverture du modal');
+        
+        // D'abord, assurons-nous que le modal est visible
         $('#appointmentModal').removeClass('hidden');
         
-        // Pré-remplir si l'utilisateur est connecté
-        if (window.userAuthenticated) {
+        // Ensuite, réinitialisons complètement le formulaire
+        this.resetForm();
+        
+        // Puis pré-remplir si l'utilisateur est connecté
+        if (window.AUTH_INFO && window.AUTH_INFO.isAuthenticated) {
             this.prefillUserData();
         }
     },
@@ -46,29 +52,76 @@ const AppointmentModal = {
     
     // Pré-remplir les données utilisateur
     prefillUserData() {
-        if (window.userData) {
-            $('#appointmentName').val(window.userData.name || '');
-            $('#appointmentEmail').val(window.userData.email || '');
-            $('#appointmentPhone').val(window.userData.phone || '');
+        if (window.AUTH_INFO && window.AUTH_INFO.isAuthenticated && window.AUTH_INFO.user) {
+            const user = window.AUTH_INFO.user;
+            console.log('[AppointmentModal] 📄 Pré-remplissage des données utilisateur');
+            
+            // Pré-remplir le nom complet
+            const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+            $('#appointmentName').val(fullName);
+            
+            // Pré-remplir l'email et le rendre en lecture seule
+            $('#appointmentEmail').val(user.email || '').prop('readonly', true).addClass('bg-gray-50');
+            
+            // Pré-remplir le téléphone si disponible
+            $('#appointmentPhone').val(user.phone || '');
         }
     },
     
     // Réinitialiser le formulaire
     resetForm() {
+        console.log('[AppointmentModal] 🧩 Réinitialisation du formulaire');
+        
+        // Réinitialiser le formulaire HTML standard
         $('#appointmentForm')[0].reset();
+        
+        // Vider explicitement tous les champs pour être sûr
+        $('#appointmentName').val('');
+        $('#appointmentEmail').val('').prop('readonly', false).removeClass('bg-gray-50');
+        $('#appointmentPhone').val('');
+        $('#appointmentService').val('');
+        $('#appointmentMessageField').val('');
+        $('#appointmentDate').val('');
+        $('#appointmentTime').val('');
+        
+        // Réinitialiser l'état du modal
         this.selectedDate = null;
         this.selectedTime = null;
+        this.hasUserInteracted = false;
+        
+        // Masquer les éléments
         $('#appointmentSummary').addClass('hidden');
         $('#appointmentSubmitBtn').prop('disabled', true);
+        
+        // Nettoyer le calendrier et les créneaux
+        $('.calendar-day').removeClass('bg-green-500 text-white bg-red-500');
         $('.time-slot-btn').removeClass('bg-green-500 text-white');
         $('#timeSlotsContainer').addClass('hidden').html('<div class="text-gray-500 text-center">Sélectionnez une date pour voir les créneaux disponibles</div>');
+        
+        // Masquer toutes les erreurs
         this.hideAllErrors();
+        
+        console.log('[AppointmentModal] ✅ Formulaire réinitialisé');
     },
     
     // Cacher toutes les erreurs
     hideAllErrors() {
         $('.text-red-500').addClass('hidden').text('');
         $('#appointmentMessage').addClass('hidden');
+    },
+    
+    // Convertir les noms de champs techniques en noms lisibles
+    getFieldDisplayName(fieldName) {
+        const fieldNames = {
+            'name': 'Nom',
+            'email': 'Email',
+            'phone': 'Téléphone',
+            'service': 'Service',
+            'date': 'Date',
+            'time': 'Heure',
+            'message': 'Message'
+        };
+        return fieldNames[fieldName] || fieldName;
     },
     
     // Afficher une erreur
@@ -113,7 +166,12 @@ const AppointmentModal = {
     },
     
     // Valider le formulaire
-    validateForm() {
+    validateForm(forceValidation = false) {
+        // Ne pas valider si l'utilisateur n'a pas encore interagi, sauf si forcé (lors de la soumission)
+        if (!this.hasUserInteracted && !forceValidation) {
+            return true;
+        }
+        
         this.hideAllErrors();
         let isValid = true;
         
@@ -203,7 +261,9 @@ const AppointmentModal = {
     submitAppointment() {
         console.log('[AppointmentModal] 📤 Soumission du rendez-vous');
         
-        if (!this.validateForm()) {
+        // Marquer que l'utilisateur a interagi et forcer la validation
+        this.hasUserInteracted = true;
+        if (!this.validateForm(true)) {
             return;
         }
         
@@ -253,8 +313,30 @@ const AppointmentModal = {
             },
             error: (xhr) => {
                 console.error('[AppointmentModal] ❌ Erreur:', xhr);
-                const errorMsg = xhr.responseJSON?.message || 'Une erreur est survenue';
-                this.showMessage('❌ ' + errorMsg, 'error');
+                const response = xhr.responseJSON || {};
+                const errorMsg = response.message || 'Une erreur est survenue';
+                
+                // Afficher les erreurs de validation spécifiques si elles existent
+                if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+                    let errorHtml = '<strong>❌ ' + errorMsg + '</strong><ul class="mt-2 list-disc pl-5 text-sm">';
+                    
+                    // Parcourir toutes les erreurs et les afficher
+                    response.data.forEach(error => {
+                        const fieldName = error.field;
+                        const fieldError = error.defaultMessage;
+                        
+                        // Ajouter l'erreur à la liste
+                        errorHtml += `<li><strong>${this.getFieldDisplayName(fieldName)}</strong>: ${fieldError}</li>`;
+                        
+                        // Marquer le champ correspondant comme invalide
+                        this.showError('appointment' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1), fieldError);
+                    });
+                    
+                    errorHtml += '</ul>';
+                    this.showMessage(errorHtml, 'error');
+                } else {
+                    this.showMessage('❌ ' + errorMsg, 'error');
+                }
             },
             complete: () => {
                 submitBtn.prop('disabled', false);
@@ -562,10 +644,12 @@ const AppointmentModal = {
             }
         });
         
-        // Valider en temps réel
-        $('#appointmentName, #appointmentEmail, #appointmentPhone, #appointmentService, #appointmentMessageField').on('blur', () => {
-            this.validateForm();
+        // Détecter quand l'utilisateur commence à interagir
+        $('#appointmentName, #appointmentEmail, #appointmentPhone, #appointmentService, #appointmentMessageField').on('input change', () => {
+            this.hasUserInteracted = true;
         });
+        
+        // Pas de validation automatique - seulement lors de la soumission
     }
 };
 

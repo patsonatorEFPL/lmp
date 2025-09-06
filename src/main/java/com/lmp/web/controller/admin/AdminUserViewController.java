@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.UserStatus;
+import com.lmp.repository.OrderRepository;
+import com.lmp.repository.ReviewRepository;
 import com.lmp.service.user.UserService;
 
 /**
@@ -35,6 +37,12 @@ public class AdminUserViewController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private OrderRepository orderRepository;
+    
+    @Autowired
+    private ReviewRepository reviewRepository;
 
     /**
      * Affiche la page de gestion des utilisateurs
@@ -289,44 +297,102 @@ public class AdminUserViewController {
     }
 
     /**
-     * Supprime un utilisateur (endpoint manquant)
+     * Supprime définitivement un utilisateur de la base de données (HARD DELETE)
+     * ⚠️ ATTENTION: Cette action est IRRÉVERSIBLE !
      */
     @PostMapping("/{id}/delete")
     @ResponseBody
     public ResponseEntity<?> deleteUser(@PathVariable Long id, HttpServletRequest request) {
-        logger.info("🔍 ADMIN DEBUG - Tentative suppression utilisateur ID: {}", id);
+        logger.error("🚨 ADMIN DEBUG - Tentative suppression DÉFINITIVE utilisateur ID: {}", id);
         logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
+        try {
+            // Vérifier que l'utilisateur existe avant suppression
+            User user = userService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+            
+            logger.error("⚠️ ADMIN DEBUG - Utilisateur à supprimer DÉFINITIVEMENT: ID={}, Email={}", id, user.getEmail());
+            
+            // Utiliser la méthode deleteUser du service qui fait maintenant du HARD DELETE
+            userService.deleteUser(id);
+            
+            auditLogger.error("User HARD DELETED (PERMANENT) - ID: {}, Email: {}", id, user.getEmail());
+            logger.error("🗑️ ADMIN DEBUG - Suppression DÉFINITIVE utilisateur terminée: {}", id);
+            
+            return ResponseEntity.ok().body("\"{\\\"success\\\": true, \\\"message\\\": \\\"Utilisateur supprimé définitivement (irréversible)\\\"}\"");
+            
+        } catch (Exception e) {
+            logger.error("❌ ADMIN DEBUG - Erreur suppression DÉFINITIVE utilisateur {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                .body("\"{\\\"success\\\": false, \\\"message\\\": \\\"" + e.getMessage() + "\\\"}\"");
+        }
+    }
+
+    /**
+     * Debug endpoint pour tester les contraintes de base de données
+     */
+    @GetMapping("/{id}/debug-hard-delete")
+    @ResponseBody
+    public ResponseEntity<?> debugHardDelete(@PathVariable Long id) {
         try {
             User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             
-            // LOG CRITIQUE : Vérification sessions actives AVANT suppression
-            logger.error("🚨 [SESSION-SECURITY] PROBLÈME CRITIQUE DÉTECTÉ : Suppression utilisateur ID: {} Email: {}", id, user.getEmail());
-            logger.error("🔓 [SESSION-SECURITY] Sessions actives de cet utilisateur ne seront PAS invalidées");
-            logger.error("⚠️ [SESSION-SECURITY] L'utilisateur pourra continuer à accéder à la plateforme si déjà connecté");
+            StringBuilder debug = new StringBuilder();
+            debug.append("DEBUG INFO pour utilisateur ID: ").append(id).append("\n");
+            debug.append("Email: ").append(user.getEmail()).append("\n");
             
-            // Marquer comme supprimé au lieu de supprimer physiquement
-            user.setStatus(UserStatus.DELETED);
-            userService.save(user);
+            // Compter les données liées
+            var orders = orderRepository.findByUserOrderByCreatedAtDesc(user);
+            var reviews = reviewRepository.findByUser(user);
             
-            // LOG CRITIQUE : Alerte session persistante après suppression
-            logger.error("❌ [SESSION-SECURITY] SÉCURITÉ COMPROMISE : Utilisateur {} marqué DELETED mais sessions restent actives", user.getEmail());
-            logger.error("🔍 [SESSION-SECURITY] Test nécessaire : Si l'utilisateur était connecté, il peut encore naviguer");
-            logger.error("📝 [SESSION-SECURITY] Solutions : 1) SessionRegistry + invalidation forcée 2) Filtre de re-validation");
+            debug.append("Commandes liées: ").append(orders.size()).append("\n");
+            debug.append("Avis liés: ").append(reviews.size()).append("\n");
             
-            auditLogger.info("User deleted - ID: {}, Email: {}", id, user.getEmail());
-            logger.info("✅ ADMIN DEBUG - Suppression utilisateur réussie: {}", id);
+            // Tester l'anonymisation d'une commande
+            if (!orders.isEmpty()) {
+                var firstOrder = orders.get(0);
+                debug.append("Test order ID: ").append(firstOrder.getId()).append("\n");
+                debug.append("Order user_id avant: ").append(firstOrder.getUser() != null ? firstOrder.getUser().getId() : "NULL").append("\n");
+                
+                // Tenter l'anonymisation
+                firstOrder.setUser(null);
+                try {
+                    orderRepository.save(firstOrder);
+                    debug.append("✅ Test anonymisation commande réussie\n");
+                    
+                    // Remettre en place pour ne pas casser les données
+                    firstOrder.setUser(user);
+                    orderRepository.save(firstOrder);
+                } catch (Exception e) {
+                    debug.append("❌ Erreur anonymisation commande: ").append(e.getMessage()).append("\n");
+                }
+            }
             
-            return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur supprimé avec succès\"}");
+            return ResponseEntity.ok().body("{\"debug\": \"" + debug.toString().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur suppression utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
-                .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
+                .body("{\"error\": \"" + e.getMessage().replace("\\", "\\\\").replace("\"", "\\\"") + "\"}");
         }
     }
+    
 
+    /**
+     * Endpoint de test pour diagnostiquer les problèmes d'authentification
+     */
+    @GetMapping("/test-auth")
+    @ResponseBody
+    public ResponseEntity<?> testAuth() {
+        try {
+            logger.info("🧪 TEST AUTH - Endpoint accessible");
+            return ResponseEntity.ok().body("\"{\\\"success\\\": true, \\\"message\\\": \\\"Authentification OK\\\"}\"");
+        } catch (Exception e) {
+            logger.error("❌ TEST AUTH - Erreur: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body("\"{\\\"success\\\": false, \\\"message\\\": \\\"" + e.getMessage() + "\\\"}\"");
+        }
+    }
+    
     /**
      * DTO pour les détails utilisateur
      */

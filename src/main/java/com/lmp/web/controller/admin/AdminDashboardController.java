@@ -169,12 +169,11 @@ public class AdminDashboardController {
             model.addAttribute("monthlyRegistrations", List.of(12, 19, 15, 25, 22, 30));
             model.addAttribute("monthlyActivity", List.of(85, 92, 78, 95, 88, 94));
             
-            // Répartition par statut
+            // Répartition par statut (plus de statut DELETED car hard delete)
             long activeCount = allUsers.stream().filter(u -> u.getStatus() == UserStatus.ACTIVE).count();
             long inactiveCount = allUsers.stream().filter(u -> u.getStatus() == UserStatus.INACTIVE).count();
-            long deletedCount = allUsers.stream().filter(u -> u.getStatus() == UserStatus.DELETED).count();
             
-            model.addAttribute("statusDistribution", List.of(activeCount, inactiveCount, deletedCount));
+            model.addAttribute("statusDistribution", List.of(activeCount, inactiveCount, 0L)); // 0 pour deleted (plus utilisé)
             model.addAttribute("totalUsers", allUsers.size());
 
             return "admin/statistics";

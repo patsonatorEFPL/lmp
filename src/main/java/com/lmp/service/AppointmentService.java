@@ -939,75 +939,42 @@ public class AppointmentService {
         logger.info("🔄 DÉBUT createAnonymousAppointment pour: {}", request.getEmail());
         logger.info("📋 Détails: nom={}, service={}, date={}", request.getName(), request.getService(), request.getAppointmentDateTime());
 
-        // Créer ou trouver un utilisateur temporaire pour les rendez-vous anonymes
-        User anonymousUser = getOrCreateAnonymousUser(request);
-        
-        // Conversion vers AppointmentForm pour validation (comme dans la version test)
+        // Conversion vers AppointmentForm pour validation
         AppointmentForm form = request.toAppointmentForm();
         
-        // UTILISER LA MÊMe MÉTHODE QUE LA VERSION TEST
-        // Cela garantit le même comportement et l'envoi d'email
-        Appointment appointment = createAppointment(form, anonymousUser);
+        // Validation du formulaire
+        validateAppointmentForm(form);
+
+        // Vérification des conflits d'horaires
+        checkTimeConflicts(form.getAppointmentDate(), form.getDurationMinutes());
+
+        // Création de l'entité sans utilisateur
+        Appointment appointment = new Appointment();
+        appointment.setUser(null); // Pas d'utilisateur connecté
+        appointment.setClientName(request.getName());
+        appointment.setClientEmail(request.getEmail());
+        appointment.setClientPhone(request.getPhone());
+        appointment.setSubject(form.getSubject());
+        appointment.setDescription(form.getDescription());
+        appointment.setAppointmentDate(form.getAppointmentDate());
+        appointment.setDurationMinutes(form.getDurationMinutes());
+        appointment.setPriority(form.getPriority());
+        appointment.setStatus(AppointmentStatus.PENDING);
+
+        // Sauvegarde
+        appointment = appointmentRepository.save(appointment);
+        
+        // Invalider le cache pour cette date
+        invalidateCacheForDate(appointment.getAppointmentDate().toLocalDate());
+
+        // Envoi de la notification de confirmation au client
+        sendAnonymousConfirmationEmail(appointment);
+        
+        // Envoi de la notification à l'équipe
+        sendAnonymousTeamNotificationEmail(appointment);
 
         logger.info("Rendez-vous anonyme créé avec succès - ID: {}", appointment.getId());
         return appointment;
-    }
-    
-    /**
-     * Crée ou trouve un utilisateur temporaire pour les rendez-vous anonymes
-     */
-    private User getOrCreateAnonymousUser(AppointmentRequest request) {
-        // Chercher si un utilisateur avec cet email existe déjà
-        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
-        if (existingUser.isPresent()) {
-            User user = existingUser.get();
-            // Mettre à jour les informations si elles sont manquantes
-            boolean needsUpdate = false;
-            
-            // Mettre à jour le nom si manquant
-            if ((user.getFirstName() == null || user.getFirstName().trim().isEmpty()) && request.getName() != null) {
-                String[] nameParts = request.getName().split(" ", 2);
-                user.setFirstName(nameParts[0]);
-                if (nameParts.length > 1) {
-                    user.setLastName(nameParts[1]);
-                } else {
-                    user.setLastName("");
-                }
-                needsUpdate = true;
-            }
-            
-            // Mettre à jour le téléphone si manquant
-            if ((user.getPhone() == null || user.getPhone().trim().isEmpty()) && request.getPhone() != null) {
-                user.setPhone(request.getPhone());
-                needsUpdate = true;
-            }
-            
-            // Sauvegarder si des mises à jour sont nécessaires
-            if (needsUpdate) {
-                logger.info("📝 Mise à jour des informations pour l'utilisateur existant: {}", user.getEmail());
-                user = userRepository.save(user);
-            }
-            
-            return user;
-        }
-        
-        // Créer un nouvel utilisateur temporaire
-        User anonymousUser = new User();
-        anonymousUser.setFirstName(request.getName().split(" ")[0]); // Premier mot comme prénom
-        if (request.getName().split(" ").length > 1) {
-            anonymousUser.setLastName(request.getName().substring(request.getName().indexOf(" ") + 1));
-        } else {
-            anonymousUser.setLastName(""); // Nom vide si pas de nom de famille
-        }
-        anonymousUser.setEmail(request.getEmail());
-        anonymousUser.setPhone(request.getPhone());
-        anonymousUser.setPassword("$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG"); // Mot de passe encodé BCrypt pour "password123"
-        anonymousUser.setRegistrationDate(LocalDateTime.now());
-        anonymousUser.setStatus(com.lmp.domain.enums.UserStatus.ACTIVE); // Actif comme dans la version test
-        anonymousUser.setAccountLocked(false);
-        anonymousUser.setEmailVerified(true); // Email vérifié pour les tests
-        
-        return userRepository.save(anonymousUser);
     }
     
     /**
@@ -1031,25 +998,27 @@ public class AppointmentService {
     /**
      * Envoie un email de confirmation pour un rendez-vous anonyme
      */
-    private void sendAnonymousConfirmationEmail(Appointment appointment, AppointmentRequest request) {
+    private void sendAnonymousConfirmationEmail(Appointment appointment) {
+        logger.info("📧 DÉBUT - Envoi email confirmation anonyme pour RDV ID: {}", appointment.getId());
+        logger.info("📫 Destinataire: {}", appointment.getEffectiveClientEmail());
+        
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("lmp.assistance@gmail.com");
-            message.setTo(request.getEmail());
-            message.setSubject("Confirmation de votre rendez-vous - LMP");
+            message.setTo(appointment.getEffectiveClientEmail());
+            message.setSubject("Confirmation de votre demande de rendez-vous - LMP");
             
             String body = String.format(
                 "Bonjour %s,\n\n" +
-                "Votre demande de rendez-vous a été reçue avec succès.\n\n" +
+                "Votre demande de rendez-vous a été enregistrée avec succès.\n\n" +
                 "Détails du rendez-vous :\n" +
-                "- Service : %s\n" +
-                "- Date : %s\n" +
+                "- Sujet : %s\n" +
+                "- Date et heure : %s\n" +
                 "- Durée : %d minutes\n" +
                 "- Statut : En attente de confirmation\n\n" +
-                "Nous vous contacterons très prochainement pour confirmer ce rendez-vous.\n\n" +
-                "Cordialement,\n" +
-                "L'équipe LMP",
-                request.getName(),
+                "Nous vous confirmerons ce rendez-vous dans les plus brefs délais.\n\n" +
+                "Cordialement,\nL'équipe LMP",
+                appointment.getEffectiveClientName(),
                 appointment.getSubject(),
                 appointment.getAppointmentDate().format(DATETIME_FORMATTER),
                 appointment.getDurationMinutes()
@@ -1058,9 +1027,65 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("📧 Email de confirmation envoyé à : {}", request.getEmail());
+            // Marquer comme envoyé
+            appointment.setConfirmationSent(true);
+            appointment.setConfirmationSentAt(LocalDateTime.now());
+            
+            logger.info("🎉 Email de confirmation anonyme envoyé pour le rendez-vous ID: {}", appointment.getId());
+            
         } catch (MailException e) {
-            logger.error("❌ Erreur envoi email confirmation anonyme pour : {}", request.getEmail(), e);
+            logger.error("Erreur lors de l'envoi de l'email de confirmation anonyme pour le rendez-vous ID: {}", 
+                    appointment.getId(), e);
+        }
+    }
+    
+    /**
+     * Envoie une notification à l'équipe pour un nouveau rendez-vous anonyme
+     */
+    private void sendAnonymousTeamNotificationEmail(Appointment appointment) {
+        logger.info("📧 Envoi notification équipe pour nouveau RDV anonyme ID: {}", appointment.getId());
+        
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("lmp.assistance@gmail.com");
+            message.setTo("lmp.assistance@gmail.com");
+            message.setSubject("📅 Nouveau rendez-vous - " + appointment.getEffectiveClientName());
+            
+            String body = String.format(
+                "Un nouveau rendez-vous a été créé !✨\n\n" +
+                "Détails du client :\n" +
+                "- Nom : %s\n" +
+                "- Email : %s\n" +
+                "- Téléphone : %s\n\n" +
+                "Détails du rendez-vous :\n" +
+                "- Service : %s\n" +
+                "- Date et heure : %s\n" +
+                "- Durée : %d minutes\n" +
+                "- Statut : %s\n" +
+                "- Description : %s\n\n" +
+                "ID du rendez-vous : #%d\n\n" +
+                "Action requise : Confirmer le rendez-vous avec le client.\n\n" +
+                "---\n" +
+                "Notification automatique - LMP Services",
+                appointment.getEffectiveClientName(),
+                appointment.getEffectiveClientEmail(),
+                appointment.getEffectiveClientPhone() != null ? appointment.getEffectiveClientPhone() : "Non fourni",
+                appointment.getSubject(),
+                appointment.getAppointmentDate().format(DATETIME_FORMATTER),
+                appointment.getDurationMinutes(),
+                appointment.getStatus().toString(),
+                appointment.getDescription() != null ? appointment.getDescription() : "Aucune description",
+                appointment.getId()
+            );
+            
+            message.setText(body);
+            mailSender.send(message);
+            
+            logger.info("🎉 Notification équipe envoyée avec succès pour RDV anonyme ID: {}", appointment.getId());
+            
+        } catch (MailException e) {
+            logger.error("❌ Erreur lors de l'envoi de la notification équipe pour le rendez-vous anonyme ID: {}", 
+                    appointment.getId(), e);
         }
     }
 }
