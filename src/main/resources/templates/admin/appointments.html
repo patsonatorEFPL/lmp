@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Rendez-vous - Administration LMP</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    
+    <style>
+        .admin-header {
+            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .filter-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card.pending { border-left-color: #ffc107; }
+        .stat-card.confirmed { border-left-color: #17a2b8; }
+        .stat-card.in-progress { border-left-color: #fd7e14; }
+        .stat-card.completed { border-left-color: #28a745; }
+        .stat-card.cancelled { border-left-color: #dc3545; }
+        .stat-card.no-show { border-left-color: #6c757d; }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c757d;
+        }
+        
+        .appointments-table-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
+            color: white;
+            padding: 1.5rem;
+            margin: 0;
+        }
+        
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-confirmed { background-color: #d1ecf1; color: #0c5460; }
+        .status-in_progress { background-color: #fde2e2; color: #b91c1c; }
+        .status-completed { background-color: #d4edda; color: #155724; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+        .status-no_show { background-color: #e2e3e5; color: #383d41; }
+        
+        .action-btn {
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .btn-confirm { background-color: #17a2b8; color: white; }
+        .btn-start { background-color: #fd7e14; color: white; }
+        .btn-complete { background-color: #28a745; color: white; }
+        .btn-cancel { background-color: #dc3545; color: white; }
+        .btn-no-show { background-color: #6c757d; color: white; }
+        
+        .pagination-container {
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .export-btn:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .client-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        
+        .client-name {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .client-email {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .appointment-subject {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .appointment-date {
+            font-weight: 600;
+            color: #dc3545;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #dc3545;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-6 mb-0">
+                        <i class="fas fa-calendar-alt me-3"></i>Gestion des Rendez-vous
+                    </h1>
+                    <p class="mb-0 opacity-75">Administration et suivi des rendez-vous clients</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a th:href="@{/admin/appointments/new}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Nouveau Rendez-vous
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i><span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i><span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-cards">
+            <div class="stat-card pending">
+                <div class="stat-number" th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).PENDING) ?: 0}">0</div>
+                <div class="stat-label">En attente</div>
+            </div>
+            <div class="stat-card confirmed">
+                <div class="stat-number" th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).CONFIRMED) ?: 0}">0</div>
+                <div class="stat-label">Confirmés</div>
+            </div>
+            <div class="stat-card in-progress">
+                <div class="stat-number" th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).IN_PROGRESS) ?: 0}">0</div>
+                <div class="stat-label">En cours</div>
+            </div>
+            <div class="stat-card completed">
+                <div class="stat-number" th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).COMPLETED) ?: 0}">0</div>
+                <div class="stat-label">Terminés</div>
+            </div>
+            <div class="stat-card cancelled">
+                <div class="stat-number" th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).CANCELLED) ?: 0}">0</div>
+                <div class="stat-label">Annulés</div>
+            </div>
+            <div class="stat-card no-show">
+                <div class="stat-number" th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).NO_SHOW) ?: 0}">0</div>
+                <div class="stat-label">Absence</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <form th:action="@{/admin/appointments}" method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="statusFilter" class="form-label">Statut</label>
+                    <select class="form-select" id="statusFilter" name="status">
+                        <option value="">Tous les statuts</option>
+                        <option th:each="status : ${allStatuses}" 
+                                th:value="${status}" 
+                                th:text="${status.displayName}"
+                                th:selected="${status == selectedStatus}">
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="startDate" class="form-label">Date début</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" 
+                           th:value="${startDate != null ? #temporals.format(startDate, 'yyyy-MM-dd') : ''}">
+                </div>
+                
+                <div class="col-md-2">
+                    <label for="endDate" class="form-label">Date fin</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate"
+                           th:value="${endDate != null ? #temporals.format(endDate, 'yyyy-MM-dd') : ''}">
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Recherche</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Nom, email, sujet..."
+                           th:value="${search}">
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Filtrer
+                    </button>
+                    <a th:href="@{/admin/appointments}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Appointments Table -->
+        <div class="appointments-table-container">
+            <div class="table-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <span th:text="${appointments.totalElements}">0</span> rendez-vous trouvé(s)
+                </h5>
+                <div>
+                    <button type="button" class="export-btn" onclick="exportAppointments()">
+                        <i class="fas fa-download me-2"></i>Export CSV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Client</th>
+                            <th>Sujet</th>
+                            <th>Date & Heure</th>
+                            <th>Statut</th>
+                            <th>Durée</th>
+                            <th>Priorité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${appointments.empty}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fas fa-calendar-times fa-3x mb-3 d-block"></i>
+                                Aucun rendez-vous trouvé
+                            </td>
+                        </tr>
+                        
+                        <tr th:each="appointment : ${appointments.content}" th:id="'row-' + ${appointment.id}">
+                            <td class="fw-bold" th:text="'#' + ${appointment.id}"></td>
+                            <td>
+                                <div class="client-info">
+                                    <div class="client-name" th:text="${appointment.effectiveClientName}"></div>
+                                    <div class="client-email" th:text="${appointment.effectiveClientEmail}"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="appointment-subject" th:text="${appointment.subject}"></div>
+                                <div th:if="${appointment.description}" class="text-muted small" 
+                                     th:text="${#strings.abbreviate(appointment.description, 50)}"></div>
+                            </td>
+                            <td>
+                                <div class="appointment-date" 
+                                     th:text="${#temporals.format(appointment.appointmentDate, 'dd/MM/yyyy HH:mm')}"></div>
+                            </td>
+                            <td>
+                                <span th:class="'status-badge status-' + ${#strings.toLowerCase(appointment.status.name())}" 
+                                      th:text="${appointment.status.displayName}"
+                                      th:id="'status-' + ${appointment.id}"></span>
+                            </td>
+                            <td th:text="${appointment.durationMinutes} + ' min'"></td>
+                            <td>
+                                <span th:class="${appointment.priority <= 3} ? 'badge bg-danger' : (${appointment.priority <= 5} ? 'badge bg-warning' : 'badge bg-success')" 
+                                      th:text="${appointment.priority}"></span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <!-- Voir détails -->
+                                    <a th:href="@{/admin/appointments/{id}(id=${appointment.id})}" 
+                                       class="action-btn btn-primary" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    <!-- Éditer -->
+                                    <a th:href="@{/admin/appointments/{id}/edit(id=${appointment.id})}" 
+                                       class="action-btn btn-warning" title="Éditer">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    
+                                    <!-- Actions selon le statut -->
+                                    <th:block th:if="${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).PENDING}">
+                                        <button class="action-btn btn-confirm" 
+                                                th:onclick="'changeStatus(' + ${appointment.id} + ', \'confirm\')'"
+                                                title="Confirmer">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </th:block>
+                                    
+                                    <th:block th:if="${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).CONFIRMED}">
+                                        <button class="action-btn btn-start" 
+                                                th:onclick="'changeStatus(' + ${appointment.id} + ', \'start\')'"
+                                                title="Démarrer">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                    </th:block>
+                                    
+                                    <th:block th:if="${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).IN_PROGRESS}">
+                                        <button class="action-btn btn-complete" 
+                                                th:onclick="'changeStatus(' + ${appointment.id} + ', \'complete\')'"
+                                                title="Terminer">
+                                            <i class="fas fa-flag-checkered"></i>
+                                        </button>
+                                    </th:block>
+                                    
+                                    <!-- Annuler (si applicable) -->
+                                    <th:block th:if="${appointment.status.cancellable}">
+                                        <button class="action-btn btn-cancel" 
+                                                th:onclick="'cancelAppointment(' + ${appointment.id} + ')'"
+                                                title="Annuler">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </th:block>
+                                    
+                                    <!-- Marquer comme no-show -->
+                                    <th:block th:if="${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).CONFIRMED}">
+                                        <button class="action-btn btn-no-show" 
+                                                th:onclick="'changeStatus(' + ${appointment.id} + ', \'no-show\')'"
+                                                title="Marquer absence">
+                                            <i class="fas fa-user-slash"></i>
+                                        </button>
+                                    </th:block>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-container" th:if="${appointments.totalPages > 1}">
+                <nav aria-label="Navigation des rendez-vous">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item" th:classappend="${appointments.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/appointments(page=0, size=${pageSize}, sortBy=${sortBy}, sortDirection=${sortDirection}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate}, search=${search})}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        
+                        <li class="page-item" th:classappend="${appointments.first} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/appointments(page=${appointments.number - 1}, size=${pageSize}, sortBy=${sortBy}, sortDirection=${sortDirection}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate}, search=${search})}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                        
+                        <th:block th:each="pageNum : ${#numbers.sequence(0, appointments.totalPages - 1)}" 
+                                  th:if="${pageNum >= appointments.number - 2 && pageNum <= appointments.number + 2}">
+                            <li class="page-item" th:classappend="${pageNum == appointments.number} ? 'active'">
+                                <a class="page-link" th:href="@{/admin/appointments(page=${pageNum}, size=${pageSize}, sortBy=${sortBy}, sortDirection=${sortDirection}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate}, search=${search})}"
+                                   th:text="${pageNum + 1}"></a>
+                            </li>
+                        </th:block>
+                        
+                        <li class="page-item" th:classappend="${appointments.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/appointments(page=${appointments.number + 1}, size=${pageSize}, sortBy=${sortBy}, sortDirection=${sortDirection}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate}, search=${search})}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        
+                        <li class="page-item" th:classappend="${appointments.last} ? 'disabled'">
+                            <a class="page-link" th:href="@{/admin/appointments(page=${appointments.totalPages - 1}, size=${pageSize}, sortBy=${sortBy}, sortDirection=${sortDirection}, status=${selectedStatus}, startDate=${startDate}, endDate=${endDate}, search=${search})}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <div class="text-center mt-3 text-muted">
+                    Affichage de <span th:text="${appointments.number * appointments.size + 1}"></span> 
+                    à <span th:text="${appointments.number * appointments.size + appointments.numberOfElements}"></span>
+                    sur <span th:text="${appointments.totalElements}"></span> résultats
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- JavaScript pour les actions AJAX -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') || '';
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+        
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        function changeStatus(appointmentId, action) {
+            const actionMessages = {
+                'confirm': 'Confirmer ce rendez-vous ?',
+                'start': 'Démarrer ce rendez-vous ?', 
+                'complete': 'Marquer ce rendez-vous comme terminé ?',
+                'no-show': 'Marquer ce rendez-vous comme absence ?'
+            };
+            
+            const message = actionMessages[action] || 'Êtes-vous sûr de vouloir effectuer cette action ?';
+            
+            Swal.fire({
+                title: 'Confirmation',
+                text: message,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Oui, continuer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performStatusChange(appointmentId, action);
+                }
+            });
+        }
+        
+        function performStatusChange(appointmentId, action) {
+            showLoading();
+            
+            const url = /*[[@{/admin/appointments/}]]*/ '/admin/appointments/' + appointmentId + '/' + action;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    // Mise à jour du badge de statut
+                    const statusElement = document.getElementById('status-' + appointmentId);
+                    if (statusElement) {
+                        statusElement.textContent = data.newStatus;
+                        statusElement.className = 'status-badge status-' + action;
+                    }
+                    
+                    // Affichage du message de succès
+                    Swal.fire({
+                        title: 'Succès !',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        // Actualiser la page pour mettre à jour les actions disponibles
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Erreur !',
+                        text: data.message,
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Erreur !',
+                    text: 'Une erreur est survenue lors de la mise à jour.',
+                    icon: 'error'
+                });
+            });
+        }
+        
+        function cancelAppointment(appointmentId) {
+            Swal.fire({
+                title: 'Annuler le rendez-vous',
+                text: 'Veuillez indiquer la raison de l\'annulation :',
+                input: 'textarea',
+                inputPlaceholder: 'Raison de l\'annulation...',
+                inputValidator: (value) => {
+                    if (!value || value.trim().length < 3) {
+                        return 'Veuillez saisir une raison d\'au moins 3 caractères'
+                    }
+                },
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Annuler le RDV',
+                cancelButtonText: 'Fermer'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performCancellation(appointmentId, result.value);
+                }
+            });
+        }
+        
+        function performCancellation(appointmentId, reason) {
+            showLoading();
+            
+            const url = /*[[@{/admin/appointments/}]]*/ '/admin/appointments/' + appointmentId + '/cancel';
+            
+            const formData = new FormData();
+            formData.append('reason', reason);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    [csrfHeader]: csrfToken
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Succès !',
+                        text: data.message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Erreur !',
+                        text: data.message,
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Erreur !',
+                    text: 'Une erreur est survenue lors de l\'annulation.',
+                    icon: 'error'
+                });
+            });
+        }
+        
+        function exportAppointments() {
+            // Construire l'URL d'export avec les filtres actuels
+            const params = new URLSearchParams(window.location.search);
+            const exportUrl = /*[[@{/admin/appointments/export}]]*/ '/admin/appointments/export?' + params.toString();
+            
+            // Ouvrir dans un nouvel onglet
+            window.open(exportUrl, '_blank');
+        }
+        
+        /*]]>*/
+    </script>
+    
+    <!-- CSRF Meta Tag -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+</body>
+</html>

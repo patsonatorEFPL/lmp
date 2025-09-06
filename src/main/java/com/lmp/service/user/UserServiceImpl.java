@@ -45,8 +45,8 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private ReviewRepository reviewRepository;
     
-    // @Autowired
-    // private AppointmentRepository appointmentRepository;
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     /**
      * Trouve un utilisateur par son ID.
@@ -515,20 +515,23 @@ public class UserServiceImpl implements UserService {
             }
             logger.info("✅ [HARD-DELETE] {} avis anonymisé(s)", anonymizedReviews);
             
-            // ÉTAPE 5: Anonymiser les rendez-vous (TEMPORAIREMENT DÉSACTIVÉE pour debug)
-            logger.warn("📅 [HARD-DELETE] Étape 5/7 - Anonymisation des rendez-vous (DÉSACTIVÉE)");
-            // TODO: Réactiver après avoir résolu le problème d'injection
-            /*
+            // ÉTAPE 5: Anonymiser les rendez-vous (conserver pour historique des appointments)
+            logger.warn("📅 [HARD-DELETE] Étape 5/7 - Anonymisation des rendez-vous");
             var userAppointments = appointmentRepository.findByUserOrderByAppointmentDateDesc(user);
             logger.info("🔍 [HARD-DELETE] Trouvé {} rendez-vous pour l'utilisateur", userAppointments.size());
             int anonymizedAppointments = 0;
             for (var appointment : userAppointments) {
                 try {
                     logger.info("🔄 [HARD-DELETE] Anonymisation rendez-vous ID: {}", appointment.getId());
-                    // Sauvegarder les informations du client avant anonymisation
-                    String clientName = appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName();
-                    String clientEmail = appointment.getUser().getEmail();
-                    String clientPhone = appointment.getUser().getPhone();
+                    // Sauvegarder les informations du client avant anonymisation (gestion des valeurs NULL)
+                    User appointmentUser = appointment.getUser();
+                    String firstName = (appointmentUser.getFirstName() != null) ? appointmentUser.getFirstName() : "Inconnu";
+                    String lastName = (appointmentUser.getLastName() != null) ? appointmentUser.getLastName() : "Inconnu";
+                    String clientName = firstName + " " + lastName;
+                    String clientEmail = (appointmentUser.getEmail() != null) ? appointmentUser.getEmail() : "email.inconnu@supprime.local";
+                    String clientPhone = (appointmentUser.getPhone() != null) ? appointmentUser.getPhone() : "Non renseigné";
+                    
+                    logger.info("🔄 [HARD-DELETE] Données client sauvegardées: nom='{}', email='{}', phone='{}'", clientName, clientEmail, clientPhone);
                     
                     // Mettre l'utilisateur à null (anonymisation)
                     appointment.setUser(null);
@@ -556,9 +559,7 @@ public class UserServiceImpl implements UserService {
                     throw new RuntimeException("Erreur lors de l'anonymisation du rendez-vous " + appointment.getId() + ": " + e.getMessage(), e);
                 }
             }
-            */
-            int anonymizedAppointments = 0; // Valeur temporaire pour les logs
-            logger.info("✅ [HARD-DELETE] {} rendez-vous anonymisé(s) (TEMPORAIREMENT SIMULÉ)", anonymizedAppointments);
+            logger.info("✅ [HARD-DELETE] {} rendez-vous anonymisé(s)", anonymizedAppointments);
             
             // ÉTAPE 6: CONSERVER l'historique des statuts de commandes
             // (table order_status_history) - Ne rien faire, conservé pour audit

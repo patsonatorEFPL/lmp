@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Rendez-vous - Administration LMP</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1><i class="fas fa-calendar-alt me-3"></i>Test Gestion des Rendez-vous</h1>
+        
+        <!-- Messages -->
+        <div th:if="${successMessage}" class="alert alert-success">
+            <span th:text="${successMessage}"></span>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger">
+            <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- Statistics simples -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).PENDING) ?: 0}">0</h3>
+                        <p>En attente</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).CONFIRMED) ?: 0}">0</h3>
+                        <p>Confirmés</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).IN_PROGRESS) ?: 0}">0</h3>
+                        <p>En cours</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).COMPLETED) ?: 0}">0</h3>
+                        <p>Terminés</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).CANCELLED) ?: 0}">0</h3>
+                        <p>Annulés</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 th:text="${statusCounts.get(T(com.lmp.domain.enums.AppointmentStatus).NO_SHOW) ?: 0}">0</h3>
+                        <p>Absences</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations de debug -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Informations de Debug</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total d'éléments :</strong> <span th:text="${appointments.totalElements}">0</span></p>
+                <p><strong>Nombre d'éléments sur cette page :</strong> <span th:text="${appointments.numberOfElements}">0</span></p>
+                <p><strong>Nombre total de pages :</strong> <span th:text="${appointments.totalPages}">0</span></p>
+                <p><strong>Page actuelle :</strong> <span th:text="${appointments.number + 1}">1</span></p>
+                <p><strong>Est vide :</strong> <span th:text="${appointments.empty}">false</span></p>
+            </div>
+        </div>
+
+        <!-- Liste simple des rendez-vous -->
+        <div class="card">
+            <div class="card-header">
+                <h5>Liste des Rendez-vous (<span th:text="${appointments.totalElements}">0</span> total)</h5>
+            </div>
+            <div class="card-body">
+                <div th:if="${appointments.empty}" class="text-center text-muted py-4">
+                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                    <p>Aucun rendez-vous trouvé</p>
+                </div>
+                
+                <div th:if="${!appointments.empty}">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Client</th>
+                                    <th>Sujet</th>
+                                    <th>Date & Heure</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="appointment : ${appointments.content}">
+                                    <td th:text="'#' + ${appointment.id}"></td>
+                                    <td>
+                                        <div>
+                                            <strong th:text="${appointment.effectiveClientName}">Client</strong><br>
+                                            <small class="text-muted" th:text="${appointment.effectiveClientEmail}">email</small>
+                                        </div>
+                                    </td>
+                                    <td th:text="${appointment.subject}">Sujet</td>
+                                    <td th:text="${#temporals.format(appointment.appointmentDate, 'dd/MM/yyyy HH:mm')}">Date</td>
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).PENDING} ? 'bg-warning' :
+                                                             (${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).CONFIRMED} ? 'bg-info' :
+                                                             (${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).IN_PROGRESS} ? 'bg-primary' :
+                                                             (${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).COMPLETED} ? 'bg-success' :
+                                                             (${appointment.status == T(com.lmp.domain.enums.AppointmentStatus).CANCELLED} ? 'bg-danger' : 'bg-secondary'))))"
+                                              th:text="${appointment.status.displayName}">
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a th:href="@{/admin/appointments/{id}(id=${appointment.id})}" 
+                                           class="btn btn-sm btn-outline-primary" title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a th:href="@{/admin/appointments/{id}/edit(id=${appointment.id})}" 
+                                           class="btn btn-sm btn-outline-warning" title="Éditer">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination simple -->
+        <nav th:if="${appointments.totalPages > 1}" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${appointments.first} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/appointments/simple(page=0, size=${pageSize})}">Premier</a>
+                </li>
+                <li class="page-item" th:classappend="${appointments.first} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/appointments/simple(page=${appointments.number - 1}, size=${pageSize})}">Précédent</a>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link" th:text="${appointments.number + 1}">1</span>
+                </li>
+                <li class="page-item" th:classappend="${appointments.last} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/appointments/simple(page=${appointments.number + 1}, size=${pageSize})}">Suivant</a>
+                </li>
+                <li class="page-item" th:classappend="${appointments.last} ? 'disabled'">
+                    <a class="page-link" th:href="@{/admin/appointments/simple(page=${appointments.totalPages - 1}, size=${pageSize})}">Dernier</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Liens de navigation -->
+        <div class="mt-4">
+            <a href="/admin/appointments" class="btn btn-primary">Version Complète</a>
+            <a href="/admin/dashboard" class="btn btn-secondary">Retour Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -319,12 +319,12 @@ public class AdminUserViewController {
             auditLogger.error("User HARD DELETED (PERMANENT) - ID: {}, Email: {}", id, user.getEmail());
             logger.error("🗑️ ADMIN DEBUG - Suppression DÉFINITIVE utilisateur terminée: {}", id);
             
-            return ResponseEntity.ok().body("\"{\\\"success\\\": true, \\\"message\\\": \\\"Utilisateur supprimé définitivement (irréversible)\\\"}\"");
+            return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur supprimé définitivement (irréversible)\"}");
             
         } catch (Exception e) {
             logger.error("❌ ADMIN DEBUG - Erreur suppression DÉFINITIVE utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
-                .body("\"{\\\"success\\\": false, \\\"message\\\": \\\"" + e.getMessage() + "\\\"}\"");
+                .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
         }
     }
 
