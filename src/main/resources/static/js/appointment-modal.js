@@ -24,6 +24,10 @@ window.AppointmentModal = {
     selectedTime: null,
     availableSlots: [],
     
+    // Gestion du redimensionnement
+    resizeTimeout: null,
+    lastViewportSize: null,
+    
     // Configuration
     config: {
         modalId: 'appointmentModal',
@@ -144,6 +148,12 @@ window.AppointmentModal = {
         if (this.elements.nextMonth) {
             this.elements.nextMonth.addEventListener('click', () => this.nextMonth());
         }
+        
+        // Gestion du redimensionnement
+        window.addEventListener('resize', this.debounce(() => this.handleResize(), 100));
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => this.handleOrientationChange(), 100);
+        });
         
         this.log('🎛️ Événements configurés');
     },
@@ -307,7 +317,11 @@ window.AppointmentModal = {
             return;
         }
         
-        let slotsHTML = '<div class="grid grid-cols-2 gap-2">';
+        // Grille adaptative selon la taille d'écran
+        const isMobile = window.innerWidth < 640;
+        const gridClass = isMobile ? 'grid-cols-2' : 'grid-cols-3 sm:grid-cols-4';
+        
+        let slotsHTML = `<div class="grid ${gridClass} gap-1.5 sm:gap-2">`;
         
         this.availableSlots.forEach(slot => {
             const time = typeof slot === 'string' ? slot : new Date(slot).toLocaleTimeString('fr-FR', { 
@@ -322,7 +336,7 @@ window.AppointmentModal = {
             
             slotsHTML += `
                 <button type="button" 
-                        class="time-slot px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${buttonClass}"
+                        class="time-slot px-2 py-1.5 sm:px-3 sm:py-2 border rounded-lg text-xs sm:text-sm font-medium transition-colors ${buttonClass} min-h-[36px] sm:min-h-[40px]"
                         onclick="AppointmentModal.selectTime('${time}')">
                     ${time}
                 </button>
@@ -440,17 +454,19 @@ window.AppointmentModal = {
         // Préremplir avec les données de l'utilisateur connecté (si disponible)
         this.prefillUserData();
         
+        // Sauvegarder la position de scroll
+        this.saveScrollPosition();
+        
         // Afficher le modal
         this.elements.modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+        this.lockBodyScroll();
         this.isOpen = true;
         
-        // Focus sur le premier champ
-        setTimeout(() => {
-            if (this.elements.name) {
-                this.elements.name.focus();
-            }
-        }, 100);
+        // Focus sur le premier champ avec amélioration pour mobile
+        this.setInitialFocus();
+        
+        // Vérifier l'orientation
+        this.handleViewportChange();
         
         // Rendre le calendrier
         this.renderCalendar();
@@ -468,8 +484,11 @@ window.AppointmentModal = {
         
         // Masquer le modal
         this.elements.modal.classList.add('hidden');
-        document.body.style.overflow = '';
+        this.unlockBodyScroll();
         this.isOpen = false;
+        
+        // Restaurer la position de scroll
+        this.restoreScrollPosition();
         
         // Réinitialiser le formulaire
         this.resetForm();
@@ -800,6 +819,112 @@ window.AppointmentModal = {
      */
     error: function(...args) {
         console.error('❌ [AppointmentModal]', ...args);
+    },
+    
+    /**
+     * Fonction debounce pour optimiser les événements resize
+     */
+    debounce: function(func, wait) {
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(this.resizeTimeout);
+                func(...args);
+            };
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(later, wait);
+        }.bind(this);
+    },
+    
+    /**
+     * Gestion du redimensionnement de la fenêtre
+     */
+    handleResize: function() {
+        if (!this.isOpen) return;
+        
+        const currentViewport = {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+        
+        // Recalcul du calendrier si nécessaire
+        if (this.selectedDate) {
+            this.renderCalendar();
+        }
+        
+        this.lastViewportSize = currentViewport;
+        this.log('📱 Redimensionnement géré:', currentViewport);
+    },
+    
+    /**
+     * Gestion du changement d'orientation
+     */
+    handleOrientationChange: function() {
+        if (!this.isOpen) return;
+        
+        this.log('🔄 Changement d\'orientation détecté');
+        this.handleViewportChange();
+    },
+    
+    /**
+     * Gestion du changement de viewport
+     */
+    handleViewportChange: function() {
+        // S'assurer que le modal reste visible
+        if (this.elements.modal && this.isOpen) {
+            // Force un reflow pour éviter les problèmes d'affichage
+            this.elements.modal.offsetHeight;
+        }
+    },
+    
+    /**
+     * Sauvegarde de la position de scroll
+     */
+    saveScrollPosition: function() {
+        this.scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    },
+    
+    /**
+     * Restauration de la position de scroll
+     */
+    restoreScrollPosition: function() {
+        if (typeof this.scrollY === 'number') {
+            window.scrollTo(0, this.scrollY);
+        }
+    },
+    
+    /**
+     * Verrouillage du scroll du body (amélioré pour mobile)
+     */
+    lockBodyScroll: function() {
+        // Méthode améliorée qui fonctionne mieux sur mobile
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this.scrollY}px`;
+        document.body.style.width = '100%';
+    },
+    
+    /**
+     * Déverrouillage du scroll du body
+     */
+    unlockBodyScroll: function() {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+    },
+    
+    /**
+     * Focus initial amélioré pour mobile
+     */
+    setInitialFocus: function() {
+        // Sur mobile, éviter le focus automatique qui peut causer des problèmes
+        const isMobile = window.innerWidth < 640;
+        
+        if (!isMobile && this.elements.name) {
+            setTimeout(() => {
+                this.elements.name.focus();
+            }, 150);
+        }
     }
 };
 

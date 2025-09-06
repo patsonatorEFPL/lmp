@@ -110,11 +110,21 @@ public class AppointmentService {
         // Invalider le cache pour cette date
         invalidateCacheForDate(appointment.getAppointmentDate().toLocalDate());
 
-            // Envoi de la notification de confirmation au client
+        // Envoi de la notification de confirmation au client
+        try {
             sendConfirmationEmail(appointment);
-            
-            // Envoi de la notification à l'équipe
-            sendTeamNotificationEmail(appointment);
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de l'email de confirmation pour le RDV {}: {}", 
+                appointment.getId(), e.getMessage());
+        }
+        
+        // Notifier l'équipe LMP du nouveau rendez-vous
+        try {
+            notifyTeamNewAppointment(appointment);
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour le RDV {}: {}", 
+                appointment.getId(), e.getMessage());
+        }
 
             logger.info("Emails de confirmation envoyés pour le rendez-vous ID: {}", appointment.getId());
         return appointment;
@@ -124,6 +134,13 @@ public class AppointmentService {
      * Confirme un rendez-vous
      */
     public Appointment confirmAppointment(Long appointmentId) {
+        return confirmAppointment(appointmentId, null);
+    }
+    
+    /**
+     * Confirme un rendez-vous (version avec admin)
+     */
+    public Appointment confirmAppointment(Long appointmentId, String adminEmail) {
         logger.info("Confirmation du rendez-vous ID: {}", appointmentId);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -135,8 +152,21 @@ public class AppointmentService {
         appointment.confirm();
         appointment = appointmentRepository.save(appointment);
 
-        // Envoi d'email de confirmation
-        sendStatusChangeEmail(appointment, "confirmé");
+        // Envoi d'email de confirmation au client
+        try {
+            sendStatusChangeEmail(appointment, "confirmé");
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de l'email de confirmation pour le RDV {}: {}", 
+                appointment.getId(), e.getMessage());
+        }
+        
+        // Notifier l'équipe du changement de statut
+        try {
+            notifyTeamStatusChange(appointment, "PENDING", "CONFIRMED", adminEmail != null ? adminEmail : "Système");
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour le RDV {}: {}", 
+                appointment.getId(), e.getMessage());
+        }
 
         logger.info("Rendez-vous confirmé - ID: {}", appointmentId);
         return appointment;
@@ -146,6 +176,13 @@ public class AppointmentService {
      * Annule un rendez-vous
      */
     public Appointment cancelAppointment(Long appointmentId, String reason) {
+        return cancelAppointment(appointmentId, reason, null);
+    }
+    
+    /**
+     * Annule un rendez-vous (version avec admin)
+     */
+    public Appointment cancelAppointment(Long appointmentId, String reason, String adminEmail) {
         logger.info("Annulation du rendez-vous ID: {} - Raison: {}", appointmentId, reason);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -157,8 +194,21 @@ public class AppointmentService {
         appointment.cancel(reason);
         appointment = appointmentRepository.save(appointment);
 
-        // Envoi d'email d'annulation
-        sendCancellationEmail(appointment, reason);
+        // Envoi d'email d'annulation au client
+        try {
+            sendCancellationEmail(appointment, reason);
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de l'email d'annulation pour le RDV {}: {}", 
+                appointment.getId(), e.getMessage());
+        }
+        
+        // Notifier l'équipe de l'annulation
+        try {
+            notifyTeamCancellation(appointment, reason, adminEmail != null ? adminEmail : "Système");
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour l'annulation du RDV {}: {}", 
+                appointment.getId(), e.getMessage());
+        }
 
         logger.info("Rendez-vous annulé - ID: {}", appointmentId);
         return appointment;
@@ -432,6 +482,10 @@ public class AppointmentService {
     }
 
     // ======== MÉTHODES D'EMAIL ========
+    
+    // Email de l'équipe LMP pour les notifications internes
+    private static final String TEAM_EMAIL = "lmp.assistance@gmail.com";
+    private static final String ADMIN_EMAIL = "admin@lmp-services.ca"; // Email admin principal
 
     /**
      * Envoie un email de confirmation de rendez-vous
@@ -591,6 +645,162 @@ public class AppointmentService {
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de l'email d'annulation pour le rendez-vous ID: {}", 
+                    appointment.getId(), e);
+        }
+    }
+    
+    // ======== NOTIFICATIONS ÉQUIPE LMP ========
+    
+    /**
+     * Notifie l'équipe LMP d'un nouveau rendez-vous
+     */
+    private void notifyTeamNewAppointment(Appointment appointment) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("lmp.assistance@gmail.com");
+            message.setTo(TEAM_EMAIL);
+            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
+                message.setCc(ADMIN_EMAIL);
+            }
+            message.setSubject("🎆 Nouveau rendez-vous reçu - LMP Admin");
+            
+            String clientInfo = appointment.getEffectiveClientName() + 
+                (appointment.getEffectiveClientEmail() != null ? " (" + appointment.getEffectiveClientEmail() + ")" : "");
+            
+            String body = String.format(
+                "💼 NOUVEAU RENDEZ-VOUS REÇU\n\n" +
+                "👤 Client : %s\n" +
+                "📧 Email : %s\n" +
+                "📞 Téléphone : %s\n\n" +
+                "🕰 Date et heure : %s\n" +
+                "🎯 Sujet : %s\n" +
+                "⏱ Durée : %d minutes\n" +
+                "🔸 Priorité : %d/10\n" +
+                "📝 Statut : %s\n\n" +
+                "💬 Description :\n%s\n\n" +
+                "---\n" +
+                "⚡ Action requise : Ce rendez-vous est en attente de confirmation.\n" +
+                "🔗 Accéder à l'admin : %s/admin/appointments/%d\n\n" +
+                "Notification automatique LMP",
+                clientInfo,
+                appointment.getEffectiveClientEmail() != null ? appointment.getEffectiveClientEmail() : "Non renseigné",
+                appointment.getEffectiveClientPhone() != null ? appointment.getEffectiveClientPhone() : "Non renseigné",
+                appointment.getAppointmentDate().format(DATETIME_FORMATTER),
+                appointment.getSubject(),
+                appointment.getDurationMinutes(),
+                appointment.getPriority(),
+                appointment.getStatus().getDisplayName(),
+                appointment.getDescription() != null ? appointment.getDescription() : "Aucune description",
+                "https://lmp-services.ca", // Base URL de l'app
+                appointment.getId()
+            );
+            
+            message.setText(body);
+            mailSender.send(message);
+            
+            logger.info("📧 Notification équipe envoyée pour nouveau RDV ID: {}", appointment.getId());
+            
+        } catch (MailException e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour nouveau RDV ID: {}", 
+                    appointment.getId(), e);
+        }
+    }
+    
+    /**
+     * Notifie l'équipe LMP d'un changement de statut de rendez-vous
+     */
+    private void notifyTeamStatusChange(Appointment appointment, String oldStatus, String newStatus, String adminEmail) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("lmp.assistance@gmail.com");
+            message.setTo(TEAM_EMAIL);
+            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
+                message.setCc(ADMIN_EMAIL);
+            }
+            message.setSubject("🔄 Changement statut RDV #" + appointment.getId() + " - LMP Admin");
+            
+            String clientInfo = appointment.getEffectiveClientName() + 
+                (appointment.getEffectiveClientEmail() != null ? " (" + appointment.getEffectiveClientEmail() + ")" : "");
+            
+            String body = String.format(
+                "🔄 CHANGEMENT DE STATUT\n\n" +
+                "🎯 RDV ID : %d\n" +
+                "👤 Client : %s\n" +
+                "🕰 Date : %s\n" +
+                "🎯 Sujet : %s\n\n" +
+                "🔴 Ancien statut : %s\n" +
+                "🟢 Nouveau statut : %s\n\n" +
+                "👨‍💼 Modifié par : %s\n" +
+                "⏰ Horodatage : %s\n\n" +
+                "🔗 Voir détails : %s/admin/appointments/%d\n\n" +
+                "Notification automatique LMP",
+                appointment.getId(),
+                clientInfo,
+                appointment.getAppointmentDate().format(DATETIME_FORMATTER),
+                appointment.getSubject(),
+                oldStatus,
+                newStatus,
+                adminEmail != null ? adminEmail : "Système",
+                LocalDateTime.now().format(DATETIME_FORMATTER),
+                "https://lmp-services.ca",
+                appointment.getId()
+            );
+            
+            message.setText(body);
+            mailSender.send(message);
+            
+            logger.info("📧 Notification équipe envoyée pour changement statut RDV ID: {} ({} -> {})", 
+                    appointment.getId(), oldStatus, newStatus);
+            
+        } catch (MailException e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour changement statut RDV ID: {}", 
+                    appointment.getId(), e);
+        }
+    }
+    
+    /**
+     * Notifie l'équipe LMP d'une annulation de rendez-vous
+     */
+    private void notifyTeamCancellation(Appointment appointment, String reason, String adminEmail) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("lmp.assistance@gmail.com");
+            message.setTo(TEAM_EMAIL);
+            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
+                message.setCc(ADMIN_EMAIL);
+            }
+            message.setSubject("❌ Annulation RDV #" + appointment.getId() + " - LMP Admin");
+            
+            String clientInfo = appointment.getEffectiveClientName() + 
+                (appointment.getEffectiveClientEmail() != null ? " (" + appointment.getEffectiveClientEmail() + ")" : "");
+            
+            String body = String.format(
+                "❌ RENDEZ-VOUS ANNULÉ\n\n" +
+                "🎯 RDV ID : %d\n" +
+                "👤 Client : %s\n" +
+                "🕰 Date prévue : %s\n" +
+                "🎯 Sujet : %s\n\n" +
+                "💬 Raison d'annulation :\n%s\n\n" +
+                "👨‍💼 Annulé par : %s\n" +
+                "⏰ Horodatage : %s\n\n" +
+                "📝 Note : L'email d'annulation a été envoyé au client.\n\n" +
+                "Notification automatique LMP",
+                appointment.getId(),
+                clientInfo,
+                appointment.getAppointmentDate().format(DATETIME_FORMATTER),
+                appointment.getSubject(),
+                reason != null ? reason : "Aucune raison spécifiée",
+                adminEmail != null ? adminEmail : "Système",
+                LocalDateTime.now().format(DATETIME_FORMATTER)
+            );
+            
+            message.setText(body);
+            mailSender.send(message);
+            
+            logger.info("📧 Notification équipe envoyée pour annulation RDV ID: {}", appointment.getId());
+            
+        } catch (MailException e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour annulation RDV ID: {}", 
                     appointment.getId(), e);
         }
     }

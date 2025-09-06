@@ -346,7 +346,7 @@ public class AdminAppointmentController {
         logger.info("Admin deleting appointment {} by: {}", id, adminEmail);
 
         try {
-            appointmentService.cancelAppointment(id, "Supprimé par l'administrateur");
+            appointmentService.cancelAppointment(id, "Supprimé par l'administrateur", adminEmail);
             
             redirectAttributes.addFlashAttribute("successMessage", 
                 "Rendez-vous supprimé avec succès");
@@ -374,7 +374,7 @@ public class AdminAppointmentController {
         String adminEmail = authentication.getName();
         
         try {
-            Appointment appointment = appointmentService.confirmAppointment(id);
+            Appointment appointment = appointmentService.confirmAppointment(id, adminEmail);
             auditLogger.info("Appointment {} confirmed by admin: {}", id, adminEmail);
             
             return Map.of(
@@ -404,7 +404,7 @@ public class AdminAppointmentController {
         String adminEmail = authentication.getName();
         
         try {
-            Appointment appointment = appointmentService.cancelAppointment(id, reason);
+            Appointment appointment = appointmentService.cancelAppointment(id, reason, adminEmail);
             auditLogger.info("Appointment {} cancelled by admin: {} - Reason: {}", id, adminEmail, reason);
             
             return Map.of(
