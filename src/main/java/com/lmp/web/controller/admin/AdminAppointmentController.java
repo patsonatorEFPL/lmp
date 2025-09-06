@@ -109,18 +109,37 @@ public class AdminAppointmentController {
                 AppointmentStatus.NO_SHOW, appointmentService.countAppointmentsByStatus(AppointmentStatus.NO_SHOW)
             );
 
+            // Calcul des statistiques individuelles
+            long totalAppointments = appointments.getTotalElements();
+            long confirmedCount = statusCounts.get(AppointmentStatus.CONFIRMED);
+            long pendingCount = statusCounts.get(AppointmentStatus.PENDING);
+            long cancelledCount = statusCounts.get(AppointmentStatus.CANCELLED);
+            long completedCount = statusCounts.get(AppointmentStatus.COMPLETED);
+            long inProgressCount = statusCounts.get(AppointmentStatus.IN_PROGRESS);
+            long noShowCount = statusCounts.get(AppointmentStatus.NO_SHOW);
+
             // Ajout des données au modèle
             model.addAttribute("appointments", appointments);
             model.addAttribute("statusCounts", statusCounts);
             model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", appointments.getTotalPages());
             model.addAttribute("pageSize", size);
             model.addAttribute("sortBy", sortBy);
             model.addAttribute("sortDirection", sortDirection);
-            model.addAttribute("selectedStatus", status);
+            model.addAttribute("status", status);
             model.addAttribute("startDate", startDate);
             model.addAttribute("endDate", endDate);
             model.addAttribute("search", search);
             model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
+            
+            // Statistiques pour les cartes du template
+            model.addAttribute("totalAppointments", totalAppointments);
+            model.addAttribute("confirmedCount", confirmedCount);
+            model.addAttribute("pendingCount", pendingCount);
+            model.addAttribute("cancelledCount", cancelledCount);
+            model.addAttribute("completedCount", completedCount);
+            model.addAttribute("inProgressCount", inProgressCount);
+            model.addAttribute("noShowCount", noShowCount);
 
             auditLogger.info("Admin appointments list viewed by: {} - {} appointments", 
                 adminEmail, appointments.getTotalElements());

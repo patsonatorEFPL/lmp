@@ -61,6 +61,8 @@ public class SecurityConfig {
                     "/auth/register-and-checkout",
                     "/login",
                     "/verify-email",
+                    "/test-welcome-email", // TEMPORAIRE - à supprimer après test
+                    "/test-welcome-email-send", // TEMPORAIRE - à supprimer après test
                     "/css/**",
                     "/js/**",
                     "/images/**",

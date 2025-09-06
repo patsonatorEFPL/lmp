@@ -438,15 +438,29 @@ public class AppointmentService {
      */
     private void sendConfirmationEmail(Appointment appointment) {
         logger.info("📧 DÉBUT - Envoi email confirmation pour RDV ID: {}", appointment.getId());
-        logger.info("📫 Destinataire: {}", appointment.getUser().getEmail());
+        
+        // Vérifier si on a un email valide
+        String clientEmail = appointment.getEffectiveClientEmail();
+        if (clientEmail == null || clientEmail.trim().isEmpty()) {
+            logger.warn("Impossible d'envoyer l'email de confirmation pour le RDV {} : aucun email client", appointment.getId());
+            return;
+        }
+        
+        logger.info("📫 Destinataire: {}", clientEmail);
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("lmp.assistance@gmail.com");
-            message.setTo(appointment.getUser().getEmail());
+            message.setTo(clientEmail);
             message.setSubject("Confirmation de votre demande de rendez-vous - LMP");
             
             logger.info("📧 Message préparé, tentative d'envoi...");
+            
+            // Récupérer le nom du client (utilisateur ou anonyme)
+            String clientName = appointment.getEffectiveClientName();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = "Client"; // Nom par défaut
+            }
             
             String body = String.format(
                 "Bonjour %s,\n\n" +
@@ -458,7 +472,7 @@ public class AppointmentService {
                 "- Statut : En attente de confirmation\n\n" +
                 "Nous vous confirmerons ce rendez-vous dans les plus brefs délais.\n\n" +
                 "Cordialement,\nL'équipe LMP",
-                appointment.getUser().getFirstName(),
+                clientName,
                 appointment.getSubject(),
                 appointment.getAppointmentDate().format(DATETIME_FORMATTER),
                 appointment.getDurationMinutes()
@@ -486,11 +500,24 @@ public class AppointmentService {
      * Envoie un email de changement de statut
      */
     private void sendStatusChangeEmail(Appointment appointment, String status) {
+        // Vérifier si on a un email valide
+        String clientEmail = appointment.getEffectiveClientEmail();
+        if (clientEmail == null || clientEmail.trim().isEmpty()) {
+            logger.warn("Impossible d'envoyer l'email de changement de statut pour le RDV {} : aucun email client", appointment.getId());
+            return;
+        }
+        
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("lmp.assistance@gmail.com");
-            message.setTo(appointment.getUser().getEmail());
+            message.setTo(clientEmail);
             message.setSubject("Votre rendez-vous a été " + status + " - LMP");
+            
+            // Récupérer le nom du client (utilisateur ou anonyme)
+            String clientName = appointment.getEffectiveClientName();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = "Client"; // Nom par défaut
+            }
             
             String body = String.format(
                 "Bonjour %s,\n\n" +
@@ -501,7 +528,7 @@ public class AppointmentService {
                 "- Durée : %d minutes\n\n" +
                 "Merci de votre confiance.\n\n" +
                 "Cordialement,\nL'équipe LMP",
-                appointment.getUser().getFirstName(),
+                clientName,
                 status,
                 appointment.getSubject(),
                 appointment.getAppointmentDate().format(DATETIME_FORMATTER),
@@ -523,11 +550,24 @@ public class AppointmentService {
      * Envoie un email d'annulation
      */
     private void sendCancellationEmail(Appointment appointment, String reason) {
+        // Vérifier si on a un email valide
+        String clientEmail = appointment.getEffectiveClientEmail();
+        if (clientEmail == null || clientEmail.trim().isEmpty()) {
+            logger.warn("Impossible d'envoyer l'email d'annulation pour le RDV {} : aucun email client", appointment.getId());
+            return;
+        }
+        
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("lmp.assistance@gmail.com");
-            message.setTo(appointment.getUser().getEmail());
+            message.setTo(clientEmail);
             message.setSubject("Annulation de votre rendez-vous - LMP");
+            
+            // Récupérer le nom du client (utilisateur ou anonyme)
+            String clientName = appointment.getEffectiveClientName();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = "Client"; // Nom par défaut
+            }
             
             String body = String.format(
                 "Bonjour %s,\n\n" +
@@ -538,7 +578,7 @@ public class AppointmentService {
                 "- Raison de l'annulation : %s\n\n" +
                 "N'hésitez pas à reprendre rendez-vous si nécessaire.\n\n" +
                 "Cordialement,\nL'équipe LMP",
-                appointment.getUser().getFirstName(),
+                clientName,
                 appointment.getSubject(),
                 appointment.getAppointmentDate().format(DATETIME_FORMATTER),
                 reason

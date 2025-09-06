@@ -19,10 +19,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import com.lmp.domain.entity.User;
+import com.lmp.domain.entity.Appointment;
 import com.lmp.domain.enums.UserStatus;
 import com.lmp.repository.OrderRepository;
 import com.lmp.repository.ReviewRepository;
+import com.lmp.repository.AppointmentRepository;
 import com.lmp.service.user.UserService;
+import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Contrôleur pour la gestion des utilisateurs via interface web admin
@@ -43,6 +47,9 @@ public class AdminUserViewController {
     
     @Autowired
     private ReviewRepository reviewRepository;
+    
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     /**
      * Affiche la page de gestion des utilisateurs
@@ -468,6 +475,170 @@ public class AdminUserViewController {
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
+    }
+
+    /**
+     * Met à jour les informations d'un utilisateur
+     */
+    @PostMapping("/{id}/update")
+    @ResponseBody
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request, Authentication authentication) {
+        logger.info("🔄 ADMIN DEBUG - Mise à jour utilisateur ID: {}", id);
+        
+        try {
+            // Vérifier l'authentification
+            if (authentication == null || !authentication.isAuthenticated()) {
+                logger.warn("🔄 ADMIN DEBUG - Admin non authentifié");
+                return ResponseEntity.status(401)
+                    .body("{\"success\": false, \"message\": \"Administrateur non authentifié\"}");
+            }
+            
+            // Récupérer l'utilisateur à modifier
+            User user = userService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                
+            String originalEmail = user.getEmail();
+            logger.info("🔄 ADMIN DEBUG - Utilisateur à modifier: ID={}, Email={}", id, originalEmail);
+            
+            // Mettre à jour les champs si fournis
+            if (request.getFirstName() != null && !request.getFirstName().trim().isEmpty()) {
+                user.setFirstName(request.getFirstName().trim());
+                logger.info("🔄 ADMIN DEBUG - Nouveau prénom: {}", request.getFirstName());
+            }
+            
+            if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
+                user.setLastName(request.getLastName().trim());
+                logger.info("🔄 ADMIN DEBUG - Nouveau nom: {}", request.getLastName());
+            }
+            
+            if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+                String newEmail = request.getEmail().trim().toLowerCase();
+                // Vérifier que l'email n'est pas déjà utilisé par un autre utilisateur
+                Optional<User> existingUser = userService.findByEmail(newEmail);
+                if (existingUser.isPresent() && !existingUser.get().getId().equals(id)) {
+                    return ResponseEntity.badRequest()
+                        .body("{\"success\": false, \"message\": \"Cet email est déjà utilisé par un autre utilisateur\"}");
+                }
+                user.setEmail(newEmail);
+                logger.info("🔄 ADMIN DEBUG - Nouvel email: {}", newEmail);
+            }
+            
+            if (request.getPhone() != null) {
+                user.setPhone(request.getPhone().trim().isEmpty() ? null : request.getPhone().trim());
+                logger.info("🔄 ADMIN DEBUG - Nouveau téléphone: {}", user.getPhone());
+            }
+            
+            if (request.getCompanyName() != null) {
+                user.setCompanyName(request.getCompanyName().trim().isEmpty() ? null : request.getCompanyName().trim());
+                logger.info("🔄 ADMIN DEBUG - Nouvelle entreprise: {}", user.getCompanyName());
+            }
+            
+            // Sauvegarder les modifications
+            userService.save(user);
+            
+            auditLogger.info("User updated by admin - ID: {}, Original Email: {}, New Email: {}, Admin: {}", 
+                           id, originalEmail, user.getEmail(), authentication.getName());
+            logger.info("✅ ADMIN DEBUG - Utilisateur mis à jour avec succès: {}", id);
+            
+            return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur mis à jour avec succès\"}");
+            
+        } catch (Exception e) {
+            logger.error("❌ ADMIN DEBUG - Erreur mise à jour utilisateur {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+    
+    /**
+     * Récupère les rendez-vous d'un utilisateur
+     */
+    @GetMapping("/{id}/appointments")
+    @ResponseBody
+    public ResponseEntity<?> getUserAppointments(@PathVariable Long id) {
+        logger.info("📅 ADMIN DEBUG - Récupération rendez-vous utilisateur ID: {}", id);
+        
+        try {
+            User user = userService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+            
+            List<Appointment> appointments = appointmentRepository.findByUserOrderByAppointmentDateDesc(user);
+            logger.info("📅 ADMIN DEBUG - Trouvé {} rendez-vous pour l'utilisateur {}", appointments.size(), user.getEmail());
+            
+            // Convertir en DTO pour l'affichage
+            List<AppointmentDto> appointmentDtos = appointments.stream()
+                .map(AppointmentDto::new)
+                .toList();
+            
+            return ResponseEntity.ok(appointmentDtos);
+            
+        } catch (Exception e) {
+            logger.error("❌ ADMIN DEBUG - Erreur récupération rendez-vous utilisateur {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.badRequest()
+                .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
+        }
+    }
+    
+    /**
+     * DTO pour les requêtes de mise à jour utilisateur
+     */
+    public static class UserUpdateRequest {
+        private String firstName;
+        private String lastName;
+        private String email;
+        private String phone;
+        private String companyName;
+        
+        public UserUpdateRequest() {}
+        
+        // Getters et Setters
+        public String getFirstName() { return firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+        
+        public String getLastName() { return lastName; }
+        public void setLastName(String lastName) { this.lastName = lastName; }
+        
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        
+        public String getPhone() { return phone; }
+        public void setPhone(String phone) { this.phone = phone; }
+        
+        public String getCompanyName() { return companyName; }
+        public void setCompanyName(String companyName) { this.companyName = companyName; }
+    }
+    
+    /**
+     * DTO pour les rendez-vous
+     */
+    public static class AppointmentDto {
+        private Long id;
+        private String appointmentDate;
+        private String status;
+        private String adminNotes;
+        private String clientName;
+        private String clientEmail;
+        private String clientPhone;
+        
+        public AppointmentDto(Appointment appointment) {
+            this.id = appointment.getId();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            this.appointmentDate = appointment.getAppointmentDate() != null ? 
+                appointment.getAppointmentDate().format(formatter) : "N/A";
+            this.status = appointment.getStatus() != null ? appointment.getStatus().toString() : "N/A";
+            this.adminNotes = appointment.getAdminNotes();
+            this.clientName = appointment.getClientName();
+            this.clientEmail = appointment.getClientEmail();
+            this.clientPhone = appointment.getClientPhone();
+        }
+        
+        // Getters
+        public Long getId() { return id; }
+        public String getAppointmentDate() { return appointmentDate; }
+        public String getStatus() { return status; }
+        public String getAdminNotes() { return adminNotes; }
+        public String getClientName() { return clientName; }
+        public String getClientEmail() { return clientEmail; }
+        public String getClientPhone() { return clientPhone; }
     }
 
     /**

@@ -451,6 +451,13 @@
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     
+                                    <!-- Bouton Éditer -->
+                                    <button type="button" class="btn btn-outline-primary action-btn" 
+                                            th:onclick="'editUser(' + ${user.id} + ')'" 
+                                            title="Éditer l'utilisateur">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    
                                     <!-- Bouton Activer/Désactiver -->
                                     <button th:if="${user.status.name() == 'ACTIVE'}" 
                                             type="button" class="btn btn-outline-warning action-btn" 
@@ -869,6 +876,216 @@
                         <div class="alert alert-danger" role="alert">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             Erreur lors du chargement des détails de l'utilisateur
+                        </div>
+                    `;
+                });
+        }
+        
+        // Nouvelle fonction pour éditer un utilisateur
+        function editUser(userId) {
+            // Récupérer d'abord les détails de l'utilisateur
+            fetch(`/admin/users/${userId}/details`)
+                .then(response => response.json())
+                .then(data => {
+                    // Créer le formulaire d'édition
+                    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+                    const content = document.getElementById('userDetailsContent');
+                    
+                    content.innerHTML = `
+                        <form id="editUserForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted text-uppercase mb-3">Informations personnelles</h6>
+                                    <div class="mb-3">
+                                        <label for="firstName" class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" id="firstName" value="${data.displayName ? data.displayName.split(' ')[0] : ''}" placeholder="Prénom">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="lastName" class="form-label">Nom</label>
+                                        <input type="text" class="form-control" id="lastName" value="${data.displayName ? data.displayName.split(' ').slice(1).join(' ') : ''}" placeholder="Nom">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" value="${data.email}" placeholder="Email">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted text-uppercase mb-3">Informations complémentaires</h6>
+                                    <div class="mb-3">
+                                        <label for="phone" class="form-label">Téléphone</label>
+                                        <input type="tel" class="form-control" id="phone" value="${data.phone || ''}" placeholder="Téléphone">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="companyName" class="form-label">Entreprise</label>
+                                        <input type="text" class="form-control" id="companyName" value="${data.companyName || ''}" placeholder="Nom de l'entreprise">
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <button type="button" class="btn btn-outline-primary" onclick="showUserAppointments(${userId})">
+                                        <i class="fas fa-calendar me-2"></i>Voir les rendez-vous
+                                    </button>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Sauvegarder
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    `;
+                    
+                    // Gestionnaire du formulaire
+                    document.getElementById('editUserForm').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        
+                        const updateData = {
+                            firstName: document.getElementById('firstName').value,
+                            lastName: document.getElementById('lastName').value,
+                            email: document.getElementById('email').value,
+                            phone: document.getElementById('phone').value,
+                            companyName: document.getElementById('companyName').value
+                        };
+                        
+                        console.log('🔄 ADMIN DEBUG - Mise à jour utilisateur:', userId, updateData);
+                        
+                        const headers = {
+                            'Content-Type': 'application/json'
+                        };
+                        
+                        if (csrfToken && csrfHeader) {
+                            headers[csrfHeader] = csrfToken;
+                        }
+                        
+                        fetch(`/admin/users/${userId}/update`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify(updateData)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                showToast(data.message, 'success');
+                                modal.hide();
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                showToast(data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ ADMIN DEBUG - Erreur mise à jour:', error);
+                            showToast('Erreur lors de la mise à jour: ' + error.message, 'error');
+                        });
+                    });
+                    
+                    modal.show();
+                })
+                .catch(error => {
+                    showToast('Erreur lors du chargement des détails utilisateur: ' + error.message, 'error');
+                });
+        }
+        
+        // Nouvelle fonction pour afficher les rendez-vous d'un utilisateur
+        function showUserAppointments(userId) {
+            const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+            const content = document.getElementById('userDetailsContent');
+            
+            // Show loading spinner
+            content.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement des rendez-vous...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Chargement des rendez-vous...</p>
+                </div>
+            `;
+            
+            if (!document.getElementById('userDetailsModal').classList.contains('show')) {
+                modal.show();
+            }
+            
+            // Fetch appointments
+            fetch(`/admin/users/${userId}/appointments`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(appointments => {
+                    console.log('📅 ADMIN DEBUG - Rendez-vous récupérés:', appointments);
+                    
+                    if (appointments.length === 0) {
+                        content.innerHTML = `
+                            <div class="text-center py-5">
+                                <i class="fas fa-calendar-times fs-1 text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun rendez-vous</h5>
+                                <p class="text-muted mb-0">Cet utilisateur n'a aucun rendez-vous enregistré.</p>
+                            </div>
+                        `;
+                    } else {
+                        let appointmentsHtml = `
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5><i class="fas fa-calendar me-2"></i>Rendez-vous (${appointments.length})</h5>
+                                <span class="badge bg-primary">${appointments.length} total</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Service</th>
+                                            <th>Statut</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        appointments.forEach(appointment => {
+                            const statusColor = {
+                                'PENDING': 'warning',
+                                'CONFIRMED': 'success', 
+                                'COMPLETED': 'primary',
+                                'CANCELLED': 'danger'
+                            }[appointment.status] || 'secondary';
+                            
+                            appointmentsHtml += `
+                                <tr>
+                                    <td><strong>${appointment.appointmentDate}</strong></td>
+                                    <td>${appointment.serviceName || 'N/A'}</td>
+                                    <td><span class="badge bg-${statusColor}">${appointment.status}</span></td>
+                                    <td>
+                                        ${appointment.notes ? `<small class="text-muted">Client: ${appointment.notes}</small><br>` : ''}
+                                        ${appointment.adminNotes ? `<small class="text-info">Admin: ${appointment.adminNotes}</small>` : ''}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        appointmentsHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        
+                        content.innerHTML = appointmentsHtml;
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ ADMIN DEBUG - Erreur chargement rendez-vous:', error);
+                    content.innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Erreur lors du chargement des rendez-vous: ${error.message}
                         </div>
                     `;
                 });

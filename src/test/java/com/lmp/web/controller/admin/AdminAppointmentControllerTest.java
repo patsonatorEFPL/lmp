@@ -113,7 +113,7 @@ class AdminAppointmentControllerTest {
         // Act
         String result = controller.listAppointments(0, 10, "appointmentDate", "desc", 
             null, null, null, null, model, 
-            () -> "admin@test.com" // Mock Authentication
+            createMockAuthentication()
         );
 
         // Assert
@@ -136,7 +136,7 @@ class AdminAppointmentControllerTest {
         // Act
         String result = controller.listAppointments(0, 10, "appointmentDate", "desc", 
             null, null, null, "test", model, 
-            () -> "admin@test.com"
+            createMockAuthentication()
         );
 
         // Assert
@@ -150,7 +150,7 @@ class AdminAppointmentControllerTest {
         when(appointmentService.findById(1L)).thenReturn(testAppointment);
 
         // Act
-        String result = controller.viewAppointment(1L, model, () -> "admin@test.com");
+        String result = controller.viewAppointment(1L, model, createMockAuthentication());
 
         // Assert
         assertEquals("admin/appointment-details", result);
@@ -164,7 +164,7 @@ class AdminAppointmentControllerTest {
             .thenThrow(new RuntimeException("Rendez-vous non trouvé"));
 
         // Act
-        String result = controller.viewAppointment(1L, model, () -> "admin@test.com");
+        String result = controller.viewAppointment(1L, model, createMockAuthentication());
 
         // Assert
         assertEquals("redirect:/admin/appointments", result);
@@ -177,7 +177,7 @@ class AdminAppointmentControllerTest {
         when(userService.findAll()).thenReturn(Arrays.asList(testUser));
 
         // Act
-        String result = controller.newAppointmentForm(model, () -> "admin@test.com");
+        String result = controller.newAppointmentForm(model, createMockAuthentication());
 
         // Assert
         assertEquals("admin/appointment-form", result);
@@ -195,7 +195,7 @@ class AdminAppointmentControllerTest {
 
         // Act
         String result = controller.saveAppointment(testAppointmentForm, bindingResult, 
-            1L, model, redirectAttributes, () -> "admin@test.com");
+            1L, model, redirectAttributes, createMockAuthentication());
 
         // Assert
         assertEquals("redirect:/admin/appointments", result);
@@ -210,7 +210,7 @@ class AdminAppointmentControllerTest {
 
         // Act
         String result = controller.saveAppointment(testAppointmentForm, bindingResult, 
-            1L, model, redirectAttributes, () -> "admin@test.com");
+            1L, model, redirectAttributes, createMockAuthentication());
 
         // Assert
         assertEquals("admin/appointment-form", result);
@@ -225,7 +225,7 @@ class AdminAppointmentControllerTest {
         when(userService.findAll()).thenReturn(Arrays.asList(testUser));
 
         // Act
-        String result = controller.editAppointmentForm(1L, model, () -> "admin@test.com");
+        String result = controller.editAppointmentForm(1L, model, createMockAuthentication());
 
         // Assert
         assertEquals("admin/appointment-form", result);
@@ -242,7 +242,7 @@ class AdminAppointmentControllerTest {
 
         // Act
         String result = controller.updateAppointment(1L, testAppointmentForm, bindingResult, 
-            null, model, redirectAttributes, () -> "admin@test.com");
+            null, model, redirectAttributes, createMockAuthentication());
 
         // Assert
         assertEquals("redirect:/admin/appointments/1", result);
@@ -258,7 +258,7 @@ class AdminAppointmentControllerTest {
 
         // Act
         String result = controller.updateAppointment(1L, testAppointmentForm, bindingResult, 
-            "Admin notes", model, redirectAttributes, () -> "admin@test.com");
+            "Admin notes", model, redirectAttributes, createMockAuthentication());
 
         // Assert
         assertEquals("redirect:/admin/appointments/1", result);
@@ -272,7 +272,7 @@ class AdminAppointmentControllerTest {
             .thenReturn(testAppointment);
 
         // Act
-        String result = controller.deleteAppointment(1L, redirectAttributes, () -> "admin@test.com");
+        String result = controller.deleteAppointment(1L, redirectAttributes, createMockAuthentication());
 
         // Assert
         assertEquals("redirect:/admin/appointments", result);
@@ -286,7 +286,7 @@ class AdminAppointmentControllerTest {
         when(appointmentService.confirmAppointment(1L)).thenReturn(testAppointment);
 
         // Act
-        Map<String, Object> result = controller.confirmAppointment(1L, () -> "admin@test.com");
+        Map<String, Object> result = controller.confirmAppointment(1L, createMockAuthentication());
 
         // Assert
         assertTrue((Boolean) result.get("success"));
@@ -301,7 +301,7 @@ class AdminAppointmentControllerTest {
             .thenThrow(new IllegalStateException("Cannot confirm"));
 
         // Act
-        Map<String, Object> result = controller.confirmAppointment(1L, () -> "admin@test.com");
+        Map<String, Object> result = controller.confirmAppointment(1L, createMockAuthentication());
 
         // Assert
         assertFalse((Boolean) result.get("success"));
@@ -316,7 +316,7 @@ class AdminAppointmentControllerTest {
             .thenReturn(testAppointment);
 
         // Act
-        Map<String, Object> result = controller.cancelAppointment(1L, "Test reason", () -> "admin@test.com");
+        Map<String, Object> result = controller.cancelAppointment(1L, "Test reason", createMockAuthentication());
 
         // Assert
         assertTrue((Boolean) result.get("success"));
@@ -330,7 +330,7 @@ class AdminAppointmentControllerTest {
         when(appointmentService.startAppointment(1L)).thenReturn(testAppointment);
 
         // Act
-        Map<String, Object> result = controller.startAppointment(1L, () -> "admin@test.com");
+        Map<String, Object> result = controller.startAppointment(1L, createMockAuthentication());
 
         // Assert
         assertTrue((Boolean) result.get("success"));
@@ -345,7 +345,7 @@ class AdminAppointmentControllerTest {
             .thenReturn(testAppointment);
 
         // Act
-        Map<String, Object> result = controller.completeAppointment(1L, "Notes", () -> "admin@test.com");
+        Map<String, Object> result = controller.completeAppointment(1L, "Notes", createMockAuthentication());
 
         // Assert
         assertTrue((Boolean) result.get("success"));
@@ -359,7 +359,7 @@ class AdminAppointmentControllerTest {
         when(appointmentService.markAsNoShow(1L)).thenReturn(testAppointment);
 
         // Act
-        Map<String, Object> result = controller.markAsNoShow(1L, () -> "admin@test.com");
+        Map<String, Object> result = controller.markAsNoShow(1L, createMockAuthentication());
 
         // Assert
         assertTrue((Boolean) result.get("success"));
@@ -381,7 +381,7 @@ class AdminAppointmentControllerTest {
             .thenReturn(appointmentPage);
 
         // Act
-        controller.exportAppointments(null, null, null, "test", response, () -> "admin@test.com");
+        controller.exportAppointments(null, null, null, "test", response, createMockAuthentication());
 
         // Assert
         verify(response).setContentType("text/csv");

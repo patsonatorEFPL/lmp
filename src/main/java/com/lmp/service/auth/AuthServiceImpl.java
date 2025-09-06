@@ -5,9 +5,20 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.lmp.domain.entity.Role;
 import com.lmp.domain.entity.User;
@@ -22,6 +33,8 @@ import com.lmp.web.dto.RegisterDto;
 @Service
 public class AuthServiceImpl implements AuthService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
+
     @Autowired
     private UserRepository userRepository;
 
@@ -30,6 +43,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JavaMailSender javaMailSender;
+
+    @Autowired
+    private TemplateEngine templateEngine;
+
+    @Value("${mail.from.address:lmp.assistance@gmail.com}")
+    private String fromEmail;
+
+    @Value("${mail.from.name:LMP Services}")
+    private String fromName;
+
+    @Value("${company.name:LMP Services}")
+    private String companyName;
 
     /**
      * Inscrit un nouvel utilisateur avec le rôle USER par défaut.
@@ -126,16 +154,52 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Envoie un email de bienvenue à l'utilisateur.
-     * Pour l'instant, simulation avec log.
+     * Envoie un email de bienvenue à l'utilisateur avec le template HTML.
      * 
      * @param user L'utilisateur nouvellement inscrit
      */
     @Override
     public void sendWelcomeEmail(User user) {
-        // TODO: Implémenter l'envoi d'email réel
-        System.out.println("Email de bienvenue envoyé à: " + user.getEmail());
-        System.out.println("Token de vérification: " + user.getVerificationToken());
+        try {
+            logger.info("WELCOME_EMAIL_DEBUG - Début envoi email de bienvenue pour : {}", user.getEmail());
+            
+            // Création du contexte Thymeleaf
+            Context context = new Context();
+            context.setVariable("user", user);
+            context.setVariable("companyName", companyName);
+            
+            // Rendu du template HTML
+            logger.info("WELCOME_EMAIL_DEBUG - Rendu template 'emails/welcome-new-account'...");
+            String htmlContent = templateEngine.process("emails/welcome-new-account", context);
+            logger.info("WELCOME_EMAIL_DEBUG - Template rendu avec succès, taille: {} caractères", htmlContent.length());
+            
+            // Création du message email
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            // Configuration du message
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(user.getEmail());
+            helper.setSubject("\uD83C\uDF89 Bienvenue chez " + companyName + " !");
+            helper.setText(htmlContent, true);
+            
+            // Envoi de l'email
+            logger.info("WELCOME_EMAIL_DEBUG - Tentative d'envoi via JavaMailSender...");
+            javaMailSender.send(message);
+            
+            logger.info("Email de bienvenue envoyé avec succès à : {}", user.getEmail());
+            
+        } catch (MessagingException e) {
+            logger.error("WELCOME_EMAIL_ERROR - MessagingException lors de l'envoi pour '{}': {}",
+                        user.getEmail(), e.getMessage(), e);
+            // Ne pas faire échouer l'inscription pour un problème d'email
+            logger.warn("L'inscription a réussi mais l'email de bienvenue n'a pas pu être envoyé");
+        } catch (Exception e) {
+            logger.error("WELCOME_EMAIL_ERROR - Exception inattendue lors de l'envoi pour '{}': Type={}, Message='{}'",
+                        user.getEmail(), e.getClass().getSimpleName(), e.getMessage(), e);
+            // Ne pas faire échouer l'inscription pour un problème d'email
+            logger.warn("L'inscription a réussi mais l'email de bienvenue n'a pas pu être envoyé");
+        }
     }
 
     /**
