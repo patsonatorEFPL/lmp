@@ -59,6 +59,15 @@ public class AuthServiceImpl implements AuthService {
     @Value("${company.name:LMP Services}")
     private String companyName;
 
+    @Value("${app.base.url:https://lmp-services.ca}")
+    private String baseUrl;
+
+    @Value("${company.email:lmp.assistance@gmail.com}")
+    private String companyEmail;
+
+    @Value("${company.website:https://lmp-services.ca}")
+    private String companyWebsite;
+
     /**
      * Inscrit un nouvel utilisateur avec le rôle USER par défaut.
      * 
@@ -104,9 +113,16 @@ public class AuthServiceImpl implements AuthService {
 
         // Sauvegarder l'utilisateur
         User savedUser = userRepository.save(user);
+        logger.info("INSCRIPTION_DEBUG - Utilisateur sauvegardé: {}", savedUser.getEmail());
 
-        // Envoyer l'email de bienvenue (simulation pour l'instant)
-        sendWelcomeEmail(savedUser);
+        // Envoyer l'email de bienvenue
+        logger.info("INSCRIPTION_DEBUG - Tentative d'envoi email de bienvenue...");
+        try {
+            sendWelcomeEmail(savedUser);
+            logger.info("INSCRIPTION_DEBUG - Email de bienvenue traité sans exception");
+        } catch (Exception e) {
+            logger.error("INSCRIPTION_DEBUG - Erreur email de bienvenue: {}", e.getMessage(), e);
+        }
 
         return savedUser;
     }
@@ -167,10 +183,13 @@ public class AuthServiceImpl implements AuthService {
             Context context = new Context();
             context.setVariable("user", user);
             context.setVariable("companyName", companyName);
+            context.setVariable("baseUrl", baseUrl);
+            context.setVariable("companyEmail", companyEmail);
+            context.setVariable("companyWebsite", companyWebsite);
             
             // Rendu du template HTML
-            logger.info("WELCOME_EMAIL_DEBUG - Rendu template 'emails/welcome-new-account'...");
-            String htmlContent = templateEngine.process("emails/welcome-new-account", context);
+            logger.info("WELCOME_EMAIL_DEBUG - Rendu template 'emails/welcome-minimal-clean'...");
+            String htmlContent = templateEngine.process("emails/welcome-minimal-clean", context);
             logger.info("WELCOME_EMAIL_DEBUG - Template rendu avec succès, taille: {} caractères", htmlContent.length());
             
             // Création du message email

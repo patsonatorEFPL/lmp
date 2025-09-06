@@ -213,6 +213,57 @@ public class AppointmentService {
         logger.info("Rendez-vous annulé - ID: {}", appointmentId);
         return appointment;
     }
+    
+    /**
+     * Supprime définitivement un rendez-vous (hard delete)
+     */
+    public void deleteAppointment(Long appointmentId) {
+        deleteAppointment(appointmentId, null);
+    }
+    
+    /**
+     * Supprime définitivement un rendez-vous (version avec admin)
+     */
+    public void deleteAppointment(Long appointmentId, String adminEmail) {
+        logger.info("Suppression définitive du rendez-vous ID: {} par: {}", appointmentId, 
+            adminEmail != null ? adminEmail : "Système");
+
+        Appointment appointment = findAppointmentById(appointmentId);
+        
+        // Sauvegarder les informations avant suppression pour les notifications
+        String clientName = appointment.getEffectiveClientName();
+        String clientEmail = appointment.getEffectiveClientEmail();
+        String subject = appointment.getSubject();
+        LocalDateTime appointmentDate = appointment.getAppointmentDate();
+        String description = appointment.getDescription();
+        
+        // Notifier le client de la suppression (si email disponible)
+        if (clientEmail != null && !clientEmail.trim().isEmpty()) {
+            try {
+                sendDeletionEmail(appointment, adminEmail);
+            } catch (Exception e) {
+                logger.error("Erreur lors de l'envoi de l'email de suppression au client pour le RDV {}: {}", 
+                    appointmentId, e.getMessage());
+            }
+        }
+        
+        // Notifier l'équipe de la suppression
+        try {
+            notifyTeamDeletion(appointment, adminEmail);
+        } catch (Exception e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour la suppression du RDV {}: {}", 
+                appointmentId, e.getMessage());
+        }
+        
+        // Invalider le cache pour cette date
+        invalidateCacheForDate(appointment.getAppointmentDate().toLocalDate());
+        
+        // Suppression définitive de la base de données
+        appointmentRepository.delete(appointment);
+        
+        logger.info("Rendez-vous supprimé définitivement - ID: {} (Client: {}, Date: {})", 
+            appointmentId, clientName, appointmentDate.format(DATETIME_FORMATTER));
+    }
 
     /**
      * Met à jour un rendez-vous existant
@@ -649,6 +700,62 @@ public class AppointmentService {
         }
     }
     
+    /**
+     * Envoie un email de suppression définitive
+     */
+    private void sendDeletionEmail(Appointment appointment, String adminEmail) {
+        // Vérifier si on a un email valide
+        String clientEmail = appointment.getEffectiveClientEmail();
+        if (clientEmail == null || clientEmail.trim().isEmpty()) {
+            logger.warn("Impossible d'envoyer l'email de suppression pour le RDV {} : aucun email client", appointment.getId());
+            return;
+        }
+        
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("lmp.assistance@gmail.com");
+            message.setTo(clientEmail);
+            message.setSubject("Suppression de votre rendez-vous - LMP");
+            
+            // Récupérer le nom du client (utilisateur ou anonyme)
+            String clientName = appointment.getEffectiveClientName();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = "Client"; // Nom par défaut
+            }
+            
+            String adminInfo = adminEmail != null ? 
+                "\n\nCette suppression a été effectuée par notre équipe administrative." :
+                "\n\nCette suppression a été effectuée automatiquement par notre système.";
+            
+            String body = String.format(
+                "Bonjour %s,\n\n" +
+                "Nous vous informons que votre rendez-vous a été supprimé de notre système.\n\n" +
+                "Détails du rendez-vous supprimé :\n" +
+                "- Sujet : %s\n" +
+                "- Date et heure : %s\n" +
+                "- Durée : %d minutes\n%s\n\n" +
+                "Si vous souhaitez reprendre rendez-vous, n'hésitez pas à nous contacter \n" +
+                "ou à utiliser notre système de prise de rendez-vous en ligne.\n\n" +
+                "Pour toute question, vous pouvez nous contacter à lmp.assistance@gmail.com\n\n" +
+                "Cordialement,\nL'équipe LMP",
+                clientName,
+                appointment.getSubject(),
+                appointment.getAppointmentDate().format(DATETIME_FORMATTER),
+                appointment.getDurationMinutes(),
+                adminInfo
+            );
+            
+            message.setText(body);
+            mailSender.send(message);
+            
+            logger.info("Email de suppression envoyé pour le rendez-vous ID: {}", appointment.getId());
+            
+        } catch (MailException e) {
+            logger.error("Erreur lors de l'envoi de l'email de suppression pour le rendez-vous ID: {}", 
+                    appointment.getId(), e);
+        }
+    }
+    
     // ======== NOTIFICATIONS ÉQUIPE LMP ========
     
     /**
@@ -801,6 +908,55 @@ public class AppointmentService {
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de la notification équipe pour annulation RDV ID: {}", 
+                    appointment.getId(), e);
+        }
+    }
+    
+    /**
+     * Notifie l'équipe LMP d'une suppression définitive de rendez-vous
+     */
+    private void notifyTeamDeletion(Appointment appointment, String adminEmail) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("lmp.assistance@gmail.com");
+            message.setTo(TEAM_EMAIL);
+            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
+                message.setCc(ADMIN_EMAIL);
+            }
+            message.setSubject("🗑️ Suppression définitive RDV #" + appointment.getId() + " - LMP Admin");
+            
+            String clientInfo = appointment.getEffectiveClientName() + 
+                (appointment.getEffectiveClientEmail() != null ? " (" + appointment.getEffectiveClientEmail() + ")" : "");
+            
+            String body = String.format(
+                "🗑️ RENDEZ-VOUS SUPPRIMÉ DÉFINITIVEMENT\n\n" +
+                "⚠️ ATTENTION : Cette action est irréversible !\n\n" +
+                "🎯 RDV ID : %d\n" +
+                "👤 Client : %s\n" +
+                "🕰 Date prévue : %s\n" +
+                "🎯 Sujet : %s\n" +
+                "📝 Description : %s\n\n" +
+                "👨‍💼 Supprimé par : %s\n" +
+                "⏰ Horodatage : %s\n\n" +
+                "📧 Note : Un email de notification a été envoyé au client.\n" +
+                "🔄 Action : Le rendez-vous a été définitivement supprimé de la base de données.\n\n" +
+                "Notification automatique LMP",
+                appointment.getId(),
+                clientInfo,
+                appointment.getAppointmentDate().format(DATETIME_FORMATTER),
+                appointment.getSubject(),
+                appointment.getDescription() != null ? appointment.getDescription() : "Aucune description",
+                adminEmail != null ? adminEmail : "Système",
+                LocalDateTime.now().format(DATETIME_FORMATTER)
+            );
+            
+            message.setText(body);
+            mailSender.send(message);
+            
+            logger.info("📧 Notification équipe envoyée pour suppression définitive RDV ID: {}", appointment.getId());
+            
+        } catch (MailException e) {
+            logger.error("Erreur lors de l'envoi de la notification équipe pour suppression définitive RDV ID: {}", 
                     appointment.getId(), e);
         }
     }

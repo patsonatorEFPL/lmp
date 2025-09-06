@@ -384,10 +384,11 @@ public class NotificationService {
             
             context.setVariable("user", testUser);
             context.setVariable("companyName", COMPANY_NAME);
+            context.setVariable("baseUrl", "https://lmp-services.ca");
             
-            // Rendu du template HTML de bienvenue (version test simplifiée)
-            logger.info("WELCOME_TEST - Rendu template 'emails/welcome-test'...");
-            String htmlContent = templateEngine.process("emails/welcome-test", context);
+            // Rendu du template HTML de bienvenue final
+            logger.info("WELCOME_TEST - Rendu template 'emails/welcome-minimal-clean'...");
+            String htmlContent = templateEngine.process("emails/welcome-minimal-clean", context);
             logger.info("WELCOME_TEST - Template rendu avec succès, taille: {} caractères", htmlContent.length());
             
             // Envoi de l'email de test

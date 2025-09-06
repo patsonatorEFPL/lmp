@@ -513,6 +513,11 @@
                                             title="Annuler">
                                         <i class="fas fa-times"></i>
                                     </button>
+                                    <button class="btn btn-action btn-dark btn-sm"
+                                            th:onclick="'deleteAppointmentPermanent(' + ${appointment.id} + ')'"
+                                            title="Supprimer définitivement">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -628,6 +633,27 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     performAction('cancel', appointmentId);
+                }
+            });
+        }
+        
+        function deleteAppointmentPermanent(appointmentId) {
+            Swal.fire({
+                title: '⚠️ Suppression définitive',
+                html: '<p><strong>ATTENTION :</strong> Cette action est <u>irréversible</u> !</p>' +
+                      '<p>Le rendez-vous sera <strong>définitivement supprimé</strong> de la base de données.</p>' +
+                      '<p>Le client recevra un email de notification.</p>',
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonText: '🗑️ Supprimer définitivement',
+                cancelButtonText: '🚫 Annuler',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                focusCancel: true,
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performAction('delete-permanent', appointmentId);
                 }
             });
         }

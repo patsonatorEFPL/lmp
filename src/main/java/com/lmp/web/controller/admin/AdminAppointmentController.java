@@ -334,31 +334,61 @@ public class AdminAppointmentController {
     }
 
     /**
-     * Suppression d'un rendez-vous (soft delete via statut CANCELLED)
+     * Annulation d'un rendez-vous (soft delete via statut CANCELLED)
      */
-    @PostMapping("/{id}/delete")
-    public String deleteAppointment(
+    @PostMapping("/{id}/cancel-soft")
+    public String cancelAppointmentSoft(
             @PathVariable Long id,
             RedirectAttributes redirectAttributes,
             Authentication authentication) {
 
         String adminEmail = authentication.getName();
-        logger.info("Admin deleting appointment {} by: {}", id, adminEmail);
+        logger.info("Admin soft-cancelling appointment {} by: {}", id, adminEmail);
 
         try {
-            appointmentService.cancelAppointment(id, "Supprimé par l'administrateur", adminEmail);
+            appointmentService.cancelAppointment(id, "Annulé par l'administrateur", adminEmail);
             
             redirectAttributes.addFlashAttribute("successMessage", 
-                "Rendez-vous supprimé avec succès");
+                "Rendez-vous annulé avec succès");
             
-            auditLogger.warn("Appointment {} deleted by admin: {}", id, adminEmail);
+            auditLogger.info("Appointment {} cancelled (soft delete) by admin: {}", id, adminEmail);
             
             return "redirect:/admin/appointments";
 
         } catch (Exception e) {
-            logger.error("Error deleting appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
+            logger.error("Error cancelling appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", 
-                "Erreur lors de la suppression : " + e.getMessage());
+                "Erreur lors de l'annulation : " + e.getMessage());
+            return "redirect:/admin/appointments";
+        }
+    }
+    
+    /**
+     * Suppression définitive d'un rendez-vous (hard delete)
+     */
+    @PostMapping("/{id}/delete")
+    public String deleteAppointmentPermanent(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes,
+            Authentication authentication) {
+
+        String adminEmail = authentication.getName();
+        logger.info("Admin permanently deleting appointment {} by: {}", id, adminEmail);
+
+        try {
+            appointmentService.deleteAppointment(id, adminEmail);
+            
+            redirectAttributes.addFlashAttribute("successMessage", 
+                "Rendez-vous supprimé définitivement avec succès");
+            
+            auditLogger.warn("Appointment {} permanently deleted by admin: {}", id, adminEmail);
+            
+            return "redirect:/admin/appointments";
+
+        } catch (Exception e) {
+            logger.error("Error permanently deleting appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "Erreur lors de la suppression définitive : " + e.getMessage());
             return "redirect:/admin/appointments";
         }
     }
@@ -496,6 +526,31 @@ public class AdminAppointmentController {
             );
         } catch (Exception e) {
             logger.error("Error marking appointment {} as no-show by admin {}: {}", id, adminEmail, e.getMessage(), e);
+            return Map.of(
+                "success", false,
+                "message", "Erreur : " + e.getMessage()
+            );
+        }
+    }
+    
+    /**
+     * Supprime définitivement un rendez-vous (AJAX)
+     */
+    @PostMapping("/{id}/delete-permanent")
+    @ResponseBody
+    public Map<String, Object> deleteAppointmentPermanentAjax(@PathVariable Long id, Authentication authentication) {
+        String adminEmail = authentication.getName();
+        
+        try {
+            appointmentService.deleteAppointment(id, adminEmail);
+            auditLogger.warn("Appointment {} permanently deleted by admin: {}", id, adminEmail);
+            
+            return Map.of(
+                "success", true,
+                "message", "Rendez-vous supprimé définitivement avec succès"
+            );
+        } catch (Exception e) {
+            logger.error("Error permanently deleting appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
             return Map.of(
                 "success", false,
                 "message", "Erreur : " + e.getMessage()

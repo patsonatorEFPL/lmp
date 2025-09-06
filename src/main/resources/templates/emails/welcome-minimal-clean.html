@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue chez LMP Services</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #2c3e50; background-color: #f8f9fa; margin: 0; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);">
+        
+        <!-- En-tête simple -->
+        <div style="background-color: #2c3e50; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 300;" th:text="'Bienvenue chez ' + ${companyName}">Bienvenue chez LMP Services</h1>
+        </div>
+
+        <!-- Contenu principal -->
+        <div style="padding: 40px 30px;">
+            
+            <!-- Message de bienvenue -->
+            <div style="margin-bottom: 30px;">
+                <h2 style="color: #2c3e50; font-size: 20px; font-weight: 400; margin: 0 0 15px 0;">
+                    Bonjour <span th:text="${user.firstName != null ? user.firstName : 'Utilisateur'}">Utilisateur</span>,
+                </h2>
+                <p style="color: #5a6c7d; margin: 0; font-size: 16px;">
+                    Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter et accéder à nos services.
+                </p>
+            </div>
+
+            <!-- Section connexion -->
+            <div style="border: 1px solid #e1e8ed; border-radius: 6px; padding: 25px; margin: 25px 0; text-align: center;">
+                <h3 style="color: #2c3e50; font-size: 18px; font-weight: 400; margin: 0 0 15px 0;">
+                    Votre compte est prêt
+                </h3>
+                <p style="color: #5a6c7d; margin: 0 0 20px 0;">
+                    Utilisez votre email et le mot de passe que vous avez choisis pour vous connecter.
+                </p>
+                
+                <a href="https://lmp-services.ca/login" 
+                   style="display: inline-block; background-color: #2c3e50; color: white; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: 400; font-size: 16px;">
+                    Se connecter
+                </a>
+            </div>
+
+            <!-- Conseils simples -->
+            <div style="border-left: 3px solid #2c3e50; padding-left: 20px; margin: 30px 0;">
+                <h4 style="color: #2c3e50; font-size: 16px; font-weight: 500; margin: 0 0 10px 0;">
+                    Conseils de sécurité
+                </h4>
+                <ul style="color: #5a6c7d; margin: 0; padding-left: 20px; font-size: 14px;">
+                    <li style="margin-bottom: 5px;">Utilisez un mot de passe unique</li>
+                    <li style="margin-bottom: 5px;">Ne partagez jamais vos identifiants</li>
+                    <li>Contactez-nous en cas d'activité suspecte</li>
+                </ul>
+            </div>
+
+            <!-- Prochaines étapes -->
+            <div style="margin: 30px 0;">
+                <h4 style="color: #2c3e50; font-size: 16px; font-weight: 500; margin: 0 0 15px 0;">
+                    Prochaines étapes
+                </h4>
+                <ol style="color: #5a6c7d; margin: 0; padding-left: 20px; font-size: 14px;">
+                    <li style="margin-bottom: 8px;">Connectez-vous à votre compte</li>
+                    <li style="margin-bottom: 8px;">Complétez votre profil</li>
+                    <li style="margin-bottom: 8px;">Explorez nos services</li>
+                    <li>Prenez votre premier rendez-vous</li>
+                </ol>
+            </div>
+
+            <!-- Contact simple -->
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 4px; margin: 30px 0;">
+                <h4 style="color: #2c3e50; font-size: 16px; font-weight: 500; margin: 0 0 10px 0;">
+                    Besoin d'aide ?
+                </h4>
+                <p style="color: #5a6c7d; margin: 0; font-size: 14px;">
+                    Contactez-nous : <a th:href="'mailto:' + ${companyEmail}" href="mailto:lmp.assistance@gmail.com" style="color: #2c3e50; text-decoration: none;" th:text="${companyEmail}">lmp.assistance@gmail.com</a>
+                    <br>Site web : <a th:href="${companyWebsite}" href="https://lmp-services.ca" style="color: #2c3e50; text-decoration: none;" th:text="${companyWebsite.replace('https://', '')}">lmp-services.ca</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Pied de page minimaliste -->
+        <div style="background-color: #f8f9fa; color: #5a6c7d; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e1e8ed;">
+            <p style="margin: 0; font-size: 14px;">
+                <strong style="color: #2c3e50;" th:text="${companyName}">LMP Services</strong>
+                <br>Votre partenaire de confiance
+            </p>
+            <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.8;">
+                Email envoyé le <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy à HH:mm')}">06/09/2025 à 16:04</span>
+                <br>© 2025 <span th:text="${companyName}">LMP Services</span>. Tous droits réservés.
+            </p>
+        </div>
+    </div>
+
+    <!-- Styles responsive -->
+    <style>
+        @media (max-width: 600px) {
+            body {
+                padding: 10px !important;
+            }
+            div[style*="padding: 40px 30px"] {
+                padding: 25px 20px !important;
+            }
+            div[style*="padding: 30px"] {
+                padding: 25px 20px !important;
+            }
+            h1[style*="font-size: 24px"] {
+                font-size: 22px !important;
+            }
+        }
+    </style>
+</body>
+</html>

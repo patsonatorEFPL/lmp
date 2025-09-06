@@ -13,6 +13,9 @@
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
     
+    <!-- CSS pour Modal Responsive -->
+    <link rel="stylesheet" th:href="@{/css/appointment-modal-responsive.css}">
+    
     <!-- Authentication Info for JavaScript -->
     <script th:inline="javascript">
         // Information d'authentification pour le JavaScript
@@ -399,33 +402,27 @@
                     </div>
                 </div>
                 
-                <!-- Section Développement Web -->
-                <div class="mb-12">
-                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 text-center">
-                        Développement Web et SEO Avancé
-                    </h2>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            </div>
+        </section>
 
         <!-- CTA Section -->
         <section class="py-16 bg-gradient-to-br from-primary to-[#4c63ff] text-white">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-3xl lg:text-4xl font-bold mb-6">
-                    Prêt à transformer votre présence digitale ?
+                    Démarrer Votre Projet SEO Québec
                 </h2>
                 <p class="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
-                    Nos experts sont là pour vous accompagner dans votre croissance en ligne.
-                    Contactez-nous pour une consultation gratuite.
+                    Rejoignez des centaines d'entreprises qui ont déjà transformé leur présence en ligne avec LMP.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="/contact" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all duration-200">
-                        💬 Poser une question
+                    <a href="mailto:lmp.assistance@gmail.com" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200 text-center">
+                        📧 Nous contacter par email
                     </a>
                 </div>
             </div>
         </section>
     </main>
+
 
     <!-- Include Booking Modal from fragment -->
     <div th:replace="fragments/booking-modal :: booking-modal"></div>
