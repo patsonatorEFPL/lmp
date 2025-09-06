@@ -13,6 +13,9 @@
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
     
+    <!-- Animations de défilement -->
+    <div th:replace="fragments/scroll-animations :: scroll-animations-css"></div>
+    
     <!-- CSS pour Modal Responsive -->
     <link rel="stylesheet" th:href="@{/css/appointment-modal-responsive.css}">
     
@@ -35,10 +38,10 @@
         <section class="bg-gradient-to-br from-[#f7f8fa] to-white py-16 lg:py-24">
             <div class="container mx-auto px-4">
                 <div class="text-center max-w-4xl mx-auto">
-                    <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-dark mb-6 leading-tight">
+                    <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-dark mb-6 leading-tight hero-animation">
                         Services Marketing Digital <span class="text-primary">Québec</span>
                     </h1>
-                    <p class="text-lg lg:text-xl text-secondary mb-8 leading-relaxed">
+                    <p class="text-lg lg:text-xl text-secondary mb-8 leading-relaxed hero-animation delay-200">
                         Solutions complètes pour votre visibilité digitale et votre croissance en ligne.
                         Expertise reconnue dans le marketing digital et le référencement.
                     </p>
@@ -51,14 +54,14 @@
             <div class="container mx-auto px-4">
                 <!-- Section Référencement Local -->
                 <div class="mb-12">
-                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 text-center">
+                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 text-center title-animation">
                         Référencement Local Google Maps
                     </h2>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
                     <!-- Service 1 -->
-                    <div id="securisations-gmb" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="securisations-gmb" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 card-animation delay-100">
                         <div class="flex items-start justify-between mb-4">
                             <div class="text-3xl" aria-label="Sécurisations Google My Business référencement local Québec">📍</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
@@ -101,7 +104,7 @@
                     </div>
 
                     <!-- Service 2 -->
-                    <div id="referencement-vip" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="referencement-vip" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 card-animation delay-200">
                         <div class="flex items-start justify-between mb-4">
                             <div class="text-3xl" aria-label="Référencement optimal VIP+ service premium garantie">⭐</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
@@ -144,7 +147,7 @@
                     </div>
 
                     <!-- Service 3 -->
-                    <div id="gestion-avis" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300">
+                    <div id="gestion-avis" class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 card-animation delay-300">
                         <div class="flex items-start justify-between mb-4">
                             <div class="text-3xl" aria-label="Gestion avis clients réputation Google My Business">💬</div>
                             <div class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -438,6 +441,9 @@
     
     <!-- Script du modal de rendez-vous -->
     <script th:src="@{/js/appointment-modal-v3.js}"></script>
+    
+    <!-- Script des animations de défilement -->
+    <div th:replace="fragments/scroll-animations :: scroll-animations-js"></div>
     
     <!-- Services Page Specific JavaScript -->
     <script>

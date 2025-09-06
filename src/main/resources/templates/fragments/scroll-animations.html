@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Fragment des animations de défilement -->
+    <div th:fragment="scroll-animations-css">
+        <!-- CSS des animations de défilement -->
+        <link th:href="@{/css/scroll-animations.css}" rel="stylesheet" type="text/css"/>
+    </div>
+    
+    <div th:fragment="scroll-animations-js">
+        <!-- JavaScript des animations de défilement -->
+        <script th:src="@{/js/scroll-animations.js}"></script>
+    </div>
+</head>
+<body>
+    <!-- Fragment complet incluant CSS + JS -->
+    <div th:fragment="scroll-animations-complete">
+        <!-- CSS des animations de défilement -->
+        <link th:href="@{/css/scroll-animations.css}" rel="stylesheet" type="text/css"/>
+        
+        <!-- JavaScript des animations de défilement (à inclure avant la fermeture de body) -->
+        <script th:src="@{/js/scroll-animations.js}"></script>
+    </div>
+</body>
+</html>
