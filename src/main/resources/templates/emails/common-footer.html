@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<!-- 
+    Fragment de pied-de-page commun pour tous les emails LMP 
+    Utilise le routing Cloudflare : support@lmp-services.ca → lmp.assistance@gmail.com
+-->
+<body>
+    <!-- Fragment commun du pied de page email -->
+    <div th:fragment="email-footer" class="email-footer" style="
+        background-color: #f8f9fa; 
+        color: #6c757d; 
+        padding: 20px; 
+        text-align: center; 
+        border-top: 1px solid #dee2e6; 
+        font-size: 14px; 
+        line-height: 1.6;
+    ">
+        <div style="margin-bottom: 15px;">
+            <strong style="color: #2c3e50;" th:text="${companyName ?: 'LMP Digital Services'}">LMP Digital Services</strong>
+            <br>
+            <span style="color: #6c757d;">Votre partenaire de confiance</span>
+        </div>
+        
+        <div style="margin-bottom: 15px; font-size: 13px;">
+            123 Rue Principale, Ville, Province, Code Postal<br>
+            Téléphone : +1 (555) 123-4567 | Email : <a href="mailto:support@lmp-services.ca" style="color: #2c3e50; text-decoration: none;">support@lmp-services.ca</a><br>
+            Site web : <a th:href="${companyWebsite ?: 'https://lmp-services.ca'}" href="https://lmp-services.ca" style="color: #2c3e50; text-decoration: none;">lmp-services.ca</a>
+        </div>
+        
+        <div style="font-size: 12px; color: #868e96; border-top: 1px solid #dee2e6; padding-top: 15px;">
+            <p style="margin: 0;">
+                Cet email a été envoyé automatiquement par notre système.<br>
+                Pour toute question, contactez-nous à <strong>support@lmp-services.ca</strong>
+            </p>
+            <p style="margin: 10px 0 0 0;">
+                © <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> 
+                <span th:text="${companyName ?: 'LMP Digital Services'}">LMP Digital Services</span>. 
+                Tous droits réservés.
+            </p>
+        </div>
+        
+        <!-- Indication discrète pour les emails noreply -->
+        <div th:if="${isNoReply}" style="
+            font-size: 11px; 
+            color: #adb5bd; 
+            margin-top: 10px; 
+            padding: 8px; 
+            background-color: #f1f3f4; 
+            border-radius: 4px;
+        ">
+            ℹ️ Cet email provient d'une adresse automatique. Pour nous contacter, utilisez <strong>support@lmp-services.ca</strong>
+        </div>
+    </div>
+
+    <!-- Fragment simplifié pour emails transactionnels -->
+    <div th:fragment="simple-footer" style="
+        background-color: #f8f9fa; 
+        color: #6c757d; 
+        padding: 15px; 
+        text-align: center; 
+        font-size: 12px;
+    ">
+        <strong th:text="${companyName ?: 'LMP Digital Services'}">LMP Digital Services</strong><br>
+        Pour toute question : <a href="mailto:support@lmp-services.ca" style="color: #2c3e50;">support@lmp-services.ca</a>
+    </div>
+</body>
+</html>

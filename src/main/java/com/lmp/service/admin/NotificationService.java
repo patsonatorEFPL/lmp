@@ -16,9 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.lmp.config.MailAddressConfig;
 import com.lmp.domain.entity.Order;
 import com.lmp.domain.enums.OrderStatus;
 
+import jakarta.mail.Address;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
 /**
@@ -31,7 +34,6 @@ public class NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
     
-    private static final String FROM_EMAIL = "lmp.assistance@gmail.com";
     private static final String COMPANY_NAME = "LMP Digital Services";
 
     @Autowired
@@ -39,6 +41,9 @@ public class NotificationService {
 
     @Autowired
     private TemplateEngine templateEngine;
+    
+    @Autowired
+    private MailAddressConfig mailAddressConfig;
     
     @org.springframework.beans.factory.annotation.Value("${spring.mail.host:NON_CONFIGURÉ}")
     private String mailHost;
@@ -268,26 +273,85 @@ public class NotificationService {
         return templateEngine.process("emails/admin-notification", context);
     }
 
-    private void sendHtmlEmail(String to, String subject, String htmlContent) throws Exception {
+    /**
+     * Envoie un email HTML avec adresses from et replyTo configurables
+     * @param to destinataire
+     * @param subject sujet
+     * @param htmlContent contenu HTML
+     * @param fromEmail adresse expéditeur (défaut: noreply)
+     * @param replyToEmail adresse reply-to (défaut: support)
+     * @throws Exception en cas d'erreur d'envoi
+     */
+    private void sendHtmlEmail(String to, String subject, String htmlContent, String fromEmail, String replyToEmail) throws Exception {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
         
-        helper.setFrom(FROM_EMAIL);
+        // Configuration de l'expéditeur
+        helper.setFrom(fromEmail, mailAddressConfig.getName());
         helper.setTo(to);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
         
+        // Configuration du Reply-To si spécifié
+        if (replyToEmail != null && !replyToEmail.isEmpty()) {
+            helper.setReplyTo(replyToEmail);
+        }
+        
+        logger.debug("Envoi email HTML: from={}, replyTo={}, to={}, subject={}", 
+                   fromEmail, replyToEmail, to, subject);
+        
         mailSender.send(mimeMessage);
     }
+    
+    /**
+     * Envoie un email HTML transactionnel avec configuration par défaut
+     * @param to destinataire
+     * @param subject sujet
+     * @param htmlContent contenu HTML
+     * @throws Exception en cas d'erreur d'envoi
+     */
+    private void sendHtmlEmail(String to, String subject, String htmlContent) throws Exception {
+        sendHtmlEmail(to, subject, htmlContent, 
+                     mailAddressConfig.getNoreply(), 
+                     mailAddressConfig.getNoreply()); // Reply-To cohérent avec From
+    }
 
-    private void sendTextEmail(String to, String subject, String textContent) {
+    /**
+     * Envoie un email texte avec adresses from et replyTo configurables
+     * @param to destinataire
+     * @param subject sujet
+     * @param textContent contenu texte
+     * @param fromEmail adresse expéditeur (défaut: noreply)
+     * @param replyToEmail adresse reply-to (défaut: support)
+     */
+    private void sendTextEmail(String to, String subject, String textContent, String fromEmail, String replyToEmail) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(FROM_EMAIL);
+        message.setFrom(fromEmail);
         message.setTo(to);
         message.setSubject(subject);
         message.setText(textContent);
         
+        // Configuration du Reply-To si spécifié
+        if (replyToEmail != null && !replyToEmail.isEmpty()) {
+            message.setReplyTo(replyToEmail);
+        }
+        
+        logger.debug("Envoi email texte: from={}, replyTo={}, to={}, subject={}", 
+                   fromEmail, replyToEmail, to, subject);
+        
         mailSender.send(message);
+    }
+    
+    /**
+     * Envoie un email texte transactionnel avec configuration par défaut
+     * @param to destinataire
+     * @param subject sujet
+     * @param textContent contenu texte
+     */
+    private void sendTextEmail(String to, String subject, String textContent) {
+        sendTextEmail(to, subject, textContent, 
+                     mailAddressConfig.getNoreply(), 
+                     mailAddressConfig.getNoreply()); // Reply-To cohérent avec From
     }
 
     private String getCustomerName(Order order) {
@@ -341,7 +405,8 @@ public class NotificationService {
      */
     public void sendTestEmail(String toEmail) throws Exception {
         logger.info("=== DIAGNOSTIC EMAIL AUTHENTICATION ===");
-        logger.info("FROM_EMAIL configuré: {}", FROM_EMAIL);
+        logger.info("FROM_EMAIL configuré: {} (noreply)", mailAddressConfig.getNoreply());
+        logger.info("REPLY_TO configuré: {}", mailAddressConfig.getReplyToSupport());
         logger.info("SMTP Host: {}", mailHost);
         logger.info("SMTP Username: {}", mailUsername);
         logger.info("SMTP Password: {}", maskPassword(mailPassword));

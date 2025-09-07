@@ -1,5 +1,6 @@
 package com.lmp.service;
 
+import com.lmp.config.MailAddressConfig;
 import com.lmp.dto.ContactForm;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -38,14 +39,18 @@ public class ContactService {
     @Autowired
     private TemplateEngine templateEngine;
     
-    @Value("${mail.from.address:lmp.assistance@gmail.com}")
-    private String fromEmail;
+    @Autowired
+    private MailAddressConfig mailAddressConfig;
     
-    @Value("${mail.from.name:LMP Digital Services}")
-    private String fromName;
+    // OBSOLÈTE - remplacé par mailAddressConfig.getSupport() pour ContactService
+    // @Value("${mail.from.address:lmp.assistance@gmail.com}")
+    // private String fromEmail;
+    
+    // @Value("${mail.from.name:LMP Digital Services}")
+    // private String fromName;
     
     @Value("${company.email:lmp.assistance@gmail.com}")
-    private String adminEmail;
+    private String adminEmail; // Garde pour la réception admin
     
     @Value("${company.name:LMP Digital Services}")
     private String companyName;
@@ -120,8 +125,8 @@ public class ContactService {
             logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Début envoi email admin pour : {}", contactForm.getEmail());
             
             // LOG DE DIAGNOSTIC : Configuration email
-            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Config: fromEmail='{}', fromName='{}', adminEmail='{}', companyName='{}'",
-                       fromEmail, fromName, adminEmail, companyName);
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Config: fromEmail='{}' (support), adminEmail='{}', companyName='{}'",
+                       mailAddressConfig.getSupport(), adminEmail, companyName);
             
             // Création du contexte Thymeleaf pour l'admin
             logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Création contexte Thymeleaf admin...");
@@ -140,9 +145,9 @@ public class ContactService {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // Configuration du message admin
+            // Configuration du message admin (vient de support@ - pas de reply-to)
             logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Configuration message admin...");
-            helper.setFrom(fromEmail, fromName);
+            helper.setFrom(mailAddressConfig.getSupport(), mailAddressConfig.getName());
             helper.setTo(adminEmail);
             helper.setSubject("🔔 Nouveau contact reçu de " + contactForm.getName());
             helper.setText(htmlContent, true);
@@ -200,9 +205,9 @@ public class ContactService {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // Configuration du message utilisateur
+            // Configuration du message utilisateur (vient de support@ - pas de reply-to)
             logger.info("CONTACT_USER_EMAIL_DEBUG - Configuration message utilisateur...");
-            helper.setFrom(fromEmail, fromName);
+            helper.setFrom(mailAddressConfig.getSupport(), mailAddressConfig.getName());
             helper.setTo(contactForm.getEmail());
             helper.setSubject("✅ Confirmation de réception - " + companyName);
             helper.setText(htmlContent, true);

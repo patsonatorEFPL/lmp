@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lmp.config.MailAddressConfig;
 import com.lmp.domain.dto.AppointmentForm;
 import com.lmp.domain.dto.AppointmentRequest;
 import com.lmp.domain.entity.Appointment;
@@ -59,6 +60,9 @@ public class AppointmentService {
 
     @Autowired
     private JavaMailSender mailSender;
+    
+    @Autowired
+    private MailAddressConfig mailAddressConfig;
     
     // Cache simple pour les créneaux (clé = date, valeur = créneaux disponibles)
     private final Map<String, CachedSlots> slotsCache = new ConcurrentHashMap<>();
@@ -586,8 +590,8 @@ public class AppointmentService {
 
     // ======== MÉTHODES D'EMAIL ========
     
-    // Email de l'équipe LMP pour les notifications internes
-    private static final String TEAM_EMAIL = "lmp.assistance@gmail.com";
+    // Email de l'équipe LMP pour les notifications internes (routing Cloudflare vers lmp.assistance@gmail.com)
+    private static final String TEAM_EMAIL = "support@lmp-services.ca";
     private static final String ADMIN_EMAIL = "admin@lmp-services.ca"; // Email admin principal
 
     /**
@@ -607,7 +611,8 @@ public class AppointmentService {
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(clientEmail);
             message.setSubject("Confirmation de votre demande de rendez-vous - LMP");
             
@@ -666,7 +671,8 @@ public class AppointmentService {
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(clientEmail);
             message.setSubject("Votre rendez-vous a été " + status + " - LMP");
             
@@ -716,7 +722,8 @@ public class AppointmentService {
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(clientEmail);
             message.setSubject("Annulation de votre rendez-vous - LMP");
             
@@ -765,7 +772,8 @@ public class AppointmentService {
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(clientEmail);
             message.setSubject("Suppression de votre rendez-vous - LMP");
             
@@ -788,7 +796,7 @@ public class AppointmentService {
                 "- Durée : %d minutes\n%s\n\n" +
                 "Si vous souhaitez reprendre rendez-vous, n'hésitez pas à nous contacter \n" +
                 "ou à utiliser notre système de prise de rendez-vous en ligne.\n\n" +
-                "Pour toute question, vous pouvez nous contacter à lmp.assistance@gmail.com\n\n" +
+                "Pour toute question, vous pouvez nous contacter via notre site web.\n\n" +
                 "Cordialement,\nL'équipe LMP",
                 clientName,
                 appointment.getSubject(),
@@ -816,7 +824,7 @@ public class AppointmentService {
     private void notifyTeamNewAppointment(Appointment appointment) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
             message.setTo(TEAM_EMAIL);
             if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
                 message.setCc(ADMIN_EMAIL);
@@ -871,7 +879,7 @@ public class AppointmentService {
     private void notifyTeamStatusChange(Appointment appointment, String oldStatus, String newStatus, String adminEmail) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
             message.setTo(TEAM_EMAIL);
             if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
                 message.setCc(ADMIN_EMAIL);
@@ -923,7 +931,7 @@ public class AppointmentService {
     private void notifyTeamCancellation(Appointment appointment, String reason, String adminEmail) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
             message.setTo(TEAM_EMAIL);
             if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
                 message.setCc(ADMIN_EMAIL);
@@ -970,7 +978,7 @@ public class AppointmentService {
     private void notifyTeamDeletion(Appointment appointment, String adminEmail) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
             message.setTo(TEAM_EMAIL);
             if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
                 message.setCc(ADMIN_EMAIL);
@@ -1019,7 +1027,8 @@ public class AppointmentService {
     private void sendUpdateEmail(Appointment appointment) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(appointment.getUser().getEmail());
             message.setSubject("Modification de votre rendez-vous - LMP");
             
@@ -1057,8 +1066,8 @@ public class AppointmentService {
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
-            message.setTo("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
+            message.setTo(mailAddressConfig.getSupport()); // Vers support pour cohérence
             message.setSubject("📅 Nouveau rendez-vous - " + appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName());
             
             String body = String.format(
@@ -1106,6 +1115,8 @@ public class AppointmentService {
     private void sendCompletionEmail(Appointment appointment) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(appointment.getUser().getEmail());
             message.setSubject("Merci pour votre rendez-vous - LMP");
             
@@ -1162,6 +1173,8 @@ public class AppointmentService {
     private void sendReminderEmail(Appointment appointment) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply (transactionnel)
             message.setTo(appointment.getUser().getEmail());
             message.setSubject("Rappel : Votre rendez-vous de demain - LMP");
             
@@ -1459,11 +1472,17 @@ public class AppointmentService {
     private void sendAnonymousConfirmationEmail(Appointment appointment) {
         logger.info("📧 DÉBUT - Envoi email confirmation anonyme pour RDV ID: {}", appointment.getId());
         logger.info("📫 Destinataire: {}", appointment.getEffectiveClientEmail());
+        logger.info("📧 DEBUG - mailAddressConfig.getNoreply(): {}", mailAddressConfig.getNoreply());
+        logger.info("📧 DEBUG - mailAddressConfig.getReplyToSupport(): {}", mailAddressConfig.getReplyToSupport());
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getNoreply());
+            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To cohérent avec From
             message.setTo(appointment.getEffectiveClientEmail());
+            
+            logger.info("📧 DEBUG - Final message.getFrom(): {}", message.getFrom());
+            logger.info("📧 DEBUG - Final message.getReplyTo(): {}", message.getReplyTo());
             message.setSubject("Confirmation de votre demande de rendez-vous - LMP");
             
             String body = String.format(
@@ -1505,8 +1524,8 @@ public class AppointmentService {
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("lmp.assistance@gmail.com");
-            message.setTo("lmp.assistance@gmail.com");
+            message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
+            message.setTo(mailAddressConfig.getSupport()); // Vers support pour cohérence
             message.setSubject("📅 Nouveau rendez-vous - " + appointment.getEffectiveClientName());
             
             String body = String.format(

@@ -17,6 +17,8 @@ import org.thymeleaf.context.Context;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+import com.lmp.config.MailAddressConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,11 +52,15 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private TemplateEngine templateEngine;
 
-    @Value("${mail.from.address:lmp.assistance@gmail.com}")
-    private String fromEmail;
+    @Autowired
+    private MailAddressConfig mailAddressConfig;
 
-    @Value("${mail.from.name:LMP Services}")
-    private String fromName;
+    // OBSOLÈTE - remplacé par mailAddressConfig.getNoreply() et mailAddressConfig.getName()
+    // @Value("${mail.from.address:lmp.assistance@gmail.com}")
+    // private String fromEmail;
+
+    // @Value("${mail.from.name:LMP Services}")
+    // private String fromName;
 
     @Value("${company.name:LMP Services}")
     private String companyName;
@@ -196,11 +202,15 @@ public class AuthServiceImpl implements AuthService {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // Configuration du message
-            helper.setFrom(fromEmail, fromName);
+            // Configuration du message avec routing Cloudflare
+            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
+            helper.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To cohérent avec From
             helper.setTo(user.getEmail());
             helper.setSubject("\uD83C\uDF89 Bienvenue chez " + companyName + " !");
             helper.setText(htmlContent, true);
+            
+            logger.debug("WELCOME_EMAIL - Configuration: from={}, replyTo={}, to={}", 
+                       mailAddressConfig.getNoreply(), mailAddressConfig.getNoreply(), user.getEmail());
             
             // Envoi de l'email
             logger.info("WELCOME_EMAIL_DEBUG - Tentative d'envoi via JavaMailSender...");

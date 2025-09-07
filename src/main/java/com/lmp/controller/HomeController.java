@@ -73,4 +73,13 @@ public class HomeController {
         
         return "index";
     }
-} 
+    
+    /**
+     * Page de test pour l'internationalisation
+     */
+    @GetMapping("/i18n-test")
+    public String i18nTest(Model model) {
+        model.addAttribute("title", "Test Internationalisation - LMP");
+        return "i18n-test";
+    }
+}

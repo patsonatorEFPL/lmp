@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.lmp.service.admin.NotificationService;
+import com.lmp.service.email.EmailService;
 
 /**
  * Controller de test pour diagnostiquer la configuration email
@@ -31,6 +32,9 @@ public class EmailTestController {
     
     @Autowired
     private NotificationService notificationService;
+    
+    @Autowired
+    private EmailService emailService;
 
     @Value("${spring.mail.host:NON_CONFIGURÉ}")
     private String mailHost;
@@ -51,9 +55,11 @@ public class EmailTestController {
         // Diagnostic de la configuration
         boolean mailSenderExists = (mailSender != null);
         boolean notificationServiceExists = (notificationService != null);
+        boolean emailServiceExists = (emailService != null);
         
         logger.info("JavaMailSender injecté: {}", mailSenderExists);
         logger.info("NotificationService injecté: {}", notificationServiceExists);
+        logger.info("EmailService injecté: {}", emailServiceExists);
         logger.info("Mail Host: {}", mailHost);
         logger.info("Mail Port: {}", mailPort);
         logger.info("Mail Username: {}", mailUsername);
@@ -81,6 +87,12 @@ public class EmailTestController {
             notificationTest = notificationService.testEmailConnectivity();
         }
         
+        // Test EmailService
+        boolean emailServiceTest = false;
+        if (emailService != null) {
+            emailServiceTest = emailService.testConnection();
+        }
+        
         // Diagnostic templates email
         String[] requiredTemplates = {
             "emails/order-status-change",
@@ -98,6 +110,7 @@ public class EmailTestController {
         
         model.addAttribute("mailSenderExists", mailSenderExists);
         model.addAttribute("notificationServiceExists", notificationServiceExists);
+        model.addAttribute("emailServiceExists", emailServiceExists);
         model.addAttribute("mailHost", mailHost);
         model.addAttribute("mailPort", mailPort);
         model.addAttribute("mailUsername", mailUsername);
@@ -105,6 +118,7 @@ public class EmailTestController {
         model.addAttribute("connectivityTest", connectivityTest);
         model.addAttribute("connectivityMessage", connectivityMessage);
         model.addAttribute("notificationTest", notificationTest);
+        model.addAttribute("emailServiceTest", emailServiceTest);
         model.addAttribute("requiredTemplates", requiredTemplates);
         
         return "admin/email-test";
@@ -116,15 +130,15 @@ public class EmailTestController {
         logger.info("Tentative d'envoi à: {}", testEmail);
         
         try {
-            if (notificationService != null) {
-                notificationService.sendTestEmail(testEmail);
+            if (emailService != null) {
+                emailService.sendTestEmail(testEmail);
                 redirectAttributes.addFlashAttribute("successMessage", 
-                    "Email de test envoyé avec succès à " + testEmail);
-                logger.info("Email de test envoyé avec succès à {}", testEmail);
+                    "Email de test Mailtrap envoyé avec succès à " + testEmail);
+                logger.info("Email de test Mailtrap envoyé avec succès à {}", testEmail);
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage", 
-                    "NotificationService non disponible");
-                logger.error("NotificationService non disponible pour test email");
+                    "EmailService non disponible");
+                logger.error("EmailService non disponible pour test email");
             }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", 
@@ -137,24 +151,56 @@ public class EmailTestController {
     
     @PostMapping("/test-welcome")
     public String sendTestWelcomeEmail(@RequestParam String testEmail, RedirectAttributes redirectAttributes) {
-        logger.info("=== TEST ENVOI EMAIL DE BIENVENUE ===");
+        logger.info("=== TEST ENVOI EMAIL DE BIENVENUE (noreply@lmp-services.ca) ===");
         logger.info("Tentative d'envoi email de bienvenue à: {}", testEmail);
         
         try {
-            if (notificationService != null) {
-                notificationService.sendTestWelcomeEmail(testEmail);
+            if (emailService != null) {
+                // Utilise le nouveau EmailService avec noreply@lmp-services.ca
+                emailService.sendWelcomeEmail(testEmail, "Utilisateur Test");
                 redirectAttributes.addFlashAttribute("successMessage", 
-                    "Email de bienvenue de test envoyé avec succès à " + testEmail);
-                logger.info("Email de bienvenue de test envoyé avec succès à {}", testEmail);
+                    "Email de bienvenue envoyé avec succès depuis noreply@lmp-services.ca à " + testEmail);
+                logger.info("Email de bienvenue envoyé avec succès depuis noreply@lmp-services.ca à {}", testEmail);
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage", 
-                    "NotificationService non disponible");
-                logger.error("NotificationService non disponible pour test email de bienvenue");
+                    "EmailService non disponible");
+                logger.error("EmailService non disponible pour test email de bienvenue");
             }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", 
                 "Erreur lors de l'envoi de l'email de bienvenue: " + e.getMessage());
-            logger.error("Erreur envoi email de bienvenue de test à {}: {}", testEmail, e.getMessage(), e);
+            logger.error("Erreur envoi email de bienvenue à {}: {}", testEmail, e.getMessage(), e);
+        }
+        
+        return "redirect:/admin/email-test";
+    }
+    
+    @PostMapping("/test-support")
+    public String sendTestSupportEmail(@RequestParam String testEmail, RedirectAttributes redirectAttributes) {
+        logger.info("=== TEST ENVOI EMAIL DE SUPPORT (support@lmp-services.ca) ===");
+        logger.info("Tentative d'envoi email de support à: {}", testEmail);
+        
+        try {
+            if (emailService != null) {
+                String subject = "Test Support - LMP Digital Services";
+                String body = "Bonjour,\n\nCeci est un email de test du service support.\n\n" +
+                             "Vous pouvez répondre directement à cet email.\n\n" +
+                             "Cordialement,\nL'équipe Support LMP Digital Services";
+                
+                // Utilise le nouveau service support avec support@lmp-services.ca
+                emailService.sendSupportEmail(testEmail, subject, body);
+                redirectAttributes.addFlashAttribute("successMessage", 
+                    "Email de support envoyé avec succès depuis support@lmp-services.ca à " + testEmail);
+                logger.info("Email de support envoyé avec succès depuis support@lmp-services.ca à {}", testEmail);
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", 
+                    "EmailService non disponible");
+                logger.error("EmailService non disponible pour test email de support");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", 
+                "Erreur lors de l'envoi de l'email de support: " + e.getMessage());
+            logger.error("Erreur envoi email de support à {}: {}", testEmail, e.getMessage(), e);
         }
         
         return "redirect:/admin/email-test";
