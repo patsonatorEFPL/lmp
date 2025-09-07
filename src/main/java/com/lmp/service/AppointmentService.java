@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -516,20 +517,71 @@ public class AppointmentService {
      * Vérifie les conflits d'horaires (en excluant un rendez-vous spécifique)
      */
     private void checkTimeConflicts(LocalDateTime appointmentDate, Integer durationMinutes, Long excludeAppointmentId) {
-        LocalDateTime endTime = appointmentDate.plusMinutes(durationMinutes);
+        LocalDateTime newStartTime = appointmentDate;
+        LocalDateTime newEndTime = appointmentDate.plusMinutes(durationMinutes);
         
-        List<Appointment> conflicts = appointmentRepository.findConflictingAppointments(appointmentDate, endTime);
+        // Récupérer tous les rendez-vous actifs
+        List<Appointment> activeAppointments = appointmentRepository.findActiveAppointments().stream()
+                .filter(appointment -> {
+                    // Exclure le rendez-vous en cours de modification
+                    if (excludeAppointmentId != null && appointment.getId().equals(excludeAppointmentId)) {
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
         
-        // Filtrer l'exclusion si nécessaire
-        if (excludeAppointmentId != null) {
-            conflicts = conflicts.stream()
-                    .filter(a -> !a.getId().equals(excludeAppointmentId))
-                    .toList();
+        // Vérifier les conflits horaires
+        List<Appointment> conflicts = new ArrayList<>();
+        for (Appointment existingAppointment : activeAppointments) {
+            LocalDateTime existingStartTime = existingAppointment.getAppointmentDate();
+            LocalDateTime existingEndTime = existingStartTime.plusMinutes(existingAppointment.getDurationMinutes());
+            
+            // Vérifier le chevauchement : deux intervalles se chevauchent si
+            // le début du nouveau rendez-vous est avant la fin de l'existant ET
+            // la fin du nouveau rendez-vous est après le début de l'existant
+            if (newStartTime.isBefore(existingEndTime) && newEndTime.isAfter(existingStartTime)) {
+                conflicts.add(existingAppointment);
+            }
         }
 
         if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException("Un rendez-vous existe déjà à ce créneau horaire");
+            // Log détaillé pour le diagnostic
+            StringBuilder conflictDetails = new StringBuilder();
+            conflictDetails.append("Conflit détecté pour le nouveau RDV [").append(newStartTime.format(DATETIME_FORMATTER))
+                         .append(" - ").append(newEndTime.format(DATETIME_FORMATTER)).append("] :\n");
+            
+            for (Appointment conflict : conflicts) {
+                LocalDateTime conflictEnd = conflict.getAppointmentDate().plusMinutes(conflict.getDurationMinutes());
+                conflictDetails.append("  - RDV ID ").append(conflict.getId())
+                             .append(" : ").append(conflict.getAppointmentDate().format(DATETIME_FORMATTER))
+                             .append(" - ").append(conflictEnd.format(DATETIME_FORMATTER))
+                             .append(" (").append(conflict.getSubject()).append(")\n");
+            }
+            
+            logger.warn("Détection de conflit d'horaires :\n{}", conflictDetails.toString());
+            throw new IllegalArgumentException("Un rendez-vous existe déjà à ce créneau horaire. " + conflicts.size() + " conflit(s) détecté(s).");
         }
+    }
+    
+    /**
+     * Méthode helper pour trouver les rendez-vous en conflit avec un créneau donné
+     */
+    private List<Appointment> getConflictingAppointments(LocalDateTime startTime, LocalDateTime endTime) {
+        List<Appointment> activeAppointments = appointmentRepository.findActiveAppointments();
+        List<Appointment> conflicts = new ArrayList<>();
+        
+        for (Appointment appointment : activeAppointments) {
+            LocalDateTime appointmentStart = appointment.getAppointmentDate();
+            LocalDateTime appointmentEnd = appointmentStart.plusMinutes(appointment.getDurationMinutes());
+            
+            // Vérifier le chevauchement
+            if (startTime.isBefore(appointmentEnd) && endTime.isAfter(appointmentStart)) {
+                conflicts.add(appointment);
+            }
+        }
+        
+        return conflicts;
     }
 
     // ======== MÉTHODES D'EMAIL ========
@@ -1225,7 +1277,7 @@ public class AppointmentService {
             }
             
             // Vérifier s'il n'y a pas de conflit dans la BD
-            List<Appointment> conflicts = appointmentRepository.findConflictingAppointments(slotStart, slotEnd);
+            List<Appointment> conflicts = getConflictingAppointments(slotStart, slotEnd);
             
             if (conflicts.isEmpty()) {
                 availableSlots.add(slotStart);

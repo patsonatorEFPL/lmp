@@ -82,12 +82,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     /**
      * Trouve tous les rendez-vous en conflit pour un créneau donné
-     * Version simplifiée - vérification de base sur la date et l'heure
+     * Logique correcte de détection des chevauchements :
+     * - Deux rendez-vous se chevauchent si l'un ne finit pas avant que l'autre ne commence
+     * - Formule : NOT (nouveauRDV_fin <= existantRDV_debut OR nouveauRDV_debut >= existantRDV_fin)
      */
-    @Query("SELECT a FROM Appointment a WHERE a.status IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS') " +
-           "AND a.appointmentDate BETWEEN :startTime AND :endTime")
-    List<Appointment> findConflictingAppointments(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
-
+    // Les méthodes findConflictingAppointments ne sont plus utilisées
+    // La détection de conflits se fait maintenant côté Java dans AppointmentService
     /**
      * Compte le nombre de rendez-vous par statut
      */
