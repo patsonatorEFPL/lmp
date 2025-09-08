@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Test i18n - LMP</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 800px; 
+            margin: 0 auto; 
+        }
+        .header { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+        }
+        .lang-switcher a { 
+            display: inline-block;
+            margin: 0 5px; 
+            padding: 5px 10px;
+            text-decoration: none; 
+            border: 1px solid #007bff;
+            border-radius: 3px;
+            color: #007bff;
+        }
+        .lang-switcher a:hover { 
+            background: #007bff; 
+            color: white; 
+        }
+        .success { color: #28a745; }
+        .info { color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌐 Test Internationalisation LMP</h1>
+        <div class="lang-switcher">
+            <strong>Langue :</strong>
+            <a href="?lang=fr">🇫🇷 Français</a>
+            <a href="?lang=en">🇺🇸 English</a>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2 class="success">✅ Test 1 : Messages i18n</h2>
+        <p><strong>Titre :</strong> <span th:text="#{nav.home}">Accueil (défaut)</span></p>
+        <p><strong>Services :</strong> <span th:text="#{nav.services}">Services (défaut)</span></p>
+        <p><strong>Contact :</strong> <span th:text="#{nav.contact}">Contact (défaut)</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2 class="info">🔍 Test 2 : Variables système</h2>
+        <p><strong>Locale actuelle :</strong> <span th:text="${#locale}">??</span></p>
+        <p><strong>Langue :</strong> <span th:text="${#locale.language}">??</span></p>
+        <p><strong>Pays :</strong> <span th:text="${#locale.country}">??</span></p>
+        <p><strong>Date :</strong> <span th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy HH:mm')}">??</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Instructions</h2>
+        <ol>
+            <li>Cliquez sur les drapeaux pour changer de langue</li>
+            <li>Vérifiez que les textes changent (Accueil ↔ Home, Services ↔ Services, Contact ↔ Contact)</li>
+            <li>Vérifiez que la locale change (fr ↔ en)</li>
+            <li>Si tout fonctionne, l'i18n est opérationnelle ! ✅</li>
+        </ol>
+    </div>
+</body>
+</html>

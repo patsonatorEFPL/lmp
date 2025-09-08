@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Test i18n Simple</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .header { background: #f0f0f0; padding: 10px; margin-bottom: 20px; }
+        .content { margin: 20px 0; }
+        .lang-selector a { margin: 0 10px; text-decoration: none; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>LMP - Test Internationalisation</h1>
+        <div class="lang-selector">
+            Langue: 
+            <a href="?lang=fr">🇫🇷</a>
+            <a href="?lang=en">🇺🇸</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Test Thymeleaf Basic</h2>
+        <p>Cette page teste Thymeleaf sans i18n pour l'instant.</p>
+        
+        <h3>Variables Thymeleaf:</h3>
+        <ul>
+            <li><strong>Date:</strong> <span th:text="${#dates.format(#dates.createNow(), 'dd/MM/yyyy HH:mm')}">??</span></li>
+            <li><strong>Locale:</strong> <span th:text="${#locale}">??</span></li>
+            <li><strong>Langue:</strong> <span th:text="${#locale.language}">??</span></li>
+        </ul>
+        
+        <hr>
+        <div>
+            <h3>Test des liens de langue:</h3>
+            <a href="?lang=fr">🇫🇷 Français</a> | 
+            <a href="?lang=en">🇺🇸 English</a>
+        </div>
+    </div>
+</body>
+</html>

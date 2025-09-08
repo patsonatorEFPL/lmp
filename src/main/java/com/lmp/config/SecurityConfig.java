@@ -13,7 +13,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 
@@ -90,6 +89,11 @@ public class SecurityConfig {
                     "/api/orders/clear-purchase-intent"
                 ).permitAll()
                 
+                // Endpoints temporaires de test - À SUPPRIMER en production
+                .requestMatchers(
+                    "/temp/**"
+                ).permitAll()
+                
                 // Endpoints de rendez-vous publics (consultation créneaux et création)
                 .requestMatchers(
                     "/appointments/available-slots",
@@ -129,7 +133,7 @@ public class SecurityConfig {
             
             // Configuration de la déconnexion
             .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutUrl("/logout")
                 .logoutSuccessUrl("/")
                 .deleteCookies("JSESSIONID")
                 .invalidateHttpSession(true)
@@ -162,7 +166,8 @@ public class SecurityConfig {
                     "/register-and-checkout", 
                     "/auth/register-and-checkout",
                     "/appointments/create",  // Temporaire pour debug
-                    "/appointments/available-slots"
+                    "/appointments/available-slots",
+                    "/temp/**"  // Endpoints temporaires de test - À SUPPRIMER en production
                 )
             )
             
@@ -182,32 +187,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Gestionnaire de succès d'authentification personnalisé par défaut.
-     * Cette méthode est conservée pour compatibilité mais n'est plus utilisée.
-     * Le gestionnaire principal est maintenant PurchaseIntentAuthenticationSuccessHandler.
-     *
-     * @return AuthenticationSuccessHandler configuré
-     * @deprecated Utiliser PurchaseIntentAuthenticationSuccessHandler à la place
-     */
-    @Bean
-    @Deprecated
-    public AuthenticationSuccessHandler authenticationSuccessHandler() {
-        return (request, response, authentication) -> {
-            String redirectUrl = "/dashboard";
-            
-            // Redirection selon le rôle
-            if (authentication.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
-                redirectUrl = "/admin/dashboard";
-            } else if (authentication.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_USER"))) {
-                redirectUrl = "/dashboard";
-            }
-            
-            response.sendRedirect(redirectUrl);
-        };
-    }
 
     /**
      * Encodeur de mots de passe BCrypt.

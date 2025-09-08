@@ -4,6 +4,7 @@ import com.lmp.domain.dto.AppointmentForm;
 import com.lmp.domain.entity.Appointment;
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.AppointmentStatus;
+import com.lmp.repository.AppointmentRepository;
 import com.lmp.service.AppointmentService;
 import com.lmp.service.user.UserService;
 
@@ -30,9 +31,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Contrôleur d'administration pour la gestion des rendez-vous.
@@ -57,6 +61,9 @@ public class AdminAppointmentController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     /**
      * Page principale de gestion des rendez-vous
@@ -580,7 +587,101 @@ public class AdminAppointmentController {
         logger.info("Accès à la page de test et diagnostic des rendez-vous par: {}", adminEmail);
         return "admin/appointments-test";
     }
+    
+    /**
+     * Test de la logique de détection des conflits
+     */
+    @GetMapping("/test-conflicts")
+    @ResponseBody
+    public Map<String, Object> testConflictDetection(
+            @RequestParam String startTime,
+            @RequestParam Integer duration,
+            Authentication authentication) {
+        
+        String adminEmail = authentication.getName();
+        logger.info("Test de détection des conflits par: {}", adminEmail);
+        
+        try {
+            LocalDateTime appointmentDate = LocalDateTime.parse(startTime);
+            LocalDateTime endTime = appointmentDate.plusMinutes(duration);
+            
+            // Récupérer tous les rendez-vous actifs pour comparaison
+            List<Appointment> allActiveAppointments = appointmentService.findActiveAppointments();
+            
+            // Récupérer les conflits avec la nouvelle logique
+            List<Appointment> conflicts = getConflictingAppointmentsForTest(appointmentDate, endTime);
+            
+            // Créer un rapport détaillé
+            List<Map<String, Object>> conflictDetails = conflicts.stream().map(appointment -> {
+                LocalDateTime conflictEnd = appointment.getAppointmentDate().plusMinutes(appointment.getDurationMinutes());
+                Map<String, Object> details = new HashMap<>();
+                details.put("id", appointment.getId());
+                details.put("subject", appointment.getSubject());
+                details.put("start", appointment.getAppointmentDate().toString());
+                details.put("end", conflictEnd.toString());
+                details.put("duration", appointment.getDurationMinutes());
+                details.put("status", appointment.getStatus().name());
+                return details;
+            }).collect(Collectors.toList());
+            
+            List<Map<String, Object>> allAppointments = allActiveAppointments.stream().map(appointment -> {
+                LocalDateTime apptEnd = appointment.getAppointmentDate().plusMinutes(appointment.getDurationMinutes());
+                Map<String, Object> apptDetails = new HashMap<>();
+                apptDetails.put("id", appointment.getId());
+                apptDetails.put("subject", appointment.getSubject());
+                apptDetails.put("start", appointment.getAppointmentDate().toString());
+                apptDetails.put("end", apptEnd.toString());
+                apptDetails.put("duration", appointment.getDurationMinutes());
+                apptDetails.put("status", appointment.getStatus().name());
+                apptDetails.put("isConflict", conflicts.stream().anyMatch(c -> c.getId().equals(appointment.getId())));
+                return apptDetails;
+            }).collect(Collectors.toList());
+            
+            return Map.of(
+                "success", true,
+                "testRequest", Map.of(
+                    "start", startTime,
+                    "end", endTime.toString(),
+                    "duration", duration
+                ),
+                "conflictsFound", conflicts.size(),
+                "conflictDetails", conflictDetails,
+                "totalActiveAppointments", allActiveAppointments.size(),
+                "allAppointments", allAppointments,
+                "message", conflicts.isEmpty() ? 
+                    "Aucun conflit détecté - créneau libre" : 
+                    conflicts.size() + " conflit(s) détecté(s)"
+            );
+            
+        } catch (Exception e) {
+            logger.error("Erreur lors du test de détection des conflits: {}", e.getMessage(), e);
+            return Map.of(
+                "success", false,
+                "error", e.getMessage()
+            );
+        }
+    }
 
+    /**
+     * Méthode helper pour les tests de conflits
+     */
+    private List<Appointment> getConflictingAppointmentsForTest(LocalDateTime startTime, LocalDateTime endTime) {
+        List<Appointment> activeAppointments = appointmentService.findActiveAppointments();
+        List<Appointment> conflicts = new ArrayList<>();
+        
+        for (Appointment appointment : activeAppointments) {
+            LocalDateTime appointmentStart = appointment.getAppointmentDate();
+            LocalDateTime appointmentEnd = appointmentStart.plusMinutes(appointment.getDurationMinutes());
+            
+            // Vérifier le chevauchement
+            if (startTime.isBefore(appointmentEnd) && endTime.isAfter(appointmentStart)) {
+                conflicts.add(appointment);
+            }
+        }
+        
+        return conflicts;
+    }
+    
     /**
      * Page simple pour le debug
      */

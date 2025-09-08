@@ -99,6 +99,13 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
+		<!-- Mailtrap Java SDK pour l'authentification de domaine -->
+		<dependency>
+			<groupId>io.mailtrap</groupId>
+			<artifactId>mailtrap-java</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+
 		<!-- Stripe pour les paiements -->
 		<dependency>
 			<groupId>com.stripe</groupId>
@@ -124,6 +131,13 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Base de données H2 pour les tests -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 		
