@@ -76,7 +76,7 @@ public class DashboardController {
         logger.info("Dashboard accessed by user: {}", userEmail);
 
         try {
-            User user = userService.findByEmail(userEmail)
+            User user = userService.findByEmailWithAllCollections(userEmail)
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             // Redirection intelligente : Les ADMIN sont automatiquement redirigés vers leur interface
@@ -262,7 +262,7 @@ public class DashboardController {
         }
 
         try {
-            User user = userService.findByEmail(authentication.getName())
+            User user = userService.findByEmailWithAllCollections(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             // 🆕 Exclure les commandes PAYMENT_PENDING de la liste complète
@@ -297,7 +297,7 @@ public class DashboardController {
         }
 
         try {
-            User user = userService.findByEmail(authentication.getName())
+            User user = userService.findByEmailWithAllCollections(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             List<Review> reviews = user.getReviews() != null ? 
@@ -330,7 +330,7 @@ public class DashboardController {
         }
 
         try {
-            User user = userService.findByEmail(authentication.getName())
+            User user = userService.findByEmailWithAllCollections(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             model.addAttribute("user", user);

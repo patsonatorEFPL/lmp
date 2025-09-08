@@ -144,6 +144,35 @@ public interface UserService {
      * @return true si l'utilisateur a le rôle, false sinon
      */
     boolean hasRole(Long userId, String roleName);
+    
+    // Méthodes avec JOIN FETCH pour éviter LazyInitializationException
+    
+    /**
+     * Trouve un utilisateur par ID avec ses rôles chargés.
+     * Évite LazyInitializationException lors de l'accès aux rôles.
+     *
+     * @param id L'ID de l'utilisateur
+     * @return Optional contenant l'utilisateur avec ses rôles
+     */
+    Optional<User> findByIdWithRoles(Long id);
+    
+    /**
+     * Trouve un utilisateur par email avec ses rôles chargés.
+     * Évite LazyInitializationException lors de l'accès aux rôles.
+     *
+     * @param email L'email de l'utilisateur
+     * @return Optional contenant l'utilisateur avec ses rôles
+     */
+    Optional<User> findByEmailWithRoles(String email);
+    
+    /**
+     * Trouve un utilisateur par email avec toutes ses collections chargées.
+     * Évite LazyInitializationException pour les dashboards.
+     *
+     * @param email L'email de l'utilisateur
+     * @return Optional contenant l'utilisateur avec toutes ses collections
+     */
+    Optional<User> findByEmailWithAllCollections(String email);
 
     /**
      * Compte le nombre total d'utilisateurs.

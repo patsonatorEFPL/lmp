@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.lmp.domain.entity.User;
@@ -26,4 +28,35 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     // Méthode pour les statistiques admin
     long countByRegistrationDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    
+    // Méthodes avec JOIN FETCH pour éviter LazyInitializationException
+    
+    /**
+     * Trouve un utilisateur par ID avec ses rôles chargés (évite LazyInitializationException)
+     * @param id L'ID de l'utilisateur
+     * @return Optional contenant l'utilisateur avec ses rôles
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id = :id")
+    Optional<User> findByIdWithRoles(@Param("id") Long id);
+    
+    /**
+     * Trouve un utilisateur par email avec ses rôles chargés (évite LazyInitializationException)
+     * @param email L'email de l'utilisateur
+     * @return Optional contenant l'utilisateur avec ses rôles
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email")
+    Optional<User> findByEmailWithRoles(@Param("email") String email);
+    
+    /**
+     * Trouve un utilisateur par email avec toutes ses collections chargées
+     * (évite LazyInitializationException pour les dashboards)
+     * @param email L'email de l'utilisateur
+     * @return Optional contenant l'utilisateur avec toutes ses collections
+     */
+    @Query("SELECT DISTINCT u FROM User u " +
+           "LEFT JOIN FETCH u.roles " +
+           "LEFT JOIN FETCH u.orders " +
+           "LEFT JOIN FETCH u.reviews " +
+           "WHERE u.email = :email")
+    Optional<User> findByEmailWithAllCollections(@Param("email") String email);
 }

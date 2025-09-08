@@ -334,6 +334,7 @@ public class UserServiceImpl implements UserService {
 
     /**
      * Vérifie si un utilisateur a un rôle spécifique.
+     * Utilise JOIN FETCH pour éviter LazyInitializationException.
      * 
      * @param userId L'ID de l'utilisateur
      * @param roleName Le nom du rôle
@@ -341,7 +342,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public boolean hasRole(Long userId, String roleName) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElse(null);
         
         if (user == null) {
@@ -442,6 +443,32 @@ public class UserServiceImpl implements UserService {
     @Override
     public long count() {
         return userRepository.count();
+    }
+    
+    // Implémentation des méthodes JOIN FETCH pour éviter LazyInitializationException
+    
+    /**
+     * Trouve un utilisateur par ID avec ses rôles chargés.
+     */
+    @Override
+    public Optional<User> findByIdWithRoles(Long id) {
+        return userRepository.findByIdWithRoles(id);
+    }
+    
+    /**
+     * Trouve un utilisateur par email avec ses rôles chargés.
+     */
+    @Override
+    public Optional<User> findByEmailWithRoles(String email) {
+        return userRepository.findByEmailWithRoles(email);
+    }
+    
+    /**
+     * Trouve un utilisateur par email avec toutes ses collections chargées.
+     */
+    @Override
+    public Optional<User> findByEmailWithAllCollections(String email) {
+        return userRepository.findByEmailWithAllCollections(email);
     }
     
     /**

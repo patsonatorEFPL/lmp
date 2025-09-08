@@ -317,9 +317,14 @@
                                 <i class="fas fa-user me-2"></i>Mon profil
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" th:href="@{/logout}">
-                                <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                            </a></li>
+                            <li>
+                                <form action="/logout" method="post" class="d-inline">
+                                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
+                                    <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                                    </button>
+                                </form>
+                            </li>
                         </ul>
                     </li>
                 </ul>
