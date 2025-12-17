@@ -1,11 +1,8 @@
 package com.lmp.web.controller;
 
-import com.lmp.domain.entity.Order;
-import com.lmp.domain.entity.User;
-import com.lmp.domain.enums.OrderStatus;
-import com.lmp.repository.OrderRepository;
-import com.lmp.repository.UserRepository;
-import com.lmp.web.dto.PurchaseIntent;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,18 +11,29 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.lmp.domain.entity.Order;
+import com.lmp.domain.entity.User;
+import com.lmp.repository.OrderRepository;
+import com.lmp.repository.UserRepository;
+import com.lmp.web.dto.PurchaseIntent;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Contrôleur pour la gestion des commandes
- * Fournit les endpoints pour créer des commandes temporaires
+ * Fournit les endpoints pour préparer les données de services et gérer les
+ * intentions de paiement
+ * Architecture webhook-driven : seuls les webhooks Stripe créent les commandes
+ * définitives
  */
 @RestController
 @RequestMapping("/api/orders")
@@ -41,8 +49,9 @@ public class OrderController {
     private UserRepository userRepository;
     
     /**
-     * Crée une commande temporaire pour un service
-     * Cette commande sera utilisée pour initier le paiement Stripe Checkout
+     * Prépare les données de service pour création de session Stripe directe
+     * Architecture webhook-driven : retourne uniquement les données nécessaires
+     * sans créer de commande préalable pour éliminer les commandes fantômes
      */
     @PostMapping("/create-temp")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
@@ -50,12 +59,10 @@ public class OrderController {
                                                   HttpServletRequest httpRequest,
                                                   Authentication authentication) {
         
-        logger.info("DEBUG - Creating temporary order for service: {}", request.get("serviceName"));
-        logger.info("DEBUG - Request headers: X-Requested-With={}, Content-Type={}, User-Agent={}",
-                    httpRequest.getHeader("X-Requested-With"),
-                    httpRequest.getHeader("Content-Type"),
-                    httpRequest.getHeader("User-Agent"));
-        auditLogger.info("Temporary order creation initiated - Service: {}, Amount: {} {}, IP: {}",
+        logger.info("Receiving order request - Service: {}", request.get("serviceName"));
+        logger.info("DEBUG - Order request details: serviceName={}, amount={}, currency={}",
+                request.get("serviceName"), request.get("amount"), request.get("currency"));
+        auditLogger.info("Service data preparation initiated - Service: {}, Amount: {} {}, IP: {}",
                          request.get("serviceName"), request.get("amount"), request.get("currency"),
                          getClientIpAddress(httpRequest));
         
@@ -65,7 +72,11 @@ public class OrderController {
             Object amountObj = request.get("amount");
             String currency = (String) request.get("currency");
             
+            logger.debug("Validating request data - Service: {}, Amount: {}, Currency: {}",
+                    serviceName, amountObj, currency);
+
             if (serviceName == null || serviceName.trim().isEmpty()) {
+                logger.warn("Invalid service name received: {}", serviceName);
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_SERVICE_NAME",
                     "message", "Le nom du service est requis"
@@ -79,9 +90,11 @@ public class OrderController {
                 } else if (amountObj instanceof String) {
                     amount = new BigDecimal((String) amountObj);
                 } else {
+                    logger.error("Invalid amount format: {}", amountObj);
                     throw new IllegalArgumentException("Format de montant invalide");
                 }
             } catch (Exception e) {
+                logger.error("Error parsing amount: {}", e.getMessage());
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_AMOUNT",
                     "message", "Montant invalide"
@@ -89,28 +102,24 @@ public class OrderController {
             }
             
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                logger.warn("Invalid amount received: {}", amount);
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_AMOUNT",
                     "message", "Le montant doit être supérieur à 0"
                 ));
             }
             
-            if (currency == null || !currency.equals("CAD")) {
+            if (currency == null || !currency.equals("EUR")) {
+                logger.warn("Invalid currency received: {}", currency);
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_CURRENCY",
-                    "message", "Seule la devise CAD est supportée"
+                        "message", "Seule la devise EUR est supportée"
                 ));
             }
-            
-            // DEBUG: Ajouter des logs pour diagnostiquer le problème d'authentification
-            logger.info("DEBUG: Authentication object: {}", authentication);
-            logger.info("DEBUG: Authentication name: {}", authentication != null ? authentication.getName() : "null");
-            logger.info("DEBUG: Authentication principal: {}", authentication != null ? authentication.getPrincipal() : "null");
-            logger.info("DEBUG: Authentication authorities: {}", authentication != null ? authentication.getAuthorities() : "null");
-            
+
             // Récupérer l'utilisateur authentifié
             if (authentication == null) {
-                logger.error("DEBUG: Authentication is null");
+                logger.warn("No authentication provided for order request");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                     "error", "AUTHENTICATION_NULL",
                     "message", "Authentification manquante"
@@ -119,66 +128,54 @@ public class OrderController {
             
             String userEmail = authentication.getName();
             if (userEmail == null || userEmail.trim().isEmpty()) {
-                logger.error("DEBUG: Authentication name is null or empty");
+                logger.warn("No user email in authentication: {}", authentication);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                     "error", "AUTHENTICATION_NAME_NULL",
                     "message", "Email d'authentification manquant"
                 ));
             }
             
-            logger.info("DEBUG: Searching for user with email: {}", userEmail);
+            logger.debug("Looking up user by email: {}", userEmail);
             User authenticatedUser = userRepository.findByEmail(userEmail).orElse(null);
             
             if (authenticatedUser == null) {
-                logger.error("DEBUG: User not found with email: {}", userEmail);
+                logger.error("User not found in database: {}", userEmail);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                     "error", "USER_NOT_FOUND",
                     "message", "Utilisateur non trouvé en base de données"
                 ));
             }
             
-            logger.info("DEBUG: User found: {} (ID: {})", authenticatedUser.getEmail(), authenticatedUser.getId());
+            logger.info("Order request validated for user: {} (ID: {})", authenticatedUser.getEmail(),
+                    authenticatedUser.getId());
+            logger.debug("User details - FirstName: {}, LastName: {}, Email: {}",
+                    authenticatedUser.getFirstName(), authenticatedUser.getLastName(), authenticatedUser.getEmail());
             
-            // Créer la commande temporaire
-            Order order = new Order();
-            order.setUser(authenticatedUser);
-            order.setServiceName(serviceName); // FIX: Ajouter le nom du service
-            order.setStatus(OrderStatus.PENDING);
-            order.setTotalAmount(amount);
-            order.setCurrency(currency); // FIX: Ajouter la devise
-            order.setCreatedAt(LocalDateTime.now());
-            order.setUpdatedAt(LocalDateTime.now());
-            order.setLastModifiedAt(LocalDateTime.now()); // FIX: Ajouter lastModifiedAt
-            
-            logger.info("DEBUG: Saving order with serviceName: {}, amount: {}, currency: {}",
-                       serviceName, amount, currency);
-            
-            // Sauvegarder la commande
-            order = orderRepository.save(order);
-            
-            // Créer la réponse
+            // Retourner seulement les données nécessaires pour la session Stripe
             Map<String, Object> response = new HashMap<>();
-            response.put("id", order.getId());
-            response.put("status", order.getStatus().name());
-            response.put("amount", order.getTotalAmount());
-            response.put("currency", currency);
             response.put("serviceName", serviceName);
-            response.put("createdAt", order.getCreatedAt());
+            response.put("amount", amount);
+            response.put("currency", currency);
+            response.put("userId", authenticatedUser.getId());
+            response.put("userEmail", authenticatedUser.getEmail());
+            response.put("userFirstName", authenticatedUser.getFirstName());
+            response.put("userLastName", authenticatedUser.getLastName());
             
-            auditLogger.info("Temporary order created successfully - Order: {}, Amount: {} {}", 
-                           order.getId(), amount, currency);
+            auditLogger.info("Service data prepared successfully - Service: {}, Amount: {} {}, User: {}",
+                    serviceName, amount, currency, authenticatedUser.getId());
             
-            logger.info("Temporary order created: {}", order.getId());
+            logger.info("Order request successfully processed - Service: {}, User: {}", serviceName,
+                    authenticatedUser.getId());
             
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            logger.error("Error creating temporary order: {}", e.getMessage(), e);
-            auditLogger.error("Temporary order creation failed - Error: {}", e.getMessage());
+            logger.error("Error processing order request: {}", e.getMessage(), e);
+            auditLogger.error("Service data preparation failed - Error: {}", e.getMessage());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "error", "INTERNAL_ERROR",
-                "message", "Erreur lors de la création de la commande"
+                    "message", "Erreur lors de la préparation des données"
             ));
         }
     }
@@ -215,7 +212,9 @@ public class OrderController {
                                               HttpSession session,
                                               HttpServletRequest httpRequest) {
         
-        logger.info("DEBUG - Saving purchase intent for anonymous user");
+        logger.info("Receiving purchase intent request for anonymous user");
+        logger.info("DEBUG - Purchase intent request details: serviceName={}, amount={}, currency={}",
+                request.get("serviceName"), request.get("amount"), request.get("currency"));
         logger.info("DEBUG - Request headers: X-Requested-With={}, Content-Type={}, User-Agent={}",
                     httpRequest.getHeader("X-Requested-With"),
                     httpRequest.getHeader("Content-Type"),
@@ -231,7 +230,11 @@ public class OrderController {
             Object amountObj = request.get("amount");
             String currency = (String) request.get("currency");
             
+            logger.debug("Validating purchase intent data - Service: {}, Amount: {}, Currency: {}",
+                    serviceName, amountObj, currency);
+
             if (serviceName == null || serviceName.trim().isEmpty()) {
+                logger.warn("Invalid service name in purchase intent: {}", serviceName);
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_SERVICE_NAME",
                     "message", "Le nom du service est requis"
@@ -245,9 +248,11 @@ public class OrderController {
                 } else if (amountObj instanceof String) {
                     amount = new BigDecimal((String) amountObj);
                 } else {
+                    logger.error("Invalid amount format in purchase intent: {}", amountObj);
                     throw new IllegalArgumentException("Format de montant invalide");
                 }
             } catch (Exception e) {
+                logger.error("Error parsing amount in purchase intent: {}", e.getMessage());
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_AMOUNT",
                     "message", "Montant invalide"
@@ -255,20 +260,24 @@ public class OrderController {
             }
             
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                logger.warn("Invalid amount in purchase intent: {}", amount);
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_AMOUNT",
                     "message", "Le montant doit être supérieur à 0"
                 ));
             }
             
-            if (currency == null || !currency.equals("CAD")) {
+            if (currency == null || !currency.equals("EUR")) {
+                logger.warn("Invalid currency in purchase intent: {}", currency);
                 return ResponseEntity.badRequest().body(Map.of(
                     "error", "INVALID_CURRENCY",
-                    "message", "Seule la devise CAD est supportée"
+                        "message", "Seule la devise EUR est supportée"
                 ));
             }
             
             // Créer l'intention de paiement
+            logger.debug("Creating purchase intent object - Service: {}, Amount: {}, Currency: {}",
+                    serviceName, amount, currency);
             PurchaseIntent purchaseIntent = new PurchaseIntent(serviceName, amount, currency);
             
             // Vérifier que l'intention est valide
@@ -280,13 +289,14 @@ public class OrderController {
                 ));
             }
             
+            logger.debug("Storing purchase intent in session: {} - Session ID: {}", serviceName, session.getId());
             // Stocker en session avec une clé spécifique
             session.setAttribute("pendingPurchaseIntent", purchaseIntent);
             session.setMaxInactiveInterval(30 * 60); // 30 minutes d'expiration
             
             logger.info("Purchase intent saved in session: {} - Amount: {} {}",
                        serviceName, amount, currency);
-            auditLogger.info("Purchase intent saved successfully - Service: {}, Amount: {} {}, SessionId: {}",
+            auditLogger.info("Purchase intent saved successfully - Service: {}, Amount: {}, SessionId: {}",
                            serviceName, amount, currency, session.getId());
             
             // Créer la réponse
@@ -299,6 +309,9 @@ public class OrderController {
             response.put("sessionId", session.getId());
             response.put("expiresIn", 30 * 60); // 30 minutes en secondes
             
+            logger.debug("Purchase intent request completed successfully - Service: {}, Session: {}",
+                    serviceName, session.getId());
+
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {

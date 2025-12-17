@@ -195,7 +195,7 @@
                     </div>
                     <div class="detail-row">
                         <span>Montant :</span>
-                        <span th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</span>
+                        <span th:text="${order.totalAmount + ' EUR'}">1,500.00 EUR</span>
                     </div>
                     <div class="detail-row">
                         <span>Date d'annulation :</span>
@@ -216,7 +216,7 @@
                 <div th:if="${order.paymentStatus == 'PAID'}">
                     <p><strong>Un remboursement sera traité automatiquement :</strong></p>
                     <ul>
-                        <li>Le montant de <strong th:text="${order.totalAmount + ' CAD'}">1,500.00 CAD</strong> sera remboursé</li>
+                        <li>Le montant de <strong th:text="${order.totalAmount + ' EUR'}">1,500.00 EUR</strong> sera remboursé</li>
                         <li>Le remboursement apparaîtra sur votre carte dans 3-5 jours ouvrables</li>
                         <li>Vous recevrez un email de confirmation du remboursement</li>
                         <li>Le numéro de référence du remboursement vous sera fourni</li>

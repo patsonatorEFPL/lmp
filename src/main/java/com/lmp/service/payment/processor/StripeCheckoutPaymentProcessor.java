@@ -1,31 +1,5 @@
 package com.lmp.service.payment.processor;
 
-import com.lmp.domain.entity.Order;
-import com.lmp.domain.entity.PaymentTransaction;
-import com.lmp.domain.enums.PaymentStatus;
-import com.lmp.service.payment.PaymentProcessor;
-import com.lmp.service.payment.dto.PaymentRequestDto;
-import com.lmp.service.payment.dto.PaymentResponseDto;
-import com.lmp.service.payment.dto.RefundRequestDto;
-import com.lmp.service.payment.dto.RefundResponseDto;
-import com.lmp.service.payment.dto.CheckoutSessionRequestDto;
-import com.lmp.service.payment.dto.CheckoutSessionResponseDto;
-import com.lmp.service.payment.exception.PaymentProcessingException;
-import com.lmp.service.payment.exception.PaymentProviderException;
-import com.lmp.service.payment.exception.PaymentValidationException;
-
-import com.stripe.Stripe;
-import com.stripe.exception.StripeException;
-import com.stripe.model.Refund;
-import com.stripe.model.checkout.Session;
-import com.stripe.param.RefundCreateParams;
-import com.stripe.param.checkout.SessionCreateParams;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,6 +7,30 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.lmp.domain.entity.Order;
+import com.lmp.domain.entity.PaymentTransaction;
+import com.lmp.domain.enums.PaymentStatus;
+import com.lmp.service.payment.PaymentProcessor;
+import com.lmp.service.payment.dto.CheckoutSessionResponseDto;
+import com.lmp.service.payment.dto.PaymentRequestDto;
+import com.lmp.service.payment.dto.PaymentResponseDto;
+import com.lmp.service.payment.dto.RefundRequestDto;
+import com.lmp.service.payment.dto.RefundResponseDto;
+import com.lmp.service.payment.exception.PaymentProcessingException;
+import com.lmp.service.payment.exception.PaymentProviderException;
+import com.lmp.service.payment.exception.PaymentValidationException;
+import com.stripe.Stripe;
+import com.stripe.exception.StripeException;
+import com.stripe.model.Refund;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.RefundCreateParams;
+import com.stripe.param.checkout.SessionCreateParams;
 
 /**
  * Processeur de paiement Stripe utilisant Checkout Sessions
@@ -361,7 +359,7 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                             .setUnitAmount(paymentRequest.getAmount().multiply(new BigDecimal("100")).longValue())
                             .setProductData(
                                 SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                                    .setName("Commande LMP #" + order.getId())
+                                    .setName(order.getServiceName())
                                     .setDescription("Services de marketing digital LMP")
                                     .build()
                             )

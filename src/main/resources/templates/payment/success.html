@@ -44,8 +44,8 @@
                         
                         <div class="flex justify-between">
                             <span class="text-gray-600">Montant total :</span>
-                            <span class="font-semibold text-green-600" 
-                                  th:text="${#numbers.formatCurrency(totalAmount)} + ' CAD'">$750.79 CAD</span>
+                            <span class="font-semibold text-green-600"
+                                  th:text="${#numbers.formatDecimal(totalAmount, 1, 2)} + ' ' + ${currency}">750.79 EUR</span>
                         </div>
                         
                         <div class="flex justify-between">
@@ -87,7 +87,14 @@
                 
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="/services" 
+                    <!-- Bouton de téléchargement de facture -->
+                    <a th:if="${order}" th:href="@{/dashboard/orders/{orderId}/invoice(orderId=${order.id})}"
+                       class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-file-pdf"></i>
+                        Télécharger la facture
+                    </a>
+                    
+                    <a href="/services"
                        class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200">
                         Retour aux services
                     </a>
@@ -124,7 +131,7 @@
             gtag('event', 'purchase', {
                 'transaction_id': /*[[${sessionId}]]*/ '',
                 'value': /*[[${totalAmount}]]*/ 0,
-                'currency': 'CAD',
+                'currency': /*[[${currency}]]*/ 'EUR',
                 'items': [{
                     'item_id': /*[[${order?.id}]]*/ '',
                     'item_name': 'Service LMP',

@@ -76,24 +76,22 @@
                 </div>
                 
                 <div class="col-md-4">
-                    <label for="province" class="form-label">Province</label>
+                    <label for="province" class="form-label">Province/Région</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-flag"></i></span>
                         <select class="form-select" id="province" name="province">
                             <option value="">Sélectionner...</option>
-                            <option value="QC">Québec</option>
-                            <option value="ON">Ontario</option>
-                            <option value="BC">Colombie-Britannique</option>
-                            <option value="AB">Alberta</option>
-                            <option value="MB">Manitoba</option>
-                            <option value="SK">Saskatchewan</option>
-                            <option value="NS">Nouvelle-Écosse</option>
-                            <option value="NB">Nouveau-Brunswick</option>
-                            <option value="NL">Terre-Neuve-et-Labrador</option>
-                            <option value="PE">Île-du-Prince-Édouard</option>
-                            <option value="NT">Territoires du Nord-Ouest</option>
-                            <option value="NU">Nunavut</option>
-                            <option value="YT">Yukon</option>
+                            <option value="BRU">Bruxelles-Capitale</option>
+                            <option value="ANT">Anvers</option>
+                            <option value="BRA">Brabant flamand</option>
+                            <option value="BRW">Brabant wallon</option>
+                            <option value="FLA">Flandre occidentale</option>
+                            <option value="FLO">Flandre orientale</option>
+                            <option value="HAI">Hainaut</option>
+                            <option value="LIE">Liège</option>
+                            <option value="LIM">Limbourg</option>
+                            <option value="LUX">Luxembourg</option>
+                            <option value="NAM">Namur</option>
                         </select>
                     </div>
                 </div>
@@ -102,10 +100,10 @@
                     <label for="postalCode" class="form-label">Code postal</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-mail-bulk"></i></span>
-                        <input type="text" class="form-control" id="postalCode" name="postalCode" 
-                               pattern="[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d" placeholder="H1A 1A1">
+                        <input type="text" class="form-control" id="postalCode" name="postalCode"
+                               pattern="\d{4}" placeholder="1180">
                         <div class="valid-feedback">Code postal valide !</div>
-                        <div class="invalid-feedback">Format: H1A 1A1</div>
+                        <div class="invalid-feedback">Format: 4 chiffres (ex: 1180)</div>
                     </div>
                 </div>
             </div>

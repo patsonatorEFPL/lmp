@@ -1,20 +1,12 @@
 package com.lmp.service.payment.webhook;
 
-import com.lmp.domain.entity.Order;
-import com.lmp.domain.entity.PaymentTransaction;
-import com.lmp.domain.enums.OrderStatus;
-import com.lmp.domain.enums.PaymentStatus;
-import com.lmp.repository.OrderRepository;
-import com.lmp.repository.PaymentTransactionRepository;
-import com.lmp.service.payment.dto.WebhookEventDto;
-import com.lmp.service.payment.exception.PaymentProcessingException;
-
-import com.stripe.exception.SignatureVerificationException;
-import com.stripe.model.Event;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.Refund;
-import com.stripe.model.checkout.Session;
-import com.stripe.net.Webhook;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +15,27 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lmp.domain.entity.Order;
+import com.lmp.domain.entity.PaymentTransaction;
+import com.lmp.domain.entity.User;
+import com.lmp.domain.enums.OrderStatus;
+import com.lmp.domain.enums.PaymentStatus;
+import com.lmp.domain.enums.StripeWebhookEventType;
+import com.lmp.repository.OrderRepository;
+import com.lmp.repository.PaymentTransactionRepository;
+import com.lmp.repository.UserRepository;
+import com.lmp.service.email.EmailService;
+import com.lmp.service.invoice.InvoicePdfService;
+import com.lmp.service.payment.dto.WebhookEventDto;
+import com.lmp.service.payment.exception.PaymentProcessingException;
+import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
+import com.stripe.model.PaymentIntent;
+import com.stripe.model.Refund;
+import com.stripe.model.checkout.Session;
+import com.stripe.net.Webhook;
 
 /**
  * Gestionnaire des webhooks Stripe
@@ -50,6 +56,17 @@ public class StripeWebhookHandler {
     
     @Autowired
     private OrderRepository orderRepository;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private EmailService emailService;
+    
+    @Autowired
+    private InvoicePdfService invoicePdfService;
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
     /**
      * Traite un webhook Stripe avec vérification de signature
@@ -115,84 +132,118 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Traite les événements selon leur type
+     * Traite les événements selon leur type en utilisant l'enum StripeWebhookEventType
      */
     private void processEventByType(Event event, WebhookEventDto webhookEvent) {
-        switch (event.getType()) {
-            case "payment_intent.succeeded":
-                handlePaymentIntentSucceeded(event, webhookEvent);
+        StripeWebhookEventType eventType = StripeWebhookEventType.fromStripeEventType(event.getType());
+        
+        if (eventType == null) {
+            logger.info("Unhandled webhook event type: {}", event.getType());
+            webhookEvent.setStatus("unhandled");
+            return;
+        }
+        
+        logger.info("🔍 DEBUG WEBHOOK - Processing event type: {} ({})", eventType, eventType.getDescription());
+        
+        switch (eventType) {
+            case PAYMENT_INTENT_SUCCEEDED:
+                handlePaymentIntentSucceeded(event, webhookEvent, eventType);
                 break;
                 
-            case "payment_intent.payment_failed":
-                handlePaymentIntentFailed(event, webhookEvent);
+            case PAYMENT_INTENT_PAYMENT_FAILED:
+                handlePaymentIntentFailed(event, webhookEvent, eventType);
                 break;
                 
-            case "payment_intent.requires_action":
-                handlePaymentIntentRequiresAction(event, webhookEvent);
+            case PAYMENT_INTENT_REQUIRES_ACTION:
+                handlePaymentIntentRequiresAction(event, webhookEvent, eventType);
                 break;
                 
-            case "charge.dispute.created":
-                handleChargeDisputeCreated(event, webhookEvent);
+            case CHARGE_DISPUTE_CREATED:
+                handleChargeDisputeCreated(event, webhookEvent, eventType);
                 break;
                 
-            case "refund.created":
-                handleRefundCreated(event, webhookEvent);
+            case REFUND_CREATED:
+                handleRefundCreated(event, webhookEvent, eventType);
                 break;
                 
-            case "refund.updated":
-                handleRefundUpdated(event, webhookEvent);
+            case REFUND_UPDATED:
+                handleRefundUpdated(event, webhookEvent, eventType);
                 break;
                 
-            case "invoice.payment_succeeded":
-                handleInvoicePaymentSucceeded(event, webhookEvent);
+            case INVOICE_PAYMENT_SUCCEEDED:
+                handleInvoicePaymentSucceeded(event, webhookEvent, eventType);
                 break;
                 
-            case "checkout.session.completed":
-                handleCheckoutSessionCompleted(event, webhookEvent);
+            case CHECKOUT_SESSION_COMPLETED:
+                handleCheckoutSessionCompleted(event, webhookEvent, eventType);
                 break;
                 
-            case "checkout.session.expired":
-                handleCheckoutSessionExpired(event, webhookEvent);
+            case CHECKOUT_SESSION_EXPIRED:
+                handleCheckoutSessionExpired(event, webhookEvent, eventType);
                 break;
                 
-            case "checkout.session.async_payment_succeeded":
-                handleCheckoutSessionAsyncPaymentSucceeded(event, webhookEvent);
+            case CHECKOUT_SESSION_ASYNC_PAYMENT_SUCCEEDED:
+                handleCheckoutSessionAsyncPaymentSucceeded(event, webhookEvent, eventType);
                 break;
                 
-            case "checkout.session.async_payment_failed":
-                handleCheckoutSessionAsyncPaymentFailed(event, webhookEvent);
+            case CHECKOUT_SESSION_ASYNC_PAYMENT_FAILED:
+                handleCheckoutSessionAsyncPaymentFailed(event, webhookEvent, eventType);
                 break;
                 
-            case "customer.subscription.updated":
-                handleSubscriptionUpdated(event, webhookEvent);
+            case CUSTOMER_SUBSCRIPTION_UPDATED:
+                handleSubscriptionUpdated(event, webhookEvent, eventType);
                 break;
                 
             default:
-                logger.info("Unhandled webhook event type: {}", event.getType());
+                logger.warn("Event type {} is defined but not implemented in handler", eventType);
                 webhookEvent.setStatus("unhandled");
         }
     }
     
     /**
-     * Gère les paiements réussis
+     * Gère les paiements réussis en utilisant l'enum pour déterminer les statuts cibles
      */
-    private void handlePaymentIntentSucceeded(Event event, WebhookEventDto webhookEvent) {
+    private void handlePaymentIntentSucceeded(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (paymentIntent != null) {
             logger.info("🔍 DEBUG WEBHOOK - handlePaymentIntentSucceeded called for PaymentIntent: {}", paymentIntent.getId());
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
             logger.info("🔍 DEBUG WEBHOOK - PaymentIntent status: {}, amount: {}, currency: {}",
                        paymentIntent.getStatus(), paymentIntent.getAmount(), paymentIntent.getCurrency());
             logger.info("🔍 DEBUG WEBHOOK - PaymentIntent metadata: {}", paymentIntent.getMetadata());
             
+            // 🆕 DIAGNOSTIC AVANCÉ - Vérification des liens Order
+            logger.info("🔍 DIAGNOSTIC LINKS - Searching for order by PaymentIntent ID: {}", paymentIntent.getId());
+            Optional<Order> orderByPI = orderRepository.findByStripePaymentIntentId(paymentIntent.getId());
+            logger.info("🔍 DIAGNOSTIC LINKS - Order found by PaymentIntent: {}", orderByPI.isPresent());
+            
+            if (orderByPI.isEmpty() && paymentIntent.getMetadata() != null) {
+                String sessionId = paymentIntent.getMetadata().get("session_id");
+                logger.info("🔍 DIAGNOSTIC LINKS - Trying fallback search by session_id: {}", sessionId);
+                if (sessionId != null) {
+                    Optional<Order> orderBySession = orderRepository.findByStripeSessionId(sessionId);
+                    logger.info("🔍 DIAGNOSTIC LINKS - Order found by session_id: {}", orderBySession.isPresent());
+                    if (orderBySession.isPresent()) {
+                        Order order = orderBySession.get();
+                        logger.info("🔍 DIAGNOSTIC LINKS - Found order {}, current paymentIntentId: {}, will update to: {}",
+                                   order.getId(), order.getStripePaymentIntentId(), paymentIntent.getId());
+                    }
+                }
+            }
+            
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
             webhookEvent.setStatus("succeeded");
             
-            // Mettre à jour la transaction dans la base de données
-            updatePaymentTransactionStatus(paymentIntent.getId(), PaymentStatus.COMPLETED);
+            // Utiliser les statuts définis dans l'enum
+            if (eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(paymentIntent.getId(), eventType.getTargetPaymentStatus());
+            }
             
-            // 🆕 NOUVEAUTÉ CRUCIALE : Mettre à jour aussi le statut de l'Order
-            updateOrderStatusByPaymentIntentId(paymentIntent.getId(), OrderStatus.CONFIRMED, paymentIntent);
+            // Mettre à jour le statut de l'Order selon l'enum
+            if (eventType.shouldUpdateOrderStatus()) {
+                updateOrderStatusByPaymentIntentId(paymentIntent.getId(), eventType.getTargetOrderStatus(), paymentIntent);
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -210,17 +261,21 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère les échecs de paiement
+     * Gère les échecs de paiement en utilisant l'enum
      */
-    private void handlePaymentIntentFailed(Event event, WebhookEventDto webhookEvent) {
+    private void handlePaymentIntentFailed(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (paymentIntent != null) {
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
             webhookEvent.setStatus("failed");
             
-            // Mettre à jour la transaction dans la base de données
-            updatePaymentTransactionStatus(paymentIntent.getId(), PaymentStatus.FAILED);
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            
+            // Utiliser les statuts définis dans l'enum
+            if (eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(paymentIntent.getId(), eventType.getTargetPaymentStatus());
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -237,17 +292,21 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère les paiements nécessitant une action supplémentaire
+     * Gère les paiements nécessitant une action supplémentaire en utilisant l'enum
      */
-    private void handlePaymentIntentRequiresAction(Event event, WebhookEventDto webhookEvent) {
+    private void handlePaymentIntentRequiresAction(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (paymentIntent != null) {
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
             webhookEvent.setStatus("requires_action");
             
-            // Mettre à jour la transaction dans la base de données
-            updatePaymentTransactionStatus(paymentIntent.getId(), PaymentStatus.PENDING);
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            
+            // Utiliser les statuts définis dans l'enum
+            if (eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(paymentIntent.getId(), eventType.getTargetPaymentStatus());
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -261,27 +320,30 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère la création de litiges
+     * Gère la création de litiges en utilisant l'enum
      */
-    private void handleChargeDisputeCreated(Event event, WebhookEventDto webhookEvent) {
+    private void handleChargeDisputeCreated(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         // Traitement des litiges - notification aux administrateurs
         webhookEvent.setStatus("dispute_created");
         
-        logger.warn("Charge dispute created - Event: {}", event.getId());
+        logger.warn("Charge dispute created - Event: {} ({})", event.getId(), eventType.getDescription());
         securityLogger.warn("Payment dispute created - Event: {}", event.getId());
         
         // TODO: Implémenter la notification aux administrateurs
+        // TODO: Utiliser eventType.getTargetOrderStatus() pour mettre à jour la commande
     }
     
     /**
-     * Gère la création de remboursements
+     * Gère la création de remboursements en utilisant l'enum
      */
-    private void handleRefundCreated(Event event, WebhookEventDto webhookEvent) {
+    private void handleRefundCreated(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         Refund refund = (Refund) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (refund != null) {
             webhookEvent.setProviderTransactionId(refund.getPaymentIntent());
             webhookEvent.setStatus("refund_created");
+            
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -297,18 +359,20 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère la mise à jour de remboursements
+     * Gère la mise à jour de remboursements en utilisant l'enum
      */
-    private void handleRefundUpdated(Event event, WebhookEventDto webhookEvent) {
+    private void handleRefundUpdated(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         Refund refund = (Refund) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (refund != null) {
             webhookEvent.setProviderTransactionId(refund.getPaymentIntent());
             webhookEvent.setStatus("refund_updated");
             
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            
             // Mettre à jour le statut si le remboursement est réussi
-            if ("succeeded".equals(refund.getStatus())) {
-                updatePaymentTransactionStatus(refund.getPaymentIntent(), PaymentStatus.REFUNDED);
+            if ("succeeded".equals(refund.getStatus()) && eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(refund.getPaymentIntent(), eventType.getTargetPaymentStatus());
             }
             
             logger.info("Refund updated - Refund: {}, Status: {}", refund.getId(), refund.getStatus());
@@ -316,29 +380,88 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère les paiements de facture réussis
+     * Gère les paiements de facture réussis en utilisant l'enum
      */
-    private void handleInvoicePaymentSucceeded(Event event, WebhookEventDto webhookEvent) {
+    private void handleInvoicePaymentSucceeded(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         webhookEvent.setStatus("invoice_paid");
-        logger.info("Invoice payment succeeded - Event: {}", event.getId());
+        logger.info("Invoice payment succeeded - Event: {} ({})", event.getId(), eventType.getDescription());
     }
     
     /**
-     * Gère la completion des sessions Checkout
+     * Gère la completion des sessions Checkout en utilisant l'enum
+     * 🆕 AMÉLIORÉ : Logique hybride pour mise à jour d'ordres existants au lieu de créer de nouveaux
      */
-    private void handleCheckoutSessionCompleted(Event event, WebhookEventDto webhookEvent) {
-        Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
+    private void handleCheckoutSessionCompleted(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
+        // 🔧 NOUVELLE APPROCHE : Désérialisation manuelle robuste
+        Session session = null;
+        
+        // 1. Tentative de désérialisation standard
+        try {
+            Optional<com.stripe.model.StripeObject> objectOpt = event.getDataObjectDeserializer().getObject();
+            if (objectOpt.isPresent() && objectOpt.get() instanceof Session) {
+                session = (Session) objectOpt.get();
+                logger.info("✅ DÉSÉRIALISATION STANDARD - Session extraite avec succès: {}", session.getId());
+            }
+        } catch (Exception e) {
+            logger.warn("⚠️ DÉSÉRIALISATION STANDARD ÉCHOUÉE - {}", e.getMessage());
+        }
+        
+        // 2. Si échec, désérialisation manuelle du JSON
+        if (session == null) {
+            logger.info("🔧 DÉSÉRIALISATION MANUELLE - Tentative de parsing JSON direct");
+            session = parseSessionFromJson(event);
+        }
         
         if (session != null) {
+            // 🔍 DIAGNOSTIC - Analyser les métadonnées
+            logger.info("🔍 DIAGNOSTIC - Session ID: {}", session.getId());
+            logger.info("🔍 DIAGNOSTIC - Session metadata: {}", session.getMetadata());
+            logger.info("🔍 DIAGNOSTIC - Session customer_email: {}", session.getCustomerEmail());
+            logger.info("🔍 DIAGNOSTIC - Session amount_total: {}", session.getAmountTotal());
+            logger.info("🔍 DIAGNOSTIC - Session currency: {}", session.getCurrency());
+            logger.info("🔍 DIAGNOSTIC - Session payment_intent: {}", session.getPaymentIntent());
+            logger.info("🔍 DIAGNOSTIC - Session payment_status: {}", session.getPaymentStatus());
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("completed");
             
-            // Mettre à jour la transaction dans la base de données
-            updatePaymentTransactionStatus(session.getId(), PaymentStatus.COMPLETED);
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("🔍 DEBUG WEBHOOK - Checkout completed for session: {}", session.getId());
             
-            // 🆕 NOUVEAUTÉ : Mettre à jour le statut de l'Order via stripeSessionId
-            logger.info("🔍 DEBUG WEBHOOK - Checkout completed, updating order status for session: {}", session.getId());
-            updateOrderStatusByStripeSessionId(session.getId(), OrderStatus.CONFIRMED);
+            // 🔧 AMÉLIORATION : Utiliser la logique pour trouver et mettre à jour l'ordre existant
+            // Priorité : 1) PaymentIntent ID, 2) Session ID, 3) Metadata order_id
+            Optional<Order> orderOpt = findOrderBySession(session);
+            
+            if (orderOpt.isPresent()) {
+                Order order = orderOpt.get();
+                logger.info("📝 MISE À JOUR EXISTANTE - Commande trouvée: {} pour la session {}, mise à jour du statut", 
+                           order.getId(), session.getId());
+                
+                // Mettre à jour l'ordre existant avec les informations de la session
+                updateOrderWithSessionData(order, session);
+                
+                // Utiliser les statuts définis dans l'enum
+                if (eventType.shouldUpdatePaymentStatus()) {
+                    updatePaymentTransactionStatus(session.getPaymentIntent(), eventType.getTargetPaymentStatus());
+                }
+                
+                // Mettre à jour le statut de l'Order selon l'enum
+                if (eventType.shouldUpdateOrderStatus()) {
+                    OrderStatus newStatus = eventType.getTargetOrderStatus();
+                    updateOrderStatus(order, newStatus, session);
+                }
+                
+            } else {
+                // 🆕 CRÉATION : Si aucune commande existante n'est trouvée, créer une nouvelle commande
+                // Cela ne devrait se produire que dans les cas de fallback ou erreurs dans le workflow
+                logger.warn("🆕 CRÉATION FONCTION DE SECOURS - Aucune commande trouvée pour session {}, création via webhook", session.getId());
+                Order newOrder = createOrderFromCheckoutSession(session);
+                if (newOrder != null) {
+                    logger.info("✅ CRÉATION RÉUSSIE - Commande {} créée via fonction de secours pour session {}",
+                               newOrder.getId(), session.getId());
+                } else {
+                    logger.error("❌ ÉCHEC CRÉATION - Impossible de créer commande pour session {} via fonction de secours", session.getId());
+                }
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -355,24 +478,32 @@ public class StripeWebhookHandler {
             
             securityLogger.info("Checkout session completed - Session: {}, Customer: {}",
                                session.getId(), session.getCustomerEmail());
+        } else {
+            logger.error("❌ Session Stripe null dans handleCheckoutSessionCompleted");
         }
     }
     
     /**
-     * Gère l'expiration des sessions Checkout
+     * Gère l'expiration des sessions Checkout en utilisant l'enum
      */
-    private void handleCheckoutSessionExpired(Event event, WebhookEventDto webhookEvent) {
+    private void handleCheckoutSessionExpired(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (session != null) {
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("expired");
             
-            // Marquer la transaction comme échouée ou expirée
-            updatePaymentTransactionStatus(session.getId(), PaymentStatus.FAILED);
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
             
-            // 🆕 NOUVEAUTÉ : Mettre à jour le statut de l'Order pour indiquer l'échec
-            updateOrderStatusByStripeSessionId(session.getId(), OrderStatus.CANCELLED);
+            // Utiliser les statuts définis dans l'enum
+            if (eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(session.getId(), eventType.getTargetPaymentStatus());
+            }
+            
+            // Mettre à jour le statut de l'Order selon l'enum
+            if (eventType.shouldUpdateOrderStatus()) {
+                updateOrderStatusByStripeSessionId(session.getId(), eventType.getTargetOrderStatus());
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -389,21 +520,27 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère les paiements asynchrones réussis (ex: virements bancaires)
+     * Gère les paiements asynchrones réussis (ex: virements bancaires) en utilisant l'enum
      */
-    private void handleCheckoutSessionAsyncPaymentSucceeded(Event event, WebhookEventDto webhookEvent) {
+    private void handleCheckoutSessionAsyncPaymentSucceeded(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (session != null) {
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("async_payment_succeeded");
             
-            // Mettre à jour la transaction comme complétée
-            updatePaymentTransactionStatus(session.getId(), PaymentStatus.COMPLETED);
-            
-            // 🆕 NOUVEAUTÉ : Mettre à jour le statut de l'Order pour indiquer le succès
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
             logger.info("🔍 DEBUG WEBHOOK - Async payment succeeded, updating order status for session: {}", session.getId());
-            updateOrderStatusByStripeSessionId(session.getId(), OrderStatus.CONFIRMED);
+            
+            // Utiliser les statuts définis dans l'enum
+            if (eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(session.getId(), eventType.getTargetPaymentStatus());
+            }
+            
+            // Mettre à jour le statut de l'Order selon l'enum
+            if (eventType.shouldUpdateOrderStatus()) {
+                updateOrderStatusByStripeSessionId(session.getId(), eventType.getTargetOrderStatus());
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -422,20 +559,26 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère les échecs de paiements asynchrones
+     * Gère les échecs de paiements asynchrones en utilisant l'enum
      */
-    private void handleCheckoutSessionAsyncPaymentFailed(Event event, WebhookEventDto webhookEvent) {
+    private void handleCheckoutSessionAsyncPaymentFailed(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         Session session = (Session) event.getDataObjectDeserializer().getObject().orElse(null);
         
         if (session != null) {
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("async_payment_failed");
             
-            // Marquer la transaction comme échouée
-            updatePaymentTransactionStatus(session.getId(), PaymentStatus.FAILED);
+            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
             
-            // 🆕 NOUVEAUTÉ : Mettre à jour le statut de l'Order pour indiquer l'échec
-            updateOrderStatusByStripeSessionId(session.getId(), OrderStatus.CANCELLED);
+            // Utiliser les statuts définis dans l'enum
+            if (eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(session.getId(), eventType.getTargetPaymentStatus());
+            }
+            
+            // Mettre à jour le statut de l'Order selon l'enum
+            if (eventType.shouldUpdateOrderStatus()) {
+                updateOrderStatusByStripeSessionId(session.getId(), eventType.getTargetOrderStatus());
+            }
             
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
@@ -452,11 +595,11 @@ public class StripeWebhookHandler {
     }
     
     /**
-     * Gère les mises à jour d'abonnement
+     * Gère les mises à jour d'abonnement en utilisant l'enum
      */
-    private void handleSubscriptionUpdated(Event event, WebhookEventDto webhookEvent) {
+    private void handleSubscriptionUpdated(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
         webhookEvent.setStatus("subscription_updated");
-        logger.info("Subscription updated - Event: {}", event.getId());
+        logger.info("Subscription updated - Event: {} ({})", event.getId(), eventType.getDescription());
     }
     
     /**
@@ -611,28 +754,480 @@ public class StripeWebhookHandler {
     private boolean shouldUpdateOrderStatus(OrderStatus currentStatus, OrderStatus newStatus) {
         logger.info("🔍 DEBUG WEBHOOK - Checking status transition: {} -> {}", currentStatus, newStatus);
         
+        // 🆕 DIAGNOSTIC DÉTAILLÉ - Analyser toutes les transitions possibles
+        if (currentStatus == newStatus) {
+            logger.info("🔍 DIAGNOSTIC STATUS - Status unchanged: {}, skipping update", currentStatus);
+            return false;
+        }
+        
         // Permettre les transitions depuis PAYMENT_PENDING
         if (currentStatus == OrderStatus.PAYMENT_PENDING) {
             boolean allowed = newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.PENDING || newStatus == OrderStatus.CANCELLED;
-            logger.info("🔍 DEBUG WEBHOOK - From PAYMENT_PENDING to {}: {}", newStatus, allowed);
+            logger.info("🔍 DIAGNOSTIC STATUS - From PAYMENT_PENDING to {}: {}", newStatus, allowed);
+            if (!allowed) {
+                logger.warn("🔍 DIAGNOSTIC STATUS - BLOCKED: Invalid transition from PAYMENT_PENDING to {}", newStatus);
+            }
+            return allowed;
+        }
+        
+        // Transitions depuis PENDING
+        if (currentStatus == OrderStatus.PENDING) {
+            boolean allowed = newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.CANCELLED ||
+                            newStatus == OrderStatus.PROCESSING || newStatus == OrderStatus.SHIPPED;
+            logger.info("🔍 DIAGNOSTIC STATUS - From PENDING to {}: {}", newStatus, allowed);
             return allowed;
         }
         
         // Permettre l'annulation depuis la plupart des statuts (sauf COMPLETED)
         if (newStatus == OrderStatus.CANCELLED) {
             boolean allowed = currentStatus != OrderStatus.COMPLETED && currentStatus != OrderStatus.CANCELLED;
-            logger.info("🔍 DEBUG WEBHOOK - Cancellation from {}: {}", currentStatus, allowed);
+            logger.info("🔍 DIAGNOSTIC STATUS - Cancellation from {}: {}", currentStatus, allowed);
+            if (!allowed) {
+                logger.warn("🔍 DIAGNOSTIC STATUS - BLOCKED: Cannot cancel order with status {}", currentStatus);
+            }
             return allowed;
         }
         
         // Empêcher les retours en arrière inappropriés
         if (currentStatus == OrderStatus.COMPLETED) {
-            logger.info("🔍 DEBUG WEBHOOK - Cannot modify completed order");
+            logger.warn("🔍 DIAGNOSTIC STATUS - BLOCKED: Cannot modify completed order");
             return false; // Ne pas modifier les commandes déjà complétées
         }
         
+        // Transitions vers CONFIRMED depuis d'autres statuts
+        if (newStatus == OrderStatus.CONFIRMED) {
+            boolean allowed = currentStatus == OrderStatus.PAYMENT_PENDING || currentStatus == OrderStatus.PENDING ||
+                            currentStatus == OrderStatus.PROCESSING;
+            logger.info("🔍 DIAGNOSTIC STATUS - To CONFIRMED from {}: {}", currentStatus, allowed);
+            return allowed;
+        }
+        
         // Permettre les progressions normales
-        logger.info("🔍 DEBUG WEBHOOK - Normal progression allowed");
+        logger.info("🔍 DIAGNOSTIC STATUS - Normal progression allowed: {} -> {}", currentStatus, newStatus);
         return true;
+    }
+    
+    /**
+     * 🆕 PHASE 1 : Crée une nouvelle commande depuis une session Stripe checkout
+     * Cette méthode extrait les métadonnées de la session et crée une commande CONFIRMÉE
+     */
+    private Order createOrderFromCheckoutSession(Session session) {
+        try {
+            logger.info("🆕 CRÉATION COMMANDE - Début création pour session: {}", session.getId());
+            
+            // 1. Extraire les métadonnées requises
+            Map<String, String> metadata = session.getMetadata();
+            if (metadata == null || metadata.isEmpty()) {
+                logger.error("❌ MÉTADONNÉES MANQUANTES - Session {} sans métadonnées", session.getId());
+                return null;
+            }
+            
+            // 2. Extraire les informations requises
+            String serviceName = metadata.get("serviceName");
+            String amountStr = metadata.get("amount");
+            String currency = metadata.get("currency");
+            String userIdStr = metadata.get("userId");
+            
+            logger.info("🔍 MÉTADONNÉES EXTRAITES - Service: {}, Amount: {}, Currency: {}, UserId: {}",
+                       serviceName, amountStr, currency, userIdStr);
+            
+            // 3. Valider les données essentielles
+            if (serviceName == null || serviceName.trim().isEmpty()) {
+                logger.error("❌ SERVICE MANQUANT - serviceName requis dans métadonnées");
+                return null;
+            }
+            
+            if (amountStr == null || amountStr.trim().isEmpty()) {
+                logger.error("❌ MONTANT MANQUANT - amount requis dans métadonnées");
+                return null;
+            }
+            
+            // 4. Convertir le montant
+            BigDecimal amount;
+            try {
+                // Le montant Stripe est en centimes, on le convertit en dollars
+                Long amountCents = Long.parseLong(amountStr);
+                amount = BigDecimal.valueOf(amountCents).divide(BigDecimal.valueOf(100));
+            } catch (NumberFormatException e) {
+                logger.error("❌ MONTANT INVALIDE - Impossible de parser amount: {}", amountStr, e);
+                return null;
+            }
+            
+            // 5. Trouver l'utilisateur
+            User user = null;
+            if (userIdStr != null && !userIdStr.trim().isEmpty()) {
+                try {
+                    Long userId = Long.parseLong(userIdStr);
+                    Optional<User> userOpt = userRepository.findById(userId);
+                    if (userOpt.isPresent()) {
+                        user = userOpt.get();
+                        logger.info("✅ UTILISATEUR TROUVÉ - ID: {}, Email: {}", userId, user.getEmail());
+                    } else {
+                        logger.warn("⚠️ UTILISATEUR NON TROUVÉ - ID: {}", userId);
+                    }
+                } catch (NumberFormatException e) {
+                    logger.error("❌ USER_ID INVALIDE - Impossible de parser userId: {}", userIdStr, e);
+                }
+            }
+            
+            // Si pas d'utilisateur trouvé par ID, essayer par email
+            if (user == null && session.getCustomerEmail() != null) {
+                Optional<User> userOpt = userRepository.findByEmail(session.getCustomerEmail());
+                if (userOpt.isPresent()) {
+                    user = userOpt.get();
+                    logger.info("✅ UTILISATEUR TROUVÉ PAR EMAIL - Email: {}", session.getCustomerEmail());
+                } else {
+                    logger.warn("⚠️ UTILISATEUR NON TROUVÉ PAR EMAIL - Email: {}", session.getCustomerEmail());
+                }
+            }
+            
+            // 6. Créer la nouvelle commande
+            Order newOrder = new Order();
+            newOrder.setUser(user);
+            newOrder.setServiceName(serviceName.trim());
+            newOrder.setTotalAmount(amount);
+            newOrder.setCurrency(currency != null ? currency : "CAD");
+            newOrder.setStatus(OrderStatus.CONFIRMED); // Statut CONFIRMÉ directement
+            newOrder.setPaymentStatus("succeeded");
+            
+            // Informations Stripe
+            newOrder.setStripeSessionId(session.getId());
+            newOrder.setStripePaymentIntentId(session.getPaymentIntent());
+            newOrder.setStripeCustomerId(session.getCustomer());
+            newOrder.setPaymentMethod("stripe_checkout");
+            
+            // Dates importantes
+            LocalDateTime now = LocalDateTime.now();
+            newOrder.setCreatedAt(now);
+            newOrder.setUpdatedAt(now);
+            newOrder.setPaidAt(now); // Payé immédiatement
+            
+            // Informations de facturation si disponibles
+            if (session.getCustomerEmail() != null) {
+                // Stocker l'email dans les notes si pas d'utilisateur associé
+                if (user == null) {
+                    newOrder.setNotes("Email client: " + session.getCustomerEmail());
+                }
+            }
+            
+            // 7. Sauvegarder la commande
+            Order savedOrder = orderRepository.save(newOrder);
+            
+            logger.info("✅ COMMANDE CRÉÉE - ID: {}, Session: {}, Service: {}, Montant: {} {}",
+                       savedOrder.getId(), session.getId(), serviceName, amount, currency);
+            
+            securityLogger.info("Order created via Stripe webhook - Order: {}, Session: {}, Amount: {} {}",
+                               savedOrder.getId(), session.getId(), amount, currency);
+            
+            return savedOrder;
+            
+        } catch (Exception e) {
+            logger.error("❌ ERREUR CRÉATION COMMANDE - Session: {}, Erreur: {}", session.getId(), e.getMessage(), e);
+            securityLogger.error("Order creation failed via webhook - Session: {}, Error: {}", session.getId(), e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 🔧 NOUVELLE MÉTHODE : Désérialisation manuelle robuste du JSON Session
+     * Cette méthode parse directement le JSON pour extraire les informations nécessaires
+     * Compatible avec toutes les versions d'API Stripe
+     */
+    private Session parseSessionFromJson(Event event) {
+        try {
+            logger.info("🔧 PARSING JSON - Début de la désérialisation manuelle");
+            
+            // 1. Extraire le JSON brut de l'événement
+            JsonNode eventData = objectMapper.readTree(event.getData().toJson());
+            JsonNode sessionJson = eventData.get("object");
+            
+            if (sessionJson == null) {
+                logger.error("❌ JSON PARSING - Pas d'objet 'object' dans les données");
+                return null;
+            }
+            
+            logger.info("🔧 JSON STRUCTURE - Object type: {}", sessionJson.get("object").asText());
+            
+            // 2. Vérifier que c'est bien une session checkout
+            if (!"checkout.session".equals(sessionJson.get("object").asText())) {
+                logger.error("❌ JSON PARSING - L'objet n'est pas une checkout.session: {}",
+                           sessionJson.get("object").asText());
+                return null;
+            }
+            
+            // 3. Créer un objet Session avec les données essentielles
+            Session manualSession = new Session();
+            
+            // ID de session
+            if (sessionJson.has("id")) {
+                manualSession.setId(sessionJson.get("id").asText());
+                logger.info("✅ JSON PARSED - Session ID: {}", manualSession.getId());
+            }
+            
+            // PaymentIntent
+            if (sessionJson.has("payment_intent")) {
+                String paymentIntentId = sessionJson.get("payment_intent").asText();
+                manualSession.setPaymentIntent(paymentIntentId);
+                logger.info("✅ JSON PARSED - Payment Intent: {}", paymentIntentId);
+            }
+            
+            // Customer email
+            if (sessionJson.has("customer_email") && !sessionJson.get("customer_email").isNull()) {
+                manualSession.setCustomerEmail(sessionJson.get("customer_email").asText());
+                logger.info("✅ JSON PARSED - Customer Email: {}", manualSession.getCustomerEmail());
+            }
+            
+            // Customer details - email alternatif
+            if (sessionJson.has("customer_details")) {
+                JsonNode customerDetails = sessionJson.get("customer_details");
+                if (customerDetails.has("email") && !customerDetails.get("email").isNull()) {
+                    String email = customerDetails.get("email").asText();
+                    if (manualSession.getCustomerEmail() == null) {
+                        manualSession.setCustomerEmail(email);
+                        logger.info("✅ JSON PARSED - Customer Email (from details): {}", email);
+                    }
+                }
+            }
+            
+            // Montant total
+            if (sessionJson.has("amount_total")) {
+                Long amountTotal = sessionJson.get("amount_total").asLong();
+                manualSession.setAmountTotal(amountTotal);
+                logger.info("✅ JSON PARSED - Amount Total: {}", amountTotal);
+            }
+            
+            // Devise
+            if (sessionJson.has("currency")) {
+                manualSession.setCurrency(sessionJson.get("currency").asText());
+                logger.info("✅ JSON PARSED - Currency: {}", manualSession.getCurrency());
+            }
+            
+            // Statut de paiement
+            if (sessionJson.has("payment_status")) {
+                manualSession.setPaymentStatus(sessionJson.get("payment_status").asText());
+                logger.info("✅ JSON PARSED - Payment Status: {}", manualSession.getPaymentStatus());
+            }
+            
+            // Customer ID
+            if (sessionJson.has("customer") && !sessionJson.get("customer").isNull()) {
+                manualSession.setCustomer(sessionJson.get("customer").asText());
+                logger.info("✅ JSON PARSED - Customer ID: {}", manualSession.getCustomer());
+            }
+            
+            // Métadonnées (crucial pour la création de commandes)
+            if (sessionJson.has("metadata")) {
+                JsonNode metadataNode = sessionJson.get("metadata");
+                Map<String, String> metadata = new HashMap<>();
+                
+                metadataNode.fields().forEachRemaining(entry -> {
+                    metadata.put(entry.getKey(), entry.getValue().asText());
+                });
+                
+                manualSession.setMetadata(metadata);
+                logger.info("✅ JSON PARSED - Metadata: {}", metadata);
+            }
+            
+            logger.info("✅ DÉSÉRIALISATION MANUELLE RÉUSSIE - Session: {}", manualSession.getId());
+            return manualSession;
+            
+        } catch (Exception e) {
+            logger.error("❌ ÉCHEC DÉSÉRIALISATION MANUELLE - Erreur: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * 🆕 NOUVEAUTÉ : Trouve une commande existante liée à la session Stripe
+     * Priorité : 1) PaymentIntent ID, 2) Session ID, 3) Metadata order_id
+     */
+    private Optional<Order> findOrderBySession(Session session) {
+        logger.info("🔍 RECHERCHE COMMANDE - Recherche d'une commande existante pour la session: {}", session.getId());
+        
+        // 1. Recherche par PaymentIntent ID (le plus fiable)
+        if (session.getPaymentIntent() != null) {
+            Optional<Order> orderByPI = orderRepository.findByStripePaymentIntentId(session.getPaymentIntent());
+            if (orderByPI.isPresent()) {
+                logger.info("✅ TROUVÉ PAR PAYMENT_INTENT - Commande {} trouvée pour PaymentIntent: {}", 
+                           orderByPI.get().getId(), session.getPaymentIntent());
+                return orderByPI;
+            }
+        }
+        
+        // 2. Recherche par Session ID
+        Optional<Order> orderBySession = orderRepository.findByStripeSessionId(session.getId());
+        if (orderBySession.isPresent()) {
+            logger.info("✅ TROUVÉ PAR SESSION_ID - Commande {} trouvée pour Session: {}", 
+                       orderBySession.get().getId(), session.getId());
+            return orderBySession;
+        }
+        
+        // 3. Recherche par metadata order_id (fallback)
+        if (session.getMetadata() != null && session.getMetadata().containsKey("order_id")) {
+            String orderIdStr = session.getMetadata().get("order_id");
+            try {
+                Long orderId = Long.parseLong(orderIdStr);
+                Optional<Order> orderByMetadata = orderRepository.findById(orderId);
+                if (orderByMetadata.isPresent()) {
+                    logger.info("✅ TROUVÉ PAR METADATA - Commande {} trouvée via metadata order_id: {}", 
+                               orderByMetadata.get().getId(), orderId);
+                    return orderByMetadata;
+                }
+            } catch (NumberFormatException e) {
+                logger.warn("⚠️ METADATA ORDER_ID INVALIDE - Impossible de parser order_id: {}", orderIdStr);
+            }
+        }
+        
+        logger.warn("❌ AUCUNE COMMANDE TROUVÉE - Aucune commande existante trouvée pour la session: {}", session.getId());
+        return Optional.empty();
+    }
+    
+    /**
+     * 🆕 NOUVEAUTÉ : Met à jour une commande existante avec les données de la session Stripe
+     */
+    private void updateOrderWithSessionData(Order order, Session session) {
+        logger.info("🔄 MISE À JOUR COMMANDE - Mise à jour de la commande {} avec les données de la session {}", 
+                   order.getId(), session.getId());
+        
+        // Mise à jour des informations de paiement
+        order.setStripeSessionId(session.getId());
+        if (session.getPaymentIntent() != null) {
+            order.setStripePaymentIntentId(session.getPaymentIntent());
+        }
+        if (session.getCustomer() != null) {
+            order.setStripeCustomerId(session.getCustomer());
+        }
+        order.setPaymentStatus(session.getPaymentStatus());
+        order.setPaymentMethod("stripe_checkout");
+        
+        // Mise à jour des informations de facturation si disponibles
+        if (session.getCustomerEmail() != null) {
+            // Si l'utilisateur n'est pas encore associé et qu'on a un email correspondant
+            if (order.getUser() == null) {
+                Optional<User> userOpt = userRepository.findByEmail(session.getCustomerEmail());
+                if (userOpt.isPresent()) {
+                    order.setUser(userOpt.get());
+                    logger.info("👤 UTILISATEUR ASSOCIÉ - Utilisateur {} associé via email: {}", 
+                               userOpt.get().getId(), session.getCustomerEmail());
+                }
+            }
+        }
+        
+        // Mise à jour des dates importantes
+        order.setUpdatedAt(LocalDateTime.now());
+        if ("paid".equals(session.getPaymentStatus())) {
+            order.setPaidAt(LocalDateTime.now());
+        } else if ("unpaid".equals(session.getPaymentStatus()) || "failed".equals(session.getPaymentStatus())) {
+            order.setPaidAt(null);
+        }
+        
+        // Sauvegarde des modifications
+        orderRepository.save(order);
+        
+        logger.info("✅ MISE À JOUR COMMANDE TERMINÉE - Commande {} mise à jour avec succès", order.getId());
+    }
+    
+    /**
+     * 🆕 NOUVEAUTÉ : Met à jour le statut de la commande avec validation de transition logique
+     */
+    private void updateOrderStatus(Order order, OrderStatus newStatus, Session session) {
+        OrderStatus oldStatus = order.getStatus();
+        logger.info("🔄 MISE À JOUR STATUT - Commande {}: {} -> {}", order.getId(), oldStatus, newStatus);
+        
+        if (shouldUpdateOrderStatus(oldStatus, newStatus)) {
+            order.setStatus(newStatus);
+            order.setUpdatedAt(LocalDateTime.now());
+            
+            if (newStatus == OrderStatus.CONFIRMED) {
+                order.setPaidAt(LocalDateTime.now());
+            }
+            
+            orderRepository.save(order);
+            
+            logger.info("✅ STATUT MISE À JOUR - Commande {} mis à jour: {} -> {}",
+                       order.getId(), oldStatus, newStatus);
+            
+            // 🆕 Envoi automatique de la facture par email après confirmation du paiement
+            if (newStatus == OrderStatus.CONFIRMED && order.getUser() != null) {
+                sendInvoiceByEmail(order, order.getUser());
+            }
+        } else {
+            logger.warn("❌ TRANSITION INVALIDE - Mise à jour de statut bloquée pour commande {}: {} -> {}",
+                       order.getId(), oldStatus, newStatus);
+        }
+    }
+    
+    /**
+     * 🆕 NOUVEAUTÉ : Envoie la facture PDF par email au client après un paiement réussi
+     */
+    private void sendInvoiceByEmail(Order order, User user) {
+        try {
+            logger.info("📧 ENVOI FACTURE - Génération et envoi de la facture pour la commande {} à {}",
+                       order.getId(), user.getEmail());
+            
+            // Générer le PDF de la facture
+            byte[] pdfData = invoicePdfService.generateInvoicePdf(order, user);
+            
+            if (pdfData == null || pdfData.length == 0) {
+                logger.error("❌ ENVOI FACTURE - Échec de génération du PDF pour la commande {}", order.getId());
+                return;
+            }
+            
+            // Générer le numéro de facture pour le nom du fichier
+            String invoiceNumber = invoicePdfService.generateInvoiceNumber(order);
+            String fileName = "Facture-" + invoiceNumber + ".pdf";
+            
+            // Préparer le contenu de l'email
+            String subject = "Votre facture LMP - " + invoiceNumber;
+            String body = buildInvoiceEmailBody(order, user, invoiceNumber);
+            
+            // Envoyer l'email avec la facture en pièce jointe
+            emailService.sendEmailWithAttachment(
+                user.getEmail(),
+                subject,
+                body,
+                fileName,
+                pdfData,
+                "application/pdf"
+            );
+            
+            logger.info("✅ ENVOI FACTURE - Facture {} envoyée avec succès à {}",
+                       invoiceNumber, user.getEmail());
+            
+            securityLogger.info("Invoice sent via email - Order: {}, Invoice: {}, Email: {}",
+                               order.getId(), invoiceNumber, user.getEmail());
+            
+        } catch (Exception e) {
+            logger.error("❌ ENVOI FACTURE - Erreur lors de l'envoi de la facture pour la commande {}: {}",
+                        order.getId(), e.getMessage(), e);
+            // Ne pas propager l'exception pour ne pas bloquer le traitement du webhook
+        }
+    }
+    
+    /**
+     * 🆕 NOUVEAUTÉ : Construit le corps de l'email de facture
+     */
+    private String buildInvoiceEmailBody(Order order, User user, String invoiceNumber) {
+        StringBuilder body = new StringBuilder();
+        
+        String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+        String lastName = user.getLastName() != null ? user.getLastName() : "";
+        String fullName = (firstName + " " + lastName).trim();
+        if (fullName.isEmpty()) {
+            fullName = user.getEmail();
+        }
+        
+        body.append("Bonjour ").append(fullName).append(",\n\n");
+        body.append("Merci pour votre achat chez LMP !\n\n");
+        body.append("Veuillez trouver ci-joint votre facture n° ").append(invoiceNumber).append(".\n\n");
+        body.append("Détails de votre commande :\n");
+        body.append("- Service : ").append(order.getServiceName()).append("\n");
+        body.append("- Montant : ").append(order.getTotalAmount()).append(" ").append(order.getCurrency()).append("\n");
+        body.append("- Date de paiement : ").append(order.getPaidAt() != null ? order.getPaidAt().toString() : "N/A").append("\n\n");
+        body.append("Si vous avez des questions concernant votre facture, n'hésitez pas à nous contacter.\n\n");
+        body.append("Cordialement,\n");
+        body.append("L'équipe LMP\n");
+        body.append("support@lmp-services.ca\n");
+        
+        return body.toString();
     }
 }

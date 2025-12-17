@@ -11,11 +11,11 @@ let markers = [];
  * Initialise la carte interactive
  */
 function initMap() {
-    // Coordonnées exactes de LMP - 1085 rue de la Rivière Québec (Québec) G1Y2A3 Canada
-    const quebecCoords = [46.7586954, -71.3541517];
+    // Coordonnées exactes de LMP - Rue Gatti De Gamond 97, 1180 Uccle, Belgique
+    const uccleCoords = [50.8012, 4.3447];
     
     // Création de la carte Leaflet
-    map = L.map('map').setView(quebecCoords, 13);
+    map = L.map('map').setView(uccleCoords, 15);
     
     // Ajout de la couche de tuiles OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

@@ -52,15 +52,21 @@ public class PaymentServiceImpl implements PaymentService {
     private StripeWebhookHandler stripeWebhookHandler;
     
     @Override
-    public PaymentResponseDto processPayment(Long orderId, PaymentRequestDto paymentRequest) 
+    public PaymentResponseDto processPayment(Long orderId, PaymentRequestDto paymentRequest)
             throws PaymentProcessingException, PaymentValidationException {
         
         logger.info("Processing payment for order {} with provider {}", orderId, paymentRequest.getPaymentProvider());
+        logger.debug("Payment request details - Order: {}, Amount: {} {}, Currency: {}, Method: {}",
+                    orderId, paymentRequest.getAmount(), paymentRequest.getCurrency(), paymentRequest.getPaymentMethod());
         
         // Récupérer la commande
+        logger.debug("Retrieving order from database: {}", orderId);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée avec ID: " + orderId));
         
+        logger.debug("Order retrieved - ID: {}, Service: '{}', Amount: {}, Status: {}",
+                    order.getId(), order.getServiceName(), order.getTotalAmount(), order.getStatus());
+                
         // Vérifier que la commande peut être payée
         validateOrderForPayment(order);
         
@@ -70,26 +76,36 @@ public class PaymentServiceImpl implements PaymentService {
         // Récupérer le processeur de paiement approprié
         PaymentProcessor processor = getPaymentProcessor(paymentRequest.getPaymentProvider());
         
+        logger.debug("Creating pending transaction for order: {}", orderId);
         // Créer une transaction en attente
         PaymentTransaction transaction = createPendingTransaction(order, paymentRequest);
+        logger.debug("Pending transaction created with ID: {}", transaction.getId());
         
         try {
+            logger.debug("Starting payment processing with processor for order: {}", orderId);
             // Traiter le paiement
             PaymentResponseDto response = processor.processPayment(order, paymentRequest);
+            
+            logger.debug("Payment processor response received for order: {} - Status: {}", orderId, response.getStatus());
             
             // Mettre à jour la transaction avec la réponse
             updateTransactionFromResponse(transaction, response);
             
             // Sauvegarder la transaction
+            logger.debug("Saving transaction to database: {}", transaction.getId());
             paymentTransactionRepository.save(transaction);
+            logger.debug("Transaction saved successfully: {}", transaction.getId());
             
             // Mettre à jour le statut de la commande si le paiement est réussi
             if (response.isSuccessful()) {
+                logger.debug("Payment successful, updating order status for order: {}", orderId);
                 updateOrderStatus(order, OrderStatus.IN_PROGRESS);
-                auditLogger.info("Payment successful - Order: {}, Transaction: {}, Amount: {} {}", 
+                logger.debug("Order status updated to IN_PROGRESS for order: {}", orderId);
+                auditLogger.info("Payment successful - Order: {}, Transaction: {}, Amount: {}",
                                orderId, transaction.getId(), response.getAmount(), response.getCurrency());
             } else if (response.isFailed()) {
-                auditLogger.warn("Payment failed - Order: {}, Transaction: {}, Error: {}", 
+                logger.warn("Payment failed for order: {} - Error: {}", orderId, response.getErrorMessage());
+                auditLogger.warn("Payment failed - Order: {}, Transaction: {}, Error: {}",
                                 orderId, transaction.getId(), response.getErrorMessage());
             }
             
@@ -101,12 +117,14 @@ public class PaymentServiceImpl implements PaymentService {
             return response;
             
         } catch (Exception e) {
+            logger.error("Error during payment processing for order {}: {}", orderId, e.getMessage(), e);
             // Marquer la transaction comme échouée
             transaction.setStatus(PaymentStatus.FAILED);
             transaction.setUpdatedAt(LocalDateTime.now());
+            logger.debug("Updating transaction status to FAILED: {}", transaction.getId());
             paymentTransactionRepository.save(transaction);
             
-            auditLogger.error("Payment processing failed - Order: {}, Transaction: {}, Error: {}", 
+            auditLogger.error("Payment processing failed - Order: {}, Transaction: {}, Error: {}",
                              orderId, transaction.getId(), e.getMessage());
             
             throw e;
@@ -326,20 +344,30 @@ public class PaymentServiceImpl implements PaymentService {
      * Valide qu'une commande peut être payée
      */
     private void validateOrderForPayment(Order order) throws PaymentValidationException {
+        logger.debug("Validating order for payment - ID: {}, Status: {}, Amount: {}",
+                    order.getId(), order.getStatus(), order.getTotalAmount());
+                    
         // 🆕 Accepter les commandes PAYMENT_PENDING et PENDING
         if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+            logger.warn("Order {} cannot be paid in current state: {}", order.getId(), order.getStatus());
             throw new PaymentValidationException("La commande ne peut pas être payée dans son état actuel: " + order.getStatus());
         }
         
         if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            logger.warn("Order {} has invalid amount for payment: {}", order.getId(), order.getTotalAmount());
             throw new PaymentValidationException("Le montant de la commande doit être supérieur à 0");
         }
+        
+        logger.debug("Order {} validation passed", order.getId());
     }
     
     /**
      * Crée une transaction en attente
      */
     private PaymentTransaction createPendingTransaction(Order order, PaymentRequestDto paymentRequest) {
+        logger.debug("Creating pending transaction for order: {} - Amount: {} {}, Provider: {}",
+                    order.getId(), paymentRequest.getAmount(), paymentRequest.getCurrency(), paymentRequest.getPaymentProvider());
+                    
         PaymentTransaction transaction = new PaymentTransaction();
         transaction.setOrder(order);
         transaction.setAmount(paymentRequest.getAmount());
@@ -350,7 +378,11 @@ public class PaymentServiceImpl implements PaymentService {
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setUpdatedAt(LocalDateTime.now());
         
-        return paymentTransactionRepository.save(transaction);
+        logger.debug("Saving pending transaction to database for order: {}", order.getId());
+        PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
+        logger.debug("Pending transaction saved successfully - ID: {}, Order: {}", savedTransaction.getId(), order.getId());
+        
+        return savedTransaction;
     }
     
     /**
@@ -366,9 +398,12 @@ public class PaymentServiceImpl implements PaymentService {
      * Met à jour le statut d'une commande
      */
     private void updateOrderStatus(Order order, OrderStatus status) {
+        logger.debug("Updating order {} status from {} to {}", order.getId(), order.getStatus(), status);
         order.setStatus(status);
         order.setUpdatedAt(LocalDateTime.now());
-        orderRepository.save(order);
+        logger.debug("Saving order {} to database with new status: {}", order.getId(), status);
+        Order savedOrder = orderRepository.save(order);
+        logger.debug("Order {} saved successfully with new status: {}", savedOrder.getId(), savedOrder.getStatus());
     }
     
     /**

@@ -1,8 +1,8 @@
 package com.lmp.service;
 
-import org.springframework.stereotype.Service;
-
 import java.util.List;
+
+import org.springframework.stereotype.Service;
 
 /**
  * Service pour gérer les données des services offerts par LMP
@@ -63,7 +63,7 @@ public class ServicesDataService {
                     "Synchronisation du profil Google avec votre courriel",
                     "Sécurisation du Google My Business"
                 ),
-                "353,89 $",
+                "353,89 €",
                 353.89,
                 "Paiement Unique",
                 "Référencement Local"
@@ -79,7 +79,7 @@ public class ServicesDataService {
                     "Remise des accès propriétaire principal",
                     "Validation du profil Google"
                 ),
-                "750,79 $",
+                "750,79 €",
                 750.79,
                 "Paiement Unique",
                 "Référencement Premium"
@@ -93,7 +93,7 @@ public class ServicesDataService {
                     "Gérez les avis indésirables",
                     "Recevez plus d'avis positifs"
                 ),
-                "747,43 $",
+                "747,43 €",
                 747.43,
                 "Paiement Unique",
                 "Réputation en Ligne"
@@ -107,7 +107,7 @@ public class ServicesDataService {
                     "Boostez votre visibilité dans votre ville",
                     "Visible dans tous les annuaires locaux"
                 ),
-                "2200,00 $",
+                "2200,00 €",
                 2200.00,
                 "Paiement Unique",
                 "Marketing Local"
@@ -121,7 +121,7 @@ public class ServicesDataService {
                     "Référencement parmi les meilleurs résultats",
                     "Boost des pages (publicité)"
                 ),
-                "550,00 $",
+                "550,00 €",
                 550.00,
                 "Paiement Unique",
                 "Développement Web"
@@ -135,7 +135,7 @@ public class ServicesDataService {
                     "Mise à jour régulière des données GMB",
                     "Résultats garantis pour Google Maps"
                 ),
-                "5500,00 $",
+                "5500,00 €",
                 5500.00,
                 "Paiement Unique",
                 "SEO Avancé"
@@ -153,7 +153,7 @@ public class ServicesDataService {
                     "Remise des accès propriétaire principal",
                     "Fusion des profils doubles"
                 ),
-                "1000,00 $",
+                "1000,00 €",
                 1000.00,
                 "Paiement Unique",
                 "Google Premium"
@@ -168,10 +168,24 @@ public class ServicesDataService {
                     "Interactions avec les clients",
                     "Activation du numéro d'identification"
                 ),
-                "475,00 $",
+                "475,00 €",
                 475.00,
                 "Paiement Unique",
                 "Support"
+            ),
+            new ServiceInfo(
+                "Black Friday : Authentification, Gestion des avis et Mise à jour map",
+                "Pack complet incluant l'authentification, la gestion des avis et la mise à jour de votre carte Google Maps.",
+                "🎁",
+                List.of(
+                    "Authentification sécurisée",
+                    "Gestion des avis clients",
+                    "Mise à jour Google Maps"
+                ),
+                "600,00 €",
+                600.00,
+                "Paiement Unique",
+                "Offre Spéciale"
             )
         );
     }

@@ -456,16 +456,17 @@
                                     </div>
                                     <div class="col-md-6 text-md-end">
                                         <div class="order-amount mb-2">
-                                            <i class="fas fa-dollar-sign me-1"></i>
-                                            <span th:text="${order.totalAmount + ' CAD'}">150.00 CAD</span>
+                                            <i class="fas fa-euro-sign me-1"></i>
+                                            <span th:text="${order.totalAmount + ' ' + (order.currency != null ? order.currency : 'EUR')}">150.00 EUR</span>
                                         </div>
-                                        <span class="status-badge" 
-                                              th:classappend="${order.status.name() == 'PENDING'} ? 'status-pending' : 
-                                                             (${order.status.name() == 'IN_PROGRESS'} ? 'status-in_progress' : 
-                                                             (${order.status.name() == 'COMPLETED'} ? 'status-completed' : 'status-cancelled'))"
-                                              th:text="${order.status.name() == 'PENDING'} ? 'En attente' : 
-                                                       (${order.status.name() == 'IN_PROGRESS'} ? 'En cours' : 
-                                                       (${order.status.name() == 'COMPLETED'} ? 'Terminée' : 'Annulée'))">En attente</span>
+                                        <span class="status-badge"
+                                              th:classappend="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'} ? 'status-pending' :
+                                                             (${order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING'} ? 'status-in_progress' :
+                                                             (${order.status.name() == 'COMPLETED' or order.status.name() == 'CONFIRMED' or order.status.name() == 'DELIVERED'} ? 'status-completed' : 'status-cancelled'))"
+                                              th:text="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'} ? 'En attente' :
+                                                       (${order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING'} ? 'En cours' :
+                                                       (${order.status.name() == 'COMPLETED' or order.status.name() == 'CONFIRMED'} ? 'Confirmée' :
+                                                       (${order.status.name() == 'DELIVERED'} ? 'Livrée' : 'Annulée')))">En attente</span>
                                     </div>
                                 </div>
                             </div>
@@ -479,11 +480,12 @@
                                                 <i class="fas fa-info-circle me-1"></i>
                                                 Détails de la commande
                                             </h6>
-                                            <p class="mb-1" th:text="${order.notes ?: 'Aucune note disponible'}">Service: Consultation, Currency: CAD</p>
+                                            <p class="mb-1 fw-medium" th:text="${order.serviceName ?: 'Service non spécifié'}">Nom du service</p>
+                                            <small class="text-muted" th:if="${order.notes != null}" th:text="${order.notes}"></small>
                                         </div>
                                         
-                                        <!-- Order Timeline (for completed/in-progress orders) -->
-                                        <div th:if="${order.status.name() != 'PENDING'}" class="mb-3">
+                                        <!-- Order Timeline (for confirmed/completed/in-progress orders) -->
+                                        <div th:if="${order.status.name() != 'PENDING' and order.status.name() != 'PAYMENT_PENDING'}" class="mb-3">
                                             <h6 class="text-muted mb-2">
                                                 <i class="fas fa-history me-1"></i>
                                                 Progression
@@ -493,13 +495,17 @@
                                                     <small class="text-muted">Commande créée</small>
                                                     <div class="fw-medium" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</div>
                                                 </div>
-                                                <div th:if="${order.status.name() != 'PENDING'}" class="timeline-item">
-                                                    <small class="text-muted">Traitement en cours</small>
-                                                    <div class="fw-medium" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</div>
+                                                <div th:if="${order.status.name() == 'CONFIRMED' or order.status.name() == 'PROCESSING' or order.status.name() == 'IN_PROGRESS' or order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" class="timeline-item">
+                                                    <small class="text-muted">Paiement confirmé</small>
+                                                    <div class="fw-medium" th:text="${order.paidAt != null} ? ${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')} : ${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</div>
                                                 </div>
-                                                <div th:if="${order.status.name() == 'COMPLETED'}" class="timeline-item">
+                                                <div th:if="${order.status.name() == 'PROCESSING' or order.status.name() == 'IN_PROGRESS' or order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" class="timeline-item">
+                                                    <small class="text-muted">Traitement en cours</small>
+                                                    <div class="fw-medium" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 11:00</div>
+                                                </div>
+                                                <div th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" class="timeline-item">
                                                     <small class="text-muted">Commande terminée</small>
-                                                    <div class="fw-medium" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 12:00</div>
+                                                    <div class="fw-medium" th:text="${order.deliveredAt != null} ? ${#temporals.format(order.deliveredAt, 'dd/MM/yyyy HH:mm')} : ${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 12:00</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -511,15 +517,15 @@
                                                 <i class="fas fa-eye"></i>
                                                 Voir détails
                                             </a>
-                                            <a th:if="${order.status.name() == 'COMPLETED'}" href="#" class="action-btn btn-outline-custom">
+                                            <a th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'CONFIRMED' or order.status.name() == 'DELIVERED'}" href="#" class="action-btn btn-outline-custom" th:onclick="'downloadInvoice(' + ${order.id} + ')'">
                                                 <i class="fas fa-download"></i>
                                                 Facture
                                             </a>
-                                            <a th:if="${order.status.name() == 'COMPLETED'}" th:href="@{/dashboard/reviews?order=} + ${order.id}" class="action-btn btn-outline-custom">
+                                            <a th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" th:href="@{/dashboard/reviews?order=} + ${order.id}" class="action-btn btn-outline-custom">
                                                 <i class="fas fa-star"></i>
                                                 Donner un avis
                                             </a>
-                                            <a th:if="${order.status.name() == 'PENDING'}" href="#" class="action-btn btn-outline-custom text-danger" th:data-order-id="${order.id}" onclick="cancelOrder(this)">
+                                            <a th:if="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'}" href="#" class="action-btn btn-outline-custom text-danger" th:data-order-id="${order.id}" onclick="cancelOrder(this)">
                                                 <i class="fas fa-times"></i>
                                                 Annuler
                                             </a>
@@ -561,7 +567,7 @@
             });
         });
 
-        // Filter functionality
+        // Filter functionality with support for multiple statuses
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 // Remove active class from all buttons
@@ -573,11 +579,25 @@
                 const orderCards = document.querySelectorAll('.order-card');
                 
                 orderCards.forEach(card => {
-                    if (filter === 'all' || card.dataset.status === filter) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
+                    const status = card.dataset.status;
+                    let isVisible = false;
+                    
+                    if (filter === 'all') {
+                        isVisible = true;
+                    } else if (filter === 'PENDING') {
+                        // Include PENDING and PAYMENT_PENDING
+                        isVisible = (status === 'PENDING' || status === 'PAYMENT_PENDING');
+                    } else if (filter === 'IN_PROGRESS') {
+                        // Include IN_PROGRESS and PROCESSING
+                        isVisible = (status === 'IN_PROGRESS' || status === 'PROCESSING');
+                    } else if (filter === 'COMPLETED') {
+                        // Include COMPLETED, CONFIRMED, and DELIVERED
+                        isVisible = (status === 'COMPLETED' || status === 'CONFIRMED' || status === 'DELIVERED');
+                    } else if (filter === 'CANCELLED') {
+                        isVisible = (status === 'CANCELLED');
                     }
+                    
+                    card.style.display = isVisible ? 'block' : 'none';
                 });
             });
         });
@@ -697,10 +717,50 @@
         function downloadInvoice(orderId) {
             window.dashboardComponents.showLoading('action', 'Génération de la facture...');
             
-            setTimeout(() => {
+            // Télécharger la facture PDF depuis le serveur
+            const invoiceUrl = '/dashboard/orders/' + orderId + '/invoice';
+            
+            fetch(invoiceUrl, {
+                method: 'GET',
+                credentials: 'same-origin'
+            })
+            .then(response => {
                 window.dashboardComponents.hideLoading('action');
+                
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Vous devez être connecté pour télécharger la facture');
+                    } else if (response.status === 403) {
+                        throw new Error('Vous n\'êtes pas autorisé à télécharger cette facture');
+                    } else if (response.status === 404) {
+                        throw new Error('Commande non trouvée');
+                    } else if (response.status === 400) {
+                        throw new Error('Cette commande n\'est pas éligible pour une facture');
+                    } else {
+                        throw new Error('Erreur lors de la génération de la facture');
+                    }
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Créer un lien de téléchargement
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'Facture_LMP_Commande_' + orderId + '.pdf';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
                 window.dashboardComponents.showToast('success', 'Facture téléchargée avec succès');
-            }, 2000);
+            })
+            .catch(error => {
+                window.dashboardComponents.hideLoading('action');
+                window.dashboardComponents.showToast('error', error.message);
+                console.error('Erreur téléchargement facture:', error);
+            });
         }
 
         // Initialize enhanced features

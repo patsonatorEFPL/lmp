@@ -622,11 +622,11 @@
                                             Pays
                                         </label>
                                         <select class="form-select form-control-custom" id="country">
-                                            <option value="CA" th:selected="${user.country == 'CA'}">Canada</option>
-                                            <option value="FR" th:selected="${user.country == 'FR'}">France</option>
-                                            <option value="US" th:selected="${user.country == 'US'}">États-Unis</option>
                                             <option value="BE" th:selected="${user.country == 'BE'}">Belgique</option>
+                                            <option value="FR" th:selected="${user.country == 'FR'}">France</option>
+                                            <option value="LU" th:selected="${user.country == 'LU'}">Luxembourg</option>
                                             <option value="CH" th:selected="${user.country == 'CH'}">Suisse</option>
+                                            <option value="NL" th:selected="${user.country == 'NL'}">Pays-Bas</option>
                                         </select>
                                     </div>
                                 </div>
@@ -720,7 +720,7 @@
                                     <i class="fas fa-flag"></i>
                                     Pays
                                 </span>
-                                <span class="info-value" th:text="${user.country ?: 'Non renseigné'}">Canada</span>
+                                <span class="info-value" th:text="${user.country ?: 'Non renseigné'}">Belgique</span>
                             </div>
                         </div>
 

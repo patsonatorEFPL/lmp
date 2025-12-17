@@ -26,7 +26,7 @@ public class MapController {
     public String map(Model model) {
         // Localisation principale LMP uniquement
         List<Location> locations = Arrays.asList(
-            new Location("LMP - Siège Social", "1085 rue de la Rivière Québec (Québec) G1Y2A3 Canada", 46.7586954, -71.3541517, "university")
+            new Location("LMP - Siège Social", "Rue Gatti De Gamond 97, 1180 Uccle", 50.8012, 4.3447, "university")
         );
         
         model.addAttribute("title", "Carte Interactive");

@@ -536,6 +536,8 @@
                     // Populate modal with data if provided
                     if (modalId === 'orderDetailsModal' && data.orderId) {
                         this.loadOrderDetails(data.orderId);
+                        // Stocker l'orderId pour le bouton de téléchargement de facture
+                        modal.dataset.currentOrderId = data.orderId;
                     } else if (modalId === 'reviewModal' && data.orderId) {
                         this.setupReviewModal(data.orderId);
                     } else if (modalId === 'statsModal') {
@@ -787,7 +789,95 @@
 
             // Initialize modals
             initializeModals() {
-                // Add any modal-specific initialization here
+                // Gestionnaire pour le bouton "Télécharger la facture" dans la modal
+                const downloadInvoiceBtn = document.getElementById('downloadInvoiceBtn');
+                if (downloadInvoiceBtn) {
+                    downloadInvoiceBtn.addEventListener('click', () => {
+                        const modal = document.getElementById('orderDetailsModal');
+                        const orderId = modal?.dataset?.currentOrderId;
+                        
+                        if (orderId) {
+                            console.log('DEBUG - Downloading invoice for order:', orderId);
+                            this.downloadInvoiceFromModal(orderId);
+                        } else {
+                            console.error('ERROR - No orderId found in modal');
+                            this.showToast('error', 'Erreur: Impossible de télécharger la facture. ID de commande manquant.');
+                        }
+                    });
+                }
+            }
+            
+            // Télécharger la facture depuis la modal des détails
+            downloadInvoiceFromModal(orderId) {
+                this.showLoading('action', 'Génération de la facture...');
+                
+                const invoiceUrl = '/dashboard/orders/' + orderId + '/invoice';
+                
+                fetch(invoiceUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    this.hideLoading('action');
+                    
+                    if (response.status === 401) {
+                        this.showToast('error', 'Session expirée. Veuillez vous reconnecter.');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    if (response.status === 403) {
+                        this.showToast('error', 'Vous n\'avez pas accès à cette facture.');
+                        return;
+                    }
+                    if (response.status === 404) {
+                        this.showToast('error', 'Commande non trouvée.');
+                        return;
+                    }
+                    if (response.status === 400) {
+                        this.showToast('warning', 'Cette commande n\'est pas éligible pour une facture (statut non confirmé).');
+                        return;
+                    }
+                    if (!response.ok) {
+                        throw new Error('Erreur serveur: ' + response.status);
+                    }
+                    
+                    // Récupérer le nom du fichier depuis Content-Disposition
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'Facture_LMP.pdf';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1].replace(/"/g, '');
+                        }
+                    }
+                    
+                    return response.blob().then(blob => ({ blob, filename }));
+                })
+                .then(result => {
+                    if (!result) return;
+                    
+                    const { blob, filename } = result;
+                    
+                    // Créer un lien de téléchargement
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Nettoyer
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    this.showToast('success', 'Facture téléchargée avec succès !');
+                })
+                .catch(error => {
+                    console.error('ERROR - Invoice download failed:', error);
+                    this.hideLoading('action');
+                    this.showToast('error', 'Erreur lors du téléchargement de la facture: ' + error.message);
+                });
             }
 
             // Initialize toasts

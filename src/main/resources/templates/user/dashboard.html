@@ -757,7 +757,7 @@
                                     </div>
                                     <div class="activity-content">
                                         <div class="activity-title">Paiement reçu</div>
-                                        <div class="activity-description">250.00 CAD pour la commande #002</div>
+                                        <div class="activity-description">250.00 EUR pour la commande #002</div>
                                         <div class="activity-time">Il y a 1 jour</div>
                                     </div>
                                 </div>
@@ -814,7 +814,7 @@
                                 </div>
                                 <div class="text-end">
                                     <div class="mb-1">
-                                        <span class="fw-bold" th:text="${'$' + order.totalAmount + ' CAD'}">$150.00 CAD</span>
+                                        <span class="fw-bold" th:text="${order.totalAmount + ' EUR'}">150.00 EUR</span>
                                     </div>
                                     <span class="status-badge" 
                                           th:classappend="${order.status.name() == 'PENDING'} ? 'status-pending' : (${order.status.name() == 'IN_PROGRESS'} ? 'status-progress' : (${order.status.name() == 'COMPLETED'} ? 'status-completed' : 'status-cancelled'))"
@@ -957,7 +957,7 @@
                 data: {
                     labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
                     datasets: [{
-                        label: 'Revenus (CAD)',
+                        label: 'Revenus (EUR)',
                         data: [1200, 1900, 1500, 2500, 2200, 3000],
                         backgroundColor: 'rgba(40, 167, 69, 0.8)',
                         borderColor: '#28a745',

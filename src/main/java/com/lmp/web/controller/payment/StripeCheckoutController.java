@@ -1,15 +1,9 @@
 package com.lmp.web.controller.payment;
 
-import com.lmp.domain.entity.Order;
-import com.lmp.domain.entity.PaymentTransaction;
-import com.lmp.domain.enums.OrderStatus;
-import com.lmp.repository.OrderRepository;
-import com.lmp.repository.PaymentTransactionRepository;
-import com.lmp.service.payment.PaymentService;
-import com.lmp.service.payment.dto.PaymentRequestDto;
-import com.lmp.service.payment.dto.PaymentResponseDto;
-import com.lmp.service.payment.processor.StripeCheckoutPaymentProcessor;
-import com.lmp.exception.ResourceNotFoundException;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,18 +13,35 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.lmp.domain.entity.Order;
+import com.lmp.domain.entity.PaymentTransaction;
+import com.lmp.domain.enums.OrderStatus;
+import com.lmp.exception.ResourceNotFoundException;
+import com.lmp.repository.OrderRepository;
+import com.lmp.repository.PaymentTransactionRepository;
+import com.lmp.repository.UserRepository;
+import com.lmp.service.payment.PaymentService;
+import com.lmp.service.payment.dto.PaymentRequestDto;
+import com.lmp.service.payment.dto.PaymentResponseDto;
+import com.lmp.service.payment.processor.StripeCheckoutPaymentProcessor;
+
 import jakarta.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Contrôleur pour les paiements Stripe Checkout
- * Gère les sessions de checkout et les URLs de callback
+ * Gère les sessions de checkout directes et legacy, ainsi que les URLs de
+ * callback
+ * Architecture webhook-driven : métadonnées enrichies pour création automatique
+ * des commandes
  */
 @Controller
 @RequestMapping("/stripe/checkout")
@@ -51,19 +62,217 @@ public class StripeCheckoutController {
     @Autowired
     private PaymentTransactionRepository paymentTransactionRepository;
     
+    @Autowired
+    private UserRepository userRepository;
+    
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
     
     /**
-     * Crée une session Stripe Checkout pour une commande
+     * Crée une session Stripe Checkout directement avec les données du service
+     * Architecture webhook-driven : ne dépend plus d'une commande existante
+     * Les webhooks utilisent les métadonnées pour créer automatiquement les
+     * commandes
+     */
+    @PostMapping("/create-session-direct")
+    @ResponseBody
+    public ResponseEntity<?> createDirectCheckoutSession(@RequestBody Map<String, Object> serviceData,
+            HttpServletRequest request) {
+
+        logger.info("Creating direct Stripe Checkout session - Service: {}", serviceData.get("serviceName"));
+        auditLogger.info("Direct Stripe Checkout session creation initiated - Service: {}, Amount: {} {}, IP: {}",
+                serviceData.get("serviceName"), serviceData.get("amount"), serviceData.get("currency"),
+                getClientIpAddress(request));
+
+        try {
+            // Valider les données du service
+            String serviceName = (String) serviceData.get("serviceName");
+            Object amountObj = serviceData.get("amount");
+            String currency = (String) serviceData.get("currency");
+            Object userIdObj = serviceData.get("userId");
+            String userEmail = (String) serviceData.get("userEmail");
+            String userFirstName = (String) serviceData.get("userFirstName");
+            String userLastName = (String) serviceData.get("userLastName");
+
+            if (serviceName == null || serviceName.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_SERVICE_NAME",
+                        "message", "Le nom du service est requis"));
+            }
+
+            BigDecimal amount;
+            try {
+                if (amountObj instanceof Number) {
+                    amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
+                } else if (amountObj instanceof String) {
+                    amount = new BigDecimal((String) amountObj);
+                } else {
+                    throw new IllegalArgumentException("Format de montant invalide");
+                }
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_AMOUNT",
+                        "message", "Montant invalide"));
+            }
+
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_AMOUNT",
+                        "message", "Le montant doit être supérieur à 0"));
+            }
+
+            if (currency == null || !currency.equals("EUR")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_CURRENCY",
+                        "message", "Seule la devise EUR est supportée"));
+            }
+
+            Long userId;
+            try {
+                if (userIdObj instanceof Number) {
+                    userId = ((Number) userIdObj).longValue();
+                } else if (userIdObj instanceof String) {
+                    userId = Long.valueOf((String) userIdObj);
+                } else {
+                    throw new IllegalArgumentException("Format d'ID utilisateur invalide");
+                }
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_USER_ID",
+                        "message", "ID utilisateur invalide"));
+            }
+
+            if (userEmail == null || userEmail.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_USER_EMAIL",
+                        "message", "Email utilisateur requis"));
+            }
+
+            logger.info("Service data validated - Service: {}, Amount: {} {}, UserId: {}, UserEmail: {}",
+                    serviceName, amount, currency, userId, userEmail);
+
+            // Créer une commande persistante dans la base de données
+            Order persistentOrder = new Order();
+            persistentOrder.setTotalAmount(amount);
+            persistentOrder.setCurrency(currency);
+            persistentOrder.setServiceName(serviceName);
+            persistentOrder.setStatus(OrderStatus.PAYMENT_PENDING);
+            persistentOrder.setCreatedAt(java.time.LocalDateTime.now());
+            persistentOrder.setUpdatedAt(java.time.LocalDateTime.now());
+            persistentOrder.setLastModifiedAt(java.time.LocalDateTime.now());
+
+            // Récupérer l'utilisateur réel de la base de données
+            Optional<com.lmp.domain.entity.User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                persistentOrder.setUser(userOpt.get());
+                logger.info("User found by ID: {} - Email: {}", userId, userOpt.get().getEmail());
+            } else {
+                // Fallback: essayer de trouver par email
+                userOpt = userRepository.findByEmail(userEmail);
+                if (userOpt.isPresent()) {
+                    persistentOrder.setUser(userOpt.get());
+                    logger.info("User found by email: {} - ID: {}", userEmail, userOpt.get().getId());
+                } else {
+                    logger.error("User not found by ID {} or email {}", userId, userEmail);
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "USER_NOT_FOUND",
+                            "message", "Utilisateur non trouvé. Veuillez vous reconnecter."));
+                }
+            }
+
+            // Sauvegarder la commande dans la base de données
+            Order savedOrder = orderRepository.save(persistentOrder);
+            logger.info("Persistent order created with ID: {} - Service: {}, Amount: {}",
+                    savedOrder.getId(), serviceName, amount, currency);
+
+            // Créer la requête de paiement
+            PaymentRequestDto paymentRequest = new PaymentRequestDto();
+            paymentRequest.setAmount(amount);
+            paymentRequest.setCurrency(currency);
+            paymentRequest.setPaymentProvider("stripe");
+            paymentRequest.setPaymentMethod("checkout_session");
+
+            // Métadonnées enrichies pour création automatique par webhook
+            Map<String, Object> metadata = new HashMap<>();
+
+            // Métadonnées de contexte
+            metadata.put("customer_ip", getClientIpAddress(request));
+            metadata.put("user_agent", request.getHeader("User-Agent"));
+            metadata.put("source_page", request.getHeader("Referer"));
+
+            // Métadonnées cruciales pour le webhook
+            metadata.put("serviceName", serviceName);
+            metadata.put("amount", String.valueOf(amount.multiply(new BigDecimal("100")).longValue()));
+            metadata.put("currency", currency);
+            metadata.put("userId", String.valueOf(userId));
+            metadata.put("userEmail", userEmail);
+            metadata.put("orderId", String.valueOf(savedOrder.getId())); // ID de la commande persistante
+
+            // Métadonnées utilisateur optionnelles
+            if (userFirstName != null && !userFirstName.trim().isEmpty()) {
+                metadata.put("userFirstName", userFirstName);
+            }
+            if (userLastName != null && !userLastName.trim().isEmpty()) {
+                metadata.put("userLastName", userLastName);
+            }
+
+            // Métadonnées de validation
+            metadata.put("webhook_version", "v3");
+            metadata.put("creation_mode", "direct");
+            metadata.put("order_creation", "persistent"); // Indique que la commande est déjà persistée
+
+            logger.info(
+                    "Enriching Stripe session with webhook metadata - Order: {}, Service: {}, Amount: {} centimes, Currency: {}, UserId: {}",
+                    savedOrder.getId(), serviceName, metadata.get("amount"), currency, userId);
+
+            paymentRequest.setMetadata(metadata);
+
+            // Utiliser directement le processeur Stripe avec la commande persistante
+            PaymentResponseDto response = stripeCheckoutProcessor.processPayment(savedOrder, paymentRequest);
+
+            if ((response.isSuccessful() || response.isPending()) && response.isRequiresRedirect()) {
+                auditLogger.info("Direct Stripe Checkout session created successfully - Service: {}, Session: {}",
+                        serviceName, response.getProviderTransactionId());
+
+                Map<String, Object> successResponse = new HashMap<>();
+                successResponse.put("success", true);
+                successResponse.put("redirectUrl", response.getRedirectUrl());
+                successResponse.put("sessionId", response.getProviderTransactionId());
+
+                return ResponseEntity.ok(successResponse);
+
+            } else {
+                logger.warn("Failed to create direct Stripe Checkout session for service: {}", serviceName);
+                auditLogger.warn("Direct Stripe Checkout session creation failed - Service: {}, Error: {}",
+                        serviceName, response.getErrorMessage());
+
+                return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(Map.of(
+                        "error", "SESSION_CREATION_FAILED",
+                        "message", response.getErrorMessage() != null ? response.getErrorMessage()
+                                : "Impossible de créer la session de paiement"));
+            }
+
+        } catch (Exception e) {
+            logger.error("Unexpected error creating direct Stripe Checkout session: {}", e.getMessage(), e);
+            auditLogger.error("Direct Stripe Checkout session creation error - Error: {}", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "INTERNAL_ERROR",
+                    "message", "Une erreur inattendue s'est produite"));
+        }
+    }
+
+    /**
+     * Méthode legacy pour les commandes existantes
+     * Maintenue pour compatibilité - utilise les métadonnées enrichies
      */
     @PostMapping("/create-session/{orderId}")
     @ResponseBody
     public ResponseEntity<?> createCheckoutSession(@PathVariable Long orderId,
                                                   HttpServletRequest request) {
         
-        logger.info("Creating Stripe Checkout session for order: {}", orderId);
-        auditLogger.info("Stripe Checkout session creation initiated - Order: {}, IP: {}", 
+        logger.info("Creating Stripe Checkout session for existing order: {}", orderId);
+        auditLogger.info("Legacy Stripe Checkout session creation initiated - Order: {}, IP: {}",
                          orderId, getClientIpAddress(request));
         
         try {
@@ -79,33 +288,74 @@ public class StripeCheckoutController {
                 ));
             }
             
+            // Validation des métadonnées requises pour le webhook
+            if (order.getServiceName() == null || order.getServiceName().trim().isEmpty()) {
+                logger.error("Webhook metadata validation failed - Missing serviceName for order: {}", orderId);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "MISSING_SERVICE_NAME",
+                        "message", "Le nom du service est requis pour cette commande"));
+            }
+
+            if (order.getUser() == null || order.getUser().getId() == null) {
+                logger.error("Webhook metadata validation failed - Missing user information for order: {}", orderId);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "MISSING_USER_INFO",
+                        "message", "Les informations utilisateur sont requises pour cette commande"));
+            }
+
+            if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                logger.error("Webhook metadata validation failed - Invalid total amount for order: {}", orderId);
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "INVALID_AMOUNT",
+                        "message", "Le montant de la commande doit être supérieur à zéro"));
+            }
+
+            logger.info(
+                    "Legacy webhook metadata validation passed - Order: {}, ServiceName: '{}', UserId: {}, Amount: {} {}",
+                    orderId, order.getServiceName(), order.getUser().getId(), order.getTotalAmount(),
+                    order.getCurrency() != null ? order.getCurrency() : "EUR");
+
             // Créer la requête de paiement
             PaymentRequestDto paymentRequest = new PaymentRequestDto();
             paymentRequest.setAmount(order.getTotalAmount());
-            paymentRequest.setCurrency("CAD");
+            paymentRequest.setCurrency(order.getCurrency() != null ? order.getCurrency() : "EUR");
             paymentRequest.setPaymentProvider("stripe");
             paymentRequest.setPaymentMethod("checkout_session");
             
-            // Ajouter les métadonnées
+            // Ajouter les métadonnées enrichies pour le webhook
             Map<String, Object> metadata = new HashMap<>();
+
+            // Métadonnées existantes
             metadata.put("order_id", orderId);
             metadata.put("customer_ip", getClientIpAddress(request));
             metadata.put("user_agent", request.getHeader("User-Agent"));
+
+            // Métadonnées requises pour le webhook
+            metadata.put("serviceName", order.getServiceName());
+            metadata.put("amount", String.valueOf(order.getTotalAmount().multiply(new BigDecimal("100")).longValue()));
+            metadata.put("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
+            metadata.put("userId", String.valueOf(order.getUser().getId()));
+
+            // Métadonnées de validation
+            metadata.put("webhook_version", "v2");
+            metadata.put("order_status", order.getStatus().toString());
+            metadata.put("creation_mode", "legacy");
+
+            logger.info(
+                    "Enriching legacy Stripe session with webhook metadata - Order: {}, ServiceName: {}, Amount: {} centimes, Currency: {}, UserId: {}",
+                    orderId, order.getServiceName(), metadata.get("amount"), metadata.get("currency"),
+                    metadata.get("userId"));
+
             paymentRequest.setMetadata(metadata);
             
             // Traiter le paiement (créer la session)
             PaymentResponseDto response = paymentService.processPayment(orderId, paymentRequest);
-            
-            // Debug logging pour diagnostiquer le problème
-            logger.error("DEBUG - Response: successful={}, requiresRedirect={}, redirectUrl={}, errorMessage={}",
-                        response.isSuccessful(), response.isRequiresRedirect(),
-                        response.getRedirectUrl(), response.getErrorMessage());
-            
+
             if ((response.isSuccessful() || response.isPending()) && response.isRequiresRedirect()) {
-                auditLogger.info("Stripe Checkout session created successfully - Order: {}, Session: {}",
+                auditLogger.info("Legacy Stripe Checkout session created successfully - Order: {}, Session: {}",
                                orderId, response.getProviderTransactionId());
                 
-                // 🆕 Sauvegarder le stripeSessionId dans l'order
+                // Sauvegarder le stripeSessionId dans l'order
                 order.setStripeSessionId(response.getProviderTransactionId());
                 orderRepository.save(order);
                 
@@ -117,25 +367,26 @@ public class StripeCheckoutController {
                 return ResponseEntity.ok(successResponse);
                 
             } else {
-                logger.warn("Failed to create Stripe Checkout session for order: {}", orderId);
-                auditLogger.warn("Stripe Checkout session creation failed - Order: {}, Error: {}", 
+                logger.warn("Failed to create legacy Stripe Checkout session for order: {}", orderId);
+                auditLogger.warn("Legacy Stripe Checkout session creation failed - Order: {}, Error: {}",
                                 orderId, response.getErrorMessage());
                 
                 return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(Map.of(
                     "error", "SESSION_CREATION_FAILED",
-                    "message", response.getErrorMessage() != null ? 
+                        "message", response.getErrorMessage() != null
+                                ?
                                response.getErrorMessage() : "Impossible de créer la session de paiement"
                 ));
             }
             
         } catch (ResourceNotFoundException e) {
-            logger.warn("Order not found for Stripe Checkout: {}", orderId);
+            logger.warn("Order not found for legacy Stripe Checkout: {}", orderId);
             return ResponseEntity.notFound().build();
             
         } catch (Exception e) {
-            logger.error("Unexpected error creating Stripe Checkout session for order {}: {}", 
+            logger.error("Unexpected error creating legacy Stripe Checkout session for order {}: {}",
                         orderId, e.getMessage(), e);
-            auditLogger.error("Stripe Checkout session creation error - Order: {}, Error: {}", 
+            auditLogger.error("Legacy Stripe Checkout session creation error - Order: {}, Error: {}",
                              orderId, e.getMessage());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
@@ -147,6 +398,8 @@ public class StripeCheckoutController {
     
     /**
      * Page de succès après paiement Stripe Checkout
+     * Architecture webhook-driven : le statut de la commande est mis à jour par le webhook.
+     * Cette page affiche simplement les informations de la commande.
      */
     @GetMapping("/success")
     public String paymentSuccess(@RequestParam("order_id") Long orderId,
@@ -156,7 +409,7 @@ public class StripeCheckoutController {
                                 RedirectAttributes redirectAttributes) {
         
         logger.info("Processing Stripe Checkout success callback - Order: {}, Session: {}", orderId, sessionId);
-        auditLogger.info("Payment success callback - Order: {}, Session: {}, Type: {}", 
+        auditLogger.info("Payment success callback - Order: {}, Session: {}, Type: {}",
                          orderId, sessionId, type);
         
         try {
@@ -164,49 +417,53 @@ public class StripeCheckoutController {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée: " + orderId));
             
-            // Récupérer la transaction
-            Optional<PaymentTransaction> transactionOpt = 
+            // Vérifier si le webhook a déjà mis à jour la commande
+            boolean paymentConfirmed = order.getStatus() != OrderStatus.PAYMENT_PENDING;
+            
+            // Ajouter les informations de base au modèle
+            model.addAttribute("order", order);
+            model.addAttribute("sessionId", sessionId);
+            model.addAttribute("success", true);
+            model.addAttribute("totalAmount", order.getTotalAmount());
+            model.addAttribute("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
+            model.addAttribute("paymentMethod", "Stripe Checkout");
+
+            // Essayer de récupérer la transaction (peut ne pas encore exister si webhook en
+            // attente)
+            Optional<PaymentTransaction> transactionOpt =
                 paymentTransactionRepository.findByTransactionId(sessionId);
             
             if (transactionOpt.isPresent()) {
                 PaymentTransaction transaction = transactionOpt.get();
-                
-                // Ajouter les informations au modèle
-                model.addAttribute("order", order);
                 model.addAttribute("transaction", transaction);
-                model.addAttribute("sessionId", sessionId);
-                model.addAttribute("success", true);
-                
-                // Calculer les détails de paiement
-                model.addAttribute("totalAmount", order.getTotalAmount());
-                model.addAttribute("currency", "CAD");
-                model.addAttribute("paymentMethod", "Stripe Checkout");
-                
-                auditLogger.info("Payment success page displayed - Order: {}, Amount: {} CAD", 
-                               orderId, order.getTotalAmount());
-                
-                return "payment/success";
-                
+                logger.info("Transaction found for payment success - Order: {}, Transaction: {}",
+                        orderId, transaction.getId());
             } else {
-                logger.warn("Transaction not found for successful payment - Session: {}", sessionId);
-                redirectAttributes.addFlashAttribute("error", 
-                    "Transaction non trouvée. Veuillez contacter le support.");
-                return "redirect:/services";
+                // La transaction n'existe pas encore (webhook en cours de traitement)
+                logger.info("Transaction not yet created (webhook pending) - Order: {}, Session: {}",
+                        orderId, sessionId);
+                model.addAttribute("transaction", null);
+                model.addAttribute("webhookPending", !paymentConfirmed);
             }
+
+            auditLogger.info("Payment success page displayed - Order: {}, Amount: {} {}, Status: {}, PaymentConfirmed: {}",
+                    orderId, order.getTotalAmount(), order.getCurrency(), order.getStatus(), paymentConfirmed);
+
+            return "payment/success";
             
         } catch (ResourceNotFoundException e) {
             logger.warn("Order not found in success callback: {}", orderId);
-            redirectAttributes.addFlashAttribute("error", 
+            redirectAttributes.addFlashAttribute("error",
                 "Commande non trouvée. Veuillez contacter le support.");
             return "redirect:/services";
             
         } catch (Exception e) {
-            logger.error("Error processing payment success callback - Order: {}, Session: {}: {}", 
+            logger.error("Error processing payment success callback - Order: {}, Session: {}: {}",
                         orderId, sessionId, e.getMessage(), e);
-            auditLogger.error("Payment success callback error - Order: {}, Session: {}, Error: {}", 
+            auditLogger.error("Payment success callback error - Order: {}, Session: {}, Error: {}",
                              orderId, sessionId, e.getMessage());
             
-            redirectAttributes.addFlashAttribute("error", 
+            redirectAttributes.addFlashAttribute("error",
                 "Une erreur s'est produite. Veuillez contacter le support.");
             return "redirect:/services";
         }

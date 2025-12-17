@@ -476,7 +476,7 @@
                                         </div>
                                         <div class="text-end">
                                             <div class="mb-1">
-                                                <span class="fw-bold" th:text="${'$' + order.totalAmount + ' CAD'}">$150.00 CAD</span>
+                                                <span class="fw-bold" th:text="${order.totalAmount + ' EUR'}">150.00 EUR</span>
                                             </div>
                                             <span class="status-badge" 
                                                   th:classappend="${order.status.name() == 'PENDING'} ? 'status-pending' : (${order.status.name() == 'IN_PROGRESS'} ? 'status-progress' : (${order.status.name() == 'COMPLETED'} ? 'status-completed' : 'status-cancelled'))"

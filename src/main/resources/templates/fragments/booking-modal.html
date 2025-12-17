@@ -31,7 +31,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
                                 <input type="tel" name="phone"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                                       placeholder="+1 (555) 123-4567">
+                                       placeholder="+32 2 123 45 67">
                                 <p class="text-xs text-gray-500 mt-1">Optionnel pour la commande</p>
                             </div>
                         </div>
@@ -119,10 +119,11 @@
                                     <select name="country"
                                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
                                         <option value="">Sélectionner...</option>
-                                        <option value="Canada" selected>Canada</option>
+                                        <option value="Belgique" selected>Belgique</option>
                                         <option value="France">France</option>
-                                        <option value="Belgique">Belgique</option>
+                                        <option value="Luxembourg">Luxembourg</option>
                                         <option value="Suisse">Suisse</option>
+                                        <option value="Pays-Bas">Pays-Bas</option>
                                     </select>
                                 </div>
                             </div>
@@ -139,14 +140,14 @@
                     <!-- Informations du service (cachées, seront remplies par JavaScript) -->
                     <input type="hidden" name="serviceName" id="modalServiceName">
                     <input type="hidden" name="amount" id="modalAmount">
-                    <input type="hidden" name="currency" value="CAD">
+                    <input type="hidden" name="currency" value="EUR">
 
                     <!-- Résumé de la commande -->
                     <div class="mb-6 bg-gray-50 p-4 rounded-lg">
                         <h4 class="text-lg font-semibold text-gray-800 mb-2">Résumé de la commande</h4>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600" id="orderSummaryService">Service sélectionné</span>
-                            <span class="font-semibold text-gray-800" id="orderSummaryAmount">0,00 CAD</span>
+                            <span class="font-semibold text-gray-800" id="orderSummaryAmount">0,00 EUR</span>
                         </div>
                     </div>
 

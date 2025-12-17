@@ -206,7 +206,7 @@
                                                        class="form-control"
                                                        id="phone"
                                                        th:field="*{phone}"
-                                                       placeholder="+1 (555) 123-4567">
+                                                       placeholder="+32 2 123 45 67">
                                             </div>
                                         </div>
                                     </div>
@@ -284,17 +284,18 @@
                                                        class="form-control"
                                                        id="postalCode"
                                                        th:field="*{postalCode}"
-                                                       placeholder="A1A 1A1">
+                                                       placeholder="1180">
                                             </div>
                                             
                                             <div class="col-md-3 mb-3">
                                                 <label for="country" class="form-label">Pays</label>
                                                 <select class="form-select" id="country" th:field="*{country}">
                                                     <option value="">Sélectionner</option>
-                                                    <option value="Canada">Canada</option>
-                                                    <option value="France">France</option>
                                                     <option value="Belgique">Belgique</option>
+                                                    <option value="France">France</option>
+                                                    <option value="Luxembourg">Luxembourg</option>
                                                     <option value="Suisse">Suisse</option>
+                                                    <option value="Pays-Bas">Pays-Bas</option>
                                                 </select>
                                             </div>
                                         </div>

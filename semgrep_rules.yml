@@ -1,0 +1,93 @@
+rules:
+  # Règles pour détecter les vulnérabilités dans les applications Java Spring Boot
+  - id: spring_boot_path_traversal
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @RequestMapping(value = "$VAR", ... )
+              public String $METHOD(..., @RequestParam $PARAM, ...) {
+                ...
+                $VAR2 = ... + $PARAM + ...;
+                ...
+                return $VAR2;
+              }
+          - pattern: |
+              @GetMapping(value = "$VAR", ... )
+              public String $METHOD(..., @RequestParam $PARAM, ...) {
+                ...
+                $VAR2 = ... + $PARAM + ...;
+                ...
+                return $VAR2;
+              }
+    message: "Potential path traversal vulnerability found. User input is used in file path without proper validation."
+    languages: [java]
+    severity: ERROR
+
+  - id: spring_boot_ssrf
+    patterns:
+      - pattern: |
+          @RequestMapping(...)
+          public $RET $METHOD(..., @RequestParam $URL, ...) {
+            ...
+            $CONNECTION = $URL.openConnection();
+            ...
+          }
+    message: "Potential Server-Side Request Forgery (SSRF) vulnerability. External URL provided by user is used without validation."
+    languages: [java]
+    severity: ERROR
+
+  - id: spring_boot_xss
+    patterns:
+      - pattern: |
+          @RequestMapping(...)
+          public String $METHOD(Model model, ..., @RequestParam $PARAM, ...) {
+            ...
+            model.addAttribute("$VAR", $PARAM);
+            ...
+          }
+    message: "Potential XSS vulnerability. User input is directly added to model without sanitization."
+    languages: [java]
+    severity: WARNING
+
+  - id: insecure_cookie
+    patterns:
+      - pattern: |
+          Cookie $COOKIE = new Cookie("$NAME", $VALUE);
+          $COOKIE.setSecure(false);
+          ...
+    message: "Cookie is set without secure flag, which may lead to information disclosure over HTTP connections."
+    languages: [java]
+    severity: WARNING
+
+  - id: hardcoded_secrets
+    patterns:
+      - pattern-either:
+          - pattern: |
+              String $PASS = "$HARDCODED_VALUE";
+          - pattern: |
+              String $KEY = "$HARDCODED_VALUE";
+    pattern-inside: |
+      public class $CLASS {
+        ...
+        static final String $PASS = "$HARDCODED_VALUE";
+        ...
+      }
+    message: "Hardcoded credential detected. Avoid hardcoding credentials in source code."
+    languages: [java]
+    severity: ERROR
+
+  - id: sql_injection_jpa
+    patterns:
+      - pattern: |
+          $QUERY = $EM.createQuery("SELECT ... FROM ... WHERE ... " + $PARAM + ...);
+    message: "Potential SQL injection vulnerability. Dynamic query built using string concatenation."
+    languages: [java]
+    severity: ERROR
+
+  - id: spring_unvalidated_redirect
+    patterns:
+      - pattern: |
+          return "redirect:" + $PARAM;
+    message: "Unvalidated redirect vulnerability. User input is used directly in redirect response."
+    languages: [java]
+    severity: WARNING
