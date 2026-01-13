@@ -523,21 +523,21 @@ const AppointmentModal = {
         
         // Ajouter un titre
         let html = '<h5 class="text-sm font-semibold text-gray-700 mb-2">⏰ Créneaux disponibles</h5>';
-        html += '<div class="grid grid-cols-4 gap-2">';
+        html += '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
         
         // Séparer matin et après-midi
         const morningSlots = slots.filter(s => parseInt(s.split(':')[0]) < 12);
         const afternoonSlots = slots.filter(s => parseInt(s.split(':')[0]) >= 12);
         
         if (morningSlots.length > 0) {
-            html += '<div class="col-span-4"><h5 class="text-sm font-medium text-gray-600 mb-2">🌅 Matin</h5></div>';
+            html += '<div class="col-span-full"><h5 class="text-sm font-medium text-gray-600 mb-2">🌅 Matin</h5></div>';
             morningSlots.forEach(slot => {
                 html += `<button type="button" class="time-slot-btn bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-3 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
             });
         }
         
         if (afternoonSlots.length > 0) {
-            html += '<div class="col-span-4 mt-3"><h5 class="text-sm font-medium text-gray-600 mb-2">☀️ Après-midi</h5></div>';
+            html += '<div class="col-span-full mt-3"><h5 class="text-sm font-medium text-gray-600 mb-2">☀️ Après-midi</h5></div>';
             afternoonSlots.forEach(slot => {
                 html += `<button type="button" class="time-slot-btn bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-3 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
             });

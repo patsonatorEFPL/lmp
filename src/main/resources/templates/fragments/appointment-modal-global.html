@@ -1,156 +1,163 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-    <!-- Fragment du Modal de Rendez-vous Global -->
+    <!-- Fragment du Modal de Rendez-vous Global - Version Premium -->
     <div th:fragment="appointment-modal-global" id="appointmentModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <!-- Overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            
+            <!-- Overlay Backdrop -->
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="AppointmentModal.close()"></div>
 
             <!-- Centre le modal -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <!-- Contenu du modal -->
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+            <!-- Contenu du modal Glassmorphism -->
+            <div class="inline-block align-bottom bg-white/95 backdrop-blur-xl border border-white/50 rounded-3xl text-left overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full animate-fade-in-up relative">
+                
+                <!-- Decorative Top Gradient Line -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-600 to-primary"></div>
+
                 <!-- Header -->
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xl font-semibold text-white" id="modal-title">
-                            📅 Prendre un Rendez-vous
-                        </h3>
-                        <button type="button" class="text-white hover:text-gray-200 transition-colors" onclick="AppointmentModal.close()">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+                <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white/50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                            <i class="far fa-calendar-check text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900" id="modal-title">Prendre rendez-vous</h3>
+                            <p class="text-xs text-gray-500">Sélectionnez une date et un horaire</p>
+                        </div>
                     </div>
+                    <button type="button" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center" onclick="AppointmentModal.close()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <!-- Body avec deux colonnes -->
-                <div class="bg-white px-6 py-4">
-                    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-4">
-                        <!-- Colonne gauche : Formulaire -->
-                        <div>
-                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Vos informations</h4>
-                            
-                            <!-- Zone de message -->
-                            <div id="appointmentMessage" class="hidden mb-4 p-4 rounded-lg"></div>
+                <!-- Body -->
+                <div class="px-6 py-6 md:px-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-8">
+                        
+                        <!-- Col 1: Formulaire -->
+                        <div class="space-y-5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">1</span>
+                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Vos informations</h4>
+                            </div>
+
+                            <!-- Zone de message (Alert) -->
+                            <div id="appointmentMessage" class="hidden mb-4 p-4 rounded-xl text-sm font-medium"></div>
                             
                             <form id="appointmentForm" class="space-y-4">
-                                <!-- Nom -->
-                                <div>
-                                    <label for="appointmentName" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Nom complet <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" id="appointmentName" name="name" required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <div id="appointmentNameError" class="text-red-500 text-sm mt-1 hidden"></div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Nom -->
+                                    <div class="col-span-1 md:col-span-2">
+                                        <label for="appointmentName" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Nom complet *</label>
+                                        <input type="text" id="appointmentName" name="name" required placeholder="Jean Dupont"
+                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
+                                        <div id="appointmentNameError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="col-span-1 md:col-span-2">
+                                        <label for="appointmentEmail" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Email *</label>
+                                        <input type="email" id="appointmentEmail" name="email" required placeholder="jean@exemple.com"
+                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
+                                        <div id="appointmentEmailError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                    </div>
+
+                                    <!-- Téléphone -->
+                                    <div class="col-span-1 md:col-span-2">
+                                        <label for="appointmentPhone" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Téléphone *</label>
+                                        <input type="tel" id="appointmentPhone" name="phone" required placeholder="+32 470 00 00 00"
+                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
+                                        <div id="appointmentPhoneError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                    </div>
+
+                                    <!-- Service -->
+                                    <div class="col-span-1 md:col-span-2">
+                                        <label for="appointmentService" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Service *</label>
+                                        <select id="appointmentService" name="service" required
+                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm cursor-pointer">
+                                            <option value="">Sélectionnez un service...</option>
+                                            <option value="Consultation">Consultation générale</option>
+                                            <option value="Développement Web">Développement Web</option>
+                                            <option value="Référencement SEO">Référencement SEO</option>
+                                            <option value="Formation">Formation</option>
+                                            <option value="Audit">Audit technique</option>
+                                            <option value="Marketing Digital">Marketing Digital</option>
+                                            <option value="Sécurité Web">Sécurité Web</option>
+                                            <option value="Autre">Autre</option>
+                                        </select>
+                                        <div id="appointmentServiceError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                    </div>
+
+                                    <!-- Message -->
+                                    <div class="col-span-1 md:col-span-2">
+                                        <label for="appointmentMessageField" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Message (optionnel)</label>
+                                        <textarea id="appointmentMessageField" name="message" rows="2"
+                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none"
+                                            placeholder="Brève description..."></textarea>
+                                    </div>
                                 </div>
 
-                                <!-- Email -->
-                                <div>
-                                    <label for="appointmentEmail" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Email <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="email" id="appointmentEmail" name="email" required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <div id="appointmentEmailError" class="text-red-500 text-sm mt-1 hidden"></div>
-                                </div>
-
-                                <!-- Téléphone -->
-                                <div>
-                                    <label for="appointmentPhone" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Téléphone <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="tel" id="appointmentPhone" name="phone" required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    <div id="appointmentPhoneError" class="text-red-500 text-sm mt-1 hidden"></div>
-                                </div>
-
-                                <!-- Service -->
-                                <div>
-                                    <label for="appointmentService" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Service <span class="text-red-500">*</span>
-                                    </label>
-                                    <select id="appointmentService" name="service" required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        <option value="">Sélectionnez un service...</option>
-                                        <option value="Consultation">Consultation générale</option>
-                                        <option value="Développement Web">Développement Web</option>
-                                        <option value="Référencement SEO">Référencement SEO</option>
-                                        <option value="Formation">Formation</option>
-                                        <option value="Audit">Audit technique</option>
-                                        <option value="Marketing Digital">Marketing Digital</option>
-                                        <option value="Sécurité Web">Sécurité Web</option>
-                                        <option value="Autre">Autre</option>
-                                    </select>
-                                    <div id="appointmentServiceError" class="text-red-500 text-sm mt-1 hidden"></div>
-                                </div>
-
-                                <!-- Message -->
-                                <div>
-                                    <label for="appointmentMessageField" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Message (optionnel)
-                                    </label>
-                                    <textarea id="appointmentMessageField" name="message" rows="3"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Décrivez brièvement votre besoin..."></textarea>
-                                    <div id="appointmentMessageFieldError" class="text-red-500 text-sm mt-1 hidden"></div>
-                                </div>
-
-                                <!-- Champs cachés pour date et heure -->
+                                <!-- Hidden fields -->
                                 <input type="hidden" id="appointmentDate" name="date">
                                 <input type="hidden" id="appointmentTime" name="time">
                             </form>
                         </div>
 
-                        <!-- Colonne droite : Calendrier et créneaux -->
-                        <div>
-                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Choisissez votre créneau</h4>
-                            
+                        <!-- Col 2: Calendrier & Slots -->
+                        <div class="bg-gray-50/80 rounded-2xl p-5 border border-gray-100 flex flex-col h-full">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold flex items-center justify-center">2</span>
+                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Disponibilités</h4>
+                            </div>
+
                             <!-- Calendrier -->
-                            <div id="calendar" class="mb-4">
-                                <!-- En-tête du calendrier -->
-                                <div class="flex items-center justify-between mb-4">
-                                    <button type="button" id="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                        </svg>
+                            <div id="calendar" class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+                                <div class="flex items-center justify-between mb-2 px-1">
+                                    <button type="button" id="prevMonth" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+                                        <i class="fas fa-chevron-left text-xs"></i>
                                     </button>
-                                    <h4 id="currentMonth" class="text-lg font-semibold text-gray-900"></h4>
-                                    <button type="button" id="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                        </svg>
+                                    <h4 id="currentMonth" class="text-sm font-bold text-gray-800 capitalize"></h4>
+                                    <button type="button" id="nextMonth" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+                                        <i class="fas fa-chevron-right text-xs"></i>
                                     </button>
                                 </div>
                                 
-                                <!-- Grille du calendrier -->
-                                <div class="grid grid-cols-7 gap-1 mb-2">
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Dim</div>
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Lun</div>
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mar</div>
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Mer</div>
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Jeu</div>
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Ven</div>
-                                    <div class="p-2 text-center text-xs font-medium text-gray-500">Sam</div>
+                                <div class="grid grid-cols-7 gap-1 mb-1 text-center">
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Dim</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Lun</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Mar</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Mer</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Jeu</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Ven</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Sam</div>
                                 </div>
                                 <div id="calendarDays" class="grid grid-cols-7 gap-1">
-                                    <!-- Les jours seront générés dynamiquement ici -->
+                                    <!-- Jours générés dynamiquement avec style propre -->
                                 </div>
                             </div>
 
-                            <!-- Créneaux horaires -->
-                            <div id="timeSlotsContainer" class="mt-4">
-                                <!-- Les créneaux seront générés dynamiquement ici -->
-                                <div class="text-gray-500 text-center py-4">Sélectionnez une date pour voir les créneaux disponibles</div>
+                            <!-- Créneaux -->
+                            <div class="flex-1 overflow-y-auto min-h-[100px] mb-4 custom-scrollbar">
+                                <h5 class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Créneaux disponibles</h5>
+                                <div id="timeSlotsContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <div class="col-span-full text-center py-6 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
+                                        <i class="far fa-calendar-alt mb-2 block text-2xl opacity-30"></i>
+                                        Sélectionnez une date
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Résumé de la sélection -->
-                            <div id="appointmentSummary" class="mt-4 p-3 bg-blue-50 rounded-lg hidden">
-                                <h5 class="text-sm font-semibold text-blue-800 mb-1">📌 Votre sélection</h5>
-                                <div id="summaryContent" class="text-sm text-blue-700">
-                                    <!-- Le contenu sera généré dynamiquement -->
+                            <!-- Résumé Sélection -->
+                            <div id="appointmentSummary" class="mt-auto p-3 bg-blue-50/80 border border-blue-100 rounded-xl hidden flex items-center gap-3 animate-fade-in">
+                                <div class="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center text-blue-600 shadow-sm text-lg">
+                                    ✨
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-bold text-blue-800 uppercase">Votre sélection</h5>
+                                    <div id="summaryContent" class="text-sm font-medium text-blue-900"></div>
                                 </div>
                             </div>
                         </div>
@@ -158,26 +165,82 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                <div class="bg-gray-50/80 px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-gray-100">
                     <button type="button" onclick="AppointmentModal.close()"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition-colors">
+                        class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all text-sm">
                         Annuler
                     </button>
                     <button type="button" id="appointmentSubmitBtn" onclick="AppointmentModal.submitAppointment()"
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-semibold text-sm shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" disabled>
                         <span id="appointmentSubmitText">Confirmer le rendez-vous</span>
-                        <span id="appointmentSubmitLoader" class="hidden">
-                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Envoi en cours...
+                        <span id="appointmentSubmitLoader" class="hidden flex items-center gap-2">
+                             <i class="fas fa-circle-notch fa-spin"></i>
+                            Envoi...
                         </span>
                     </button>
                 </div>
             </div>
         </div>
-    </div>
+        
+        <style>
+            /* Custom styles for calendar interactivity that Tailwind handles best with @apply but here inline to avoid build steps for css */
+            .day-cell {
+                aspect-ratio: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 9999px;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 0.85rem;
+                font-weight: 500;
+                color: #374151;
+            }
+            .day-cell:hover:not(.disabled):not(.selected) {
+                 background-color: #f3f4f6;
+                 color: var(--primary-color);
+            }
+            .day-cell.selected {
+                background: linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%);
+                color: white;
+                box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            }
+            .day-cell.disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            .day-cell.today {
+                font-weight: 800;
+                color: var(--primary-color);
+                background-color: #eff6ff;
+            }
 
+            .time-slot-btn {
+                padding: 0.65rem;
+                text-align: center;
+                border-radius: 0.75rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: #4b5563;
+                background-color: white;
+                border: 1px solid #e5e7eb;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .time-slot-btn:hover {
+                border-color: var(--primary-color);
+                color: var(--primary-color);
+                transform: translateY(-1px);
+                background-color: #f9fafb;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            }
+            .time-slot-btn.selected {
+                background: linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: 0 3px 10px rgba(79, 70, 229, 0.2);
+            }
+        </style>
+    </div>
 </body>
 </html>

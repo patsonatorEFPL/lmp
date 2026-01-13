@@ -5,202 +5,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - LMP</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    
+    <!-- Global Styles (Tailwind + FontAwesome + Custom) -->
+    <div th:replace="fragments/styles :: global-styles"></div>
+
     <style>
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .login-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        
-        .login-body {
-            padding: 2rem;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 12px 30px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-        
-        .divider {
-            text-align: center;
-            margin: 1.5rem 0;
-            position: relative;
-        }
-        
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #dee2e6;
-        }
-        
-        .divider span {
-            background: white;
-            padding: 0 1rem;
-            color: #6c757d;
+        .login-mesh-bg {
+            background-color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
         }
     </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-6 col-lg-5">
-                    <div class="login-card">
-                        <!-- Header -->
-                        <div class="login-header">
-                            <h2 class="mb-0">
-                                <i class="fas fa-sign-in-alt me-2"></i>
-                                Connexion
-                            </h2>
-                            <p class="mb-0 mt-2">Connectez-vous à votre compte LMP</p>
+<body class="login-mesh-bg min-h-screen flex items-center justify-center p-4">
+
+    <!-- Container Global -->
+    <div class="w-full max-w-md animate-fade-in-up">
+        
+        <!-- Logo ou Titre -->
+        <div class="text-center mb-8">
+            <a href="/" class="inline-block group">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-3xl shadow-lg shadow-primary/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-dark tracking-tight">Espace Client</h1>
+                <p class="text-gray-500 mt-2">Connectez-vous pour gérer votre visibilité</p>
+            </a>
+        </div>
+
+        <!-- Carte Login Glassmorphism -->
+        <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 p-8 md:p-10 relative overflow-hidden">
+             <!-- Decorative Top Border -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-primary"></div>
+
+            <!-- Messages d'alerte -->
+            <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-start gap-3 text-sm">
+                <i class="fas fa-exclamation-circle mt-0.5"></i>
+                <span th:text="${errorMessage}">Erreur de connexion</span>
+            </div>
+            
+            <div th:if="${successMessage}" class="mb-6 p-4 rounded-xl bg-green-50 border border-green-100 text-green-600 flex items-start gap-3 text-sm">
+                <i class="fas fa-check-circle mt-0.5"></i>
+                <span th:text="${successMessage}">Succès</span>
+            </div>
+            
+            <div th:if="${warningMessage}" class="mb-6 p-4 rounded-xl bg-yellow-50 border border-yellow-100 text-yellow-700 flex items-start gap-3 text-sm">
+                <i class="fas fa-clock mt-0.5"></i>
+                <span th:text="${warningMessage}">Attention</span>
+            </div>
+
+            <!-- Formulaire -->
+            <form th:action="@{/perform-login}" method="post" class="space-y-6">
+                
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Adresse Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                            <i class="far fa-envelope"></i>
                         </div>
-                        
-                        <!-- Body -->
-                        <div class="login-body">
-                            <!-- Messages d'alerte -->
-                            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-3">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <span th:text="${errorMessage}"></span>
-                            </div>
-                            
-                            <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center mb-3">
-                                <i class="fas fa-check-circle me-2"></i>
-                                <span th:text="${successMessage}"></span>
-                            </div>
-                            
-                            <div th:if="${warningMessage}" class="alert alert-warning d-flex align-items-center mb-3">
-                                <i class="fas fa-clock me-2"></i>
-                                <span th:text="${warningMessage}"></span>
-                            </div>
-                            
-                            <!-- Formulaire de connexion -->
-                            <form th:action="@{/perform-login}" method="post">
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">
-                                        <i class="fas fa-envelope me-1"></i>
-                                        Email
-                                    </label>
-                                    <input type="email" 
-                                           class="form-control" 
-                                           id="email" 
-                                           name="email"
-                                           placeholder="votre@email.com"
-                                           required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">
-                                        <i class="fas fa-lock me-1"></i>
-                                        Mot de passe
-                                    </label>
-                                    <input type="password" 
-                                           class="form-control" 
-                                           id="password" 
-                                           name="password"
-                                           placeholder="Votre mot de passe"
-                                           required>
-                                </div>
-                                
-                                <div class="mb-3 form-check">
-                                    <input type="checkbox" 
-                                           class="form-check-input" 
-                                           id="rememberMe" 
-                                           name="rememberMe"
->
-                                    <label class="form-check-label" for="rememberMe">
-                                        Se souvenir de moi
-                                    </label>
-                                </div>
-                                
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-login">
-                                        <i class="fas fa-sign-in-alt me-2"></i>
-                                        Se connecter
-                                    </button>
-                                </div>
-                            </form>
-                            
-                            <!-- Divider -->
-                            <div class="divider">
-                                <span>ou</span>
-                            </div>
-                            
-                            <!-- Liens supplémentaires -->
-                            <div class="text-center">
-                                <p class="mb-2">
-                                    <a th:href="@{/forgot-password}" class="text-decoration-none">
-                                        <i class="fas fa-key me-1"></i>
-                                        Mot de passe oublié ?
-                                    </a>
-                                </p>
-                                <p class="mb-0">
-                                    Pas encore de compte ? 
-                                    <a th:href="@{/register}" class="text-decoration-none fw-bold">
-                                        <i class="fas fa-user-plus me-1"></i>
-                                        S'inscrire
-                                    </a>
-                                </p>
-                            </div>
-                            
-                            <!-- Retour à l'accueil -->
-                            <div class="text-center mt-4">
-                                <a th:href="@{/}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-home me-2"></i>
-                                    Retour à l'accueil
-                                </a>
-                            </div>
-                        </div>
+                        <input type="email" id="email" name="email" required
+                               class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400"
+                               placeholder="nom@entreprise.com">
                     </div>
                 </div>
+
+                <!-- Password -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="password" class="block text-sm font-medium text-gray-700">Mot de passe</label>
+                        <a th:href="@{/forgot-password}" class="text-xs font-medium text-primary hover:text-purple-600 transition-colors">
+                            Oublié ?
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <input type="password" id="password" name="password" required
+                               class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400"
+                               placeholder="••••••••">
+                    </div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center">
+                    <input type="checkbox" id="rememberMe" name="rememberMe" 
+                           class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary transition-colors cursor-pointer">
+                    <label for="rememberMe" class="ml-2 block text-sm text-gray-600 cursor-pointer select-none">
+                        Se souvenir de moi
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-semibold text-sm shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 group">
+                    <span>Se connecter</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative my-8">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-100"></div>
+                </div>
+                <div class="relative flex justify-center text-xs uppercase">
+                    <span class="bg-white px-2 text-gray-400 tracking-wider">Nouveau sur LMP ?</span>
+                </div>
+            </div>
+
+            <!-- Register Link -->
+            <div class="text-center">
+                <a th:href="@{/register}" class="inline-flex items-center justify-center w-full py-3 px-6 rounded-xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-600 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-300">
+                    Créer un compte
+                </a>
             </div>
         </div>
+        
+        <!-- Footer Links -->
+        <div class="text-center mt-8">
+            <a th:href="@{/}" class="text-sm text-gray-500 hover:text-dark transition-colors inline-flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour à l'accueil
+            </a>
+        </div>
     </div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

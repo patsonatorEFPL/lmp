@@ -5,375 +5,263 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - LMP</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Global Styles (Tailwind + FontAwesome + Custom) -->
+    <div th:replace="fragments/styles :: global-styles"></div>
     
     <style>
-        .register-container {
-            min-height: 100vh;
-            padding: 2rem 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .login-mesh-bg {
+            background-color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
         }
         
-        .register-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        /* Smooth height transition for collapsible sections */
+        .collapsible-wrapper {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s ease-out;
+        }
+        
+        .collapsible-wrapper.open {
+            grid-template-rows: 1fr;
+        }
+        
+        .collapsible-content {
             overflow: hidden;
-            margin: 2rem 0;
-        }
-        
-        .register-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        
-        .register-body {
-            padding: 2rem;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-register {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            padding: 12px 30px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-        
-        .form-section {
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        .form-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-        
-        .section-title {
-            color: #495057;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-        }
-        
-        .section-title i {
-            margin-right: 0.5rem;
-            color: #667eea;
-        }
-        
-        .password-strength {
-            height: 5px;
-            margin-top: 5px;
-            border-radius: 3px;
-            transition: all 0.3s ease;
-        }
-        
-        .password-strength.weak {
-            background-color: #dc3545;
-            width: 25%;
-        }
-        
-        .password-strength.medium {
-            background-color: #ffc107;
-            width: 50%;
-        }
-        
-        .password-strength.strong {
-            background-color: #28a745;
-            width: 75%;
-        }
-        
-        .password-strength.very-strong {
-            background-color: #007bff;
-            width: 100%;
-        }
-        
-        .terms-checkbox {
-            padding: 1rem;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            margin: 1rem 0;
         }
     </style>
 </head>
-<body>
-    <div class="register-container">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-8 col-lg-7">
-                    <div class="register-card">
-                        <!-- Header -->
-                        <div class="register-header">
-                            <h2 class="mb-0">
-                                <i class="fas fa-user-plus me-2"></i>
-                                Inscription rapide
-                            </h2>
-                            <p class="mb-0 mt-2">Créez votre compte en quelques secondes</p>
+<body class="login-mesh-bg min-h-screen py-10 px-4 flex items-center justify-center">
+
+    <div class="w-full max-w-2xl animate-fade-in-up">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <a href="/" class="inline-block group">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-3xl shadow-lg shadow-primary/30 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-dark tracking-tight">Créer un compte</h1>
+                <p class="text-gray-500 mt-2">Rejoignez-nous en quelques secondes</p>
+            </a>
+        </div>
+
+        <!-- Register Card -->
+        <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 p-6 md:p-10 relative overflow-hidden">
+             <!-- Decorative Top Border -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-primary"></div>
+
+            <!-- Error Messages -->
+            <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-start gap-3 text-sm">
+                <i class="fas fa-exclamation-triangle mt-0.5"></i>
+                <span th:text="${errorMessage}">Erreur</span>
+            </div>
+
+            <form th:action="@{/register}" method="post" th:object="${registerDto}" id="registerForm" class="space-y-8">
+                
+                <!-- Section 1 : Essential Info -->
+                <div>
+                    <h2 class="flex items-center text-lg font-semibold text-gray-800 mb-4">
+                        <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center mr-3 text-sm">
+                            <i class="fas fa-rocket"></i>
+                        </span>
+                        Informations de connexion
+                    </h2>
+                    
+                    <p class="text-sm text-gray-500 mb-6 bg-blue-50/50 p-3 rounded-xl border border-blue-100/50 inline-flex items-center w-full">
+                        <i class="fas fa-info-circle text-primary mr-2"></i>
+                        Votre nom d'affichage sera généré automatiquement. Vous pourrez le changer plus tard.
+                    </p>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                <i class="far fa-envelope"></i>
+                            </div>
+                            <input type="email" id="email" th:field="*{email}" required placeholder="nom@entreprise.com"
+                                   class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
                         </div>
-                        
-                        <!-- Body -->
-                        <div class="register-body">
-                            <!-- Messages d'alerte -->
-                            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center mb-3">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <span th:text="${errorMessage}"></span>
+                        <p class="mt-1 text-xs text-red-500" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+                    </div>
+                </div>
+                
+                <!-- Section 2 : Optional Personal Info (Collapsible) -->
+                <div class="border-t border-gray-100 pt-6">
+                    <button type="button" onclick="toggleSection('personalSection')" class="flex items-center text-sm font-medium text-gray-600 hover:text-primary transition-colors w-full group">
+                        <i class="fas fa-chevron-right mr-2 text-xs transition-transform duration-300 transform group-hover:translate-x-1" id="personalSectionIcon"></i>
+                        Ajouter nom, prénom et téléphone (optionnel)
+                    </button>
+                    
+                    <div id="personalSectionWrapper" class="collapsible-wrapper mt-2">
+                        <div class="collapsible-content space-y-4 pt-2">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">Prénom</label>
+                                    <input type="text" id="firstName" th:field="*{firstName}" placeholder="Jean"
+                                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                                </div>
+                                <div>
+                                    <label for="lastName" class="block text-sm font-medium text-gray-700 mb-2">Nom</label>
+                                    <input type="text" id="lastName" th:field="*{lastName}" placeholder="Dupont"
+                                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                                </div>
                             </div>
-                            
-                            <!-- Formulaire d'inscription -->
-                            <form th:action="@{/register}" method="post" th:object="${registerDto}" id="registerForm">
-                                
-                                <!-- Section Inscription rapide -->
-                                <div class="form-section">
-                                    <h5 class="section-title">
-                                        <i class="fas fa-rocket"></i>
-                                        Inscription express
-                                    </h5>
-                                    <p class="text-muted mb-3">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Votre nom d'affichage sera automatiquement généré depuis votre email.
-                                        Vous pourrez le personnaliser plus tard dans votre profil.
-                                    </p>
-                                    
-                                    <div class="mb-3">
-                                        <label for="email" class="form-label">Email *</label>
-                                        <input type="email"
-                                               class="form-control"
-                                               id="email"
-                                               th:field="*{email}"
-                                               placeholder="votre.email@exemple.com"
-                                               required>
-                                        <small class="text-muted">Votre identifiant de connexion</small>
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                                    </div>
-                                    
-                                    <!-- Champs optionnels repliables -->
-                                    <div class="mb-3">
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none" onclick="toggleOptionalPersonalFields()">
-                                            <i id="togglePersonalIcon" class="fas fa-chevron-down me-1"></i>
-                                            <span id="togglePersonalText">Ajouter prénom, nom et téléphone (optionnel)</span>
-                                        </button>
-                                        
-                                        <div id="optionalPersonalFields" class="mt-3" style="display: none;">
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="firstName" class="form-label">Prénom</label>
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           id="firstName"
-                                                           th:field="*{firstName}"
-                                                           placeholder="Jean">
-                                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
-                                                </div>
-                                                
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="lastName" class="form-label">Nom</label>
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           id="lastName"
-                                                           th:field="*{lastName}"
-                                                           placeholder="Dupont">
-                                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="phone" class="form-label">Téléphone</label>
-                                                <input type="tel"
-                                                       class="form-control"
-                                                       id="phone"
-                                                       th:field="*{phone}"
-                                                       placeholder="+32 2 123 45 67">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Section Mot de passe -->
-                                <div class="form-section">
-                                    <h5 class="section-title">
-                                        <i class="fas fa-lock"></i>
-                                        Sécurité
-                                    </h5>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label for="password" class="form-label">Mot de passe *</label>
-                                            <input type="password" 
-                                                   class="form-control" 
-                                                   id="password" 
-                                                   th:field="*{password}"
-                                                   placeholder="Minimum 6 caractères"
-                                                   required>
-                                            <div class="password-strength" id="passwordStrength"></div>
-                                            <small class="text-muted">Minimum 6 caractères</small>
-                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
-                                        </div>
-                                        
-                                        <div class="col-md-6 mb-3">
-                                            <label for="confirmPassword" class="form-label">Confirmer le mot de passe *</label>
-                                            <input type="password" 
-                                                   class="form-control" 
-                                                   id="confirmPassword" 
-                                                   th:field="*{confirmPassword}"
-                                                   placeholder="Confirmez votre mot de passe"
-                                                   required>
-                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Section Adresse optionnelle -->
-                                <div class="form-section">
-                                    <button type="button" class="btn btn-link p-0 text-decoration-none mb-3" onclick="toggleOptionalAddressFields()">
-                                        <i id="toggleAddressIcon" class="fas fa-chevron-down me-1"></i>
-                                        <span id="toggleAddressText">Ajouter informations d'adresse (optionnel)</span>
-                                    </button>
-                                    
-                                    <div id="optionalAddressFields" style="display: none;">
-                                        <h5 class="section-title">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            Informations d'adresse
-                                        </h5>
-                                        
-                                        <div class="mb-3">
-                                            <label for="address" class="form-label">Adresse</label>
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="address"
-                                                   th:field="*{address}"
-                                                   placeholder="Votre adresse complète">
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label for="city" class="form-label">Ville</label>
-                                                <input type="text"
-                                                       class="form-control"
-                                                       id="city"
-                                                       th:field="*{city}"
-                                                       placeholder="Votre ville">
-                                            </div>
-                                            
-                                            <div class="col-md-3 mb-3">
-                                                <label for="postalCode" class="form-label">Code postal</label>
-                                                <input type="text"
-                                                       class="form-control"
-                                                       id="postalCode"
-                                                       th:field="*{postalCode}"
-                                                       placeholder="1180">
-                                            </div>
-                                            
-                                            <div class="col-md-3 mb-3">
-                                                <label for="country" class="form-label">Pays</label>
-                                                <select class="form-select" id="country" th:field="*{country}">
-                                                    <option value="">Sélectionner</option>
-                                                    <option value="Belgique">Belgique</option>
-                                                    <option value="France">France</option>
-                                                    <option value="Luxembourg">Luxembourg</option>
-                                                    <option value="Suisse">Suisse</option>
-                                                    <option value="Pays-Bas">Pays-Bas</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="companyName" class="form-label">Nom de l'entreprise</label>
-                                            <input type="text"
-                                                   class="form-control"
-                                                   id="companyName"
-                                                   th:field="*{companyName}"
-                                                   placeholder="Nom de votre entreprise (si applicable)">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Section Conditions -->
-                                <div class="form-section">
-                                    <div class="terms-checkbox">
-                                        <div class="form-check">
-                                            <input type="checkbox" 
-                                                   class="form-check-input" 
-                                                   id="acceptTerms" 
-                                                   th:field="*{acceptTerms}"
-                                                   required>
-                                            <label class="form-check-label" for="acceptTerms">
-                                                J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> 
-                                                et la <a href="#" target="_blank">politique de confidentialité</a> *
-                                            </label>
-                                            <div class="invalid-feedback" th:if="${#fields.hasErrors('acceptTerms')}" th:errors="*{acceptTerms}"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Bouton d'inscription -->
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary btn-register">
-                                        <i class="fas fa-user-plus me-2"></i>
-                                        Créer mon compte
-                                    </button>
-                                </div>
-                            </form>
-                            
-                            <!-- Lien de connexion -->
-                            <div class="text-center mt-4">
-                                <p class="mb-0">
-                                    Déjà un compte ? 
-                                    <a th:href="@{/login}" class="text-decoration-none fw-bold">
-                                        <i class="fas fa-sign-in-alt me-1"></i>
-                                        Se connecter
-                                    </a>
-                                </p>
-                            </div>
-                            
-                            <!-- Retour à l'accueil -->
-                            <div class="text-center mt-3">
-                                <a th:href="@{/}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-home me-2"></i>
-                                    Retour à l'accueil
-                                </a>
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                                <input type="tel" id="phone" th:field="*{phone}" placeholder="+32 470 12 34 56"
+                                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Section 3 : Password -->
+                <div class="border-t border-gray-100 pt-6">
+                    <h2 class="flex items-center text-lg font-semibold text-gray-800 mb-4">
+                        <span class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center mr-3 text-sm">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        Sécurité
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Mot de passe *</label>
+                            <div class="relative">
+                                <input type="password" id="password" th:field="*{password}" required placeholder="••••••••"
+                                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                            </div>
+                            <!-- Password Strength Bar -->
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full mt-2 overflow-hidden">
+                                <div id="passwordStrengthBar" class="h-full w-0 transition-all duration-300"></div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">Minimum 6 caractères</p>
+                            <p class="mt-1 text-xs text-red-500" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+                        </div>
+                        
+                        <div>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirmer *</label>
+                            <input type="password" id="confirmPassword" th:field="*{confirmPassword}" required placeholder="••••••••"
+                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4 : Optional Address (Collapsible) -->
+                <div class="border-t border-gray-100 pt-6">
+                    <button type="button" onclick="toggleSection('addressSection')" class="flex items-center text-sm font-medium text-gray-600 hover:text-primary transition-colors w-full group">
+                        <i class="fas fa-chevron-right mr-2 text-xs transition-transform duration-300 transform group-hover:translate-x-1" id="addressSectionIcon"></i>
+                        Ajouter une adresse (optionnel)
+                    </button>
+                    
+                    <div id="addressSectionWrapper" class="collapsible-wrapper mt-2">
+                        <div class="collapsible-content space-y-4 pt-2">
+                            <div>
+                                <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Adresse</label>
+                                <input type="text" id="address" th:field="*{address}" placeholder="Rue de la Loi 16"
+                                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="md:col-span-1">
+                                    <label for="postalCode" class="block text-sm font-medium text-gray-700 mb-2">Code Postal</label>
+                                    <input type="text" id="postalCode" th:field="*{postalCode}" placeholder="1000"
+                                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label for="city" class="block text-sm font-medium text-gray-700 mb-2">Ville</label>
+                                    <input type="text" id="city" th:field="*{city}" placeholder="Bruxelles"
+                                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="country" class="block text-sm font-medium text-gray-700 mb-2">Pays</label>
+                                    <select id="country" th:field="*{country}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark">
+                                        <option value="">Sélectionner</option>
+                                        <option value="Belgique">Belgique</option>
+                                        <option value="France">France</option>
+                                        <option value="Luxembourg">Luxembourg</option>
+                                        <option value="Suisse">Suisse</option>
+                                        <option value="Pays-Bas">Pays-Bas</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="companyName" class="block text-sm font-medium text-gray-700 mb-2">Entreprise</label>
+                                    <input type="text" id="companyName" th:field="*{companyName}" placeholder="LMP Inc."
+                                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-dark placeholder-gray-400">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="border-t border-gray-100 pt-6">
+                    <div class="flex items-start bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div class="flex items-center h-5">
+                            <input id="acceptTerms" th:field="*{acceptTerms}" type="checkbox" required
+                                   class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary transition-colors cursor-pointer">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="acceptTerms" class="font-medium text-gray-700 cursor-pointer">Conditions d'utilisation</label>
+                            <p class="text-gray-500">J'accepte les <a href="#" class="text-primary hover:underline">conditions d'utilisation</a> et la <a href="#" class="text-primary hover:underline">politique de confidentialité</a>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-semibold text-lg shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 group">
+                    <span>Créer mon compte</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </button>
+
+            </form>
+
+            <!-- Links -->
+            <div class="mt-8 text-center space-y-4">
+                <p class="text-gray-600">
+                    Déjà un compte ? 
+                    <a th:href="@{/login}" class="text-primary font-semibold hover:text-purple-600 transition-colors">Se connecter</a>
+                </p>
+                <div class="border-t border-gray-100 pt-4">
+                     <a th:href="@{/}" class="text-sm text-gray-500 hover:text-dark transition-colors inline-flex items-center gap-2">
+                        <i class="fas fa-home"></i> Retour à l'accueil
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Script de validation -->
+
     <script>
+        // Collapsible Sections
+        function toggleSection(sectionId) {
+            const wrapper = document.getElementById(sectionId + 'Wrapper');
+            const icon = document.getElementById(sectionId + 'Icon');
+            
+            wrapper.classList.toggle('open');
+            
+            if (wrapper.classList.contains('open')) {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const passwordField = document.getElementById('password');
             const confirmPasswordField = document.getElementById('confirmPassword');
-            const strengthBar = document.getElementById('passwordStrength');
+            const strengthBar = document.getElementById('passwordStrengthBar');
             
-            // Validation de la force du mot de passe
+            // Password Strength
             passwordField.addEventListener('input', function() {
                 const password = this.value;
                 let strength = 0;
@@ -384,77 +272,54 @@
                 if (password.match(/[0-9]+/)) strength++;
                 if (password.match(/[$@#&!]+/)) strength++;
                 
-                strengthBar.className = 'password-strength';
-                if (strength <= 1) strengthBar.classList.add('weak');
-                else if (strength <= 2) strengthBar.classList.add('medium');
-                else if (strength <= 3) strengthBar.classList.add('strong');
-                else strengthBar.classList.add('very-strong');
+                let width = '0%';
+                let colorClass = 'bg-gray-100';
+                
+                // Reset classes
+                strengthBar.className = 'h-full transition-all duration-300';
+                
+                if (password.length === 0) {
+                    width = '0%';
+                } else if (strength <= 1) {
+                    width = '25%';
+                    strengthBar.classList.add('bg-red-500');
+                } else if (strength <= 2) {
+                    width = '50%';
+                    strengthBar.classList.add('bg-orange-500');
+                } else if (strength <= 3) {
+                    width = '75%';
+                    strengthBar.classList.add('bg-yellow-500');
+                } else {
+                    width = '100%';
+                    strengthBar.classList.add('bg-green-500');
+                }
+                
+                strengthBar.style.width = width;
             });
             
-            // Validation de la confirmation du mot de passe
+            // Password Confirmation validation logic
             confirmPasswordField.addEventListener('input', function() {
-                if (this.value !== passwordField.value) {
-                    this.setCustomValidity('Les mots de passe ne correspondent pas');
+                if (this.value !== passwordField.value && this.value.length > 0) {
+                    this.classList.add('border-red-300', 'focus:border-red-500', 'focus:ring-red-200');
+                    this.classList.remove('border-gray-200', 'focus:border-primary', 'focus:ring-primary/20');
                 } else {
-                    this.setCustomValidity('');
+                    this.classList.remove('border-red-300', 'focus:border-red-500', 'focus:ring-red-200');
+                    this.classList.add('border-gray-200', 'focus:border-primary', 'focus:ring-primary/20');
                 }
             });
             
-            // Validation du formulaire
+            // Form Submit validation
             document.getElementById('registerForm').addEventListener('submit', function(e) {
                 if (passwordField.value !== confirmPasswordField.value) {
                     e.preventDefault();
-                    alert('Les mots de passe ne correspondent pas');
+                    // Simple shake animation on the card could be added here
+                    confirmPasswordField.focus();
+                    confirmPasswordField.classList.add('animate-pulse');
+                    setTimeout(() => confirmPasswordField.classList.remove('animate-pulse'), 500);
                 }
             });
         });
-        
-        // Fonctions pour gérer les sections repliables
-        window.toggleOptionalPersonalFields = function() {
-            const fields = document.getElementById('optionalPersonalFields');
-            const icon = document.getElementById('togglePersonalIcon');
-            const text = document.getElementById('togglePersonalText');
-            
-            if (fields.style.display === 'none') {
-                fields.style.display = 'block';
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-                text.textContent = 'Masquer prénom, nom et téléphone';
-            } else {
-                fields.style.display = 'none';
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-                text.textContent = 'Ajouter prénom, nom et téléphone (optionnel)';
-                // Vider les champs quand on les masque
-                document.getElementById('firstName').value = '';
-                document.getElementById('lastName').value = '';
-                document.getElementById('phone').value = '';
-            }
-        };
-        
-        window.toggleOptionalAddressFields = function() {
-            const fields = document.getElementById('optionalAddressFields');
-            const icon = document.getElementById('toggleAddressIcon');
-            const text = document.getElementById('toggleAddressText');
-            
-            if (fields.style.display === 'none') {
-                fields.style.display = 'block';
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-                text.textContent = 'Masquer informations d\'adresse';
-            } else {
-                fields.style.display = 'none';
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-                text.textContent = 'Ajouter informations d\'adresse (optionnel)';
-                // Vider les champs quand on les masque
-                document.getElementById('address').value = '';
-                document.getElementById('city').value = '';
-                document.getElementById('postalCode').value = '';
-                document.getElementById('country').value = '';
-                document.getElementById('companyName').value = '';
-            }
-        };
     </script>
+
 </body>
 </html>

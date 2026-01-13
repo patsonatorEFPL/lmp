@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMP - Local Map Profil | Visibilité Locale</title>
-    <meta name="description" content="Nous prenons soin de votre visibilité locale. Expertise en référencement, gestion d'avis et présence digitale.">
+    <title>LMP - Local Map Profil | Excellence Digitale</title>
+    <meta name="description" content="Nous transformons votre visibilité locale. Expertise Premium en référencement, gestion d'avis et présence digitale.">
     
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     
     <!-- Animations de défilement -->
     <div th:replace="fragments/scroll-animations :: scroll-animations-css"></div>
@@ -30,69 +31,140 @@
     <div th:replace="fragments/navigation :: navigation"></div>
 
     <main>
-        <!-- Hero Section -->
-        <section id="home" class="bg-gradient-to-br from-[#f7f8fa] to-white py-16 lg:py-24">
-            <div class="container mx-auto px-4">
-                <div class="flex flex-col lg:flex-row items-center justify-between gap-12">
+        <!-- Hero Section Premium -->
+        <section id="home" class="relative min-h-[90vh] flex items-center mesh-gradient-bg py-20 lg:py-28 overflow-hidden">
+            <!-- Animated Background Elements -->
+            <div class="absolute top-20 right-[10%] w-64 h-64 bg-purple-400/20 rounded-full blur-[100px] animate-float"></div>
+            <div class="absolute bottom-20 left-[10%] w-96 h-96 bg-blue-400/20 rounded-full blur-[120px] animate-float-delayed"></div>
+
+            <div class="container mx-auto px-4 relative z-10">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-16">
                     <!-- Hero Text -->
-                    <div class="flex-1 lg:max-w-2xl">
-                        <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-dark mb-6 leading-tight hero-animation">
-                            LMP - Marketing Digital Local
-                            <span class="text-primary"> Professionnel</span>
+                    <div class="flex-1 lg:max-w-2xl relative">
+                        <div class="inline-flex items-center gap-2 px-4 py-2 mb-8 text-sm font-semibold text-primary glass rounded-full shadow-sm hover-lift">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            <span>Nouvelle mise à jour Google 2026 disponible</span>
+                        </div>
+                        
+                        <h1 class="text-5xl lg:text-7xl font-bold text-dark mb-6 leading-[1.1] tracking-tight hero-animation">
+                            LMP
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Marketing Digital</span>
+                            <span class="block text-4xl lg:text-5xl mt-2 font-medium text-secondary">L'excellence locale.</span>
                         </h1>
-                        <p class="text-lg lg:text-xl text-secondary mb-8 leading-relaxed hero-animation delay-200">
-                            Nous nous engageons pour la réussite de votre entreprise sur Google et les plateformes locales. 
-                            Expertise en référencement, gestion d'avis et présence digitale.
+                        
+                        <p class="text-xl text-gray-600 mb-10 leading-relaxed max-w-xl hero-animation delay-200">
+                            Propulsez votre visibilité au sommet. Technologie de pointe et expertise humaine pour dominer votre marché local.
                         </p>
                         
-                        <!-- Email Form -->
-                        <form onsubmit="handleEmailSubmit(event)" class="flex flex-col sm:flex-row gap-4 mb-8 form-animation delay-300">
-                            <input
-                                type="email"
-                                placeholder="Votre email professionnel"
-                                class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                required
-                            />
-                            <button type="submit" class="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200">
-                                Commencer
-                            </button>
-                        </form>
+                        <!-- Premium Email Form -->
+                        <div class="relative max-w-lg mb-12 hero-animation delay-300">
+                            <form onsubmit="handleEmailSubmit(event)" class="glass p-2 rounded-2xl flex items-center gap-2 shadow-medium hover:shadow-lg transition-all duration-300">
+                                <div class="pl-4 text-gray-400">
+                                    <i class="far fa-envelope text-xl"></i>
+                                </div>
+                                <input
+                                    type="email"
+                                    placeholder="votre@email.com"
+                                    class="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 placeholder-gray-400 text-lg py-3"
+                                    required
+                                />
+                                <button type="submit" class="bg-dark text-white px-8 py-3 rounded-xl font-semibold hover:bg-black transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2">
+                                    <span>Débuter</span>
+                                    <i class="fas fa-arrow-right text-xs"></i>
+                                </button>
+                            </form>
+                            <!-- Decorative blur behind form -->
+                            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-20 -z-10"></div>
+                        </div>
 
-                        <!-- Trust Indicators -->
-                        <div class="flex flex-wrap items-center gap-6 text-sm text-secondary fade-in-up delay-400">
+                        <!-- Trust Indicators Premium -->
+                        <div class="flex flex-wrap items-center gap-8 text-sm font-medium text-gray-500 fade-in-up delay-400">
                             <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span>Consultation gratuite</span>
+                                <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                    <i class="fas fa-check text-xs"></i>
+                                </div>
+                                <span>Pas de frais cachés</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span>Résultats garantis</span>
+                                <div class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                    <i class="fas fa-shield-alt text-xs"></i>
+                                </div>
+                                <span>Paiement sécurisé</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span>Support dédié</span>
+                                <div class="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                    <i class="fas fa-bolt text-xs"></i>
+                                </div>
+                                <span>Mise en place rapide</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Hero Visual -->
-                    <div class="flex-1 lg:max-w-lg">
-                        <div class="relative fade-in-left delay-500">
-                            <!-- Main Visual Container -->
-                            <div class="bg-gradient-to-br from-primary to-[#4c63ff] rounded-2xl p-8 shadow-2xl">
-                                <div class="text-center text-white">
-                                    <div class="text-6xl mb-4" aria-label="Analyse croissance marketing digital local">📊</div>
-                                    <h3 class="text-xl font-semibold mb-2">Croissance Digitale</h3>
-                                    <p class="text-blue-100">Optimisation & Performance</p>
+                    <!-- Hero Visual Premium / 3D Effect Composition -->
+                    <div class="flex-1 lg:max-w-xl relative perspective-1000">
+                        <div class="relative fade-in-left delay-500 transform-style-3d hover:rotate-y-2 transition-transform duration-700">
+                            <!-- Main Card -->
+                            <div class="glass-dark rounded-3xl p-8 shadow-2xl border border-gray-700/50 backdrop-blur-xl relative z-10 overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10"></div>
+                                
+                                <div class="flex items-center justify-between mb-8">
+                                    <div>
+                                        <div class="text-gray-400 text-sm font-medium mb-1">Croissance Mensuelle</div>
+                                        <div class="text-3xl font-bold text-white flex items-center gap-2">
+                                            +127%
+                                            <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">+2.4%</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                        <i class="fas fa-chart-bar text-white text-xl"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mockup Graph -->
+                                <div class="h-32 flex items-end justify-between gap-2 mb-6">
+                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[40%] hover:h-[45%] transition-all duration-300 hover:bg-blue-500/50"></div>
+                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[60%] hover:h-[70%] transition-all duration-300 hover:bg-blue-500/50"></div>
+                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[50%] hover:h-[55%] transition-all duration-300 hover:bg-blue-500/50"></div>
+                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[75%] hover:h-[85%] transition-all duration-300 hover:bg-purple-500/50"></div>
+                                    <div class="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg h-[90%] shadow-[0_0_15px_rgba(59,130,246,0.5)] relative group">
+                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-dark text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Top</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between text-gray-400 text-sm pt-4 border-t border-gray-700/50">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                        <span>Système Actif</span>
+                                    </div>
+                                    <span>Mise à jour: Il y a 2 min</span>
                                 </div>
                             </div>
                             
-                            <!-- Floating Stats -->
-                            <div class="absolute -top-4 -right-4 bg-yellow text-dark px-4 py-2 rounded-lg font-bold shadow-lg floating-element">
-                                245% ROI
+                            <!-- Floating Card 1 -->
+                            <div class="absolute -top-12 -right-12 glass p-4 rounded-2xl shadow-medium animate-float z-20 max-w-[180px]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
+                                        <i class="fas fa-star text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-500">Note Moyenne</div>
+                                        <div class="font-bold text-dark">4.9/5.0</div>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-orange-500 h-full w-[95%]"></div>
+                                </div>
                             </div>
-                            <div class="absolute -bottom-4 -left-4 bg-white px-4 py-2 rounded-lg font-bold shadow-lg text-primary floating-element floating-element-delayed">
-                                130K+ Clients
+
+                            <!-- Floating Card 2 -->
+                            <div class="absolute -bottom-10 -left-10 glass p-4 rounded-2xl shadow-medium animate-float-delayed z-20 flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-white border-2 border-green-100 overflow-hidden p-0.5">
+                                    <img src="https://ui-avatars.com/api/?name=Client+Top&background=random" alt="Client" class="w-full h-full rounded-full object-cover">
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-dark">Nouveau Client</div>
+                                    <div class="text-xs text-green-600 font-medium">+ 350€ Revenus</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -100,367 +172,273 @@
             </div>
         </section>
 
-        <!-- Stats Section -->
-        <section class="py-16 bg-white">
+        <!-- Stats Section (Bento Grid Style) -->
+        <section class="py-20 bg-white relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-[0_-20px_40px_rgba(0,0,0,0.02)]">
             <div class="container mx-auto px-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    <div class="text-center counter-animation delay-100">
-                        <div class="text-4xl font-bold text-primary mb-2" data-target="500">500+</div>
-                        <div class="text-secondary">Clients satisfaits</div>
+                <div class="bento-grid max-w-6xl mx-auto">
+                    <!-- Stat 1 (Large) -->
+                    <div class="col-span-1 md:col-span-2 bg-gray-50 rounded-3xl p-8 hover-lift flex items-center justify-between group">
+                        <div>
+                            <div class="text-5xl font-bold text-dark mb-2 group-hover:text-primary transition-colors">500+</div>
+                            <div class="text-lg text-secondary font-medium">Clients satisfaits accompagnés en Europe</div>
+                        </div>
+                        <div class="w-20 h-20 bg-white rounded-2xl shadow-sm flex items-center justify-center text-4xl text-primary group-hover:scale-110 transition-transform">
+                            <i class="fas fa-users-crown"></i>
+                        </div>
                     </div>
-                    <div class="text-center counter-animation delay-200">
-                        <div class="text-4xl font-bold text-primary mb-2" data-target="95">95%</div>
-                        <div class="text-secondary">Taux de réussite</div>
+                    
+                    <!-- Stat 2 -->
+                    <div class="bg-blue-600 rounded-3xl p-8 text-white hover-lift relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+                        <div class="relative z-10">
+                            <div class="text-4xl font-bold mb-1">98%</div>
+                            <div class="text-blue-100 text-sm font-medium">Taux de rétention</div>
+                        </div>
                     </div>
-                    <div class="text-center counter-animation delay-300">
-                        <div class="text-4xl font-bold text-primary mb-2">24/7</div>
-                        <div class="text-secondary">Support disponible</div>
+
+                    <!-- Stat 3 -->
+                    <div class="bg-dark rounded-3xl p-8 text-white hover-lift relative overflow-hidden group">
+                        <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl -ml-10 -mb-10 transition-transform group-hover:scale-150"></div>
+                        <div class="relative z-10 flex flex-col justify-between h-full">
+                            <i class="fas fa-headset text-2xl text-purple-400 mb-4"></i>
+                            <div>
+                                <div class="text-4xl font-bold mb-1">24/7</div>
+                                <div class="text-gray-400 text-sm font-medium">Support Expert</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-center counter-animation delay-400">
-                        <div class="text-4xl font-bold text-primary mb-2" data-target="10">10+</div>
-                        <div class="text-secondary">Années d'expérience</div>
+                    
+                    <!-- Stat 4 (Wide) -->
+                    <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-gray-50 rounded-3xl p-8 hover-lift flex items-center gap-6 group border border-gray-100">
+                         <div class="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-2xl text-green-500 border border-green-100">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div>
+                            <div class="text-3xl font-bold text-dark group-hover:text-green-600 transition-colors">10 Ans d'Expérience</div>
+                            <div class="text-secondary">Une expertise forgée au fil des évolutions de Google.</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Services Section -->
-        <section id="services" class="py-16 bg-white">
+        <!-- Services Section Premium -->
+        <section id="services" class="py-32 bg-gray-50/50">
             <div class="container mx-auto px-4">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4 title-animation">
-                        Nos Services de Référencement Local
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl lg:text-5xl font-bold text-dark mb-6 title-animation">
+                        Solutions Premium
                     </h2>
-                    <p class="text-lg text-secondary max-w-2xl mx-auto fade-in-up delay-200">
-                        Solutions complètes pour votre visibilité digitale et votre croissance en ligne.
-                        Expertise reconnue dans le marketing digital et le référencement.
+                    <p class="text-lg text-secondary max-w-2xl mx-auto fade-in-up delay-200 font-light">
+                        Une suite complète d'outils et de services conçue pour exceller dans l'écosystème Google.
                     </p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <!-- Service 1 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-100">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Référencement local Google Maps">📍</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                Référencement Local
-                            </div>
+                    <div class="service-card-premium group" onclick="window.location.href='/services#securisations-gmb'">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-dark text-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <i class="fas fa-map-marked-alt"></i>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#securisations-gmb" class="hover:text-primary transition-colors">
-                                Optimisation Google Maps
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Protégez et optimisez votre profil Google My Business. Accès sécurisé, gestion des droits et protection contre les modifications malveillantes.
-                        </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">353,89 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Référencement</span>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
+                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-primary transition-colors">
+                            Optimisation Map
+                        </h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            Sécurisation avancée et optimisation technique de votre fiche Google pour un positionnement durable.
+                        </p>
+                        <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-6">
+                            <div class="text-2xl font-bold text-dark">353€</div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="w-10 h-10 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105">
+                                <i class="fas fa-plus"></i>
                             </button>
-                            <a href="/services#securisations-gmb" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
                         </div>
+                        <div class="glow-effect"></div>
                     </div>
 
-                    <!-- Service 2 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-200">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Service premium référencement VIP Google My Business">⭐</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                                Référencement Premium
-                            </div>
+                    <!-- Service 2 (Featured) -->
+                    <div class="service-card-premium group relative ring-2 ring-primary/10 bg-white" onclick="window.location.href='/services#referencement-vip'">
+                        <div class="absolute top-4 right-4 animate-pulse">
+                            <i class="fas fa-crown text-yellow-400"></i>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#referencement-vip" class="hover:text-primary transition-colors">
-                                SEO Premium VIP+
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Service premium avec garantie de résultats. Référencement avancé, maintenance du profil et support prioritaire.
-                        </p>
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl mb-6 group-hover:rotate-12 transition-transform duration-500">
+                            <i class="fas fa-star"></i>
+                        </div>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">750,79 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-600">Recommandé</span>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
+                        <h3 class="text-xl font-bold mb-3 text-dark">
+                            SEO VIP+
+                        </h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            L'excellence opérationnelle. Garantie de résultats, maintenance proactive et support prioritaire 24/7.
+                        </p>
+                        <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-6">
+                            <div class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">750€</div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="px-6 py-2 rounded-full bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                                Commander
                             </button>
-                            <a href="/services#referencement-vip" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
                         </div>
                     </div>
 
                     <!-- Service 3 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-300">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Gestion avis clients réputation en ligne Google">💬</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                Réputation en Ligne
-                            </div>
+                    <div class="service-card-premium group" onclick="window.location.href='/services#gestion-avis'">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-dark text-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <i class="fas fa-comments"></i>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#gestion-avis" class="hover:text-primary transition-colors">
-                                Gestion des Avis
-                            </a>
+                         <div class="mb-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Réputation</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-primary transition-colors">
+                            Gestion Avis
                         </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Améliorez votre réputation en ligne avec notre service de gestion des avis. Multipliez les avis positifs et gérez efficacement les commentaires.
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            Transformez vos clients en ambassadeurs. Stratégies de collecte et modération professionnelle.
                         </p>
-                        <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">747,43 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Gestion des Avis', 747.43)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
+                        <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-6">
+                            <div class="text-2xl font-bold text-dark">747€</div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Gestion des Avis', 747.43)" class="w-10 h-10 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105">
+                                <i class="fas fa-plus"></i>
                             </button>
-                            <a href="/services#gestion-avis" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
                         </div>
+                        <div class="glow-effect"></div>
                     </div>
 
                     <!-- Service 4 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-100">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Présence locale marketing entreprises">🏪</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                                Marketing Local
-                            </div>
+                    <div class="service-card-premium group" onclick="window.location.href='/services#presence-locales'">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-dark text-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <i class="fas fa-store"></i>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#presence-locales" class="hover:text-primary transition-colors">
-                                Présence Locales
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Boostez votre visibilité locale avec une présence optimisée dans tous les annuaires locaux et sur Google Maps.
-                        </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">2200,00 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Local</span>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Présence Locales', 2200.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
+                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-primary transition-colors">
+                            Présence Locale
+                        </h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            Multi-diffusion de vos informations sur +50 plateformes, GPS et annuaires numériques.
+                        </p>
+                        <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-6">
+                            <div class="text-2xl font-bold text-dark">2.200€</div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Présence Locales', 2200.00)" class="w-10 h-10 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105">
+                                <i class="fas fa-plus"></i>
                             </button>
-                            <a href="/services#presence-locales" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
                         </div>
+                        <div class="glow-effect"></div>
                     </div>
 
-                    <!-- Service 5 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-200">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Création sites web professionnels SEO optimisé">💻</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
-                                Développement Web
-                            </div>
+                     <!-- Service 5 -->
+                    <div class="service-card-premium group" onclick="window.location.href='/services#creation-site-web'">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-dark text-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <i class="fas fa-code"></i>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#creation-site-web" class="hover:text-primary transition-colors">
-                                Développement Site Web
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Création de site web professionnel avec protocole SSL, référencement optimisé et promotion incluse.
-                        </p>
                         <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">550,00 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Web</span>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Création Site Web', 100.99)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
+                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-primary transition-colors">
+                            Site Web Pro
+                        </h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            Développement sur mesure, rapide, sécurisé (SSL) et optimisé pour la conversion mobile.
+                        </p>
+                        <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-6">
+                            <div class="text-2xl font-bold text-dark">550€</div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Création Site Web', 100.99)" class="w-10 h-10 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105">
+                                <i class="fas fa-plus"></i>
                             </button>
-                            <a href="/services#creation-site-web" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
                         </div>
+                        <div class="glow-effect"></div>
                     </div>
 
                     <!-- Service 6 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-300">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="SEO référencement naturel moteurs recherche Google">🔍</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
-                                SEO Avancé
-                            </div>
+                    <div class="service-card-premium group" onclick="window.location.href='/services#seo-referencement-naturel'">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-dark text-2xl mb-6 group-hover:scale-110 transition-transform duration-500">
+                            <i class="fas fa-search-dollar"></i>
                         </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#seo-referencement-naturel" class="hover:text-primary transition-colors">
-                                SEO et Référencement Naturel
-                            </a>
+                         <div class="mb-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">SEO Avancé</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-primary transition-colors">
+                            SEO & Naturel
                         </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Service SEO complet pour améliorer votre positionnement sur les moteurs de recherche et Google Maps.
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            Stratégie de contenu et netlinking haute performance pour dominer les SERPs Google.
                         </p>
-                        <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">5500,00 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('SEO et Référencement Naturel', 5500.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
+                        <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-6">
+                            <div class="text-2xl font-bold text-dark">5.500€</div>
+                            <button onclick="event.stopPropagation(); openBookingModal('SEO et Référencement Naturel', 5500.00)" class="w-10 h-10 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105">
+                                <i class="fas fa-plus"></i>
                             </button>
-                            <a href="/services#seo-referencement-naturel" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
                         </div>
-                    </div>
-
-                    <!-- Service 7 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-100">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Optimisation Google premium positionnement garanti">🚀</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                Google Premium
-                            </div>
-                        </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#mise-a-jour-2026" class="hover:text-primary transition-colors">
-                                Mise à jour 2026
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Optimisation premium de votre présence Google avec mise à jour régulière et positionnement garanti.
-                        </p>
-                        <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">1000,00 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Optimisations Google+', 11121.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
-                            </button>
-                            <a href="/services#mise-a-jour-2026" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Service 8 -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-200">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Assistance technique support marketing digital maintenance">🛠️</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                Support
-                            </div>
-                        </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#assistance-technique" class="hover:text-primary transition-colors">
-                                Assistance Technique
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Support technique dédié pour vous aider à rester devant vos concurrents avec une maintenance de votre profil.
-                        </p>
-                        <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">475,00 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Assistance Technique', 402.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
-                            </button>
-                            <a href="/services#assistance-technique" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Service 9 - Black Friday -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-6 card-hover card-animation delay-300">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="text-3xl" aria-label="Offre Black Friday">🎁</div>
-                            <div class="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                Offre Spéciale
-                            </div>
-                        </div>
-                        <h3 class="text-xl font-semibold mb-2">
-                            <a href="/services#black-friday" class="hover:text-primary transition-colors">
-                                Black Friday : Authentification, Gestion des avis et Mise à jour map
-                            </a>
-                        </h3>
-                        <p class="text-secondary text-sm mb-4">
-                            Pack complet incluant l'authentification, la gestion des avis et la mise à jour de votre carte Google Maps.
-                        </p>
-                        <div class="mb-4">
-                            <div class="text-2xl font-bold text-primary mb-1">600,00 €</div>
-                            <div class="text-sm text-secondary">Paiement Unique</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="openBookingModal('Black Friday : Authentification, Gestion des avis et Mise à jour map', 600.00)" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-all">
-                                Acheter
-                            </button>
-                            <a href="/services#black-friday" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all text-center">
-                                Info
-                            </a>
-                        </div>
+                        <div class="glow-effect"></div>
                     </div>
                 </div>
             </div>
         </section>
         
-        <!-- About Section -->
-        <section id="about" class="py-16 bg-gradient-to-br from-white to-[#f7f8fa]">
+        <!-- About Section Minimalist -->
+        <section id="about" class="py-32 bg-white relative">
             <div class="container mx-auto px-4">
-                <div class="max-w-4xl mx-auto text-center">
+                <div class="max-w-4xl mx-auto text-center mb-20">
                     <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 title-animation">
-                        À Propos de Notre Équipe Marketing
+                        L'Expertise au service de votre croissance.
                     </h2>
-                    <p class="text-lg text-secondary mb-12 leading-relaxed fade-in-up delay-200">
-                        Avec plus de 10 ans d'expérience dans le marketing digital, 
-                        nous avons aidé des milliers d'entreprises à améliorer leur visibilité locale 
-                        et à attirer plus de clients qualifiés.
+                    <p class="text-lg text-gray-500 font-light leading-relaxed fade-in-up delay-200">
+                        Depuis plus de 10 ans, nous redéfinissons les standards du marketing local.
+                        Une approche data-driven combinée à une compréhension humaine de vos enjeux.
                     </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                     <div class="text-center group p-6 rounded-2xl hover:bg-gray-50 transition-colors duration-500">
+                        <div class="w-16 h-16 mx-auto mb-8 bg-gray-100 rounded-2xl flex items-center justify-center text-dark text-2xl group-hover:bg-dark group-hover:text-white transition-colors duration-500">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-dark mb-4">Certifié & Reconnu</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">Partenaire privilégié des plateformes majeures, nous maîtrisons les algorithmes.</p>
+                    </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div class="text-center card-animation delay-100">
-                            <div class="text-4xl mb-4 icon-animation delay-200" aria-label="Expertise reconnue Google Partner marketing local">🏆</div>
-                            <h3 class="text-xl font-semibold text-dark mb-2">Expertise Reconnue</h3>
-                            <p class="text-secondary">Certifiés Google Partner et spécialistes du référencement local</p>
+                    <div class="text-center group p-6 rounded-2xl hover:bg-gray-50 transition-colors duration-500">
+                        <div class="w-16 h-16 mx-auto mb-8 bg-gray-100 rounded-2xl flex items-center justify-center text-dark text-2xl group-hover:bg-dark group-hover:text-white transition-colors duration-500">
+                            <i class="fas fa-chart-line"></i>
                         </div>
-                        <div class="text-center card-animation delay-200">
-                            <div class="text-4xl mb-4 icon-animation delay-300" aria-label="Résultats mesurés rapports performance SEO">🔍</div>
-                            <h3 class="text-xl font-semibold text-dark mb-2">Résultats Mesurés</h3>
-                            <p class="text-secondary">Suivi transparent avec rapports détaillés de performance</p>
+                        <h3 class="text-lg font-bold text-dark mb-4">Focus ROI</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">Chaque action est mesurée. Des rapports transparents pour suivre votre évolution.</p>
+                    </div>
+                    
+                    <div class="text-center group p-6 rounded-2xl hover:bg-gray-50 transition-colors duration-500">
+                        <div class="w-16 h-16 mx-auto mb-8 bg-gray-100 rounded-2xl flex items-center justify-center text-dark text-2xl group-hover:bg-dark group-hover:text-white transition-colors duration-500">
+                            <i class="fas fa-users-cog"></i>
                         </div>
-                        <div class="text-center card-animation delay-300">
-                            <div class="text-4xl mb-4 icon-animation delay-400" aria-label="Support dédié conseiller marketing digital">📞</div>
-                            <h3 class="text-xl font-semibold text-dark mb-2">Support Dédié</h3>
-                            <p class="text-secondary">Accompagnement personnalisé avec votre conseiller attribué</p>
-                        </div>
+                        <h3 class="text-lg font-bold text-dark mb-4">Humain avant tout</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed">Un expert dédié vous accompagne. Pas de robots, des vraies réponses.</p>
                     </div>
                 </div>
             </div>
         </section>
         
-        <!-- Contact Section -->
-        <section id="contact" class="py-16 bg-primary text-white">
-            <div class="container mx-auto px-4 text-center">
-                <h2 class="text-3xl lg:text-4xl font-bold mb-6 title-animation">
-                    Contact - Services Web Local
+        <!-- Contact Section Premium -->
+        <section id="contact" class="py-32 bg-dark text-white relative overflow-hidden">
+             <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+             <!-- Minimalist Gradient Glow -->
+             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 blur-[150px] rounded-full pointer-events-none"></div>
+             
+             <div class="container mx-auto px-4 text-center relative z-10">
+                <h2 class="text-4xl lg:text-6xl font-bold mb-8 title-animation tracking-tight">
+                    Prêt pour l'étape suivante ?
                 </h2>
-                <p class="text-lg text-blue-100 mb-8 max-w-2xl mx-auto fade-in-up delay-200">
-                    Contactez-nous dès aujourd'hui pour une consultation gratuite et découvrez 
-                    comment nous pouvons transformer votre présence digitale.
+                <p class="text-xl text-gray-400 mb-12 max-w-2xl mx-auto fade-in-up delay-200 font-light">
+                    Discutons de vos objectifs. L'audit initial est offert et sans engagement.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center button-animation delay-300">
-                    <button onclick="openAppointmentModal('Consultation Gratuite')" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200">
-                        Prendre un rendez-vous
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center button-animation delay-300">
+                    <button onclick="openAppointmentModal('Consultation Gratuite')" class="px-8 py-4 bg-white text-dark rounded-full font-bold hover:bg-gray-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transform hover:-translate-y-1">
+                        Réserver mon audit
                     </button>
-                    <a href="mailto:lmp.assistance@gmail.com" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-all duration-200">
-                        Nous contacter
+                    <a href="mailto:lmp.assistance@gmail.com" class="text-gray-400 hover:text-white font-medium flex items-center gap-2 transition-colors">
+                        <span>Écrivez-nous</span>
+                        <i class="fas fa-arrow-right text-sm"></i>
                     </a>
                 </div>
             </div>
