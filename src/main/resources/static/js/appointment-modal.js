@@ -173,11 +173,8 @@ window.AppointmentModal = {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
         
-        // Mettre à jour le titre du mois
-        const monthNames = [
-            'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-        ];
+        // Récupérer les noms de mois traduits depuis les attributs data du modal
+        const monthNames = this.getMonthNames();
         this.elements.currentMonth.textContent = `${monthNames[month]} ${year}`;
         
         // Calculer le premier jour du mois et le nombre de jours
@@ -925,6 +922,31 @@ window.AppointmentModal = {
                 this.elements.name.focus();
             }, 150);
         }
+    },
+    
+    /**
+     * Récupère les noms de mois traduits depuis les attributs data du modal
+     */
+    getMonthNames: function() {
+        // Essayer de récupérer depuis les attributs data du modal
+        if (this.elements.modal && this.elements.modal.dataset.months) {
+            try {
+                return JSON.parse(this.elements.modal.dataset.months);
+            } catch (e) {
+                this.log('⚠️ Erreur lors du parsing des noms de mois:', e);
+            }
+        }
+        
+        // Fallback : utiliser l'API Intl pour obtenir les noms de mois dans la langue du navigateur
+        const locale = document.documentElement.lang || 'fr';
+        const monthNames = [];
+        
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(2000, i, 1);
+            monthNames.push(date.toLocaleDateString(locale, { month: 'long' }));
+        }
+        
+        return monthNames;
     }
 };
 

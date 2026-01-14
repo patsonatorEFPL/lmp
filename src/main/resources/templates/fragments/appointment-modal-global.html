@@ -24,8 +24,8 @@
                             <i class="far fa-calendar-check text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-xl font-bold text-gray-900" id="modal-title">Prendre rendez-vous</h3>
-                            <p class="text-xs text-gray-500">Sélectionnez une date et un horaire</p>
+                            <h3 class="text-xl font-bold text-gray-900" id="modal-title" th:text="#{appointment.modal.title}">Prendre rendez-vous</h3>
+                            <p class="text-xs text-gray-500" th:text="#{appointment.modal.subtitle}">Sélectionnez une date et un horaire</p>
                         </div>
                     </div>
                     <button type="button" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center" onclick="AppointmentModal.close()">
@@ -41,7 +41,7 @@
                         <div class="space-y-5">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">1</span>
-                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Vos informations</h4>
+                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide" th:text="#{appointment.modal.step1}">Vos informations</h4>
                             </div>
 
                             <!-- Zone de message (Alert) -->
@@ -51,52 +51,52 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <!-- Nom -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentName" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Nom complet *</label>
-                                        <input type="text" id="appointmentName" name="name" required placeholder="Jean Dupont"
+                                        <label for="appointmentName" class="block text-xs font-medium text-gray-500 mb-1 ml-1" th:text="#{appointment.modal.name}">Nom complet *</label>
+                                        <input type="text" id="appointmentName" name="name" required th:placeholder="#{appointment.modal.name.placeholder}"
                                             class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
                                         <div id="appointmentNameError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Email -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentEmail" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Email *</label>
-                                        <input type="email" id="appointmentEmail" name="email" required placeholder="jean@exemple.com"
+                                        <label for="appointmentEmail" class="block text-xs font-medium text-gray-500 mb-1 ml-1" th:text="#{appointment.modal.email}">Email *</label>
+                                        <input type="email" id="appointmentEmail" name="email" required th:placeholder="#{appointment.modal.email.placeholder}"
                                             class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
                                         <div id="appointmentEmailError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Téléphone -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentPhone" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Téléphone *</label>
-                                        <input type="tel" id="appointmentPhone" name="phone" required placeholder="+32 470 00 00 00"
+                                        <label for="appointmentPhone" class="block text-xs font-medium text-gray-500 mb-1 ml-1" th:text="#{appointment.modal.phone}">Téléphone *</label>
+                                        <input type="tel" id="appointmentPhone" name="phone" required th:placeholder="#{appointment.modal.phone.placeholder}"
                                             class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
                                         <div id="appointmentPhoneError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Service -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentService" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Service *</label>
+                                        <label for="appointmentService" class="block text-xs font-medium text-gray-500 mb-1 ml-1" th:text="#{appointment.modal.service}">Service *</label>
                                         <select id="appointmentService" name="service" required
                                             class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm cursor-pointer">
-                                            <option value="">Sélectionnez un service...</option>
-                                            <option value="Consultation">Consultation générale</option>
-                                            <option value="Développement Web">Développement Web</option>
-                                            <option value="Référencement SEO">Référencement SEO</option>
-                                            <option value="Formation">Formation</option>
-                                            <option value="Audit">Audit technique</option>
-                                            <option value="Marketing Digital">Marketing Digital</option>
-                                            <option value="Sécurité Web">Sécurité Web</option>
-                                            <option value="Autre">Autre</option>
+                                            <option value="" th:text="#{appointment.modal.service.select}">Sélectionnez un service...</option>
+                                            <option value="Consultation" th:text="#{appointment.modal.service.consultation}">Consultation générale</option>
+                                            <option value="Développement Web" th:text="#{appointment.modal.service.webdev}">Développement Web</option>
+                                            <option value="Référencement SEO" th:text="#{appointment.modal.service.seo}">Référencement SEO</option>
+                                            <option value="Formation" th:text="#{appointment.modal.service.training}">Formation</option>
+                                            <option value="Audit" th:text="#{appointment.modal.service.audit}">Audit technique</option>
+                                            <option value="Marketing Digital" th:text="#{appointment.modal.service.marketing}">Marketing Digital</option>
+                                            <option value="Sécurité Web" th:text="#{appointment.modal.service.security}">Sécurité Web</option>
+                                            <option value="Autre" th:text="#{appointment.modal.service.other}">Autre</option>
                                         </select>
                                         <div id="appointmentServiceError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Message -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentMessageField" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Message (optionnel)</label>
+                                        <label for="appointmentMessageField" class="block text-xs font-medium text-gray-500 mb-1 ml-1" th:text="#{appointment.modal.message}">Message (optionnel)</label>
                                         <textarea id="appointmentMessageField" name="message" rows="2"
                                             class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none"
-                                            placeholder="Brève description..."></textarea>
+                                            th:placeholder="#{appointment.modal.message.placeholder}"></textarea>
                                     </div>
                                 </div>
 
@@ -110,7 +110,7 @@
                         <div class="bg-gray-50/80 rounded-2xl p-5 border border-gray-100 flex flex-col h-full">
                             <div class="flex items-center gap-2 mb-4">
                                 <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold flex items-center justify-center">2</span>
-                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Disponibilités</h4>
+                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide" th:text="#{appointment.modal.step2}">Disponibilités</h4>
                             </div>
 
                             <!-- Calendrier -->
@@ -126,13 +126,13 @@
                                 </div>
                                 
                                 <div class="grid grid-cols-7 gap-1 mb-1 text-center">
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Dim</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Lun</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Mar</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Mer</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Jeu</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Ven</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Sam</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.sun}">Dim</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.mon}">Lun</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.tue}">Mar</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.wed}">Mer</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.thu}">Jeu</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.fri}">Ven</div>
+                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase" th:text="#{appointment.modal.day.sat}">Sam</div>
                                 </div>
                                 <div id="calendarDays" class="grid grid-cols-7 gap-1">
                                     <!-- Jours générés dynamiquement avec style propre -->
@@ -141,11 +141,11 @@
 
                             <!-- Créneaux -->
                             <div class="flex-1 overflow-y-auto min-h-[100px] mb-4 custom-scrollbar">
-                                <h5 class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Créneaux disponibles</h5>
+                                <h5 class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider" th:text="#{appointment.modal.slots.title}">Créneaux disponibles</h5>
                                 <div id="timeSlotsContainer">
                                     <div class="col-span-full text-center py-6 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
                                         <i class="far fa-calendar-alt mb-2 block text-2xl opacity-30"></i>
-                                        Sélectionnez une date
+                                        <span th:text="#{appointment.modal.slots.select_date}">Sélectionnez une date</span>
                                     </div>
                                 </div>
                             </div>
@@ -156,7 +156,7 @@
                                     ✨
                                 </div>
                                 <div>
-                                    <h5 class="text-xs font-bold text-blue-800 uppercase">Votre sélection</h5>
+                                    <h5 class="text-xs font-bold text-blue-800 uppercase" th:text="#{appointment.modal.summary.title}">Votre sélection</h5>
                                     <div id="summaryContent" class="text-sm font-medium text-blue-900"></div>
                                 </div>
                             </div>
@@ -167,15 +167,15 @@
                 <!-- Footer -->
                 <div class="bg-gray-50/80 px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-gray-100">
                     <button type="button" onclick="AppointmentModal.close()"
-                        class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all text-sm">
+                        class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all text-sm" th:text="#{appointment.modal.cancel}">
                         Annuler
                     </button>
                     <button type="button" id="appointmentSubmitBtn" onclick="AppointmentModal.submitAppointment()"
                         class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-semibold text-sm shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" disabled>
-                        <span id="appointmentSubmitText">Confirmer le rendez-vous</span>
+                        <span id="appointmentSubmitText" th:text="#{appointment.modal.submit}">Confirmer le rendez-vous</span>
                         <span id="appointmentSubmitLoader" class="hidden flex items-center gap-2">
                              <i class="fas fa-circle-notch fa-spin"></i>
-                            Envoi...
+                            <span th:text="#{appointment.modal.sending}">Envoi...</span>
                         </span>
                     </button>
                 </div>

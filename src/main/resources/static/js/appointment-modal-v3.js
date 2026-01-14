@@ -352,8 +352,20 @@ const AppointmentModal = {
         let currentMonth = today.getMonth();
         let currentYear = today.getFullYear();
         
-        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                          'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        // Récupérer les noms de mois traduits en utilisant l'API Intl
+        const getMonthNames = () => {
+            const locale = document.documentElement.lang || 'fr';
+            const monthNames = [];
+            
+            for (let i = 0; i < 12; i++) {
+                const date = new Date(2000, i, 1);
+                monthNames.push(date.toLocaleDateString(locale, { month: 'long' }));
+            }
+            
+            return monthNames;
+        };
+        
+        const monthNames = getMonthNames();
         
         const renderCalendar = () => {
             const firstDay = new Date(currentYear, currentMonth, 1).getDay();
