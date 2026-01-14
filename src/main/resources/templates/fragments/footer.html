@@ -11,7 +11,7 @@
                         <span class="text-2xl font-bold tracking-tight text-white">LMP</span>
                         <span class="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-white/10 text-white tracking-widest border border-white/10">Premium</span>
                     </div>
-                    <p class="text-gray-400 mb-6 leading-relaxed max-w-sm">
+                    <p class="text-gray-400 mb-6 leading-relaxed max-w-sm" th:text="#{footer.description}">
                         Votre partenaire de confiance pour la visibilité locale et le marketing digital.
                         Nous aidons les entreprises à se démarquer et à prospérer.
                     </p>
@@ -30,25 +30,25 @@
 
                 <!-- Navigation -->
                 <div>
-                    <h5 class="text-white font-medium mb-6">Explorer</h5>
+                    <h5 class="text-white font-medium mb-6" th:text="#{footer.explore}">Explorer</h5>
                     <ul class="space-y-3">
-                        <li><a href="/" class="hover:text-white transition-colors">Accueil</a></li>
-                        <li><a href="/services" class="hover:text-white transition-colors">Nos Services</a></li>
-                        <li><a href="/map" class="hover:text-white transition-colors">Carte Interactive</a></li>
-                        <li><a href="/about" class="hover:text-white transition-colors">L'Agence</a></li>
+                        <li><a href="/" class="hover:text-white transition-colors" th:text="#{nav.home}">Accueil</a></li>
+                        <li><a href="/services" class="hover:text-white transition-colors" th:text="#{footer.services}">Nos Services</a></li>
+                        <li><a href="/map" class="hover:text-white transition-colors" th:text="#{footer.map}">Carte Interactive</a></li>
+                        <li><a href="/about" class="hover:text-white transition-colors" th:text="#{nav.about}">L'Agence</a></li>
                     </ul>
                 </div>
 
                 <!-- Contact -->
                 <div>
-                    <h5 class="text-white font-medium mb-6">Contact</h5>
+                    <h5 class="text-white font-medium mb-6" th:text="#{nav.contact}">Contact</h5>
                     <div class="space-y-4">
                         <a href="mailto:lmp.assistance@gmail.com" class="block hover:text-white transition-colors">lmp.assistance@gmail.com</a>
                         <address class="not-italic">
                             Rue Gatti De Gamond 97,<br>
                             1180 Uccle, Belgique
                         </address>
-                        <div class="text-gray-500">Lun - Ven: 9h00 - 18h00</div>
+                        <div class="text-gray-500" th:text="#{footer.hours}">Lun - Ven: 9h00 - 18h00</div>
                     </div>
                 </div>
             </div>
