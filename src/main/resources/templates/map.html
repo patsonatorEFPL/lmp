@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${title}">Carte Interactive - LMP</title>
-    <meta name="description" content="Explorez notre carte interactive pour découvrir les solutions locales">
+    <title th:text="#{map.title} + ' | LMP'">Carte Interactive - LMP</title>
+    <meta name="description" th:content="#{map.meta.description}" content="Explorez notre carte interactive pour découvrir les solutions locales">
     
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
@@ -95,8 +95,8 @@
     <section class="py-16 bg-gradient-to-br from-[#f7f8fa] to-white">
         <div class="container mx-auto px-4">
             <div class="text-center">
-                <h1 class="text-4xl lg:text-5xl font-bold text-dark mb-4" th:text="${title}">Carte Interactive</h1>
-                <p class="text-lg text-secondary max-w-2xl mx-auto" th:text="${subtitle}">Découvrez les solutions locales sur notre carte interactive</p>
+                <h1 class="text-4xl lg:text-5xl font-bold text-dark mb-4" th:text="#{map.header.title}">Carte Interactive</h1>
+                <p class="text-lg text-secondary max-w-2xl mx-auto" th:text="#{map.header.subtitle}">Découvrez les solutions locales sur notre carte interactive</p>
             </div>
         </div>
     </section>
@@ -108,26 +108,26 @@
                 <!-- Les contrôles de la carte -->
                 <div class="map-controls">
                     <div class="map-search">
-                        <input type="text" id="searchInput" placeholder="Rechercher une localisation...">
+                        <input type="text" id="searchInput" th:placeholder="#{map.search.placeholder}" placeholder="Rechercher une localisation...">
                     </div>
                     
                     <div class="map-filters">
                         <select id="categoryFilter">
-                            <option value="all">Toutes les catégories</option>
-                            <option value="restaurant">Restaurants</option>
-                            <option value="coffee">Cafés</option>
-                            <option value="shopping-bag">Boutiques</option>
-                            <option value="heartbeat">Santé</option>
-                            <option value="university">Services</option>
-                            <option value="tree">Parcs</option>
-                            <option value="subway">Transport</option>
-                            <option value="book">Culture</option>
+                            <option value="all" th:text="#{map.category.all}">Toutes les catégories</option>
+                            <option value="restaurant" th:text="#{map.category.restaurant}">Restaurants</option>
+                            <option value="coffee" th:text="#{map.category.coffee}">Cafés</option>
+                            <option value="shopping-bag" th:text="#{map.category.shopping}">Boutiques</option>
+                            <option value="heartbeat" th:text="#{map.category.health}">Santé</option>
+                            <option value="university" th:text="#{map.category.services}">Services</option>
+                            <option value="tree" th:text="#{map.category.parks}">Parcs</option>
+                            <option value="subway" th:text="#{map.category.transport}">Transport</option>
+                            <option value="book" th:text="#{map.category.culture}">Culture</option>
                         </select>
                     </div>
                     
                     <div class="map-info">
                         <i class="fas fa-info-circle"></i>
-                        Cliquez sur un marqueur pour plus d'informations
+                        <span th:text="#{map.info.click}">Cliquez sur un marqueur pour plus d'informations</span>
                     </div>
                 </div>
             </div>
@@ -138,33 +138,33 @@
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
-                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4">Comment utiliser la carte</h2>
-                <p class="text-lg text-secondary max-w-2xl mx-auto">Quelques conseils pour tirer le meilleur parti de notre carte interactive</p>
+                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4" th:text="#{map.howto.title}">Comment utiliser la carte</h2>
+                <p class="text-lg text-secondary max-w-2xl mx-auto" th:text="#{map.howto.subtitle}">Quelques conseils pour tirer le meilleur parti de notre carte interactive</p>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Recherche localisation carte interactive LMP">🔍</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Recherche</h3>
-                    <p class="text-secondary">Utilisez la barre de recherche pour trouver rapidement une localisation spécifique par nom.</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{map.howto.search.aria}">🔍</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{map.howto.search.title}">Recherche</h3>
+                    <p class="text-secondary" th:text="#{map.howto.search.desc}">Utilisez la barre de recherche pour trouver rapidement une localisation spécifique par nom.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Filtres catégories services locaux">⚡</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Filtres</h3>
-                    <p class="text-secondary">Filtrez les marqueurs par catégorie pour voir seulement les types de services qui vous intéressent.</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{map.howto.filter.aria}">⚡</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{map.howto.filter.title}">Filtres</h3>
+                    <p class="text-secondary" th:text="#{map.howto.filter.desc}">Filtrez les marqueurs par catégorie pour voir seulement les types de services qui vous intéressent.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Interaction clic marqueurs informations détails">👆</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Interaction</h3>
-                    <p class="text-secondary">Cliquez sur un marqueur pour voir les détails de la localisation et les informations disponibles.</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{map.howto.interaction.aria}">👆</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{map.howto.interaction.title}">Interaction</h3>
+                    <p class="text-secondary" th:text="#{map.howto.interaction.desc}">Cliquez sur un marqueur pour voir les détails de la localisation et les informations disponibles.</p>
                 </div>
                 
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Navigation carte zoom déplacement outils">🔧</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Navigation</h3>
-                    <p class="text-secondary">Utilisez la molette de la souris pour zoomer/dézoomer et faites glisser pour vous déplacer sur la carte.</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{map.howto.navigation.aria}">🔧</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{map.howto.navigation.title}">Navigation</h3>
+                    <p class="text-secondary" th:text="#{map.howto.navigation.desc}">Utilisez la molette de la souris pour zoomer/dézoomer et faites glisser pour vous déplacer sur la carte.</p>
                 </div>
             </div>
         </div>
