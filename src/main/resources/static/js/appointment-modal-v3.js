@@ -13,7 +13,7 @@ const AppointmentModal = {
     
     // Initialisation
     init() {
-        console.log('[AppointmentModal] 🚀 Initialisation v3.0');
+        console.log('[AppointmentModal] 🚀 Initialisation v3.2');
         
         // Initialiser les événements
         this.bindEvents();
@@ -522,25 +522,37 @@ const AppointmentModal = {
         }
         
         // Ajouter un titre
-        let html = '<h5 class="text-sm font-semibold text-gray-700 mb-2">⏰ Créneaux disponibles</h5>';
-        html += '<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
+        let html = '<h5 class="text-sm font-semibold text-gray-700 mb-4">⏰ Créneaux disponibles</h5>';
         
         // Séparer matin et après-midi
         const morningSlots = slots.filter(s => parseInt(s.split(':')[0]) < 12);
         const afternoonSlots = slots.filter(s => parseInt(s.split(':')[0]) >= 12);
         
+        // Conteneur principal : sections empilées
+        html += '<div class="space-y-6">';
+        
+        // Section Matin
         if (morningSlots.length > 0) {
-            html += '<div class="col-span-full"><h5 class="text-sm font-medium text-gray-600 mb-2">🌅 Matin</h5></div>';
+            html += '<div>';
+            html += '<h6 class="text-xs font-medium text-gray-500 mb-3">🌅 Matin</h6>';
+            html += '<div class="grid grid-cols-4 gap-3">';
             morningSlots.forEach(slot => {
-                html += `<button type="button" class="time-slot-btn bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-3 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
+                html += `<button type="button" class="time-slot-btn text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
             });
+            html += '</div>';
+            html += '</div>';
         }
         
+        // Section Après-midi
         if (afternoonSlots.length > 0) {
-            html += '<div class="col-span-full mt-3"><h5 class="text-sm font-medium text-gray-600 mb-2">☀️ Après-midi</h5></div>';
+            html += '<div>';
+            html += '<h6 class="text-xs font-medium text-gray-500 mb-3">☀️ Après-midi</h6>';
+            html += '<div class="grid grid-cols-4 gap-3">';
             afternoonSlots.forEach(slot => {
-                html += `<button type="button" class="time-slot-btn bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-3 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
+                html += `<button type="button" class="time-slot-btn text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
             });
+            html += '</div>';
+            html += '</div>';
         }
         
         html += '</div>';
