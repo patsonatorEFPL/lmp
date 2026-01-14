@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:utext="${title}">À Propos - LMP</title>
-    <meta name="description" content="Découvrez notre mission, notre équipe et nos valeurs">
+    <meta name="description" th:content="#{about.page.meta.description}" content="Découvrez notre mission, notre équipe et nos valeurs">
     
     <!-- Global Styles -->
     <div th:replace="fragments/styles :: global-styles"></div>
@@ -29,22 +29,22 @@
             <div class="max-w-6xl mx-auto">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     <div>
-                        <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6">Notre Mission Marketing Local</h2>
+                        <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6" th:text="#{about.mission.title}">Notre Mission Marketing Local</h2>
                         <p class="text-lg text-secondary mb-8 leading-relaxed" th:utext="${mission}">
-                            LMP (Local Map Profil) est une plateforme innovante qui connecte les utilisateurs aux meilleures solutions locales. 
+                            LMP (Local Map Profil) est une plateforme innovante qui connecte les utilisateurs aux meilleures solutions locales.
                             Notre mission est de faciliter la découverte et l'accès aux services, entreprises et opportunités qui vous entourent.
                         </p>
                         
-                        <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6">Vision SEO Local</h2>
+                        <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6" th:text="#{about.vision.title}">Vision SEO Local</h2>
                         <p class="text-lg text-secondary leading-relaxed" th:text="${vision}">
-                            Nous imaginons un monde où chaque personne peut facilement trouver et accéder aux ressources locales qui répondent à ses besoins, 
+                            Nous imaginons un monde où chaque personne peut facilement trouver et accéder aux ressources locales qui répondent à ses besoins,
                             créant ainsi des communautés plus connectées et prospères.
                         </p>
                     </div>
                     
                     <div class="text-center">
-                        <div class="text-8xl text-primary mb-6" aria-label="Innovation locale marketing digital solutions">💡</div>
-                        <div class="text-2xl font-semibold text-dark">Innovation Locale</div>
+                        <div class="text-8xl text-primary mb-6" th:attr="aria-label=#{about.innovation.aria}">💡</div>
+                        <div class="text-2xl font-semibold text-dark" th:text="#{about.innovation.label}">Innovation Locale</div>
                     </div>
                 </div>
             </div>
@@ -55,30 +55,30 @@
     <section class="py-16 bg-gradient-to-br from-white to-[#f7f8fa]">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
-                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4">Valeurs Marketing Digital</h2>
-                <p class="text-lg text-secondary max-w-2xl mx-auto">Les principes qui guident nos actions</p>
+                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4" th:text="#{about.values.title}">Valeurs Marketing Digital</h2>
+                <p class="text-lg text-secondary max-w-2xl mx-auto" th:text="#{about.values.subtitle}">Les principes qui guident nos actions</p>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Excellence marketing digital qualité services">⭐</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Excellence</h3>
-                    <p class="text-secondary">Nous visons l'excellence dans tout ce que nous faisons</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{about.values.excellence.aria}">⭐</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.values.excellence.title}">Excellence</h3>
+                    <p class="text-secondary" th:text="#{about.values.excellence.desc}">Nous visons l'excellence dans tout ce que nous faisons</p>
                 </div>
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Collaboration partenariat équipe clients">🤝</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Collaboration</h3>
-                    <p class="text-secondary">Nous croyons au pouvoir de la collaboration</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{about.values.collaboration.aria}">🤝</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.values.collaboration.title}">Collaboration</h3>
+                    <p class="text-secondary" th:text="#{about.values.collaboration.desc}">Nous croyons au pouvoir de la collaboration</p>
                 </div>
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Innovation technologie marketing digital moderne">💡</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Innovation</h3>
-                    <p class="text-secondary">Nous repoussons constamment les limites</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{about.values.innovation.aria}">💡</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.values.innovation.title}">Innovation</h3>
+                    <p class="text-secondary" th:text="#{about.values.innovation.desc}">Nous repoussons constamment les limites</p>
                 </div>
                 <div class="text-center">
-                    <div class="text-4xl mb-4 text-primary" aria-label="Impact positif communautés locales">🎯</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Impact</h3>
-                    <p class="text-secondary">Nous créons un impact positif dans nos communautés</p>
+                    <div class="text-4xl mb-4 text-primary" th:attr="aria-label=#{about.values.impact.aria}">🎯</div>
+                    <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.values.impact.title}">Impact</h3>
+                    <p class="text-secondary" th:text="#{about.values.impact.desc}">Nous créons un impact positif dans nos communautés</p>
                 </div>
             </div>
         </div>
@@ -88,26 +88,26 @@
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
-                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4">Performance Marketing</h2>
-                <p class="text-lg text-secondary max-w-2xl mx-auto">Une plateforme qui grandit avec sa communauté</p>
+                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4" th:text="#{about.stats.title}">Performance Marketing</h2>
+                <p class="text-lg text-secondary max-w-2xl mx-auto" th:text="#{about.stats.subtitle}">Une plateforme qui grandit avec sa communauté</p>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div class="text-center">
                     <div class="text-4xl font-bold text-primary mb-2">1000+</div>
-                    <div class="text-secondary">Entreprises partenaires</div>
+                    <div class="text-secondary" th:text="#{about.stats.partners}">Entreprises partenaires</div>
                 </div>
                 <div class="text-center">
                     <div class="text-4xl font-bold text-primary mb-2">50K+</div>
-                    <div class="text-secondary">Utilisateurs actifs</div>
+                    <div class="text-secondary" th:text="#{about.stats.users}">Utilisateurs actifs</div>
                 </div>
                 <div class="text-center">
                     <div class="text-4xl font-bold text-primary mb-2">95%</div>
-                    <div class="text-secondary">Taux de satisfaction</div>
+                    <div class="text-secondary" th:text="#{about.stats.satisfaction}">Taux de satisfaction</div>
                 </div>
                 <div class="text-center">
                     <div class="text-4xl font-bold text-primary mb-2">10+</div>
-                    <div class="text-secondary">Années d'expérience</div>
+                    <div class="text-secondary" th:text="#{about.stats.experience}">Années d'expérience</div>
                 </div>
             </div>
         </div>
@@ -117,9 +117,9 @@
     <section class="py-16 bg-gradient-to-br from-white to-[#f7f8fa]">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
-                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4">Équipe Experts SEO</h2>
-                <p class="text-lg text-secondary max-w-2xl mx-auto">Des passionnés dédiés à votre succès</p>
-                <p class="text-sm text-gray-400 mt-2">← Glissez pour voir plus →</p>
+                <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-4" th:text="#{about.team.title}">Équipe Experts SEO</h2>
+                <p class="text-lg text-secondary max-w-2xl mx-auto" th:text="#{about.team.subtitle}">Des passionnés dédiés à votre succès</p>
+                <p class="text-sm text-gray-400 mt-2" th:text="#{about.team.scroll}">← Glissez pour voir plus →</p>
             </div>
             
             <!-- Conteneur avec scroll horizontal -->
@@ -127,42 +127,42 @@
                 <div class="flex gap-6 min-w-max">
                     <!-- Marie Dubois -->
                     <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
-                        <div class="text-6xl mb-4 text-primary" aria-label="Marie Dubois PDG Fondatrice LMP marketing digital">👩‍💼</div>
-                        <h3 class="text-xl font-semibold text-dark mb-2">Marie Dubois</h3>
-                        <p class="text-primary font-medium mb-2">PDG & Fondatrice</p>
-                        <p class="text-secondary text-sm">Passionnée par l'innovation locale, Marie a créé LMP avec la vision de connecter les communautés.</p>
+                        <div class="text-6xl mb-4 text-primary" th:attr="aria-label=#{about.team.marie.aria}">👩‍💼</div>
+                        <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.team.marie.name}">Marie Dubois</h3>
+                        <p class="text-primary font-medium mb-2" th:text="#{about.team.marie.role}">PDG & Fondatrice</p>
+                        <p class="text-secondary text-sm" th:text="#{about.team.marie.desc}">Passionnée par l'innovation locale, Marie a créé LMP avec la vision de connecter les communautés.</p>
                     </div>
                     
                     <!-- Jean Tremblay -->
                     <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
-                        <div class="text-6xl mb-4 text-primary" aria-label="Jean Tremblay Directeur Technique développement web LMP">👨‍💻</div>
-                        <h3 class="text-xl font-semibold text-dark mb-2">Jean Tremblay</h3>
-                        <p class="text-primary font-medium mb-2">Directeur Technique</p>
-                        <p class="text-secondary text-sm">Expert en développement web et cartographie, Jean supervise la création de nos solutions techniques.</p>
+                        <div class="text-6xl mb-4 text-primary" th:attr="aria-label=#{about.team.jean.aria}">👨‍💻</div>
+                        <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.team.jean.name}">Jean Tremblay</h3>
+                        <p class="text-primary font-medium mb-2" th:text="#{about.team.jean.role}">Directeur Technique</p>
+                        <p class="text-secondary text-sm" th:text="#{about.team.jean.desc}">Expert en développement web et cartographie, Jean supervise la création de nos solutions techniques.</p>
                     </div>
                     
                     <!-- Théophile Terrier -->
                     <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
-                        <div class="text-6xl mb-4 text-primary" aria-label="Théophile Terrier Directeur Marketing stratégies digitales LMP">👨‍🎨</div>
-                        <h3 class="text-xl font-semibold text-dark mb-2">Théophile Terrier</h3>
-                        <p class="text-primary font-medium mb-2">Directeur Marketing</p>
-                        <p class="text-secondary text-sm">Théophile développe nos stratégies pour connecter avec les utilisateurs et partenaires locaux.</p>
+                        <div class="text-6xl mb-4 text-primary" th:attr="aria-label=#{about.team.theophile.aria}">👨‍🎨</div>
+                        <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.team.theophile.name}">Théophile Terrier</h3>
+                        <p class="text-primary font-medium mb-2" th:text="#{about.team.theophile.role}">Directeur Marketing</p>
+                        <p class="text-secondary text-sm" th:text="#{about.team.theophile.desc}">Théophile développe nos stratégies pour connecter avec les utilisateurs et partenaires locaux.</p>
                     </div>
                     
                     <!-- Pierre Lavoie -->
                     <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
-                        <div class="text-6xl mb-4 text-primary" aria-label="Pierre Lavoie Responsable Partenariats entreprises locales LMP">👨‍🤝‍👨</div>
-                        <h3 class="text-xl font-semibold text-dark mb-2">Pierre Lavoie</h3>
-                        <p class="text-primary font-medium mb-2">Responsable Partenariats</p>
-                        <p class="text-secondary text-sm">Pierre développe nos relations avec les entreprises et organisations locales.</p>
+                        <div class="text-6xl mb-4 text-primary" th:attr="aria-label=#{about.team.pierre.aria}">👨‍🤝‍👨</div>
+                        <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.team.pierre.name}">Pierre Lavoie</h3>
+                        <p class="text-primary font-medium mb-2" th:text="#{about.team.pierre.role}">Responsable Partenariats</p>
+                        <p class="text-secondary text-sm" th:text="#{about.team.pierre.desc}">Pierre développe nos relations avec les entreprises et organisations locales.</p>
                     </div>
                     
                     <!-- Barbara Amandine Berger -->
                     <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
-                        <div class="text-6xl mb-4 text-primary" aria-label="Barbara Amandine Berger Assistante Supérieure LMP">👩‍💼</div>
-                        <h3 class="text-xl font-semibold text-dark mb-2">Barbara Amandine Berger</h3>
-                        <p class="text-primary font-medium mb-2">Assistante Supérieure</p>
-                        <p class="text-secondary text-sm">Barbara assure la coordination et le support administratif de l'équipe avec professionnalisme et efficacité.</p>
+                        <div class="text-6xl mb-4 text-primary" th:attr="aria-label=#{about.team.barbara.aria}">👩‍💼</div>
+                        <h3 class="text-xl font-semibold text-dark mb-2" th:text="#{about.team.barbara.name}">Barbara Amandine Berger</h3>
+                        <p class="text-primary font-medium mb-2" th:text="#{about.team.barbara.role}">Assistante Supérieure</p>
+                        <p class="text-secondary text-sm" th:text="#{about.team.barbara.desc}">Barbara assure la coordination et le support administratif de l'équipe avec professionnalisme et efficacité.</p>
                     </div>
                 </div>
             </div>
