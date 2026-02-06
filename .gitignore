@@ -35,3 +35,36 @@ build/
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+### JVM Crash Logs ###
+hs_err_pid*.log
+replay_pid*.log
+
+### Temporary SQL Scripts ###
+add_missing_billing_columns.sql
+check_db_structure.sql
+create_refunds_table.sql
+fix_hard_delete.sql
+fix_refunds_table.sql
+
+### Semgrep Security Tool ###
+generate_semgrep_report.py
+run_semgrep_scan.py
+semgrep_mcp_server.py
+semgrep_rules.yml
+semgrep_scan_results.json
+SEMGREP_MCP_INSTALLATION.md
+SEMGREP_VULNERABILITY_REPORT.md
+
+### Archives and Build Artifacts ###
+*.zip
+node_modules/
+${project.build.directory}/
+
+### AI Tools Directories ###
+.kilocode/
+.qwen/
+.roo/
+
+### Duplicate/Obsolete Folders ###
+LMP/
