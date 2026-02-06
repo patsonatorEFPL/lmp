@@ -40,7 +40,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 /**
- * Contrôleur pour la gestion de l'authentification (connexion, inscription, déconnexion).
+ * Contrôleur pour la gestion de l'authentification (connexion, inscription,
+ * déconnexion).
  */
 @Controller
 public class AuthController {
@@ -60,24 +61,23 @@ public class AuthController {
     /**
      * Affiche la page de connexion.
      * 
-     * @param model Le modèle pour la vue
-     * @param error Paramètre d'erreur de connexion
-     * @param logout Paramètre de déconnexion
+     * @param model   Le modèle pour la vue
+     * @param error   Paramètre d'erreur de connexion
+     * @param logout  Paramètre de déconnexion
      * @param expired Paramètre de session expirée
      * @return Le nom de la vue
      */
     @GetMapping("/login")
     public String showLoginForm(Model model,
-                               @RequestParam(value = "error", required = false) String error,
-                               @RequestParam(value = "logout", required = false) String logout,
-                               @RequestParam(value = "expired", required = false) String expired) {
-        
+            @RequestParam(value = "error", required = false) String error,
+            @RequestParam(value = "logout", required = false) String logout,
+            @RequestParam(value = "expired", required = false) String expired) {
+
         // Rediriger les utilisateurs déjà connectés
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
             return "redirect:/dashboard";
         }
-
 
         if (error != null) {
             model.addAttribute("errorMessage", "Email ou mot de passe incorrect.");
@@ -115,17 +115,17 @@ public class AuthController {
     /**
      * Traite l'inscription d'un nouvel utilisateur.
      * 
-     * @param registerDto Les données d'inscription
-     * @param bindingResult Le résultat de la validation
-     * @param model Le modèle pour la vue
+     * @param registerDto        Les données d'inscription
+     * @param bindingResult      Le résultat de la validation
+     * @param model              Le modèle pour la vue
      * @param redirectAttributes Les attributs de redirection
      * @return Le nom de la vue ou redirection
      */
     @PostMapping("/register")
     public String registerUser(@Valid @ModelAttribute("registerDto") RegisterDto registerDto,
-                              BindingResult bindingResult,
-                              Model model,
-                              RedirectAttributes redirectAttributes) {
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes) {
 
         try {
             // Vérifier les erreurs de validation
@@ -139,8 +139,8 @@ public class AuthController {
             // Créer l'utilisateur
             User user = authService.registerUser(registerDto);
 
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Inscription réussie ! Vous pouvez maintenant vous connecter.");
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Inscription réussie ! Vous pouvez maintenant vous connecter.");
             return "redirect:/login";
 
         } catch (RuntimeException e) {
@@ -152,28 +152,28 @@ public class AuthController {
     /**
      * Vérifie l'email d'un utilisateur avec un token.
      * 
-     * @param token Le token de vérification
+     * @param token              Le token de vérification
      * @param redirectAttributes Les attributs de redirection
      * @return Redirection vers la page de connexion
      */
     @GetMapping("/verify-email")
     public String verifyEmail(@RequestParam("token") String token,
-                             RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes) {
 
         try {
             boolean verified = authService.verifyEmail(token);
 
             if (verified) {
-                redirectAttributes.addFlashAttribute("successMessage", 
-                    "Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.");
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.");
             } else {
-                redirectAttributes.addFlashAttribute("errorMessage", 
-                    "Token de vérification invalide ou expiré.");
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Token de vérification invalide ou expiré.");
             }
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
-                "Erreur lors de la vérification de l'email.");
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Erreur lors de la vérification de l'email.");
         }
 
         return "redirect:/login";
@@ -213,15 +213,15 @@ public class AuthController {
     /**
      * Traite la mise à jour du profil utilisateur.
      * 
-     * @param user Les données utilisateur mises à jour
-     * @param authentication L'authentification actuelle
+     * @param user               Les données utilisateur mises à jour
+     * @param authentication     L'authentification actuelle
      * @param redirectAttributes Les attributs de redirection
      * @return Redirection vers le profil
      */
     @PostMapping("/profile")
     public String updateProfile(@ModelAttribute("user") User user,
-                               Authentication authentication,
-                               RedirectAttributes redirectAttributes) {
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
 
         try {
             if (authentication != null && authentication.isAuthenticated()) {
@@ -239,13 +239,13 @@ public class AuthController {
 
                     userService.save(currentUser);
 
-                    redirectAttributes.addFlashAttribute("successMessage", 
-                        "Profil mis à jour avec succès !");
+                    redirectAttributes.addFlashAttribute("successMessage",
+                            "Profil mis à jour avec succès !");
                 }
             }
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", 
-                "Erreur lors de la mise à jour du profil : " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Erreur lors de la mise à jour du profil : " + e.getMessage());
         }
 
         return "redirect:/profile";
@@ -257,53 +257,49 @@ public class AuthController {
      * la création de commande et la redirection vers Stripe Checkout.
      *
      * @param registerWithOrderDto Les données d'inscription et de commande
-     * @param request La requête HTTP pour l'authentification automatique
+     * @param request              La requête HTTP pour l'authentification
+     *                             automatique
      * @return ResponseEntity avec l'URL de redirection Stripe ou les erreurs
      */
     @PostMapping("/register-and-checkout")
     @ResponseBody
     public ResponseEntity<?> registerAndCheckout(@Valid @RequestBody RegisterWithOrderDto registerWithOrderDto,
-                                                 HttpServletRequest request,
-                                                 HttpServletResponse response) {
-        
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
         try {
             // 1. Validation des données d'inscription
             if (!registerWithOrderDto.isPasswordMatching()) {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "error", "PASSWORD_MISMATCH",
-                    "message", "Les mots de passe ne correspondent pas"
-                ));
+                        "error", "PASSWORD_MISMATCH",
+                        "message", "Les mots de passe ne correspondent pas"));
             }
 
             if (!registerWithOrderDto.getAcceptTerms()) {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "error", "TERMS_NOT_ACCEPTED",
-                    "message", "Vous devez accepter les conditions d'utilisation"
-                ));
+                        "error", "TERMS_NOT_ACCEPTED",
+                        "message", "Vous devez accepter les conditions d'utilisation"));
             }
 
             // 2. Vérifier que l'email n'existe pas déjà
             if (authService.existsByEmail(registerWithOrderDto.getEmail())) {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "error", "EMAIL_EXISTS",
-                    "message", "Un utilisateur avec cet email existe déjà"
-                ));
+                        "error", "EMAIL_EXISTS",
+                        "message", "Un utilisateur avec cet email existe déjà"));
             }
 
             // 3. Validation du montant et de la devise
             if (registerWithOrderDto.getAmount() == null ||
-                registerWithOrderDto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    registerWithOrderDto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "error", "INVALID_AMOUNT",
-                    "message", "Le montant doit être supérieur à 0"
-                ));
+                        "error", "INVALID_AMOUNT",
+                        "message", "Le montant doit être supérieur à 0"));
             }
 
             if (!"CAD".equals(registerWithOrderDto.getCurrency())) {
                 return ResponseEntity.badRequest().body(Map.of(
-                    "error", "INVALID_CURRENCY",
-                    "message", "Seule la devise CAD est supportée"
-                ));
+                        "error", "INVALID_CURRENCY",
+                        "message", "Seule la devise CAD est supportée"));
             }
 
             // 4. Créer l'utilisateur
@@ -312,7 +308,7 @@ public class AuthController {
 
             // 5. Connexion automatique de l'utilisateur
             authenticateUser(registerWithOrderDto.getEmail(),
-                           registerWithOrderDto.getPassword(), request, response);
+                    registerWithOrderDto.getPassword(), request, response);
 
             // 6. Créer la commande avec statut PAYMENT_PENDING
             Order order = new Order();
@@ -323,7 +319,7 @@ public class AuthController {
             order.setTotalAmount(registerWithOrderDto.getAmount());
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
-            
+
             // Sauvegarder la commande
             order = orderRepository.save(order);
 
@@ -336,59 +332,56 @@ public class AuthController {
             responseData.put("userId", newUser.getId());
             responseData.put("redirectUrl", "/stripe/checkout/create-session/" + order.getId());
             responseData.put("authenticated", true); // Indiquer que l'utilisateur est maintenant connecté
-            
+
             return ResponseEntity.ok(responseData);
 
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(
-                "error", "REGISTRATION_FAILED",
-                "message", e.getMessage()
-            ));
+                    "error", "REGISTRATION_FAILED",
+                    "message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "error", "INTERNAL_ERROR",
-                "message", "Une erreur inattendue s'est produite"
-            ));
+                    "error", "INTERNAL_ERROR",
+                    "message", "Une erreur inattendue s'est produite"));
         }
     }
 
     /**
      * Connecte automatiquement un utilisateur après inscription.
      *
-     * @param email L'email de l'utilisateur
+     * @param email    L'email de l'utilisateur
      * @param password Le mot de passe en clair
-     * @param request La requête HTTP
+     * @param request  La requête HTTP
      * @param response La réponse HTTP
      */
-    private void authenticateUser(String email, String password, HttpServletRequest request, HttpServletResponse response) {
+    private void authenticateUser(String email, String password, HttpServletRequest request,
+            HttpServletResponse response) {
         try {
             // Créer le token d'authentification
-            UsernamePasswordAuthenticationToken authToken =
-                new UsernamePasswordAuthenticationToken(email, password);
-            
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(email, password);
+
             // Ajouter les détails de la requête
             authToken.setDetails(new WebAuthenticationDetails(request));
-            
+
             // Authentifier l'utilisateur
             Authentication authentication = authenticationManager.authenticate(authToken);
-            
+
             // Créer un nouveau contexte de sécurité avec l'authentification
             SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
             securityContext.setAuthentication(authentication);
-            
+
             // Mettre à jour le contexte de sécurité
             SecurityContextHolder.setContext(securityContext);
-            
+
             // Sauvegarder explicitement le contexte de sécurité dans la session HTTP
-            HttpSessionSecurityContextRepository securityContextRepository =
-                new HttpSessionSecurityContextRepository();
+            HttpSessionSecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
             securityContextRepository.saveContext(securityContext, request, response);
-            
+
             // Mettre à jour la date de dernière connexion
             userService.updateLastLoginDate(email);
-            
+
             System.out.println("DEBUG: Authentification réussie pour " + email + ", session sauvegardée");
-            
+
         } catch (Exception e) {
             // Log l'erreur mais ne pas échouer tout le processus
             System.err.println("Erreur lors de la connexion automatique : " + e.getMessage());

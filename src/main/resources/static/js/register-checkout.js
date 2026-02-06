@@ -3,6 +3,15 @@
  * Gère la validation des formulaires, l'inscription utilisateur et la redirection Stripe
  */
 
+/**
+ * Détecte la langue actuelle depuis GTranslate (cookie googtrans)
+ * @returns {string} Code langue (fr, en, es, de, it, nl, pt, lb)
+ */
+function getGTranslateLanguage() {
+  var match = document.cookie.match(/googtrans=\/fr\/(\w+)/);
+  return match ? match[1] : "fr";
+}
+
 // Variables globales pour le service sélectionné
 let selectedService = {
   name: "",
@@ -683,6 +692,7 @@ async function handleAuthenticatedUserOrder(
       userEmail: userData.userEmail,
       userFirstName: userData.userFirstName,
       userLastName: userData.userLastName,
+      userLanguage: getGTranslateLanguage(),
     };
 
     console.log(

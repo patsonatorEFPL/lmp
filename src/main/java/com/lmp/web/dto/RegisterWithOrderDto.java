@@ -9,10 +9,14 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 /**
- * DTO pour l'inscription d'un utilisateur avec création simultanée d'une commande.
- * Utilisé pour le flux d'achat intégré où l'utilisateur s'inscrit et commande en une seule étape.
- * Inscription simplifiée : seuls email et password sont obligatoires pour l'utilisateur.
- * Les informations d'adresse restent obligatoires pour la facturation et livraison.
+ * DTO pour l'inscription d'un utilisateur avec création simultanée d'une
+ * commande.
+ * Utilisé pour le flux d'achat intégré où l'utilisateur s'inscrit et commande
+ * en une seule étape.
+ * Inscription simplifiée : seuls email et password sont obligatoires pour
+ * l'utilisateur.
+ * Les informations d'adresse restent obligatoires pour la facturation et
+ * livraison.
  */
 public class RegisterWithOrderDto {
 
@@ -38,7 +42,8 @@ public class RegisterWithOrderDto {
     @Size(max = 20, message = "Le téléphone ne peut pas dépasser 20 caractères")
     private String phone;
 
-    // Informations d'adresse (optionnelles pour l'inscription simplifiée, collectées lors du checkout Stripe)
+    // Informations d'adresse (optionnelles pour l'inscription simplifiée,
+    // collectées lors du checkout Stripe)
     @Size(max = 255, message = "L'adresse ne peut pas dépasser 255 caractères")
     private String address;
 
@@ -73,7 +78,8 @@ public class RegisterWithOrderDto {
     private Boolean acceptTerms = false;
 
     // Constructeurs
-    public RegisterWithOrderDto() {}
+    public RegisterWithOrderDto() {
+    }
 
     // Getters et Setters
     public String getFirstName() {
