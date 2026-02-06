@@ -3,13 +3,63 @@
  * - Gestion du service "Autre" avec message obligatoire
  * - Validation améliorée avec filtrage de mots inappropriés
  * - Support des règles métier configurées
+ * - Compatibilité GTranslate (protection contre la modification du DOM)
  */
 
 const AppointmentModal = {
-    // État du modal
+    // ============================================================
+    // CONSTANTES ET CONFIGURATION
+    // ============================================================
+    
+    /** Classes CSS pour empêcher GTranslate de modifier les éléments */
+    TRANSLATE_SAFE_CLASSES: 'notranslate',
+    
+    /** Attributs HTML pour désactiver la traduction */
+    TRANSLATE_SAFE_ATTRS: 'translate="no"',
+    
+    // ============================================================
+    // UTILITAIRES - Fonctions helper réutilisables
+    // ============================================================
+    
+    /**
+     * Récupère de façon sécurisée un data-attribute depuis un élément cliqué
+     * Gère le cas où GTranslate encapsule l'élément dans des <font> ou <span>
+     * 
+     * @param {Event} event - L'événement de clic
+     * @param {string} selector - Le sélecteur CSS de l'élément parent attendu
+     * @param {string} dataAttr - Le nom de l'attribut data (sans le préfixe 'data-')
+     * @returns {string|null} La valeur de l'attribut ou null si non trouvé
+     */
+    getDataFromClick(event, selector, dataAttr) {
+        const element = $(event.target).closest(selector);
+        if (!element.length) {
+            console.error(`[AppointmentModal] ❌ Élément '${selector}' non trouvé`);
+            return null;
+        }
+        // Préférer .attr() car .data() est mis en cache par jQuery et peut être désynchronisé
+        const value = element.attr(`data-${dataAttr}`) || element.data(dataAttr);
+        if (!value) {
+            console.error(`[AppointmentModal] ❌ Attribut 'data-${dataAttr}' non trouvé sur ${selector}`);
+            return null;
+        }
+        return value;
+    },
+    
+    /**
+     * Génère les attributs HTML pour rendre un élément insensible à GTranslate
+     * @returns {string} Chaîne d'attributs à insérer dans le HTML
+     */
+    getTranslateSafeAttrs() {
+        return `class="${this.TRANSLATE_SAFE_CLASSES}" ${this.TRANSLATE_SAFE_ATTRS}`;
+    },
+    
+    // ============================================================
+    // ÉTAT DU MODAL
+    // ============================================================
     selectedDate: null,
     selectedTime: null,
     hasUserInteracted: false, // Pour savoir si l'utilisateur a commencé à remplir le formulaire
+
     
     // Initialisation
     init() {
@@ -396,7 +446,7 @@ const AppointmentModal = {
                 
                 const disabled = isPast || isWeekend ? 'data-disabled="true"' : '';
                 
-                html += `<div class="calendar-day ${classes}" data-date="${dateStr}" ${disabled} title="${title}">${day}</div>`;
+                html += `<div class="calendar-day notranslate ${classes}" data-date="${dateStr}" ${disabled} title="${title}" translate="no">${day}</div>`;
             }
             
             $('#calendarDays').html(html);
@@ -428,9 +478,10 @@ const AppointmentModal = {
             }
         });
         
-        // Sélectionner une date
+        // Sélectionner une date (utilise getDataFromClick pour compatibilité GTranslate)
         $(document).on('click', '.calendar-day:not([data-disabled="true"])', (e) => {
-            const dateStr = $(e.target).data('date');
+            const dateStr = this.getDataFromClick(e, '.calendar-day', 'date');
+            if (!dateStr) return;
             this.selectDate(dateStr);
         });
         
@@ -537,7 +588,7 @@ const AppointmentModal = {
             html += '<h6 class="text-xs font-medium text-gray-500 mb-3">🌅 Matin</h6>';
             html += '<div class="grid grid-cols-4 gap-3">';
             morningSlots.forEach(slot => {
-                html += `<button type="button" class="time-slot-btn text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
+                html += `<button type="button" class="time-slot-btn notranslate text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}" translate="no">${slot}</button>`;
             });
             html += '</div>';
             html += '</div>';
@@ -549,7 +600,7 @@ const AppointmentModal = {
             html += '<h6 class="text-xs font-medium text-gray-500 mb-3">☀️ Après-midi</h6>';
             html += '<div class="grid grid-cols-4 gap-3">';
             afternoonSlots.forEach(slot => {
-                html += `<button type="button" class="time-slot-btn text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}">${slot}</button>`;
+                html += `<button type="button" class="time-slot-btn notranslate text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}" translate="no">${slot}</button>`;
             });
             html += '</div>';
             html += '</div>';
@@ -558,10 +609,12 @@ const AppointmentModal = {
         html += '</div>';
         container.html(html);
         
-        // Gérer la sélection des créneaux
+        // Gérer la sélection des créneaux (utilise getDataFromClick pour compatibilité GTranslate)
         $('.time-slot-btn').on('click', (e) => {
-            const time = $(e.target).data('time');
-            this.selectTimeSlot(time, e.target);
+            const time = this.getDataFromClick(e, '.time-slot-btn', 'time');
+            if (!time) return;
+            const btn = $(e.target).closest('.time-slot-btn');
+            this.selectTimeSlot(time, btn[0]);
         });
     },
     
