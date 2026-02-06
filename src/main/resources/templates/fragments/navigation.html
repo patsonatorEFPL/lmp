@@ -68,10 +68,6 @@
                         </form>
                     </div>
                     
-                    <select class="px-3 py-1 border border-gray-200 rounded-md bg-white text-sm font-medium">
-                        <option value="fr">FR</option>
-                        <option value="en">EN</option>
-                    </select>
                 </div>
 
                 <!-- Mobile Menu Button (caché sur dashboard) -->
@@ -101,7 +97,9 @@
                         Contact
                     </a>
                     
+                    
                     <!-- Mobile - Utilisateur non connecté -->
+
                     <div sec:authorize="!isAuthenticated()" class="space-y-2 pt-2 border-t border-gray-100">
                         <a href="/login" class="block w-full text-center border border-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200">
                             Connexion

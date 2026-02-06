@@ -140,5 +140,76 @@
                 line-height: 1.2;
             }
         }
+        
+        /* GTranslate widget positioning */
+        .gtranslate_wrapper {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999;
+        }
     </style>
+    
+    <!-- GTranslate Configuration -->
+    <script>
+        window.gtranslateSettings = {
+            "default_language": "fr",
+            "detect_browser_language": false,
+            "languages": ["fr", "en", "es", "de", "it", "nl", "pt", "lb"],
+            "wrapper_selector": ".gtranslate_wrapper",
+            "switcher_horizontal_position": "left",
+            "switcher_vertical_position": "bottom",
+            "flag_style": "3d",
+            "alt_flags": {"en": "usa", "pt": "brazil", "es": "spain"}
+        };
+        
+        // Function to change GTranslate language
+        function changeGTranslateLang(lang) {
+            // Set cookie for GTranslate
+            var date = new Date();
+            date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+            document.cookie = "googtrans=/fr/" + lang + "; expires=" + date.toUTCString() + "; path=/";
+            document.cookie = "googtrans=/fr/" + lang + "; expires=" + date.toUTCString() + "; path=/; domain=." + window.location.hostname;
+            
+            // Reload page to apply translation
+            window.location.reload();
+        }
+        
+        // Function to get current GTranslate language
+        function getGTranslateLang() {
+            var match = document.cookie.match(/googtrans=\/fr\/(\w+)/);
+            return match ? match[1] : 'fr';
+        }
+        
+        // Update language buttons on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var currentLang = getGTranslateLang();
+            var frButtons = document.querySelectorAll('.lang-btn-fr');
+            var enButtons = document.querySelectorAll('.lang-btn-en');
+            
+            frButtons.forEach(function(btn) {
+                if (currentLang === 'fr') {
+                    btn.classList.add('bg-primary', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+            
+            enButtons.forEach(function(btn) {
+                if (currentLang === 'en') {
+                    btn.classList.add('bg-primary', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+        });
+    </script>
+    
+    <!-- GTranslate Widget -->
+    <div class="gtranslate_wrapper"></div>
+    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </div>
