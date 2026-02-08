@@ -1,165 +1,34 @@
 <!-- Theme Toggle and Language Controls Fragment -->
-<div th:fragment="theme-language-controls" class="flex items-center gap-4">
-    <style>
-
-
-        /* GTranslate Dropdown - Navigation */
-        .nav-gtranslate-wrapper {
-            position: relative;
-        }
-
-        .nav-gtranslate-dropdown {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0.75rem;
-            background: transparent; /* Changed from #1a2230 */
-            border: none; /* Changed from 1px solid #2a3447 */
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.85rem;
-            color: #ffffff;
-        }
-
-        .nav-gtranslate-dropdown:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-gtranslate-dropdown i {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            transition: transform 0.2s;
-        }
-
-        .nav-gtranslate-dropdown.open i {
-            transform: rotate(180deg);
-        }
-
-        .nav-gtranslate-menu {
-            position: absolute;
-            top: calc(100% + 0.5rem);
-            right: 0;
-            background: #1a2230;
-            border: 1px solid #2a3447;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.2s ease;
-            z-index: 100;
-            min-width: 160px;
-        }
-
-        .nav-gtranslate-menu.open {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .nav-gtranslate-menu a {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1rem;
-            color: #ffffff;
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: background 0.2s;
-        }
-
-        .nav-gtranslate-menu a:hover {
-            background: #2a3447;
-        }
-
-        .nav-gtranslate-menu a.active {
-            color: #135bec;
-        }
-
-        .nav-gtranslate-menu img {
-            width: 20px;
-            height: 14px;
-            border-radius: 2px;
-            object-fit: cover;
-        }
-
-        /* Light mode overrides */
-        body:not(.dark) .nav-gtranslate-dropdown {
-            background: transparent;
-            color: #374151;
-        }
+<div th:fragment="theme-language-controls" class="flex items-center gap-2">
+    
+    <!-- Theme Toggle (DaisyUI Swap) -->
+    <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
+        <input type="checkbox" id="theme-toggle-check" onchange="toggleThemeFromCheckbox(this)" />
         
-        body:not(.dark) .nav-gtranslate-dropdown:hover {
-            background: rgba(0, 0, 0, 0.05); /* Light hover effect */
-        }
+        <!-- Sun icon -->
+        <span class="material-symbols-outlined swap-on w-5 h-5 fill-current">light_mode</span>
+        
+        <!-- Moon icon -->
+        <span class="material-symbols-outlined swap-off w-5 h-5 fill-current">dark_mode</span>
+    </label>
 
-        body:not(.dark) .nav-gtranslate-menu {
-            background: #ffffff;
-            border-color: #e5e7eb;
-        }
-
-        body:not(.dark) .nav-gtranslate-dropdown {
-            color: #374151;
-        }
-
-        body:not(.dark) .nav-gtranslate-menu a {
-            color: #374151;
-        }
-
-        body:not(.dark) .nav-gtranslate-menu a:hover {
-            background: #f3f4f6;
-        }
-    </style>
-
-    <!-- Theme Toggle Button -->
-    <button type="button" class="nav-theme-toggle text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5 transition-colors" onclick="toggleNavTheme()" title="Toggle theme">
-        <span class="material-symbols-outlined notranslate" translate="no" id="theme-toggle-dark-icon" style="display: none;">dark_mode</span>
-        <span class="material-symbols-outlined notranslate" translate="no" id="theme-toggle-light-icon" style="display: none;">light_mode</span>
-    </button>
-
-    <!-- GTranslate Dropdown -->
-    <div class="nav-gtranslate-wrapper">
-        <div class="nav-gtranslate-dropdown" onclick="toggleNavGTranslateMenu()">
-            <img id="nav-current-flag" src="https://flagcdn.com/w40/us.png" alt="" style="width: 20px; height: 14px; border-radius: 2px;">
-            <span id="nav-current-lang">EN</span>
-            <i class="fas fa-chevron-down"></i>
+    <!-- Language Dropdown (DaisyUI) -->
+    <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2 px-2 font-normal">
+            <img id="nav-current-flag" src="https://flagcdn.com/w40/us.png" alt="" class="w-5 h-3.5 rounded-sm object-cover shadow-sm">
+            <span id="nav-current-lang" class="hidden sm:inline">EN</span>
+            <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
         </div>
-        <div class="nav-gtranslate-menu" id="nav-gtranslate-menu">
-            <a href="#" onclick="changeNavGTranslateLang('en'); return false;" class="active" data-lang="en">
-                <img src="https://flagcdn.com/w40/us.png" alt="EN">
-                <span>English</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('fr'); return false;" data-lang="fr">
-                <img src="https://flagcdn.com/w40/fr.png" alt="FR">
-                <span>Français</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('es'); return false;" data-lang="es">
-                <img src="https://flagcdn.com/w40/es.png" alt="ES">
-                <span>Español</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('de'); return false;" data-lang="de">
-                <img src="https://flagcdn.com/w40/de.png" alt="DE">
-                <span>Deutsch</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('it'); return false;" data-lang="it">
-                <img src="https://flagcdn.com/w40/it.png" alt="IT">
-                <span>Italiano</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('nl'); return false;" data-lang="nl">
-                <img src="https://flagcdn.com/w40/nl.png" alt="NL">
-                <span>Nederlands</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('pt'); return false;" data-lang="pt">
-                <img src="https://flagcdn.com/w40/br.png" alt="PT">
-                <span>Português</span>
-            </a>
-            <a href="#" onclick="changeNavGTranslateLang('lb'); return false;" data-lang="lb">
-                <img src="https://flagcdn.com/w40/lu.png" alt="LB">
-                <span>Lëtzebuergesch</span>
-            </a>
-        </div>
+        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-48 mt-2 border border-base-200">
+            <li><a onclick="changeNavGTranslateLang('en')"><img src="https://flagcdn.com/w40/us.png" class="w-5 h-3.5 rounded-sm"> English</a></li>
+            <li><a onclick="changeNavGTranslateLang('fr')"><img src="https://flagcdn.com/w40/fr.png" class="w-5 h-3.5 rounded-sm"> Français</a></li>
+            <li><a onclick="changeNavGTranslateLang('es')"><img src="https://flagcdn.com/w40/es.png" class="w-5 h-3.5 rounded-sm"> Español</a></li>
+            <li><a onclick="changeNavGTranslateLang('de')"><img src="https://flagcdn.com/w40/de.png" class="w-5 h-3.5 rounded-sm"> Deutsch</a></li>
+            <li><a onclick="changeNavGTranslateLang('it')"><img src="https://flagcdn.com/w40/it.png" class="w-5 h-3.5 rounded-sm"> Italiano</a></li>
+            <li><a onclick="changeNavGTranslateLang('nl')"><img src="https://flagcdn.com/w40/nl.png" class="w-5 h-3.5 rounded-sm"> Nederlands</a></li>
+            <li><a onclick="changeNavGTranslateLang('pt')"><img src="https://flagcdn.com/w40/br.png" class="w-5 h-3.5 rounded-sm"> Português</a></li>
+            <li><a onclick="changeNavGTranslateLang('lb')"><img src="https://flagcdn.com/w40/lu.png" class="w-5 h-3.5 rounded-sm"> Lëtzebuergesch</a></li>
+        </ul>
     </div>
 
     <!-- Hidden GTranslate wrapper -->
@@ -179,80 +48,47 @@
         };
         const navSupportedLangs = ['en', 'fr', 'es', 'de', 'it', 'nl', 'pt', 'lb'];
 
-        // Theme Toggle
-        function toggleNavTheme() {
+        // Theme Toggle via Checkbox (DaisyUI Swap)
+        function toggleThemeFromCheckbox(checkbox) {
             const body = document.body;
             const html = document.documentElement;
-            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            // Swap logic: if checked -> light (sun visible), if unchecked -> dark (moon visible)
+            // Wait, usually: checked = on (sun), unchecked = off (moon).
+            // Let's decide: Dark mode default.
+            // If Dark mode: moon visible (swap-off). Checkbox unchecked.
+            // If Light mode: sun visible (swap-on). Checkbox checked.
+            
+            const isLight = checkbox.checked;
+            const newTheme = isLight ? 'light' : 'dark';
             
             if (newTheme === 'dark') {
                 body.classList.add('dark');
                 html.classList.add('dark');
-                body.style.backgroundColor = '#101622';
-                body.style.color = '#ffffff';
+                html.dataset.theme = 'dark'; // DaisyUI
+                body.style.backgroundColor = '#101622'; // Keep original custom override? Or trust DaisyUI? DaisyUI sets base-100.
+                // Remove inline styles to let DaisyUI handle it
+                 body.style.backgroundColor = '';
+                 body.style.color = '';
             } else {
                 body.classList.remove('dark');
                 html.classList.remove('dark');
-                body.style.backgroundColor = '#ffffff';
-                body.style.color = '#1f2937';
+                html.dataset.theme = 'light'; // DaisyUI
+                // Remove inline styles
+                body.style.backgroundColor = '';
+                body.style.color = '';
             }
             
             localStorage.setItem('lmp-theme', newTheme);
-            updateNavThemeIcon(newTheme);
         }
-
-        function updateNavThemeIcon(theme) {
-            const moonIcon = document.getElementById('theme-toggle-dark-icon');
-            const sunIcon = document.getElementById('theme-toggle-light-icon');
-            
-            if (moonIcon && sunIcon) {
-                if (theme === 'dark') {
-                    moonIcon.style.display = 'block';
-                    sunIcon.style.display = 'none';
-                } else {
-                    moonIcon.style.display = 'none';
-                    sunIcon.style.display = 'block';
-                }
-            }
-        }
-
-        // GTranslate Menu Toggle
-        function toggleNavGTranslateMenu() {
-            const dropdown = document.querySelector('.nav-gtranslate-dropdown');
-            const menu = document.getElementById('nav-gtranslate-menu');
-            if (dropdown) dropdown.classList.toggle('open');
-            if (menu) menu.classList.toggle('open');
-        }
-
-        // Close menu when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.nav-gtranslate-wrapper')) {
-                const dropdown = document.querySelector('.nav-gtranslate-dropdown');
-                const menu = document.getElementById('nav-gtranslate-menu');
-                if (dropdown) dropdown.classList.remove('open');
-                if (menu) menu.classList.remove('open');
-            }
-        });
 
         // Change Language
         function changeNavGTranslateLang(lang) {
             var config = navLangConfig[lang];
             if (!config) return;
             
-            // Update visual
+            // Visual update handled on reload but usually good to update instantly
             document.getElementById('nav-current-lang').textContent = config.name;
             document.getElementById('nav-current-flag').src = config.flag;
-            
-            // Update active state
-            document.querySelectorAll('.nav-gtranslate-menu a').forEach(a => {
-                a.classList.remove('active');
-                if (a.dataset.lang === lang) a.classList.add('active');
-            });
-            
-            // Close menu
-            document.querySelector('.nav-gtranslate-dropdown').classList.remove('open');
-            document.getElementById('nav-gtranslate-menu').classList.remove('open');
             
             // Set GTranslate cookie
             var date = new Date();
@@ -260,48 +96,36 @@
             document.cookie = "googtrans=/en/" + lang + "; expires=" + date.toUTCString() + "; path=/";
             document.cookie = "googtrans=/en/" + lang + "; expires=" + date.toUTCString() + "; path=/; domain=." + window.location.hostname;
             
-            // Reload to apply translation
             window.location.reload();
         }
 
-        // Get browser language
-        function getNavBrowserLang() {
-            const browserLang = navigator.language || navigator.userLanguage;
-            const shortLang = browserLang.split('-')[0].toLowerCase();
-            if (navSupportedLangs.includes(shortLang)) {
-                return shortLang;
-            }
-            return 'en';
-        }
-
-        // Get current language from cookie
+        // Helper to get lang
         function getNavCurrentLang() {
             var match = document.cookie.match(/googtrans=\/en\/(\w+)/);
             if (match && navSupportedLangs.includes(match[1])) {
                 return match[1];
             }
-            return getNavBrowserLang();
+            return navigator.language.split('-')[0].toLowerCase() in navLangConfig ? navigator.language.split('-')[0].toLowerCase() : 'en';
         }
 
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize theme
+            // Initialize Theme
             const savedTheme = localStorage.getItem('lmp-theme') || 'dark';
+            const checkbox = document.getElementById('theme-toggle-check');
             const html = document.documentElement;
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark');
-                html.classList.add('dark');
-                document.body.style.backgroundColor = '#101622';
-                document.body.style.color = '#ffffff';
-            } else {
-                document.body.classList.remove('dark');
-                html.classList.remove('dark');
-                document.body.style.backgroundColor = '#ffffff';
-                document.body.style.color = '#1f2937';
-            }
-            updateNavThemeIcon(savedTheme);
             
-            // Initialize language
+            // Logic: Checked = Light (Sun), Unchecked = Dark (Moon)
+            if (savedTheme === 'light') {
+                checkbox.checked = true;
+                html.classList.remove('dark');
+                html.dataset.theme = 'light';
+            } else {
+                checkbox.checked = false;
+                html.classList.add('dark');
+                html.dataset.theme = 'dark';
+            }
+            
+            // Initialize Language
             var currentLang = getNavCurrentLang();
             var config = navLangConfig[currentLang] || navLangConfig['en'];
             
@@ -309,16 +133,11 @@
             var langEl = document.getElementById('nav-current-lang');
             if (flagEl) flagEl.src = config.flag;
             if (langEl) langEl.textContent = config.name;
-            
-            document.querySelectorAll('.nav-gtranslate-menu a').forEach(a => {
-                a.classList.remove('active');
-                if (a.dataset.lang === currentLang) a.classList.add('active');
-            });
         });
     </script>
 </div>
 
-<!-- GTranslate Configuration (to be added at end of body) -->
+<!-- GTranslate Config -->
 <div th:fragment="gtranslate-config">
     <script>
         window.gtranslateSettings = {

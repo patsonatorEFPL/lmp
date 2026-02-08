@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" data-theme="lmp">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +7,8 @@
     <meta name="description" content="Nous transformons votre visibilité locale. Expertise Premium en référencement, gestion d'avis et présence digitale.">
     
     <!-- CSRF Token pour sécurité (must be before fragment includes) -->
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <meta name="_csrf" th:content="${_csrf?.token}" th:if="${_csrf != null}"/>
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}" th:if="${_csrf != null}"/>
     
     <!-- Global Styles -->
     <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
@@ -26,144 +26,145 @@
         };
     </script>
 </head>
-<body class="min-h-screen bg-white">
+<body class="min-h-screen bg-base-100">
     <!-- Header -->
     <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <main>
-        <!-- Hero Section Premium -->
-        <section id="home" class="relative min-h-[90vh] flex items-center mesh-gradient-bg py-20 lg:py-28 overflow-hidden">
+        <!-- Hero Section Premium with DaisyUI -->
+        <section id="home" class="relative min-h-[90vh] flex items-center py-20 lg:py-28 overflow-hidden bg-gradient-to-br from-base-100 via-primary/5 to-secondary/10">
             <!-- Animated Background Elements -->
-            <div class="absolute top-20 right-[10%] w-64 h-64 bg-purple-400/20 rounded-full blur-[100px] animate-float"></div>
-            <div class="absolute bottom-20 left-[10%] w-96 h-96 bg-blue-400/20 rounded-full blur-[120px] animate-float-delayed"></div>
+            <div class="absolute top-20 right-[10%] w-64 h-64 bg-primary/20 rounded-full blur-[100px] animate-pulse"></div>
+            <div class="absolute bottom-20 left-[10%] w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-pulse" style="animation-delay: 1s;"></div>
 
             <div class="container mx-auto px-4 relative z-10">
                 <div class="flex flex-col lg:flex-row items-center justify-between gap-16">
                     <!-- Hero Text -->
                     <div class="flex-1 lg:max-w-2xl relative">
-                        <div class="inline-flex items-center gap-2 px-4 py-2 mb-8 text-sm font-semibold text-primary glass rounded-full shadow-sm hover-lift">
-                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        <div class="badge badge-primary badge-lg gap-2 mb-8 shadow-lg">
+                            <span class="loading loading-dot loading-xs text-success"></span>
                             <span>Nouvelle mise à jour Google 2026 disponible</span>
                         </div>
                         
-                        <h1 class="text-5xl lg:text-7xl font-bold text-dark mb-6 leading-[1.1] tracking-tight hero-animation">
+                        <h1 class="text-5xl lg:text-7xl font-bold text-neutral mb-6 leading-[1.1] tracking-tight">
                             LMP
-                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Marketing Digital</span>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Marketing Digital</span>
                             <span class="block text-4xl lg:text-5xl mt-2 font-medium text-secondary">L'excellence locale.</span>
                         </h1>
                         
-                        <p class="text-xl text-gray-600 mb-10 leading-relaxed max-w-xl hero-animation delay-200">
+                        <p class="text-xl text-base-content/70 mb-10 leading-relaxed max-w-xl">
                             Propulsez votre visibilité au sommet. Technologie de pointe et expertise humaine pour dominer votre marché local.
                         </p>
                         
-                        <!-- Premium Email Form -->
-                        <div class="relative max-w-lg mb-12 hero-animation delay-300 group">
-                            <form onsubmit="handleEmailSubmit(event)" class="glass p-2 rounded-2xl flex items-center gap-2 shadow-medium hover:shadow-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/20">
-                                <div class="pl-4 text-gray-400 group-focus-within:text-primary transition-colors">
-                                    <i class="far fa-envelope text-xl"></i>
-                                </div>
+                        <!-- Premium Email Form with DaisyUI -->
+                        <div class="relative max-w-lg mb-12 group">
+                            <form onsubmit="handleEmailSubmit(event)" class="join w-full shadow-xl hover:shadow-2xl transition-all duration-300">
                                 <input
                                     type="email"
                                     placeholder="votre@email.com"
-                                    class="flex-1 bg-transparent border-none focus:ring-0 text-gray-800 placeholder-gray-400 text-lg py-3 outline-none"
+                                    class="input input-bordered input-lg join-item flex-1"
                                     required
                                 />
-                                <button type="submit" class="bg-dark text-white px-8 py-3 rounded-xl font-semibold hover:bg-black transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 focus:ring-2 focus:ring-offset-2 focus:ring-dark">
+                                <button type="submit" class="btn btn-primary btn-lg join-item gap-2">
                                     <span>Débuter</span>
                                     <i class="fas fa-arrow-right text-xs"></i>
                                 </button>
                             </form>
                             <!-- Decorative blur behind form -->
-                            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-20 -z-10 group-hover:opacity-30 transition-opacity"></div>
+                            <div class="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20 -z-10 group-hover:opacity-30 transition-opacity"></div>
                         </div>
 
-                        <!-- Trust Indicators Premium -->
-                        <div class="flex flex-wrap items-center gap-8 text-sm font-medium text-gray-500 fade-in-up delay-400">
-                            <div class="flex items-center gap-2">
-                                <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                                    <i class="fas fa-check text-xs"></i>
-                                </div>
+                        <!-- Trust Indicators with DaisyUI -->
+                        <div class="flex flex-wrap items-center gap-6">
+                            <div class="flex items-center gap-2 badge badge-ghost badge-lg">
+                                <div class="text-success"><i class="fas fa-check"></i></div>
                                 <span>Pas de frais cachés</span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                    <i class="fas fa-shield-alt text-xs"></i>
-                                </div>
+                            <div class="flex items-center gap-2 badge badge-ghost badge-lg">
+                                <div class="text-info"><i class="fas fa-shield-alt"></i></div>
                                 <span>Paiement sécurisé</span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                                    <i class="fas fa-bolt text-xs"></i>
-                                </div>
+                            <div class="flex items-center gap-2 badge badge-ghost badge-lg">
+                                <div class="text-warning"><i class="fas fa-bolt"></i></div>
                                 <span>Mise en place rapide</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Hero Visual Premium / 3D Effect Composition -->
-                    <div class="flex-1 lg:max-w-xl relative perspective-1000">
-                        <div class="relative fade-in-left delay-500 transform-style-3d hover:rotate-y-2 transition-transform duration-700">
+                    <!-- Hero Visual with DaisyUI Card -->
+                    <div class="flex-1 lg:max-w-xl relative">
+                        <div class="relative animate-float">
                             <!-- Main Card -->
-                            <div class="glass-dark rounded-3xl p-8 shadow-2xl border border-gray-700/50 backdrop-blur-xl relative z-10 overflow-hidden">
-                                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10"></div>
-                                
-                                <div class="flex items-center justify-between mb-8">
-                                    <div>
-                                        <div class="text-gray-400 text-sm font-medium mb-1">Croissance Mensuelle</div>
-                                        <div class="text-3xl font-bold text-white flex items-center gap-2">
-                                            +127%
-                                            <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">+2.4%</span>
+                            <div class="card bg-neutral text-neutral-content shadow-2xl">
+                                <div class="card-body">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <div>
+                                            <div class="text-sm opacity-70 mb-1">Croissance Mensuelle</div>
+                                            <div class="text-3xl font-bold flex items-center gap-2">
+                                                +127%
+                                                <span class="badge badge-success badge-sm">+2.4%</span>
+                                            </div>
+                                        </div>
+                                        <div class="avatar placeholder">
+                                            <div class="bg-gradient-to-br from-primary to-accent text-white w-12 rounded-xl">
+                                                <i class="fas fa-chart-bar text-xl"></i>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                        <i class="fas fa-chart-bar text-white text-xl"></i>
+                                    
+                                    <!-- Mockup Graph -->
+                                    <div class="h-32 flex items-end justify-between gap-2 mb-6">
+                                        <div class="w-full bg-base-300 rounded-t-lg h-[40%] hover:h-[45%] transition-all duration-300 hover:bg-primary/50"></div>
+                                        <div class="w-full bg-base-300 rounded-t-lg h-[60%] hover:h-[70%] transition-all duration-300 hover:bg-primary/50"></div>
+                                        <div class="w-full bg-base-300 rounded-t-lg h-[50%] hover:h-[55%] transition-all duration-300 hover:bg-primary/50"></div>
+                                        <div class="w-full bg-base-300 rounded-t-lg h-[75%] hover:h-[85%] transition-all duration-300 hover:bg-accent/50"></div>
+                                        <div class="w-full bg-gradient-to-t from-primary to-accent rounded-t-lg h-[90%] shadow-lg shadow-primary/50 relative group">
+                                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-base-100 text-neutral text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Top</div>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                <!-- Mockup Graph -->
-                                <div class="h-32 flex items-end justify-between gap-2 mb-6">
-                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[40%] hover:h-[45%] transition-all duration-300 hover:bg-blue-500/50"></div>
-                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[60%] hover:h-[70%] transition-all duration-300 hover:bg-blue-500/50"></div>
-                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[50%] hover:h-[55%] transition-all duration-300 hover:bg-blue-500/50"></div>
-                                    <div class="w-full bg-gray-700/50 rounded-t-lg h-[75%] hover:h-[85%] transition-all duration-300 hover:bg-purple-500/50"></div>
-                                    <div class="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg h-[90%] shadow-[0_0_15px_rgba(59,130,246,0.5)] relative group">
-                                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-dark text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Top</div>
+                                    
+                                    <div class="divider my-0"></div>
+                                    
+                                    <div class="flex items-center justify-between text-sm opacity-70 pt-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="loading loading-dot loading-xs text-success"></span>
+                                            <span>Système Actif</span>
+                                        </div>
+                                        <span>Mise à jour: Il y a 2 min</span>
                                     </div>
-                                </div>
-                                
-                                <div class="flex items-center justify-between text-gray-400 text-sm pt-4 border-t border-gray-700/50">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                        <span>Système Actif</span>
-                                    </div>
-                                    <span>Mise à jour: Il y a 2 min</span>
                                 </div>
                             </div>
                             
                             <!-- Floating Card 1 -->
-                            <div class="absolute -top-12 -right-12 glass p-4 rounded-2xl shadow-medium animate-float z-20 max-w-[180px]">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-500">
-                                        <i class="fas fa-star text-sm"></i>
+                            <div class="absolute -top-12 -right-12 card bg-base-100 shadow-xl z-20 max-w-[180px] animate-bounce" style="animation-duration: 3s;">
+                                <div class="card-body p-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="bg-warning/20 text-warning w-10 rounded-full">
+                                                <i class="fas fa-star text-sm"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs opacity-50">Note Moyenne</div>
+                                            <div class="font-bold">4.9/5.0</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="text-xs text-gray-500">Note Moyenne</div>
-                                        <div class="font-bold text-dark">4.9/5.0</div>
-                                    </div>
-                                </div>
-                                <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-orange-500 h-full w-[95%]"></div>
+                                    <progress class="progress progress-warning w-full" value="95" max="100"></progress>
                                 </div>
                             </div>
 
                             <!-- Floating Card 2 -->
-                            <div class="absolute -bottom-10 -left-10 glass p-4 rounded-2xl shadow-medium animate-float-delayed z-20 flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-full bg-white border-2 border-green-100 overflow-hidden p-0.5">
-                                    <img src="https://ui-avatars.com/api/?name=Client+Top&background=random" alt="Client" class="w-full h-full rounded-full object-cover">
-                                </div>
-                                <div>
-                                    <div class="text-sm font-bold text-dark">Nouveau Client</div>
-                                    <div class="text-xs text-green-600 font-medium">+ 350€ Revenus</div>
+                            <div class="absolute -bottom-10 -left-10 card bg-base-100 shadow-xl z-20 flex items-center animate-bounce" style="animation-duration: 4s; animation-delay: 1s;">
+                                <div class="card-body p-4 flex-row items-center gap-4">
+                                    <div class="avatar">
+                                        <div class="w-12 rounded-full bg-success/20 border-2 border-success">
+                                            <img src="https://ui-avatars.com/api/?name=Client+Top&background=random" alt="Client">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold">Nouveau Client</div>
+                                        <div class="text-xs text-success font-medium">+ 350€ Revenus</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -172,305 +173,364 @@
             </div>
         </section>
 
-        <!-- Stats Section (Bento Grid Style) -->
-        <section class="py-20 bg-white relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-[0_-20px_40px_rgba(0,0,0,0.02)]">
+        <!-- Stats Section with DaisyUI Stats -->
+        <section class="py-20 bg-base-100 relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-xl">
             <div class="container mx-auto px-4">
-                <div class="bento-grid max-w-6xl mx-auto">
-                    <!-- Stat 1 (Large) -->
-                    <div class="col-span-1 md:col-span-2 bg-gray-50 rounded-3xl p-8 hover-lift flex items-center justify-between group">
-                        <div>
-                            <div class="text-5xl font-bold text-dark mb-2 group-hover:text-primary transition-colors">500+</div>
-                            <div class="text-lg text-secondary font-medium">Clients satisfaits accompagnés en Europe</div>
+                <div class="stats stats-vertical lg:stats-horizontal shadow-xl w-full bg-base-100">
+                    <!-- Stat 1 -->
+                    <div class="stat">
+                        <div class="stat-figure text-primary">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary/10 text-primary w-16 rounded-full">
+                                    <i class="fas fa-users text-2xl"></i>
+                                </div>
+                            </div>
                         </div>
-                        <div class="w-20 h-20 bg-white rounded-2xl shadow-sm flex items-center justify-center text-4xl text-primary group-hover:scale-110 transition-transform">
-                            <i class="fas fa-users-crown"></i>
+                        <div class="stat-value text-primary">500+</div>
+                        <div class="stat-title">Clients satisfaits</div>
+                        <div class="stat-desc text-success">
+                            <i class="fas fa-arrow-up text-xs"></i> accompagnés en Europe
                         </div>
                     </div>
+                    
+                    <div class="divider lg:divider-horizontal"></div>
                     
                     <!-- Stat 2 -->
-                    <div class="bg-blue-600 rounded-3xl p-8 text-white hover-lift relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
-                        <div class="relative z-10">
-                            <div class="text-4xl font-bold mb-1">98%</div>
-                            <div class="text-blue-100 text-sm font-medium">Taux de rétention</div>
-                        </div>
-                    </div>
-
-                    <!-- Stat 3 -->
-                    <div class="bg-dark rounded-3xl p-8 text-white hover-lift relative overflow-hidden group">
-                        <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl -ml-10 -mb-10 transition-transform group-hover:scale-150"></div>
-                        <div class="relative z-10 flex flex-col justify-between h-full">
-                            <i class="fas fa-headset text-2xl text-purple-400 mb-4"></i>
-                            <div>
-                                <div class="text-4xl font-bold mb-1">24/7</div>
-                                <div class="text-gray-400 text-sm font-medium">Support Expert</div>
+                    <div class="stat">
+                        <div class="stat-figure text-secondary">
+                            <div class="avatar placeholder">
+                                <div class="bg-secondary/10 text-secondary w-16 rounded-full">
+                                    <i class="fas fa-chart-line text-2xl"></i>
+                                </div>
                             </div>
                         </div>
+                        <div class="stat-value text-secondary">98%</div>
+                        <div class="stat-title">Taux de rétention</div>
+                        <div class="stat-desc">Clients fidèles depuis 2020</div>
                     </div>
                     
-                    <!-- Stat 4 (Wide) -->
-                    <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-gray-50 rounded-3xl p-8 hover-lift flex items-center gap-6 group border border-gray-100">
-                         <div class="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-2xl text-green-500 border border-green-100">
-                            <i class="fas fa-history"></i>
+                    <div class="divider lg:divider-horizontal"></div>
+                    
+                    <!-- Stat 3 -->
+                    <div class="stat">
+                        <div class="stat-figure text-accent">
+                            <div class="avatar placeholder">
+                                <div class="bg-accent/10 text-accent w-16 rounded-full">
+                                    <i class="fas fa-headset text-2xl"></i>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="text-3xl font-bold text-dark group-hover:text-green-600 transition-colors">10 Ans d'Expérience</div>
-                            <div class="text-secondary">Une expertise forgée au fil des évolutions de Google.</div>
+                        <div class="stat-value text-accent">24/7</div>
+                        <div class="stat-title">Support Expert</div>
+                        <div class="stat-desc">Disponible à tout moment</div>
+                    </div>
+                    
+                    <div class="divider lg:divider-horizontal"></div>
+                    
+                    <!-- Stat 4 -->
+                    <div class="stat">
+                        <div class="stat-figure text-success">
+                            <div class="avatar placeholder">
+                                <div class="bg-success/10 text-success w-16 rounded-full">
+                                    <i class="fas fa-award text-2xl"></i>
+                                </div>
+                            </div>
                         </div>
+                        <div class="stat-value text-success">10+</div>
+                        <div class="stat-title">Années d'expérience</div>
+                        <div class="stat-desc">Expertise Google certifiée</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Services Section Premium -->
-        <section id="services" class="py-32 bg-gray-50/50">
+        <!-- Services Section with DaisyUI Cards -->
+        <section id="services" class="py-32 bg-base-200/50">
             <div class="container mx-auto px-4">
                 <div class="text-center mb-20">
-                    <h2 class="text-4xl lg:text-5xl font-bold text-dark mb-6 title-animation">
+                    <h2 class="text-4xl lg:text-5xl font-bold text-neutral mb-6">
                         Solutions Premium
                     </h2>
-                    <p class="text-lg text-secondary max-w-2xl mx-auto fade-in-up delay-200 font-light">
+                    <p class="text-lg text-base-content/70 max-w-2xl mx-auto">
                         Une suite complète d'outils et de services conçue pour exceller dans l'écosystème Google.
                     </p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Service 1 -->
-                    <div class="service-card-premium group cursor-pointer hover:border-primary/30 transition-all duration-300" onclick="window.location.href='/services#securisations-gmb'">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 text-2xl group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                                <i class="fas fa-map-marked-alt"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#securisations-gmb'">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary/10 text-primary w-14 rounded-2xl">
+                                        <i class="fas fa-map-marked-alt text-2xl"></i>
+                                    </div>
+                                </div>
+                                <div class="badge badge-ghost">Référencement</div>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">Référencement</span>
-                        </div>
-                        
-                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-primary transition-colors">
-                            Optimisation Map
-                        </h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
-                            Sécurisation avancée et optimisation technique de votre fiche Google pour un positionnement durable.
-                        </p>
-                        <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-6">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">À partir de</span>
-                                <span class="text-2xl font-bold text-dark">353€</span>
+                            
+                            <h3 class="card-title text-xl">Optimisation Map</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">
+                                Sécurisation avancée et optimisation technique de votre fiche Google pour un positionnement durable.
+                            </p>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div class="card-actions justify-between items-center">
+                                <div>
+                                    <div class="text-xs opacity-50">À partir de</div>
+                                    <div class="text-2xl font-bold text-primary">353€</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="btn btn-primary btn-circle">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
                             </div>
-                            <button onclick="event.stopPropagation(); openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="w-12 h-12 rounded-full bg-gray-50 text-dark flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300 transform group-hover:rotate-90">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
                         </div>
-                        <div class="glow-effect opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
 
                     <!-- Service 2 (Featured) -->
-                    <div class="service-card-premium group relative ring-1 ring-primary/10 bg-gradient-to-b from-white to-blue-50/20 cursor-pointer hover:ring-primary/40 transition-all duration-300 shadow-lg hover:shadow-xl" onclick="window.location.href='/services#referencement-vip'">
-                        <div class="absolute top-0 right-0 bg-gradient-to-l from-primary to-purple-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl z-10 shadow-lg animate-pulse-slow">
-                            BEST SELLER
-                        </div>
-                        
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-primary/20">
-                                <i class="fas fa-crown"></i>
+                    <div class="card bg-gradient-to-br from-primary to-accent text-primary-content shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer relative overflow-hidden" onclick="window.location.href='/services#referencement-vip'">
+                        <div class="absolute top-0 right-0">
+                                            <div class="badge badge-warning badge-lg rounded-bl-2xl rounded-tr-xl font-bold">
+                                <i class="fas fa-crown mr-1"></i> BEST SELLER
                             </div>
                         </div>
                         
-                        <h3 class="text-xl font-bold mb-3 text-dark">
-                            SEO VIP+ Garantie
-                        </h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
-                            L'excellence opérationnelle. Garantie de résultats, maintenance proactive et support prioritaire 24/7.
-                        </p>
-                        <div class="mt-auto flex items-center justify-between border-t border-primary/10 pt-6">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">Package complet</span>
-                                <span class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">750€</span>
+                        <div class="card-body">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-white/20 text-white w-14 rounded-2xl">
+                                        <i class="fas fa-crown text-2xl"></i>
+                                    </div>
+                                </div>
                             </div>
-                            <button onclick="event.stopPropagation(); openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 group-hover:gap-3">
-                                <span>Commander</span>
-                                <i class="fas fa-arrow-right text-xs"></i>
-                            </button>
+                            
+                            <h3 class="card-title text-xl">SEO VIP+ Garantie</h3>
+                            <p class="opacity-80 text-sm leading-relaxed">
+                                L'excellence opérationnelle. Garantie de résultats, maintenance proactive et support prioritaire 24/7.
+                            </p>
+                            
+                            <div class="divider my-2 opacity-30"></div>
+                            
+                            <div class="card-actions justify-between items-center">
+                                <div>
+                                    <div class="text-xs opacity-70">Package complet</div>
+                                    <div class="text-2xl font-bold">750€</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="btn btn-ghost btn-circle bg-white/20 hover:bg-white/30 text-white border-0">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Service 3 -->
-                    <div class="service-card-premium group cursor-pointer hover:border-green-500/30 transition-all duration-300" onclick="window.location.href='/services#gestion-avis'">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 text-2xl group-hover:scale-110 group-hover:bg-green-600 group-hover:text-white transition-all duration-500">
-                                <i class="fas fa-comments"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#gestion-avis'">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-success/10 text-success w-14 rounded-2xl">
+                                        <i class="fas fa-comments text-2xl"></i>
+                                    </div>
+                                </div>
+                                <div class="badge badge-success badge-outline">Réputation</div>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 group-hover:bg-green-50 group-hover:text-green-600 transition-colors">Réputation</span>
-                        </div>
-                        
-                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-green-600 transition-colors">
-                            Gestion Avis
-                        </h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
-                            Transformez vos clients en ambassadeurs. Stratégies de collecte et modération professionnelle.
-                        </p>
-                        <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-6">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">À partir de</span>
-                                <span class="text-2xl font-bold text-dark">747€</span>
+                            
+                            <h3 class="card-title text-xl">Gestion Avis</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">
+                                Transformez vos clients en ambassadeurs. Stratégies de collecte et modération professionnelle.
+                            </p>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div class="card-actions justify-between items-center">
+                                <div>
+                                    <div class="text-xs opacity-50">À partir de</div>
+                                    <div class="text-2xl font-bold text-success">747€</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); openBookingModal('Gestion des Avis', 747.43)" class="btn btn-success btn-circle">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
                             </div>
-                            <button onclick="event.stopPropagation(); openBookingModal('Gestion des Avis', 747.43)" class="w-12 h-12 rounded-full bg-gray-50 text-dark flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-90">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
                         </div>
-                         <div class="glow-effect opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
 
                     <!-- Service 4 -->
-                    <div class="service-card-premium group cursor-pointer hover:border-orange-500/30 transition-all duration-300" onclick="window.location.href='/services#presence-locales'">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 text-2xl group-hover:scale-110 group-hover:bg-orange-600 group-hover:text-white transition-all duration-500">
-                                <i class="fas fa-store"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#presence-locales'">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-warning/10 text-warning w-14 rounded-2xl">
+                                        <i class="fas fa-store text-2xl"></i>
+                                    </div>
+                                </div>
+                                <div class="badge badge-warning badge-outline">Local</div>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors">Local</span>
-                        </div>
-                        
-                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-orange-600 transition-colors">
-                            Présence Locale
-                        </h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
-                            Multi-diffusion de vos informations sur +50 plateformes, GPS et annuaires numériques.
-                        </p>
-                        <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-6">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">Pack annuel</span>
-                                <span class="text-2xl font-bold text-dark">2.200€</span>
+                            
+                            <h3 class="card-title text-xl">Présence Locale</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">
+                                Multi-diffusion de vos informations sur +50 plateformes, GPS et annuaires numériques.
+                            </p>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div class="card-actions justify-between items-center">
+                                <div>
+                                    <div class="text-xs opacity-50">Pack annuel</div>
+                                    <div class="text-2xl font-bold text-warning">2.200€</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); openBookingModal('Présence Locales', 2200.00)" class="btn btn-warning btn-circle">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
                             </div>
-                            <button onclick="event.stopPropagation(); openBookingModal('Présence Locales', 2200.00)" class="w-12 h-12 rounded-full bg-gray-50 text-dark flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-90">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
                         </div>
-                         <div class="glow-effect opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
 
                     <!-- Service 5 -->
-                    <div class="service-card-premium group cursor-pointer hover:border-teal-500/30 transition-all duration-300" onclick="window.location.href='/services#creation-site-web'">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-600 text-2xl group-hover:scale-110 group-hover:bg-teal-600 group-hover:text-white transition-all duration-500">
-                                <i class="fas fa-code"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#creation-site-web'">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-info/10 text-info w-14 rounded-2xl">
+                                        <i class="fas fa-code text-2xl"></i>
+                                    </div>
+                                </div>
+                                <div class="badge badge-info badge-outline">Web Dev</div>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">Web Dev</span>
-                        </div>
-                        
-                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-teal-600 transition-colors">
-                            Site Web Pro
-                        </h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
-                            Développement sur mesure, rapide, sécurisé (SSL) et optimisé pour la conversion mobile.
-                        </p>
-                        <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-6">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">À partir de</span>
-                                <span class="text-2xl font-bold text-dark">550€</span>
+                            
+                            <h3 class="card-title text-xl">Site Web Pro</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">
+                                Développement sur mesure, rapide, sécurisé (SSL) et optimisé pour la conversion mobile.
+                            </p>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div class="card-actions justify-between items-center">
+                                <div>
+                                    <div class="text-xs opacity-50">À partir de</div>
+                                    <div class="text-2xl font-bold text-info">550€</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); openBookingModal('Création Site Web', 100.99)" class="btn btn-info btn-circle">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
                             </div>
-                            <button onclick="event.stopPropagation(); openBookingModal('Création Site Web', 100.99)" class="w-12 h-12 rounded-full bg-gray-50 text-dark flex items-center justify-center group-hover:bg-teal-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-90">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
                         </div>
-                         <div class="glow-effect opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
 
                     <!-- Service 6 -->
-                    <div class="service-card-premium group cursor-pointer hover:border-indigo-500/30 transition-all duration-300" onclick="window.location.href='/services#seo-referencement-naturel'">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-2xl group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
-                                <i class="fas fa-search-dollar"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#seo-referencement-naturel'">
+                        <div class="card-body">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-accent/10 text-accent w-14 rounded-2xl">
+                                        <i class="fas fa-search-dollar text-2xl"></i>
+                                    </div>
+                                </div>
+                                <div class="badge badge-secondary badge-outline">SEO Avancé</div>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">SEO Avancé</span>
-                        </div>
-                        
-                        <h3 class="text-xl font-bold mb-3 text-dark group-hover:text-indigo-600 transition-colors">
-                            SEO & Naturel
-                        </h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6">
-                            Stratégie de contenu et netlinking haute performance pour dominer les SERPs Google.
-                        </p>
-                        <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-6">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">Sur devis</span>
-                                <span class="text-2xl font-bold text-dark">5.500€</span>
+                            
+                            <h3 class="card-title text-xl">SEO & Naturel</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">
+                                Stratégie de contenu et netlinking haute performance pour dominer les SERPs Google.
+                            </p>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div class="card-actions justify-between items-center">
+                                <div>
+                                    <div class="text-xs opacity-50">Sur devis</div>
+                                    <div class="text-2xl font-bold text-accent">5.500€</div>
+                                </div>
+                                <button onclick="event.stopPropagation(); openBookingModal('SEO et Référencement Naturel', 5500.00)" class="btn btn-accent btn-circle">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
                             </div>
-                            <button onclick="event.stopPropagation(); openBookingModal('SEO et Référencement Naturel', 5500.00)" class="w-12 h-12 rounded-full bg-gray-50 text-dark flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 transform group-hover:rotate-90">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
                         </div>
-                         <div class="glow-effect opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     </div>
                 </div>
             </div>
         </section>
         
-        <!-- About Section Minimalist -->
-        <section id="about" class="py-32 bg-white relative overflow-hidden">
+        <!-- About Section with DaisyUI -->
+        <section id="about" class="py-32 bg-base-100 relative overflow-hidden">
             <!-- Background Decoration -->
-            <div class="absolute top-0 right-0 w-1/3 h-full bg-gray-50 skew-x-12 opacity-50 -z-10"></div>
+            <div class="absolute top-0 right-0 w-1/3 h-full bg-base-200/50 skew-x-12 opacity-50 -z-10"></div>
             
             <div class="container mx-auto px-4">
                 <div class="max-w-4xl mx-auto text-center mb-20">
-                    <h2 class="text-3xl lg:text-4xl font-bold text-dark mb-6 title-animation">
+                    <h2 class="text-3xl lg:text-4xl font-bold text-neutral mb-6">
                         L'Expertise au service de votre croissance.
                     </h2>
-                    <p class="text-lg text-gray-500 font-light leading-relaxed fade-in-up delay-200">
+                    <p class="text-lg text-base-content/60 leading-relaxed">
                         Depuis plus de 10 ans, nous redéfinissons les standards du marketing local.
                         Une approche data-driven combinée à une compréhension humaine de vos enjeux.
                     </p>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                     <div class="text-center group p-8 rounded-3xl border border-gray-100 bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
-                        <div class="w-16 h-16 mx-auto mb-8 bg-blue-50 rounded-2xl flex items-center justify-center text-primary text-2xl group-hover:scale-110 transition-transform duration-500">
-                            <i class="fas fa-award"></i>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300">
+                        <div class="card-body items-center text-center">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary/10 text-primary w-16 rounded-2xl">
+                                    <i class="fas fa-award text-2xl"></i>
+                                </div>
+                            </div>
+                            <h3 class="card-title text-xl">Certifié & Reconnu</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">Partenaire privilégié des plateformes majeures, nous maîtrisons les algorithmes pour garantir votre conformité.</p>
                         </div>
-                        <h3 class="text-xl font-bold text-dark mb-4">Certifié & Reconnu</h3>
-                        <p class="text-gray-500 text-sm leading-relaxed">Partenaire privilégié des plateformes majeures, nous maîtrisons les algorithmes pour garantir votre conformité.</p>
                     </div>
                     
-                    <div class="text-center group p-8 rounded-3xl border border-gray-100 bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
-                        <div class="w-16 h-16 mx-auto mb-8 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 text-2xl group-hover:scale-110 transition-transform duration-500">
-                            <i class="fas fa-chart-line"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300">
+                        <div class="card-body items-center text-center">
+                            <div class="avatar placeholder">
+                                <div class="bg-accent/10 text-accent w-16 rounded-2xl">
+                                    <i class="fas fa-chart-line text-2xl"></i>
+                                </div>
+                            </div>
+                            <h3 class="card-title text-xl">Focus ROI</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">Chaque action est mesurée. Des rapports transparents et détaillés pour suivre votre évolution jour après jour.</p>
                         </div>
-                        <h3 class="text-xl font-bold text-dark mb-4">Focus ROI</h3>
-                        <p class="text-gray-500 text-sm leading-relaxed">Chaque action est mesurée. Des rapports transparents et détaillés pour suivre votre évolution jour après jour.</p>
                     </div>
                     
-                    <div class="text-center group p-8 rounded-3xl border border-gray-100 bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
-                        <div class="w-16 h-16 mx-auto mb-8 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 text-2xl group-hover:scale-110 transition-transform duration-500">
-                            <i class="fas fa-users-cog"></i>
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300">
+                        <div class="card-body items-center text-center">
+                            <div class="avatar placeholder">
+                                <div class="bg-success/10 text-success w-16 rounded-2xl">
+                                    <i class="fas fa-users-cog text-2xl"></i>
+                                </div>
+                            </div>
+                            <h3 class="card-title text-xl">Humain avant tout</h3>
+                            <p class="text-base-content/60 text-sm leading-relaxed">Un expert dédié vous accompagne personnellement. Pas de robots, des vraies réponses et une stratégie sur mesure.</p>
                         </div>
-                        <h3 class="text-xl font-bold text-dark mb-4">Humain avant tout</h3>
-                        <p class="text-gray-500 text-sm leading-relaxed">Un expert dédié vous accompagne personnellement. Pas de robots, des vraies réponses et une stratégie sur mesure.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Testimonials Section NEW (Preuve Sociale) -->
-        <section id="temoignages" class="py-24 bg-gray-900 text-white relative overflow-hidden">
+        <!-- Testimonials Section with DaisyUI -->
+        <section id="temoignages" class="py-24 bg-neutral text-neutral-content relative overflow-hidden">
             <!-- Decorative Elements -->
             <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
                 <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary rounded-full blur-[120px]"></div>
-                <div class="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] bg-purple-600 rounded-full blur-[100px]"></div>
+                <div class="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] bg-accent rounded-full blur-[100px]"></div>
             </div>
 
             <div class="container mx-auto px-4 relative z-10">
                 <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
                     <div class="max-w-xl">
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-semibold mb-6 backdrop-blur-sm border border-white/10">
-                            <span class="w-2 h-2 rounded-full bg-green-400"></span> 500+ Clients Heureux
+                        <div class="badge badge-primary badge-lg gap-2 mb-6">
+                            <span class="loading loading-dot loading-xs text-success"></span> 500+ Clients Heureux
                         </div>
                         <h2 class="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
                             Ils ont transformé <br>
-                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">leur visibilité</span>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">leur visibilité</span>
                         </h2>
                     </div>
                     <div class="flex items-center gap-4">
-                        <button class="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center hover:bg-white hover:text-dark transition-all">
+                        <button class="btn btn-circle btn-outline border-base-content/20 hover:bg-base-content hover:text-neutral">
                             <i class="fas fa-arrow-left"></i>
                         </button>
-                        <button class="w-12 h-12 rounded-full bg-white text-dark flex items-center justify-center hover:bg-gray-200 transition-all">
+                        <button class="btn btn-circle bg-base-content text-neutral border-0 hover:bg-base-content/80">
                             <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>
@@ -478,58 +538,82 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Avis 1 -->
-                    <div class="glass-dark p-8 rounded-3xl hover:-translate-y-2 transition-all duration-300">
-                        <div class="flex items-center gap-1 text-yellow-400 text-sm mb-6">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p class="text-gray-300 text-lg mb-8 leading-relaxed">
-                            "LMP a complètement changé notre approche locale. En 3 mois, nos appels entrants ont doublé. Le tableau de bord est clair et le support ultra réactif."
-                        </p>
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg">
-                                JD
+                    <div class="card bg-base-100/5 border border-base-content/10 hover:-translate-y-2 transition-all duration-300">
+                        <div class="card-body">
+                            <div class="rating rating-sm mb-4">
+                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
                             </div>
-                            <div>
-                                <div class="font-bold text-white">Jean Dupont</div>
-                                <div class="text-sm text-gray-500">Restaurateur, Bruxelles</div>
+                            <p class="text-base-content/80 text-lg mb-6 leading-relaxed">
+                                "LMP a complètement changé notre approche locale. En 3 mois, nos appels entrants ont doublé. Le tableau de bord est clair et le support ultra réactif."
+                            </p>
+                            <div class="flex items-center gap-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-gradient-to-br from-primary to-info w-12 rounded-full text-white font-bold">
+                                        JD
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-bold">Jean Dupont</div>
+                                    <div class="text-sm opacity-50">Restaurateur, Bruxelles</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Avis 2 -->
-                    <div class="glass-dark p-8 rounded-3xl hover:-translate-y-2 transition-all duration-300 bg-white/5 border-white/10">
-                        <div class="flex items-center gap-1 text-yellow-400 text-sm mb-6">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p class="text-gray-300 text-lg mb-8 leading-relaxed">
-                            "Le service de gestion des avis m'a sauvé un temps précieux. Je ne m'occupe plus de rien, et ma note moyenne est passée de 3.8 à 4.7. Indispensable."
-                        </p>
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg">
-                                SM
+                    <div class="card bg-base-100/10 border border-base-content/20 hover:-translate-y-2 transition-all duration-300">
+                        <div class="card-body">
+                            <div class="rating rating-sm mb-4">
+                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
                             </div>
-                            <div>
-                                <div class="font-bold text-white">Sophie Martin</div>
-                                <div class="text-sm text-gray-500">Institut de Beauté, Liege</div>
+                            <p class="text-base-content/80 text-lg mb-6 leading-relaxed">
+                                "Le service de gestion des avis m'a sauvé un temps précieux. Je ne m'occupe plus de rien, et ma note moyenne est passée de 3.8 à 4.7. Indispensable."
+                            </p>
+                            <div class="flex items-center gap-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-gradient-to-br from-accent to-pink-500 w-12 rounded-full text-white font-bold">
+                                        SM
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-bold">Sophie Martin</div>
+                                    <div class="text-sm opacity-50">Institut de Beauté, Liege</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Avis 3 -->
-                    <div class="glass-dark p-8 rounded-3xl hover:-translate-y-2 transition-all duration-300">
-                        <div class="flex items-center gap-1 text-yellow-400 text-sm mb-6">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        </div>
-                        <p class="text-gray-300 text-lg mb-8 leading-relaxed">
-                            "L'équipe technique est impressionnante. Ils ont réglé un problème de fiche suspendue en 48h que je traînais depuis des mois. Merci pour l'efficacité."
-                        </p>
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-lg">
-                                PL
+                    <div class="card bg-base-100/5 border border-base-content/10 hover:-translate-y-2 transition-all duration-300">
+                        <div class="card-body">
+                            <div class="rating rating-sm mb-4">
+                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" />
                             </div>
-                            <div>
-                                <div class="font-bold text-white">Pierre Lambert</div>
-                                <div class="text-sm text-gray-500">Garage Automobile, Namur</div>
+                            <p class="text-base-content/80 text-lg mb-6 leading-relaxed">
+                                "L'équipe technique est impressionnante. Ils ont réglé un problème de fiche suspendue en 48h que je traînais depuis des mois. Merci pour l'efficacité."
+                            </p>
+                            <div class="flex items-center gap-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-gradient-to-br from-success to-emerald-500 w-12 rounded-full text-white font-bold">
+                                        PL
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-bold">Pierre Lambert</div>
+                                    <div class="text-sm opacity-50">Garage Automobile, Namur</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -537,24 +621,25 @@
             </div>
         </section>
         
-        <!-- Contact Section Premium -->
-        <section id="contact" class="py-32 bg-dark text-white relative overflow-hidden">
+        <!-- Contact Section with DaisyUI -->
+        <section id="contact" class="py-32 bg-neutral text-neutral-content relative overflow-hidden">
              <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
              <!-- Minimalist Gradient Glow -->
              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 blur-[150px] rounded-full pointer-events-none"></div>
              
              <div class="container mx-auto px-4 text-center relative z-10">
-                <h2 class="text-4xl lg:text-6xl font-bold mb-8 title-animation tracking-tight">
+                <h2 class="text-4xl lg:text-6xl font-bold mb-8 tracking-tight">
                     Prêt pour l'étape suivante ?
                 </h2>
-                <p class="text-xl text-gray-400 mb-12 max-w-2xl mx-auto fade-in-up delay-200 font-light">
+                <p class="text-xl text-base-content/60 mb-12 max-w-2xl mx-auto">
                     Discutons de vos objectifs. L'audit initial est offert et sans engagement.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center button-animation delay-300">
-                    <button onclick="openAppointmentModal('Consultation Gratuite')" class="px-8 py-4 bg-white text-dark rounded-full font-bold hover:bg-gray-100 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] transform hover:-translate-y-1">
+                <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                    <button onclick="openAppointmentModal('Consultation Gratuite')" class="btn btn-lg btn-primary rounded-full shadow-lg hover:shadow-xl transition-all">
+                        <i class="fas fa-calendar-check mr-2"></i>
                         Réserver mon audit
                     </button>
-                    <a href="mailto:lmp.assistance@gmail.com" class="text-gray-400 hover:text-white font-medium flex items-center gap-2 transition-colors">
+                    <a href="mailto:lmp.assistance@gmail.com" class="btn btn-lg btn-ghost text-base-content/60 hover:text-base-content gap-2">
                         <span>Écrivez-nous</span>
                         <i class="fas fa-arrow-right text-sm"></i>
                     </a>

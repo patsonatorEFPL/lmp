@@ -9,7 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS + DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -27,7 +28,27 @@
                         'inter': ['Inter', 'sans-serif']
                     }
                 }
-            }
+            },
+            // DaisyUI configuration
+            daisyui: {
+                themes: [
+                    {
+                        lmp: {
+                            "primary": "#1a3cff",
+                            "secondary": "#6c757d",
+                            "accent": "#8b5cf6",
+                            "neutral": "#212529",
+                            "base-100": "#ffffff",
+                            "info": "#3b82f6",
+                            "success": "#22c55e",
+                            "warning": "#f59e0b",
+                            "error": "#ef4444",
+                        },
+                    },
+                    "dark",
+                    "light",
+                ],
+            },
         }
     </script>
     <script>

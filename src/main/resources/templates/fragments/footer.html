@@ -2,69 +2,53 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
     <!-- Footer Fragment -->
-    <footer th:fragment="footer" class="bg-dark text-gray-400 py-16 text-sm font-light">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-                <!-- Logo et Description -->
-                <div class="md:col-span-2 space-y-6">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl font-bold tracking-tight text-white">LMP</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-white/10 text-white tracking-widest border border-white/10">Premium</span>
-                    </div>
-                    <p class="text-gray-400 mb-6 leading-relaxed max-w-sm">
-                        Votre partenaire de confiance pour la visibilité locale et le marketing digital.
-                        Nous aidons les entreprises à se démarquer et à prospérer.
-                    </p>
-                    <div class="flex gap-4">
-                        <a href="#" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white hover:text-dark transition-all duration-300">
-                            <i class="fab fa-twitter text-xs"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white hover:text-dark transition-all duration-300">
-                            <i class="fab fa-linkedin-in text-xs"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white hover:text-dark transition-all duration-300">
-                            <i class="fab fa-instagram text-xs"></i>
-                        </a>
-                    </div>
+    <footer th:fragment="footer" class="bg-neutral text-neutral-content">
+        <div class="footer p-10 container mx-auto">
+            <aside>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-2xl font-bold tracking-tight">LMP</span>
+                    <span class="badge badge-primary badge-outline text-xs">PREMIUM</span>
                 </div>
-
-                <!-- Navigation -->
-                <div>
-                    <h5 class="text-white font-medium mb-6">Explorer</h5>
-                    <ul class="space-y-3">
-                        <li><a href="/" class="hover:text-white transition-colors">Accueil</a></li>
-                        <li><a href="/services" class="hover:text-white transition-colors">Nos Services</a></li>
-                        <li><a href="/map" class="hover:text-white transition-colors">Carte Interactive</a></li>
-                        <li><a href="/about" class="hover:text-white transition-colors">L'Agence</a></li>
-                    </ul>
+                <p class="max-w-xs opacity-70">
+                    Votre partenaire de confiance pour la visibilité locale.<br>
+                    Propulsant les entreprises depuis 2024.
+                </p>
+                <div class="flex gap-4 mt-4">
+                     <a class="link link-hover opacity-70 hover:opacity-100 transition-opacity"><i class="fab fa-twitter text-xl"></i></a>
+                     <a class="link link-hover opacity-70 hover:opacity-100 transition-opacity"><i class="fab fa-linkedin text-xl"></i></a>
+                     <a class="link link-hover opacity-70 hover:opacity-100 transition-opacity"><i class="fab fa-instagram text-xl"></i></a>
                 </div>
-
-                <!-- Contact -->
-                <div>
-                    <h5 class="text-white font-medium mb-6">Contact</h5>
-                    <div class="space-y-4">
-                        <a href="mailto:lmp.assistance@gmail.com" class="block hover:text-white transition-colors">lmp.assistance@gmail.com</a>
-                        <address class="not-italic">
-                            Rue Gatti De Gamond 97,<br>
-                            1180 Uccle, Belgique
-                        </address>
-                        <div class="text-gray-500">Lun - Ven: 9h00 - 18h00</div>
-                    </div>
+            </aside>
+            
+            <nav>
+                <h6 class="footer-title opacity-100">Explorer</h6>
+                <a href="/" class="link link-hover opacity-70 hover:opacity-100">Accueil</a>
+                <a href="/services" class="link link-hover opacity-70 hover:opacity-100">Nos Services</a>
+                <a href="/map" class="link link-hover opacity-70 hover:opacity-100">Carte Interactive</a>
+                <a href="/about" class="link link-hover opacity-70 hover:opacity-100">L'Agence</a>
+            </nav>
+            
+            <nav>
+                <h6 class="footer-title opacity-100">Contact</h6>
+                <a href="mailto:lmp.assistance@gmail.com" class="link link-hover opacity-70 hover:opacity-100">lmp.assistance@gmail.com</a>
+                <div class="opacity-70">
+                    Rue Gatti De Gamond 97,<br>
+                    1180 Uccle, Belgique
                 </div>
-            </div>
-
-            <!-- Bottom Bar -->
-            <div class="border-t border-gray-800 pt-8">
-                <div class="flex flex-col md:flex-row justify-between items-center">
-                    <div class="text-gray-500 text-sm mb-4 md:mb-0">
-                        &copy; 2024 LMP (Local Map Profil). Tous droits réservés.
-                    </div>
-                    <div class="flex space-x-6 text-sm">
-                        <a href="/privacy" class="text-gray-400 hover:text-white transition-colors">Politique de confidentialité</a>
-                        <a href="/terms" class="text-gray-400 hover:text-white transition-colors">Conditions d'utilisation</a>
-                    </div>
+                <div class="badge badge-ghost mt-2">Lun - Ven: 9h - 18h</div>
+            </nav>
+        </div>
+        
+        <div class="footer px-10 py-6 border-t border-base-content/10 bg-neutral text-neutral-content container mx-auto">
+             <aside class="items-center grid-flow-col">
+                <p class="opacity-70">&copy; 2024 LMP (Local Map Profil). Tous droits réservés.</p>
+             </aside>
+             <nav class="md:place-self-center md:justify-self-end">
+                <div class="grid grid-flow-col gap-6">
+                    <a href="/privacy" class="link link-hover text-xs opacity-70 hover:opacity-100">Confidentialité</a>
+                    <a href="/terms" class="link link-hover text-xs opacity-70 hover:opacity-100">Conditions</a>
                 </div>
-            </div>
+             </nav>
         </div>
     </footer>
 </body>
