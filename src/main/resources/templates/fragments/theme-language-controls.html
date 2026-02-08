@@ -1,35 +1,7 @@
 <!-- Theme Toggle and Language Controls Fragment -->
-<div th:fragment="theme-language-controls">
+<div th:fragment="theme-language-controls" class="flex items-center gap-4">
     <style>
-        /* Theme Toggle - Navigation */
-        .nav-theme-toggle {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-            padding: 0.5rem 0.75rem;
-            border-radius: 8px;
-            background: #1a2230;
-            border: 1px solid #2a3447;
-            transition: all 0.2s ease;
-        }
 
-        .nav-theme-toggle:hover {
-            border-color: #135bec;
-        }
-
-        .nav-theme-toggle i {
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-theme-toggle .fa-sun {
-            color: #fbbf24;
-        }
-
-        .nav-theme-toggle .fa-moon {
-            color: #6366f1;
-        }
 
         /* GTranslate Dropdown - Navigation */
         .nav-gtranslate-wrapper {
@@ -135,10 +107,10 @@
     </style>
 
     <!-- Theme Toggle Button -->
-    <div class="nav-theme-toggle" onclick="toggleNavTheme()" title="Toggle theme">
-        <i class="fas fa-moon"></i>
-        <i class="fas fa-sun" style="display: none;"></i>
-    </div>
+    <button type="button" class="nav-theme-toggle text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-slate-200 dark:focus:ring-slate-700 rounded-lg text-sm p-2.5 transition-colors" onclick="toggleNavTheme()" title="Toggle theme">
+        <span class="material-symbols-outlined notranslate" translate="no" id="theme-toggle-dark-icon" style="display: none;">dark_mode</span>
+        <span class="material-symbols-outlined notranslate" translate="no" id="theme-toggle-light-icon" style="display: none;">light_mode</span>
+    </button>
 
     <!-- GTranslate Dropdown -->
     <div class="nav-gtranslate-wrapper">
@@ -203,15 +175,18 @@
         // Theme Toggle
         function toggleNavTheme() {
             const body = document.body;
-            const currentTheme = body.classList.contains('dark') ? 'dark' : 'light';
+            const html = document.documentElement;
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
             if (newTheme === 'dark') {
                 body.classList.add('dark');
+                html.classList.add('dark');
                 body.style.backgroundColor = '#101622';
                 body.style.color = '#ffffff';
             } else {
                 body.classList.remove('dark');
+                html.classList.remove('dark');
                 body.style.backgroundColor = '#ffffff';
                 body.style.color = '#1f2937';
             }
@@ -221,8 +196,8 @@
         }
 
         function updateNavThemeIcon(theme) {
-            const moonIcon = document.querySelector('.nav-theme-toggle .fa-moon');
-            const sunIcon = document.querySelector('.nav-theme-toggle .fa-sun');
+            const moonIcon = document.getElementById('theme-toggle-dark-icon');
+            const sunIcon = document.getElementById('theme-toggle-light-icon');
             
             if (moonIcon && sunIcon) {
                 if (theme === 'dark') {
@@ -305,12 +280,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize theme
             const savedTheme = localStorage.getItem('lmp-theme') || 'dark';
+            const html = document.documentElement;
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark');
+                html.classList.add('dark');
                 document.body.style.backgroundColor = '#101622';
                 document.body.style.color = '#ffffff';
             } else {
                 document.body.classList.remove('dark');
+                html.classList.remove('dark');
                 document.body.style.backgroundColor = '#ffffff';
                 document.body.style.color = '#1f2937';
             }
