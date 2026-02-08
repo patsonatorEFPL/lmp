@@ -64,16 +64,28 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 0.875rem;
-            background: #1a2230;
-            border: 1px solid #2a3447;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 9999px;
             cursor: pointer;
             transition: all 0.2s ease;
             font-size: 0.875rem;
+            color: #1f2937;
+        }
+        
+        /* Dark mode overrides */
+        .dark .gtranslate-dropdown {
+            background: #1a2230;
+            border-color: #2a3447;
             color: #ffffff;
         }
         
         .gtranslate-dropdown:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+        }
+
+        .dark .gtranslate-dropdown:hover {
             border-color: #135bec;
             background: #2a3447;
         }
@@ -81,8 +93,14 @@
         .gtranslate-dropdown i,
         .gtranslate-dropdown .material-symbols-outlined {
             font-size: 1rem;
-            color: #94a3b8;
+            font-size: 1rem;
+            color: #64748b;
             transition: transform 0.2s;
+        }
+
+        .dark .gtranslate-dropdown i,
+        .dark .gtranslate-dropdown .material-symbols-outlined {
+            color: #94a3b8;
         }
         
         .gtranslate-dropdown.open .material-symbols-outlined {
@@ -93,10 +111,10 @@
             position: absolute;
             top: calc(100% + 0.5rem);
             right: 0;
-            background: #1a2230;
-            border: 1px solid #2a3447;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 0.75rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             opacity: 0;
             visibility: hidden;
@@ -104,6 +122,12 @@
             transition: all 0.2s ease;
             z-index: 100;
             min-width: 160px;
+        }
+
+        .dark .gtranslate-menu {
+            background: #1a2230;
+            border-color: #2a3447;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
         
         .gtranslate-menu.open {
@@ -117,17 +141,30 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1rem;
-            color: #ffffff;
+            color: #1f2937;
             text-decoration: none;
             font-size: 0.875rem;
             transition: background 0.2s;
         }
+
+        .dark .gtranslate-menu a {
+            color: #ffffff;
+        }
         
         .gtranslate-menu a:hover {
+            background: #f1f5f9;
+        }
+
+        .dark .gtranslate-menu a:hover {
             background: #2a3447;
         }
         
         .gtranslate-menu a.active {
+            color: #2563eb;
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .dark .gtranslate-menu a.active {
             color: #135bec;
             background: rgba(19, 91, 236, 0.1);
         }
