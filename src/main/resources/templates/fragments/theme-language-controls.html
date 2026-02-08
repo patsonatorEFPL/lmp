@@ -1,0 +1,351 @@
+<!-- Theme Toggle and Language Controls Fragment -->
+<div th:fragment="theme-language-controls">
+    <style>
+        /* Theme Toggle - Navigation */
+        .nav-theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            background: #1a2230;
+            border: 1px solid #2a3447;
+            transition: all 0.2s ease;
+        }
+
+        .nav-theme-toggle:hover {
+            border-color: #135bec;
+        }
+
+        .nav-theme-toggle i {
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-theme-toggle .fa-sun {
+            color: #fbbf24;
+        }
+
+        .nav-theme-toggle .fa-moon {
+            color: #6366f1;
+        }
+
+        /* GTranslate Dropdown - Navigation */
+        .nav-gtranslate-wrapper {
+            position: relative;
+        }
+
+        .nav-gtranslate-dropdown {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: #1a2230;
+            border: 1px solid #2a3447;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            color: #ffffff;
+        }
+
+        .nav-gtranslate-dropdown:hover {
+            border-color: #135bec;
+        }
+
+        .nav-gtranslate-dropdown i {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            transition: transform 0.2s;
+        }
+
+        .nav-gtranslate-dropdown.open i {
+            transform: rotate(180deg);
+        }
+
+        .nav-gtranslate-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: #1a2230;
+            border: 1px solid #2a3447;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            z-index: 100;
+            min-width: 160px;
+        }
+
+        .nav-gtranslate-menu.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-gtranslate-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .nav-gtranslate-menu a:hover {
+            background: #2a3447;
+        }
+
+        .nav-gtranslate-menu a.active {
+            color: #135bec;
+        }
+
+        .nav-gtranslate-menu img {
+            width: 20px;
+            height: 14px;
+            border-radius: 2px;
+            object-fit: cover;
+        }
+
+        /* Light mode overrides */
+        body:not(.dark) .nav-theme-toggle,
+        body:not(.dark) .nav-gtranslate-dropdown,
+        body:not(.dark) .nav-gtranslate-menu {
+            background: #ffffff;
+            border-color: #e5e7eb;
+        }
+
+        body:not(.dark) .nav-gtranslate-dropdown {
+            color: #374151;
+        }
+
+        body:not(.dark) .nav-gtranslate-menu a {
+            color: #374151;
+        }
+
+        body:not(.dark) .nav-gtranslate-menu a:hover {
+            background: #f3f4f6;
+        }
+    </style>
+
+    <!-- Theme Toggle Button -->
+    <div class="nav-theme-toggle" onclick="toggleNavTheme()" title="Toggle theme">
+        <i class="fas fa-moon"></i>
+        <i class="fas fa-sun" style="display: none;"></i>
+    </div>
+
+    <!-- GTranslate Dropdown -->
+    <div class="nav-gtranslate-wrapper">
+        <div class="nav-gtranslate-dropdown" onclick="toggleNavGTranslateMenu()">
+            <img id="nav-current-flag" src="https://flagcdn.com/w40/us.png" alt="" style="width: 20px; height: 14px; border-radius: 2px;">
+            <span id="nav-current-lang">EN</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="nav-gtranslate-menu" id="nav-gtranslate-menu">
+            <a href="#" onclick="changeNavGTranslateLang('en'); return false;" class="active" data-lang="en">
+                <img src="https://flagcdn.com/w40/us.png" alt="EN">
+                <span>English</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('fr'); return false;" data-lang="fr">
+                <img src="https://flagcdn.com/w40/fr.png" alt="FR">
+                <span>Français</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('es'); return false;" data-lang="es">
+                <img src="https://flagcdn.com/w40/es.png" alt="ES">
+                <span>Español</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('de'); return false;" data-lang="de">
+                <img src="https://flagcdn.com/w40/de.png" alt="DE">
+                <span>Deutsch</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('it'); return false;" data-lang="it">
+                <img src="https://flagcdn.com/w40/it.png" alt="IT">
+                <span>Italiano</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('nl'); return false;" data-lang="nl">
+                <img src="https://flagcdn.com/w40/nl.png" alt="NL">
+                <span>Nederlands</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('pt'); return false;" data-lang="pt">
+                <img src="https://flagcdn.com/w40/br.png" alt="PT">
+                <span>Português</span>
+            </a>
+            <a href="#" onclick="changeNavGTranslateLang('lb'); return false;" data-lang="lb">
+                <img src="https://flagcdn.com/w40/lu.png" alt="LB">
+                <span>Lëtzebuergesch</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Hidden GTranslate wrapper -->
+    <div class="gtranslate_wrapper" style="display: none;"></div>
+
+    <script>
+        // Language configuration
+        const navLangConfig = {
+            en: { name: 'EN', flag: 'https://flagcdn.com/w40/us.png' },
+            fr: { name: 'FR', flag: 'https://flagcdn.com/w40/fr.png' },
+            es: { name: 'ES', flag: 'https://flagcdn.com/w40/es.png' },
+            de: { name: 'DE', flag: 'https://flagcdn.com/w40/de.png' },
+            it: { name: 'IT', flag: 'https://flagcdn.com/w40/it.png' },
+            nl: { name: 'NL', flag: 'https://flagcdn.com/w40/nl.png' },
+            pt: { name: 'PT', flag: 'https://flagcdn.com/w40/br.png' },
+            lb: { name: 'LB', flag: 'https://flagcdn.com/w40/lu.png' }
+        };
+        const navSupportedLangs = ['en', 'fr', 'es', 'de', 'it', 'nl', 'pt', 'lb'];
+
+        // Theme Toggle
+        function toggleNavTheme() {
+            const body = document.body;
+            const currentTheme = body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            if (newTheme === 'dark') {
+                body.classList.add('dark');
+                body.style.backgroundColor = '#101622';
+                body.style.color = '#ffffff';
+            } else {
+                body.classList.remove('dark');
+                body.style.backgroundColor = '#ffffff';
+                body.style.color = '#1f2937';
+            }
+            
+            localStorage.setItem('lmp-theme', newTheme);
+            updateNavThemeIcon(newTheme);
+        }
+
+        function updateNavThemeIcon(theme) {
+            const moonIcon = document.querySelector('.nav-theme-toggle .fa-moon');
+            const sunIcon = document.querySelector('.nav-theme-toggle .fa-sun');
+            
+            if (moonIcon && sunIcon) {
+                if (theme === 'dark') {
+                    moonIcon.style.display = 'block';
+                    sunIcon.style.display = 'none';
+                } else {
+                    moonIcon.style.display = 'none';
+                    sunIcon.style.display = 'block';
+                }
+            }
+        }
+
+        // GTranslate Menu Toggle
+        function toggleNavGTranslateMenu() {
+            const dropdown = document.querySelector('.nav-gtranslate-dropdown');
+            const menu = document.getElementById('nav-gtranslate-menu');
+            if (dropdown) dropdown.classList.toggle('open');
+            if (menu) menu.classList.toggle('open');
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-gtranslate-wrapper')) {
+                const dropdown = document.querySelector('.nav-gtranslate-dropdown');
+                const menu = document.getElementById('nav-gtranslate-menu');
+                if (dropdown) dropdown.classList.remove('open');
+                if (menu) menu.classList.remove('open');
+            }
+        });
+
+        // Change Language
+        function changeNavGTranslateLang(lang) {
+            var config = navLangConfig[lang];
+            if (!config) return;
+            
+            // Update visual
+            document.getElementById('nav-current-lang').textContent = config.name;
+            document.getElementById('nav-current-flag').src = config.flag;
+            
+            // Update active state
+            document.querySelectorAll('.nav-gtranslate-menu a').forEach(a => {
+                a.classList.remove('active');
+                if (a.dataset.lang === lang) a.classList.add('active');
+            });
+            
+            // Close menu
+            document.querySelector('.nav-gtranslate-dropdown').classList.remove('open');
+            document.getElementById('nav-gtranslate-menu').classList.remove('open');
+            
+            // Set GTranslate cookie
+            var date = new Date();
+            date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+            document.cookie = "googtrans=/en/" + lang + "; expires=" + date.toUTCString() + "; path=/";
+            document.cookie = "googtrans=/en/" + lang + "; expires=" + date.toUTCString() + "; path=/; domain=." + window.location.hostname;
+            
+            // Reload to apply translation
+            window.location.reload();
+        }
+
+        // Get browser language
+        function getNavBrowserLang() {
+            const browserLang = navigator.language || navigator.userLanguage;
+            const shortLang = browserLang.split('-')[0].toLowerCase();
+            if (navSupportedLangs.includes(shortLang)) {
+                return shortLang;
+            }
+            return 'en';
+        }
+
+        // Get current language from cookie
+        function getNavCurrentLang() {
+            var match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+            if (match && navSupportedLangs.includes(match[1])) {
+                return match[1];
+            }
+            return getNavBrowserLang();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            const savedTheme = localStorage.getItem('lmp-theme') || 'dark';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark');
+                document.body.style.backgroundColor = '#101622';
+                document.body.style.color = '#ffffff';
+            } else {
+                document.body.classList.remove('dark');
+                document.body.style.backgroundColor = '#ffffff';
+                document.body.style.color = '#1f2937';
+            }
+            updateNavThemeIcon(savedTheme);
+            
+            // Initialize language
+            var currentLang = getNavCurrentLang();
+            var config = navLangConfig[currentLang] || navLangConfig['en'];
+            
+            var flagEl = document.getElementById('nav-current-flag');
+            var langEl = document.getElementById('nav-current-lang');
+            if (flagEl) flagEl.src = config.flag;
+            if (langEl) langEl.textContent = config.name;
+            
+            document.querySelectorAll('.nav-gtranslate-menu a').forEach(a => {
+                a.classList.remove('active');
+                if (a.dataset.lang === currentLang) a.classList.add('active');
+            });
+        });
+    </script>
+</div>
+
+<!-- GTranslate Configuration (to be added at end of body) -->
+<div th:fragment="gtranslate-config">
+    <script>
+        window.gtranslateSettings = {
+            "default_language": "en",
+            "detect_browser_language": true,
+            "languages": ["en", "fr", "es", "de", "it", "nl", "pt", "lb"],
+            "wrapper_selector": ".gtranslate_wrapper",
+            "switcher_horizontal_position": "left",
+            "switcher_vertical_position": "bottom",
+            "flag_style": "3d",
+            "alt_flags": {"en": "usa", "pt": "brazil", "es": "spain"}
+        };
+    </script>
+    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+</div>

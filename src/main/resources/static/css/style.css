@@ -146,11 +146,12 @@ body {
     filter: blur(20px);
 }
 
-/* Premium Service Cards */
+/* Premium Service Cards - Dark Mode */
+/* Premium Service Cards - Light Mode */
 .service-card-premium {
-    background: white;
+    background: #ffffff;
     border-radius: 16px;
-    border: 1px solid rgba(229, 231, 235, 0.5);
+    border: 1px solid #e2e8f0;
     padding: 2rem;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     height: 100%;
@@ -167,7 +168,7 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), transparent);
+    background: linear-gradient(90deg, #2563eb, transparent);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -175,10 +176,24 @@ body {
 .service-card-premium:hover {
     transform: translateY(-8px);
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #60a5fa;
 }
 
 .service-card-premium:hover::after {
     opacity: 1;
+}
+
+/* Service card text colors for light mode */
+.service-card-premium h3 {
+    color: #1f2937;
+}
+
+.service-card-premium p {
+    color: #64748b;
+}
+
+.service-card-premium span {
+    color: #1f2937;
 }
 
 /* Buttons Premium */
