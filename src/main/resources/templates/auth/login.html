@@ -75,7 +75,7 @@
     
     <!-- Theme & Language Toggles -->
     <div class="absolute top-6 right-6 z-20">
-        <div th:replace="fragments/theme-language-controls :: theme-language-controls"></div>
+        <th:block th:replace="~{fragments/theme-language-controls :: theme-language-controls}"></th:block>
     </div>
 
     <div class="flex h-full w-full flex-col lg:flex-row">
@@ -273,6 +273,6 @@
     </script>
 
     <!-- GTranslate Config -->
-    <div th:replace="fragments/theme-language-controls :: gtranslate-config"></div>
+    <th:block th:replace="~{fragments/theme-language-controls :: gtranslate-config}"></th:block>
 </body>
 </html>

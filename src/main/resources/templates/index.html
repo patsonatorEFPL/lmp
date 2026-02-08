@@ -6,16 +6,16 @@
     <title>LMP - Local Map Profil | Excellence Digitale</title>
     <meta name="description" content="Nous transformons votre visibilité locale. Expertise Premium en référencement, gestion d'avis et présence digitale.">
     
+    <!-- CSRF Token pour sécurité (must be before fragment includes) -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
     <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
+    <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     
     <!-- Animations de défilement -->
-    <div th:replace="fragments/scroll-animations :: scroll-animations-css"></div>
-    
-    <!-- CSRF Token pour sécurité -->
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <th:block th:replace="~{fragments/scroll-animations :: scroll-animations-css}"></th:block>
     
     <!-- Authentication Info pour JavaScript -->
     <script th:inline="javascript">
@@ -28,7 +28,7 @@
 </head>
 <body class="min-h-screen bg-white">
     <!-- Header -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+    <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <main>
         <!-- Hero Section Premium -->
@@ -564,16 +564,16 @@
     </main>
     
     <!-- Modal unifié pour l'achat de services -->
-    <div th:replace="fragments/booking-modal :: booking-modal"></div>
+    <th:block th:replace="~{fragments/booking-modal :: booking-modal}"></th:block>
     
     <!-- Modal de prise de rendez-vous -->
-    <div th:replace="fragments/appointment-modal-global :: appointment-modal-global"></div>
+    <th:block th:replace="~{fragments/appointment-modal-global :: appointment-modal-global}"></th:block>
     
     <!-- Bouton flottant CONTACTEZ-NOUS -->
-    <div th:replace="fragments/floating-contact-button :: floating-contact-button"></div>
+    <th:block th:replace="~{fragments/floating-contact-button :: floating-contact-button}"></th:block>
     
     <!-- Footer -->
-    <div th:replace="fragments/footer :: footer"></div>
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
 
 
     <!-- JavaScript -->
@@ -650,7 +650,7 @@
     <script th:src="@{/js/appointment-modal-v3.js(v='4.3')}"></script>
     
     <!-- Script des animations de défilement -->
-    <div th:replace="fragments/scroll-animations :: scroll-animations-js"></div>
+    <th:block th:replace="~{fragments/scroll-animations :: scroll-animations-js}"></th:block>
     
     <!-- Initialisation du modal -->
     <script>
@@ -662,6 +662,6 @@
         });
     </script>
     <!-- GTranslate Config -->
-    <div th:replace="fragments/theme-language-controls :: gtranslate-config"></div>
+    <th:block th:replace="~{fragments/theme-language-controls :: gtranslate-config}"></th:block>
 </body>
 </html>

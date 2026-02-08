@@ -7,11 +7,11 @@
     <meta name="description" content="Conditions d'utilisation de LMP Local Map Profil - Règles et réglementations pour l'utilisation de notre site web">
     
     <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
+    <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
 </head>
 <body class="min-h-screen bg-white">
     <!-- Navigation -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+    <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <!-- Header Section -->
     <section class="py-16 bg-gradient-to-br from-[#f7f8fa] to-white">
@@ -181,15 +181,15 @@
     </section>
 
     <!-- Bouton flottant CONTACTEZ-NOUS -->
-    <div th:replace="fragments/floating-contact-button :: floating-contact-button"></div>
+    <th:block th:replace="~{fragments/floating-contact-button :: floating-contact-button}"></th:block>
     
     <!-- Footer -->
-    <div th:replace="fragments/footer :: footer"></div>
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
 
     <!-- Booking Modal -->
-    <div th:replace="fragments/booking-modal :: booking-modal"></div>
+    <th:block th:replace="~{fragments/booking-modal :: booking-modal}"></th:block>
 
     <!-- Navigation Scripts -->
-    <div th:replace="fragments/scripts :: navigation-scripts"></div>
+    <th:block th:replace="~{fragments/scripts :: navigation-scripts}"></th:block>
 </body>
 </html>

@@ -11,10 +11,10 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     
     <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
+    <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
     
     <!-- Animations de défilement -->
-    <div th:replace="fragments/scroll-animations :: scroll-animations-css"></div>
+    <th:block th:replace="~{fragments/scroll-animations :: scroll-animations-css}"></th:block>
     
     <!-- Authentication Info for JavaScript -->
     <script th:inline="javascript">
@@ -28,7 +28,7 @@
 </head>
 <body class="min-h-screen bg-white">
     <!-- Header -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+    <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <main>
         <!-- Hero Section Premium -->
@@ -435,10 +435,10 @@
     </main>
 
     <!-- Include Booking Modal from fragment -->
-    <div th:replace="fragments/booking-modal :: booking-modal"></div>
+    <th:block th:replace="~{fragments/booking-modal :: booking-modal}"></th:block>
     
     <!-- Modal de prise de rendez-vous -->
-    <div th:replace="fragments/appointment-modal-global :: appointment-modal-global"></div>
+    <th:block th:replace="~{fragments/appointment-modal-global :: appointment-modal-global}"></th:block>
 
     <!-- Include Register Checkout Script -->
     <script src="/js/register-checkout.js"></script>
@@ -450,7 +450,7 @@
     <script th:src="@{/js/appointment-modal-v3.js}"></script>
     
     <!-- Script des animations de défilement -->
-    <div th:replace="fragments/scroll-animations :: scroll-animations-js"></div>
+    <th:block th:replace="~{fragments/scroll-animations :: scroll-animations-js}"></th:block>
     
     <!-- Services Page Specific JavaScript -->
     <script>
@@ -542,9 +542,9 @@
     </style>
 
     <!-- Bouton flottant CONTACTEZ-NOUS -->
-    <div th:replace="fragments/floating-contact-button :: floating-contact-button"></div>
+    <th:block th:replace="~{fragments/floating-contact-button :: floating-contact-button}"></th:block>
     
     <!-- Footer -->
-    <div th:replace="fragments/footer :: footer"></div>
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
 </body>
 </html>
