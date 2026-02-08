@@ -1,0 +1,8 @@
+<div th:fragment="logo-with-text(textSize)" class="flex items-center gap-3 group">
+    <img th:src="@{/images/Logo LMP.webp}" src="/images/Logo LMP.webp" alt="LMP Logo" 
+         class="h-10 w-auto group-hover:scale-105 transition-transform duration-300">
+    <span class="font-display font-semibold tracking-tight text-white hover:text-primary transition-colors" 
+          th:classappend="${textSize != null ? textSize : 'text-xl'}">
+        LMP Digital Services
+    </span>
+</div>

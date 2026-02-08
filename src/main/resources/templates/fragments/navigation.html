@@ -34,6 +34,10 @@
 
                 <!-- Zone DROITE : Connexion + Langue -->
                 <div class="hidden md:flex items-center space-x-4">
+                    <!-- Theme & Language Controls -->
+                    <div th:replace="fragments/theme-language-controls :: theme-language-controls"></div>
+
+
                     <!-- Authentification - Utilisateur non connecté -->
                     <div sec:authorize="!isAuthenticated()" class="flex items-center space-x-4">
                         <a href="/login" class="text-gray-700 hover:text-primary font-medium transition-colors">
@@ -93,7 +97,13 @@
                     <a href="/about" th:class="${currentPage == 'about' ? 'text-primary bg-blue-50 px-3 py-2 rounded-lg font-semibold transition-colors' : 'text-left text-gray-700 hover:text-primary font-medium transition-colors'}">
                         À propos
                     </a>
-                    <a href="/contact" th:class="${currentPage == 'contact' ? 'text-primary bg-blue-50 px-3 py-2 rounded-lg font-semibold transition-colors' : 'text-left text-gray-700 hover:text-primary font-medium transition-colors'}">
+                    
+                    <!-- Theme & Language Controls Mobile -->
+                    <div class="flex items-center justify-between px-2 pt-2 border-t border-gray-100">
+                        <span class="text-gray-700 font-medium">Paramètres</span>
+                        <div th:replace="fragments/theme-language-controls :: theme-language-controls"></div>
+                    </div>
+<a href="/contact" th:class="${currentPage == 'contact' ? 'text-primary bg-blue-50 px-3 py-2 rounded-lg font-semibold transition-colors' : 'text-left text-gray-700 hover:text-primary font-medium transition-colors'}">
                         Contact
                     </a>
                     

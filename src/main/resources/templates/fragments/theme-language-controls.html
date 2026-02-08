@@ -13,8 +13,8 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 0.75rem;
-            background: #1a2230;
-            border: 1px solid #2a3447;
+            background: transparent; /* Changed from #1a2230 */
+            border: none; /* Changed from 1px solid #2a3447 */
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -23,7 +23,7 @@
         }
 
         .nav-gtranslate-dropdown:hover {
-            border-color: #135bec;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .nav-gtranslate-dropdown i {
@@ -86,8 +86,15 @@
         }
 
         /* Light mode overrides */
-        body:not(.dark) .nav-theme-toggle,
-        body:not(.dark) .nav-gtranslate-dropdown,
+        body:not(.dark) .nav-gtranslate-dropdown {
+            background: transparent;
+            color: #374151;
+        }
+        
+        body:not(.dark) .nav-gtranslate-dropdown:hover {
+            background: rgba(0, 0, 0, 0.05); /* Light hover effect */
+        }
+
         body:not(.dark) .nav-gtranslate-menu {
             background: #ffffff;
             border-color: #e5e7eb;

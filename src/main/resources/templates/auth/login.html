@@ -82,8 +82,8 @@
             <div class="relative z-10 flex flex-col h-full justify-between p-12 xl:p-16">
                 <!-- Logo LMP -->
                 <div class="flex items-center gap-3">
-                    <a href="/" class="group flex items-center gap-3">
-                        <img th:src="@{/images/Logo LMP.webp}" src="/images/Logo LMP.webp" alt="LMP Logo" class="h-12 w-auto group-hover:scale-105 transition-transform duration-300">
+                    <a href="/" class="group flex items-center gap-3 text-white hover:text-white/90 transition-colors">
+                        <div th:replace="~{fragments/logo :: logo-with-text('text-2xl')}"></div>
                     </a>
                 </div>
                 
@@ -126,9 +126,9 @@
 
             <div class="w-full max-w-md">
                 <!-- Mobile Logo (visible only on small screens) -->
-                <div class="mb-8 flex items-center gap-2 lg:hidden">
-                    <a href="/" class="group">
-                        <img th:src="@{/images/Logo LMP.webp}" src="/images/Logo LMP.webp" alt="LMP Logo" class="h-10 w-auto group-hover:scale-105 transition-transform duration-300">
+                <div class="mb-8 flex items-center justify-center gap-2 lg:hidden">
+                    <a href="/" class="group flex items-center gap-3 text-slate-900 dark:text-white hover:text-primary transition-colors">
+                        <div th:replace="~{fragments/logo :: logo-with-text('text-xl')}"></div>
                     </a>
                 </div>
                 
