@@ -1,9 +1,9 @@
 <!-- Theme Toggle and Language Controls Fragment -->
-<div th:fragment="theme-language-controls" class="flex items-center gap-2">
+<div th:fragment="theme-language-controls" class="flex items-center gap-2 notranslate">
     
     <!-- Theme Toggle (DaisyUI Swap) -->
     <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
-        <input type="checkbox" id="theme-toggle-check" onchange="toggleThemeFromCheckbox(this)" />
+        <input type="checkbox" class="theme-controller bg-base-100 opacity-0 border-0 absolute w-0 h-0" value="default" id="theme-toggle-check" onchange="toggleThemeFromCheckbox(this)" />
         
         <!-- Sun icon -->
         <span class="material-symbols-outlined swap-on w-5 h-5 fill-current">light_mode</span>
@@ -16,7 +16,7 @@
     <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2 px-2 font-normal">
             <img id="nav-current-flag" src="https://flagcdn.com/w40/us.png" alt="" class="w-5 h-3.5 rounded-sm object-cover shadow-sm">
-            <span id="nav-current-lang" class="hidden sm:inline">EN</span>
+            <span id="nav-current-lang" class="hidden sm:inline text-base-content">EN</span>
             <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
         </div>
         <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-48 mt-2 border border-base-200">

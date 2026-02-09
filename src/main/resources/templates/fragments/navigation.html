@@ -1,72 +1,39 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-    <!-- Navigation Header Fragment -->
-    <header th:fragment="navigation" class="sticky top-0 z-50">
-        <div class="navbar bg-base-100/90 backdrop-blur shadow-sm transition-all duration-300">
+    <header th:fragment="navigation" class="sticky top-0 z-50 bg-base-100/90 backdrop-blur shadow-sm transition-all duration-300">
+        <div class="navbar container mx-auto">
+            <!-- Navbar Start: Logo -->
             <div class="navbar-start">
-                <!-- Mobile Dropdown -->
-                <div class="dropdown lg:hidden dashboard-hide-mobile">
-                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
-                    </div>
-                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                        <li><a href="/" th:classappend="${currentPage == 'home' ? 'active font-semibold' : ''}">Accueil</a></li>
-                        <li><a href="/services" th:classappend="${currentPage == 'services' ? 'active font-semibold' : ''}">Services</a></li>
-                        <li><a href="/map" th:classappend="${currentPage == 'map' ? 'active font-semibold' : ''}">Carte</a></li>
-                        <li><a href="/about" th:classappend="${currentPage == 'about' ? 'active font-semibold' : ''}">À propos</a></li>
-                        <li><a href="/contact" th:classappend="${currentPage == 'contact' ? 'active font-semibold' : ''}">Contact</a></li>
-                        
-                        <!-- Mobile Auth -->
-                        <div class="divider my-1"></div>
-                        <li sec:authorize="!isAuthenticated()"><a href="/login">Connexion</a></li>
-                        <li sec:authorize="isAuthenticated()">
-                            <h2 class="menu-title px-4 py-2">Mon Compte</h2>
-                            <ul>
-                                <li><a href="/dashboard">Dashboard</a></li>
-                                <li sec:authorize="hasRole('ADMIN')"><a href="/admin/dashboard">Admin Panel</a></li>
-                                <li>
-                                    <form action="/logout" method="post" class="w-full">
-                                        <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
-                                        <button type="submit" class="w-full text-left">Déconnexion</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </div>
-                
-                <!-- Logo -->
-                <a href="/" class="btn btn-ghost text-xl px-2">
-                    <img src="/images/Logo LMP.webp" alt="LMP Logo" class="h-8 w-auto">
-                    <!-- <span class="hidden md:inline font-bold text-lg tracking-tight">LMP</span> -->
+                <a href="/" class="btn btn-ghost text-xl px-2 group">
+                    <img src="/images/Logo LMP.webp" alt="LMP Logo" class="h-10 w-auto group-hover:scale-105 transition-transform duration-300">
                 </a>
-                
-                <!-- Desktop Menu (Left/Center) -->
-                <div class="hidden lg:flex px-4">
-                    <ul class="menu menu-horizontal px-1 gap-1">
-                        <li><a href="/" th:classappend="${currentPage == 'home' ? 'active font-semibold' : ''}">Accueil</a></li>
-                        <li><a href="/services" th:classappend="${currentPage == 'services' ? 'active font-semibold' : ''}">Services</a></li>
-                        <li><a href="/map" th:classappend="${currentPage == 'map' ? 'active font-semibold' : ''}">Carte</a></li>
-                        <li><a href="/about" th:classappend="${currentPage == 'about' ? 'active font-semibold' : ''}">À propos</a></li>
-                        <li><a href="/contact" th:classappend="${currentPage == 'contact' ? 'active font-semibold' : ''}">Contact</a></li>
-                    </ul>
-                </div>
             </div>
 
-            <!-- Navbar End: Controls & Auth -->
-            <div class="navbar-end gap-2">
-                <!-- Theme & Language Controls -->
-                <th:block th:replace="~{fragments/theme-language-controls :: theme-language-controls}"></th:block>
+            <!-- Navbar Center: Desktop Menu -->
+            <div class="navbar-center hidden lg:flex">
+                <ul class="menu menu-horizontal px-1 gap-2 text-base-content">
+                    <li><a href="/" th:classappend="${currentPage == 'home' ? 'bg-primary text-primary-content font-bold' : 'hover:bg-base-200'}" class="rounded-full px-6 py-2 transition-all">Accueil</a></li>
+                    <li><a href="/services" th:classappend="${currentPage == 'services' ? 'bg-primary text-primary-content font-bold' : 'hover:bg-base-200'}" class="rounded-full px-6 py-2 transition-all">Services</a></li>
+                    <li><a href="/map" th:classappend="${currentPage == 'map' ? 'bg-primary text-primary-content font-bold' : 'hover:bg-base-200'}" class="rounded-full px-6 py-2 transition-all">Carte</a></li>
+                    <li><a href="/about" th:classappend="${currentPage == 'about' ? 'bg-primary text-primary-content font-bold' : 'hover:bg-base-200'}" class="rounded-full px-6 py-2 transition-all">À propos</a></li>
+                    <li><a href="/contact" th:classappend="${currentPage == 'contact' ? 'bg-primary text-primary-content font-bold' : 'hover:bg-base-200'}" class="rounded-full px-6 py-2 transition-all">Contact</a></li>
+                </ul>
+            </div>
 
-                <!-- Desktop Auth Buttons -->
-                <div class="hidden md:flex items-center gap-2">
-                    <a sec:authorize="!isAuthenticated()" href="/login" class="btn btn-primary btn-sm rounded-full px-6">
+            <!-- Navbar End: Controls, Auth & Mobile Menu -->
+            <div class="navbar-end gap-2">
+                <!-- Desktop: Theme & Language Controls -->
+                <div class="hidden lg:flex items-center gap-2">
+                    <th:block th:replace="~{fragments/theme-language-controls :: theme-language-controls}"></th:block>
+                    
+                    <!-- Auth Buttons -->
+                    <a sec:authorize="!isAuthenticated()" href="/login" class="btn btn-primary btn-sm rounded-full px-6 ml-2">
                         Connexion
                     </a>
 
                     <!-- User Dropdown (Authenticated) -->
-                    <div sec:authorize="isAuthenticated()" class="dropdown dropdown-end">
+                    <div sec:authorize="isAuthenticated()" class="dropdown dropdown-end ml-2">
                         <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder online">
                             <div class="bg-neutral text-neutral-content rounded-full w-9">
                                 <span class="text-xs font-bold" sec:authentication="name" th:text="${#strings.substring(#authentication.principal.username,0,2).toUpperCase()}">UI</span>
@@ -88,6 +55,8 @@
                         </ul>
                     </div>
                 </div>
+
+
             </div>
         </div>
     </header>
