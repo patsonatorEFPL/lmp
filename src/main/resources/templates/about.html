@@ -9,12 +9,12 @@
     <!-- Global Styles -->
     <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
 </head>
-<body class="min-h-screen bg-white">
+<body class="min-h-screen bg-base-100">
     <!-- Navigation -->
     <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <!-- Header Section -->
-    <section class="py-16 bg-gradient-to-br from-[#f7f8fa] to-white">
+    <section class="py-16 bg-gradient-to-br from-base-200 to-base-100">
         <div class="container mx-auto px-4">
             <div class="text-center">
                 <h1 class="text-4xl lg:text-5xl font-bold text-base-content mb-4" th:utext="${title}">À Propos - Équipe Marketing Digital</h1>
@@ -24,7 +24,7 @@
     </section>
 
     <!-- Mission Section -->
-    <section class="py-16 bg-white">
+    <section class="py-16 bg-base-100">
         <div class="container mx-auto px-4">
             <div class="max-w-6xl mx-auto">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -52,7 +52,7 @@
     </section>
 
     <!-- Values Section -->
-    <section class="py-16 bg-gradient-to-br from-white to-[#f7f8fa]">
+    <section class="py-16 bg-gradient-to-br from-base-100 to-base-200">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Valeurs Marketing Digital</h2>
@@ -85,7 +85,7 @@
     </section>
 
     <!-- Stats Section -->
-    <section class="py-16 bg-white">
+    <section class="py-16 bg-base-100">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Performance Marketing</h2>
@@ -114,19 +114,19 @@
     </section>
 
     <!-- Team Section - Carrousel Horizontal -->
-    <section class="py-16 bg-gradient-to-br from-white to-[#f7f8fa]">
+    <section class="py-16 bg-gradient-to-br from-base-100 to-base-200">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Équipe Experts SEO</h2>
                 <p class="text-lg text-base-content/80 max-w-2xl mx-auto">Des passionnés dédiés à votre succès</p>
-                <p class="text-sm text-gray-400 mt-2">← Glissez pour voir plus →</p>
+                <p class="text-sm text-base-content/40 mt-2">← Glissez pour voir plus →</p>
             </div>
             
             <!-- Conteneur avec scroll horizontal -->
             <div class="overflow-x-auto pb-6 -mx-4 px-4 scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
                 <div class="flex gap-6 min-w-max">
                     <!-- Marie Dubois -->
-                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-base-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-base-200">
                         <div class="text-6xl mb-4 text-primary" aria-label="Marie Dubois PDG Fondatrice LMP marketing digital">👩‍💼</div>
                         <h3 class="text-xl font-semibold text-base-content mb-2">Marie Dubois</h3>
                         <p class="text-primary font-medium mb-2">PDG & Fondatrice</p>
@@ -134,7 +134,7 @@
                     </div>
                     
                     <!-- Jean Tremblay -->
-                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-base-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-base-200">
                         <div class="text-6xl mb-4 text-primary" aria-label="Jean Tremblay Directeur Technique développement web LMP">👨‍💻</div>
                         <h3 class="text-xl font-semibold text-base-content mb-2">Jean Tremblay</h3>
                         <p class="text-primary font-medium mb-2">Directeur Technique</p>
@@ -142,7 +142,7 @@
                     </div>
                     
                     <!-- Théophile Terrier -->
-                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-base-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-base-200">
                         <div class="text-6xl mb-4 text-primary" aria-label="Théophile Terrier Directeur Marketing stratégies digitales LMP">👨‍🎨</div>
                         <h3 class="text-xl font-semibold text-base-content mb-2">Théophile Terrier</h3>
                         <p class="text-primary font-medium mb-2">Directeur Marketing</p>
@@ -150,7 +150,7 @@
                     </div>
                     
                     <!-- Pierre Lavoie -->
-                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-base-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-base-200">
                         <div class="text-6xl mb-4 text-primary" aria-label="Pierre Lavoie Responsable Partenariats entreprises locales LMP">👨‍🤝‍👨</div>
                         <h3 class="text-xl font-semibold text-base-content mb-2">Pierre Lavoie</h3>
                         <p class="text-primary font-medium mb-2">Responsable Partenariats</p>
@@ -158,9 +158,9 @@
                     </div>
                     
                     <!-- Barbara Amandine Berger -->
-                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300">
+                    <div class="text-center min-w-[280px] max-w-[280px] flex-shrink-0 bg-base-100 rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300 border border-base-200">
                         <div class="text-6xl mb-4 text-primary" aria-label="Barbara Amandine Berger Assistante Supérieure LMP">👩‍💼</div>
-                        <h3 class="text-xl font-semibold text-dark mb-2">Barbara Amandine Berger</h3>
+                        <h3 class="text-xl font-semibold text-base-content mb-2">Barbara Amandine Berger</h3>
                         <p class="text-primary font-medium mb-2">Assistante Supérieure</p>
                         <p class="text-base-content/80 text-sm">Barbara assure la coordination et le support administratif de l'équipe avec professionnalisme et efficacité.</p>
                     </div>
@@ -170,10 +170,10 @@
             <!-- Indicateurs de scroll (optionnel) -->
             <div class="flex justify-center mt-4 gap-2">
                 <div class="w-2 h-2 rounded-full bg-primary"></div>
-                <div class="w-2 h-2 rounded-full bg-gray-300"></div>
-                <div class="w-2 h-2 rounded-full bg-gray-300"></div>
-                <div class="w-2 h-2 rounded-full bg-gray-300"></div>
-                <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                <div class="w-2 h-2 rounded-full bg-base-content/20"></div>
+                <div class="w-2 h-2 rounded-full bg-base-content/20"></div>
+                <div class="w-2 h-2 rounded-full bg-base-content/20"></div>
+                <div class="w-2 h-2 rounded-full bg-base-content/20"></div>
             </div>
         </div>
     </section>

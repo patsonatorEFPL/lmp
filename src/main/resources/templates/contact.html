@@ -9,13 +9,13 @@
     <!-- Global Styles -->
     <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
 </head>
-<body class="min-h-screen bg-white">
+<body class="min-h-screen bg-base-100">
     <!-- Header -->
     <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <main>
         <!-- Hero Section -->
-        <section class="bg-gradient-to-br from-[#f7f8fa] to-white py-16 lg:py-24">
+        <section class="bg-gradient-to-br from-base-200 to-base-100 py-16 lg:py-24">
             <div class="container mx-auto px-4">
                 <div class="text-center max-w-4xl mx-auto">
                     <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-base-content mb-6 leading-tight">
@@ -30,7 +30,7 @@
         </section>
 
         <!-- Contact Section -->
-        <section class="py-16 bg-white">
+        <section class="py-16 bg-base-100">
             <div class="container mx-auto px-4">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     <!-- Contact Information -->
@@ -52,7 +52,7 @@
                                 <div>
                                     <h3 class="font-semibold text-base-content mb-1">Contact Email</h3>
                                     <p class="text-base-content/80">lmp.assistance@gmail.com</p>
-                                    <p class="text-sm text-gray-500">Réponse sous 24h</p>
+                                    <p class="text-sm text-base-content/50">Réponse sous 24h</p>
                                 </div>
                             </div>
 
@@ -75,13 +75,13 @@
                                     <h3 class="font-semibold text-base-content mb-1">Horaires</h3>
                                     <p class="text-base-content/80">Lundi - Vendredi: 9h00 - 18h00</p>
                                     <p class="text-base-content/80">Samedi: 10h00 - 16h00</p>
-                                    <p class="text-sm text-gray-500">Dimanche: Fermé</p>
+                                    <p class="text-sm text-base-content/50">Dimanche: Fermé</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Social Links -->
-                        <div class="pt-6 border-t border-gray-200">
+                        <div class="pt-6 border-t border-base-200">
                             <h3 class="font-semibold text-base-content mb-4">Suivez-nous</h3>
                             <div class="flex space-x-4">
                                 <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-all">
@@ -101,14 +101,14 @@
                     </div>
 
                     <!-- Contact Form -->
-                    <div class="bg-white border border-gray-200 rounded-xl p-8 shadow-lg">
+                    <div class="bg-base-100 border border-base-200 rounded-xl p-8 shadow-lg">
                         <h3 class="text-2xl font-bold text-base-content mb-6">Formulaire Contact SEO</h3>
                         
                         <!-- Message d'erreur globale -->
-                        <div th:if="${errorMessage}" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div th:if="${errorMessage}" class="mb-6 p-4 bg-error/10 border border-error/30 rounded-lg">
                             <div class="flex items-center">
-                                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
-                                <p class="text-red-700" th:text="${errorMessage}"></p>
+                                <i class="fas fa-exclamation-triangle text-error mr-2"></i>
+                                <p class="text-error" th:text="${errorMessage}"></p>
                             </div>
                         </div>
                         
@@ -117,61 +117,61 @@
                             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             
                             <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Nom complet *</label>
+                                <label for="name" class="block text-sm font-medium text-base-content/70 mb-2">Nom complet *</label>
                                 <input type="text" id="name" th:field="*{name}" required
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                       th:classappend="${#fields.hasErrors('name')} ? 'border-red-500' : ''">
-                                <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-red-500 text-sm mt-1"></p>
+                                       class="w-full px-4 py-3 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-base-100 text-base-content"
+                                       th:classappend="${#fields.hasErrors('name')} ? 'border-error' : ''">
+                                <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-error text-sm mt-1"></p>
                             </div>
 
                             <div>
-                                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                <label for="email" class="block text-sm font-medium text-base-content/70 mb-2">Email *</label>
                                 <input type="email" id="email" th:field="*{email}" required
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                       th:classappend="${#fields.hasErrors('email')} ? 'border-red-500' : ''">
-                                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-red-500 text-sm mt-1"></p>
+                                       class="w-full px-4 py-3 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-base-100 text-base-content"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'border-error' : ''">
+                                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-error text-sm mt-1"></p>
                             </div>
 
                             <div>
-                                <label for="subject" class="block text-sm font-medium text-gray-700 mb-2">Sujet *</label>
+                                <label for="subject" class="block text-sm font-medium text-base-content/70 mb-2">Sujet *</label>
                                 <input type="text" id="subject" th:field="*{subject}" required
-                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                       th:classappend="${#fields.hasErrors('subject')} ? 'border-red-500' : ''">
-                                <p th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}" class="text-red-500 text-sm mt-1"></p>
+                                       class="w-full px-4 py-3 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-base-100 text-base-content"
+                                       th:classappend="${#fields.hasErrors('subject')} ? 'border-error' : ''">
+                                <p th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}" class="text-error text-sm mt-1"></p>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                                    <label for="phone" class="block text-sm font-medium text-base-content/70 mb-2">Téléphone</label>
                                     <input type="tel" id="phone" th:field="*{phone}"
                                            placeholder="+32 2 123 45 67"
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                           th:classappend="${#fields.hasErrors('phone')} ? 'border-red-500' : ''">
-                                    <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="text-red-500 text-sm mt-1"></p>
+                                           class="w-full px-4 py-3 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-base-100 text-base-content"
+                                           th:classappend="${#fields.hasErrors('phone')} ? 'border-error' : ''">
+                                    <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="text-error text-sm mt-1"></p>
                                 </div>
 
                                 <div>
-                                    <label for="company" class="block text-sm font-medium text-gray-700 mb-2">Entreprise</label>
+                                    <label for="company" class="block text-sm font-medium text-base-content/70 mb-2">Entreprise</label>
                                     <input type="text" id="company" th:field="*{company}"
                                            placeholder="Nom de votre entreprise"
-                                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                                           th:classappend="${#fields.hasErrors('company')} ? 'border-red-500' : ''">
-                                    <p th:if="${#fields.hasErrors('company')}" th:errors="*{company}" class="text-red-500 text-sm mt-1"></p>
+                                           class="w-full px-4 py-3 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-base-100 text-base-content"
+                                           th:classappend="${#fields.hasErrors('company')} ? 'border-error' : ''">
+                                    <p th:if="${#fields.hasErrors('company')}" th:errors="*{company}" class="text-error text-sm mt-1"></p>
                                 </div>
                             </div>
 
                             <div>
-                                <label for="message" class="block text-sm font-medium text-gray-700 mb-2">Message *</label>
+                                <label for="message" class="block text-sm font-medium text-base-content/70 mb-2">Message *</label>
                                 <textarea id="message" rows="6" th:field="*{message}" required
                                           placeholder="Décrivez votre projet et vos objectifs..."
-                                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-                                          th:classappend="${#fields.hasErrors('message')} ? 'border-red-500' : ''"></textarea>
-                                <p th:if="${#fields.hasErrors('message')}" th:errors="*{message}" class="text-red-500 text-sm mt-1"></p>
+                                          class="w-full px-4 py-3 border border-base-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-base-100 text-base-content"
+                                          th:classappend="${#fields.hasErrors('message')} ? 'border-error' : ''"></textarea>
+                                <p th:if="${#fields.hasErrors('message')}" th:errors="*{message}" class="text-error text-sm mt-1"></p>
                             </div>
 
                             <div class="flex items-center space-x-3">
-                                <input type="checkbox" id="consent" required class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary">
-                                <label for="consent" class="text-sm text-gray-700">
+                                <input type="checkbox" id="consent" required class="w-4 h-4 text-primary border-base-300 rounded focus:ring-primary">
+                                <label for="consent" class="text-sm text-base-content/70">
                                     J'accepte que LMP me contacte concernant ma demande *
                                 </label>
                             </div>
@@ -187,7 +187,7 @@
         </section>
 
         <!-- FAQ Section -->
-        <section class="py-16 bg-gray-50">
+        <section class="py-16 bg-base-200/50">
             <div class="container mx-auto px-4">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">FAQ Services Marketing Digital</h2>
@@ -197,7 +197,7 @@
                 </div>
 
                 <div class="max-w-4xl mx-auto space-y-6">
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200">
                         <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Délais Résultats SEO</h3>
                             <i class="fas fa-chevron-down text-primary transition-transform"></i>
@@ -207,7 +207,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200">
                         <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Consultation Gratuite Marketing</h3>
                             <i class="fas fa-chevron-down text-primary transition-transform"></i>
@@ -217,7 +217,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200">
                         <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Quels types d'entreprises accompagnez-vous ?</h3>
                             <i class="fas fa-chevron-down text-primary transition-transform"></i>
@@ -227,7 +227,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200">
                         <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Proposez-vous un suivi des performances ?</h3>
                             <i class="fas fa-chevron-down text-primary transition-transform"></i>
@@ -241,16 +241,16 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="py-16 bg-gradient-to-br from-primary to-[#4c63ff] text-white">
+        <section class="py-16 bg-base-200 text-base-content">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-3xl lg:text-4xl font-bold mb-6">
                     Démarrer Votre Projet SEO
                 </h2>
-                <p class="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+                <p class="text-lg text-base-content/60 mb-8 max-w-2xl mx-auto">
                     Rejoignez des centaines d'entreprises qui ont déjà transformé leur présence en ligne avec LMP.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="mailto:lmp.assistance@gmail.com" class="bg-yellow text-dark px-8 py-4 rounded-lg font-semibold hover:bg-yellow/90 transition-all duration-200 text-center">
+                    <a href="mailto:lmp.assistance@gmail.com" class="bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 text-center">
                         📧 Nous contacter par email
                     </a>
                 </div>

@@ -21,9 +21,16 @@
             z-index: 1000;
             background: white;
             padding: 1rem;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            min-width: 200px;
+            min-width: 220px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .dark .map-controls {
+            background: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
         
         .map-search {
@@ -32,10 +39,30 @@
         
         .map-search input {
             width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
             font-size: 0.875rem;
+            background: #f8fafc;
+            color: #1f2937;
+            transition: border-color 0.2s;
+        }
+
+        .map-search input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark .map-search input {
+            background: #0f172a;
+            border-color: #475569;
+            color: #e2e8f0;
+        }
+
+        .dark .map-search input:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
         }
         
         .map-filters {
@@ -44,15 +71,24 @@
         
         .map-filters select {
             width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
             font-size: 0.875rem;
+            background: #f8fafc;
+            color: #1f2937;
+            cursor: pointer;
+        }
+        
+        .dark .map-filters select {
+            background: #0f172a;
+            border-color: #475569;
+            color: #e2e8f0;
         }
         
         .map-info {
             font-size: 0.75rem;
-            color: #6c757d;
+            color: #94a3b8;
             text-align: center;
         }
         
@@ -85,18 +121,54 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.75rem;
         }
+
+        /* Leaflet dark mode tiles */
+        .dark .leaflet-tile {
+            filter: brightness(0.85) contrast(1.1) saturate(0.9);
+        }
+
+        .dark .leaflet-control-zoom a {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+
+        .dark .leaflet-control-zoom a:hover {
+            background: #334155;
+        }
+
+        .dark .leaflet-control-attribution {
+            background: rgba(30, 41, 59, 0.8);
+            color: #94a3b8;
+        }
+
+        .dark .leaflet-control-attribution a {
+            color: #60a5fa;
+        }
+
+        /* Info cards hover */
+        .info-card {
+            padding: 2rem;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
-<body class="min-h-screen bg-white">
+<body class="min-h-screen bg-base-100">
     <!-- Navigation -->
     <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <!-- Header Section -->
-    <section class="py-16 bg-gradient-to-br from-[#f7f8fa] to-white">
+    <section class="py-16 bg-gradient-to-br from-base-200 to-base-100">
         <div class="container mx-auto px-4">
             <div class="text-center">
                 <h1 class="text-4xl lg:text-5xl font-bold text-base-content mb-4" th:text="${title}">Carte Interactive</h1>
-                <p class="text-lg text-base-content/80 max-w-2xl mx-auto" th:text="${subtitle}">Découvrez les solutions locales sur notre carte interactive</p>
+                <p class="text-lg text-base-content/60 max-w-2xl mx-auto" th:text="${subtitle}">Découvrez les solutions locales sur notre carte interactive</p>
             </div>
         </div>
     </section>
@@ -135,36 +207,36 @@
     </section>
 
     <!-- Section Informations -->
-    <section class="py-16 bg-white">
+    <section class="py-16 bg-base-200/50">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Comment utiliser la carte</h2>
-                <p class="text-lg text-base-content/80 max-w-2xl mx-auto">Quelques conseils pour tirer le meilleur parti de notre carte interactive</p>
+                <p class="text-lg text-base-content/60 max-w-2xl mx-auto">Quelques conseils pour tirer le meilleur parti de notre carte interactive</p>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="text-center">
+                <div class="info-card text-center bg-base-100 rounded-2xl p-6">
                     <div class="text-4xl mb-4 text-primary" aria-label="Recherche localisation carte interactive LMP">🔍</div>
                     <h3 class="text-xl font-semibold text-base-content mb-2">Recherche</h3>
-                    <p class="text-base-content/80">Utilisez la barre de recherche pour trouver rapidement une localisation spécifique par nom.</p>
+                    <p class="text-base-content/60">Utilisez la barre de recherche pour trouver rapidement une localisation spécifique par nom.</p>
                 </div>
                 
-                <div class="text-center">
+                <div class="info-card text-center bg-base-100 rounded-2xl p-6">
                     <div class="text-4xl mb-4 text-primary" aria-label="Filtres catégories services locaux">⚡</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Filtres</h3>
-                    <p class="text-base-content/80">Filtrez les marqueurs par catégorie pour voir seulement les types de services qui vous intéressent.</p>
+                    <h3 class="text-xl font-semibold text-base-content mb-2">Filtres</h3>
+                    <p class="text-base-content/60">Filtrez les marqueurs par catégorie pour voir seulement les types de services qui vous intéressent.</p>
                 </div>
                 
-                <div class="text-center">
+                <div class="info-card text-center bg-base-100 rounded-2xl p-6">
                     <div class="text-4xl mb-4 text-primary" aria-label="Interaction clic marqueurs informations détails">👆</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Interaction</h3>
-                    <p class="text-base-content/80">Cliquez sur un marqueur pour voir les détails de la localisation et les informations disponibles.</p>
+                    <h3 class="text-xl font-semibold text-base-content mb-2">Interaction</h3>
+                    <p class="text-base-content/60">Cliquez sur un marqueur pour voir les détails de la localisation et les informations disponibles.</p>
                 </div>
                 
-                <div class="text-center">
+                <div class="info-card text-center bg-base-100 rounded-2xl p-6">
                     <div class="text-4xl mb-4 text-primary" aria-label="Navigation carte zoom déplacement outils">🔧</div>
-                    <h3 class="text-xl font-semibold text-dark mb-2">Navigation</h3>
-                    <p class="text-base-content/80">Utilisez la molette de la souris pour zoomer/dézoomer et faites glisser pour vous déplacer sur la carte.</p>
+                    <h3 class="text-xl font-semibold text-base-content mb-2">Navigation</h3>
+                    <p class="text-base-content/60">Utilisez la molette de la souris pour zoomer/dézoomer et faites glisser pour vous déplacer sur la carte.</p>
                 </div>
             </div>
         </div>
