@@ -68,3 +68,8 @@ ${project.build.directory}/
 
 ### Duplicate/Obsolete Folders ###
 LMP/
+
+### Temporary Backup Files ###
+login_backup.html
+old_footer.html
+old_footer.tmp
