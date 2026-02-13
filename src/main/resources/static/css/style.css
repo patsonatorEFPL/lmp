@@ -209,6 +209,29 @@ body {
     color: #1f2937;
 }
 
+/* Dark Mode - Service Cards */
+.dark .service-card-premium {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark .service-card-premium:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    border-color: #60a5fa;
+}
+
+.dark .service-card-premium h3 {
+    color: #f1f5f9;
+}
+
+.dark .service-card-premium p {
+    color: #94a3b8;
+}
+
+.dark .service-card-premium span {
+    color: #e2e8f0;
+}
+
 /* Buttons Premium */
 .btn-premium {
     position: relative;
