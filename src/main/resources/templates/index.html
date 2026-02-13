@@ -258,194 +258,162 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Service 1 -->
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#securisations-gmb'">
-                        <div class="card-body">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="avatar placeholder">
-                                    <div class="bg-primary/10 text-primary w-14 rounded-2xl">
-                                        <i class="fas fa-map-marked-alt text-2xl"></i>
-                                    </div>
-                                </div>
-                                <div class="badge badge-ghost">Référencement</div>
+                    <div class="service-card-premium group cursor-pointer" onclick="window.location.href='/services#securisations-gmb'">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-2xl group-hover:scale-110 transition-transform duration-500">
+                                <i class="fas fa-map-marked-alt"></i>
                             </div>
-                            
-                            <h3 class="card-title text-xl text-base-content">Optimisation Map</h3>
-                            <p class="text-base-content/60 text-sm leading-relaxed">
-                                Sécurisation avancée et optimisation technique de votre fiche Google pour un positionnement durable.
-                            </p>
-                            
-                            <div class="divider my-2"></div>
-                            
-                            <div class="card-actions justify-between items-center">
-                                <div>
-                                    <div class="text-xs opacity-50">À partir de</div>
-                                    <div class="text-3xl font-bold text-black dark:text-base-content">353€</div>
-                                </div>
-                                <button onclick="event.stopPropagation(); openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="btn btn-primary btn-circle">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Référencement</span>
                         </div>
+                        
+                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Optimisation Map</h3>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
+                            Sécurisation avancée et optimisation technique de votre fiche Google pour un positionnement durable.
+                        </p>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">À partir de</div>
+                                <div class="text-3xl font-bold text-black dark:text-base-content">353€</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="glow-effect"></div>
                     </div>
 
                     <!-- Service 2 (Featured) -->
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer relative overflow-hidden group border-2 border-primary/20" onclick="window.location.href='/services#referencement-vip'">
-                        <div class="absolute top-0 right-0">
-                                            <div class="badge badge-primary badge-lg rounded-bl-2xl rounded-tr-xl font-bold text-white">
-                                <i class="fas fa-crown mr-1"></i> BEST SELLER
-                            </div>
+                    <div class="service-card-premium group cursor-pointer relative ring-2 ring-primary/5" onclick="window.location.href='/services#referencement-vip'">
+                        <div class="absolute top-0 right-0 bg-gradient-to-l from-primary to-purple-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl z-10 shadow-lg">
+                            BEST SELLER
                         </div>
                         
-                        <div class="card-body">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="avatar placeholder">
-                                    <div class="bg-primary/10 text-primary w-14 rounded-2xl">
-                                        <i class="fas fa-crown text-2xl"></i>
-                                    </div>
-                                </div>
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-purple-500/20">
+                                <i class="fas fa-crown"></i>
                             </div>
-                            
-                            <h3 class="card-title text-xl text-base-content">SEO VIP+ Garantie</h3>
-                            <p class="text-base-content/60 text-sm leading-relaxed">
-                                L'excellence opérationnelle. Garantie de résultats, maintenance proactive et support prioritaire 24/7.
-                            </p>
-                            
-                            <div class="divider my-2"></div>
-                            
-                            <div class="card-actions justify-between items-center">
-                                <div>
-                                    <div class="text-xs opacity-50">Package complet</div>
-                                    <div class="text-3xl font-bold text-black dark:text-base-content">750€</div>
-                                </div>
-                                <button onclick="event.stopPropagation(); openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="btn btn-primary btn-circle">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mt-2">Premium</span>
+                        </div>
+                        
+                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white">SEO VIP+ Garantie</h3>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
+                            L'excellence opérationnelle. Garantie de résultats, maintenance proactive et support prioritaire 24/7.
+                        </p>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">Package complet</div>
+                                <div class="text-3xl font-bold text-black dark:text-base-content">750€</div>
                             </div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="px-6 py-3 rounded-full bg-gradient-to-r from-primary to-purple-600 text-white font-semibold hover:shadow-xl hover:-translate-y-0.5 transition-all">
+                                Commander
+                            </button>
                         </div>
                     </div>
 
                     <!-- Service 3 -->
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#gestion-avis'">
-                        <div class="card-body">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="avatar placeholder">
-                                    <div class="bg-success/10 text-success w-14 rounded-2xl">
-                                        <i class="fas fa-comments text-2xl"></i>
-                                    </div>
-                                </div>
-                                <div class="badge badge-success badge-outline">Réputation</div>
+                    <div class="service-card-premium group cursor-pointer" onclick="window.location.href='/services#gestion-avis'">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 text-2xl group-hover:scale-110 transition-transform duration-500">
+                                <i class="fas fa-comments"></i>
                             </div>
-                            
-                            <h3 class="card-title text-xl text-base-content">Gestion Avis</h3>
-                            <p class="text-base-content/60 text-sm leading-relaxed">
-                                Transformez vos clients en ambassadeurs. Stratégies de collecte et modération professionnelle.
-                            </p>
-                            
-                            <div class="divider my-2"></div>
-                            
-                            <div class="card-actions justify-between items-center">
-                                <div>
-                                    <div class="text-xs opacity-50">À partir de</div>
-                                    <div class="text-3xl font-bold text-black dark:text-base-content">747€</div>
-                                </div>
-                                <button onclick="event.stopPropagation(); openBookingModal('Gestion des Avis', 747.43)" class="btn btn-success btn-circle">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Réputation</span>
                         </div>
+                        
+                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Gestion Avis</h3>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
+                            Transformez vos clients en ambassadeurs. Stratégies de collecte et modération professionnelle.
+                        </p>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">À partir de</div>
+                                <div class="text-3xl font-bold text-black dark:text-base-content">747€</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Gestion des Avis', 747.43)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="glow-effect"></div>
                     </div>
 
                     <!-- Service 4 -->
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#presence-locales'">
-                        <div class="card-body">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="avatar placeholder">
-                                    <div class="bg-warning/10 text-warning w-14 rounded-2xl">
-                                        <i class="fas fa-store text-2xl"></i>
-                                    </div>
-                                </div>
-                                <div class="badge badge-warning badge-outline">Local</div>
+                    <div class="service-card-premium group cursor-pointer" onclick="window.location.href='/services#presence-locales'">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-2xl group-hover:scale-110 transition-transform duration-500">
+                                <i class="fas fa-store"></i>
                             </div>
-                            
-                            <h3 class="card-title text-xl text-base-content">Présence Locale</h3>
-                            <p class="text-base-content/60 text-sm leading-relaxed">
-                                Multi-diffusion de vos informations sur +50 plateformes, GPS et annuaires numériques.
-                            </p>
-                            
-                            <div class="divider my-2"></div>
-                            
-                            <div class="card-actions justify-between items-center">
-                                <div>
-                                    <div class="text-xs opacity-50">Pack annuel</div>
-                                    <div class="text-3xl font-bold text-black dark:text-base-content">2.200€</div>
-                                </div>
-                                <button onclick="event.stopPropagation(); openBookingModal('Présence Locales', 2200.00)" class="btn btn-warning btn-circle">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Multi-Diffusion</span>
                         </div>
+                        
+                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Présence Locale</h3>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
+                            Multi-diffusion de vos informations sur +50 plateformes, GPS et annuaires numériques.
+                        </p>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">Pack annuel</div>
+                                <div class="text-3xl font-bold text-black dark:text-base-content">2.200€</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Présence Locales', 2200.00)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="glow-effect"></div>
                     </div>
 
                     <!-- Service 5 -->
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#creation-site-web'">
-                        <div class="card-body">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="avatar placeholder">
-                                    <div class="bg-info/10 text-info w-14 rounded-2xl">
-                                        <i class="fas fa-code text-2xl"></i>
-                                    </div>
-                                </div>
-                                <div class="badge badge-info badge-outline">Web Dev</div>
+                    <div class="service-card-premium group cursor-pointer" onclick="window.location.href='/services#creation-site-web'">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 text-2xl group-hover:scale-110 transition-transform duration-500">
+                                <i class="fas fa-laptop-code"></i>
                             </div>
-                            
-                            <h3 class="card-title text-xl text-base-content">Site Web Pro</h3>
-                            <p class="text-base-content/60 text-sm leading-relaxed">
-                                Développement sur mesure, rapide, sécurisé (SSL) et optimisé pour la conversion mobile.
-                            </p>
-                            
-                            <div class="divider my-2"></div>
-                            
-                            <div class="card-actions justify-between items-center">
-                                <div>
-                                    <div class="text-xs opacity-50">À partir de</div>
-                                    <div class="text-3xl font-bold text-black dark:text-base-content">550€</div>
-                                </div>
-                                <button onclick="event.stopPropagation(); openBookingModal('Création Site Web', 100.99)" class="btn btn-info btn-circle">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Web Dev</span>
                         </div>
+                        
+                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Site Web Pro</h3>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
+                            Développement sur mesure, rapide, sécurisé (SSL) et optimisé pour la conversion mobile.
+                        </p>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">À partir de</div>
+                                <div class="text-3xl font-bold text-black dark:text-base-content">550€</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); openBookingModal('Création Site Web', 100.99)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="glow-effect"></div>
                     </div>
 
                     <!-- Service 6 -->
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group" onclick="window.location.href='/services#seo-referencement-naturel'">
-                        <div class="card-body">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="avatar placeholder">
-                                    <div class="bg-neutral/10 text-neutral w-14 rounded-2xl">
-                                        <i class="fas fa-search-dollar text-2xl"></i>
-                                    </div>
-                                </div>
-                                <div class="badge badge-neutral badge-outline">SEO Avancé</div>
+                    <div class="service-card-premium group cursor-pointer" onclick="window.location.href='/services#seo-referencement-naturel'">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-2xl group-hover:scale-110 transition-transform duration-500">
+                                <i class="fas fa-search-dollar"></i>
                             </div>
-                            
-                            <h3 class="card-title text-xl text-base-content">SEO & Naturel</h3>
-                            <p class="text-base-content/60 text-sm leading-relaxed">
-                                Stratégie de contenu et netlinking haute performance pour dominer les SERPs Google.
-                            </p>
-                            
-                            <div class="divider my-2"></div>
-                            
-                            <div class="card-actions justify-between items-center">
-                                <div>
-                                    <div class="text-xs opacity-50">Sur devis</div>
-                                    <div class="text-3xl font-bold text-black dark:text-base-content">5.500€</div>
-                                </div>
-                                <button onclick="event.stopPropagation(); openBookingModal('SEO et Référencement Naturel', 5500.00)" class="btn btn-neutral btn-circle">
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
-                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">SEO Naturel</span>
                         </div>
+                        
+                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">SEO & Naturel</h3>
+                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
+                            Stratégie de contenu et netlinking haute performance pour dominer les SERPs Google.
+                        </p>
+                        
+                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">Sur devis</div>
+                                <div class="text-3xl font-bold text-black dark:text-base-content">5.500€</div>
+                            </div>
+                            <button onclick="event.stopPropagation(); openBookingModal('SEO et Référencement Naturel', 5500.00)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="glow-effect"></div>
                     </div>
                 </div>
             </div>
