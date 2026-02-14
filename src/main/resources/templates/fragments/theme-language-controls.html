@@ -1,6 +1,8 @@
 <!-- Theme Toggle and Language Controls Fragment -->
 <div th:fragment="theme-language-controls" class="flex items-center gap-2 notranslate">
     
+
+    
     <!-- Theme Toggle (DaisyUI Swap) -->
     <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm">
         <input type="checkbox" class="theme-controller bg-base-100 opacity-0 border-0 absolute w-0 h-0" value="default" id="theme-toggle-check" onchange="toggleThemeFromCheckbox(this)" />
@@ -14,14 +16,14 @@
 
     <!-- Language Dropdown (DaisyUI) -->
     <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2 px-2 font-normal">
-            <img id="nav-current-flag" src="https://flagcdn.com/w40/us.png" alt="" class="w-5 h-3.5 rounded-sm object-cover shadow-sm">
-            <span id="nav-current-lang" class="hidden sm:inline text-base-content">EN</span>
-            <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+        <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2 px-2 font-normal language-btn">
+            <img id="nav-current-flag" src="https://flagcdn.com/w40/fr.png" alt="" class="w-5 h-3.5 rounded-sm object-cover shadow-sm">
+            <span id="nav-current-lang" class="hidden sm:inline text-base-content">FR</span>
+            <i class="fas fa-chevron-down text-[10px] opacity-70 text-base-content"></i>
         </div>
         <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-48 mt-2 border border-base-200">
-            <li><a onclick="changeNavGTranslateLang('en')"><img src="https://flagcdn.com/w40/us.png" class="w-5 h-3.5 rounded-sm"> English</a></li>
             <li><a onclick="changeNavGTranslateLang('fr')"><img src="https://flagcdn.com/w40/fr.png" class="w-5 h-3.5 rounded-sm"> Français</a></li>
+            <li><a onclick="changeNavGTranslateLang('en')"><img src="https://flagcdn.com/w40/us.png" class="w-5 h-3.5 rounded-sm"> English</a></li>
             <li><a onclick="changeNavGTranslateLang('es')"><img src="https://flagcdn.com/w40/es.png" class="w-5 h-3.5 rounded-sm"> Español</a></li>
             <li><a onclick="changeNavGTranslateLang('de')"><img src="https://flagcdn.com/w40/de.png" class="w-5 h-3.5 rounded-sm"> Deutsch</a></li>
             <li><a onclick="changeNavGTranslateLang('it')"><img src="https://flagcdn.com/w40/it.png" class="w-5 h-3.5 rounded-sm"> Italiano</a></li>
@@ -37,8 +39,8 @@
     <script>
         // Language configuration
         const navLangConfig = {
-            en: { name: 'EN', flag: 'https://flagcdn.com/w40/us.png' },
             fr: { name: 'FR', flag: 'https://flagcdn.com/w40/fr.png' },
+            en: { name: 'EN', flag: 'https://flagcdn.com/w40/us.png' },
             es: { name: 'ES', flag: 'https://flagcdn.com/w40/es.png' },
             de: { name: 'DE', flag: 'https://flagcdn.com/w40/de.png' },
             it: { name: 'IT', flag: 'https://flagcdn.com/w40/it.png' },
@@ -46,17 +48,12 @@
             pt: { name: 'PT', flag: 'https://flagcdn.com/w40/br.png' },
             lb: { name: 'LB', flag: 'https://flagcdn.com/w40/lu.png' }
         };
-        const navSupportedLangs = ['en', 'fr', 'es', 'de', 'it', 'nl', 'pt', 'lb'];
+        const navSupportedLangs = ['fr', 'en', 'es', 'de', 'it', 'nl', 'pt', 'lb'];
 
         // Theme Toggle via Checkbox (DaisyUI Swap)
         function toggleThemeFromCheckbox(checkbox) {
             const body = document.body;
             const html = document.documentElement;
-            // Swap logic: if checked -> light (sun visible), if unchecked -> dark (moon visible)
-            // Wait, usually: checked = on (sun), unchecked = off (moon).
-            // Let's decide: Dark mode default.
-            // If Dark mode: moon visible (swap-off). Checkbox unchecked.
-            // If Light mode: sun visible (swap-on). Checkbox checked.
             
             const isLight = checkbox.checked;
             const newTheme = isLight ? 'light' : 'dark';
@@ -64,16 +61,13 @@
             if (newTheme === 'dark') {
                 body.classList.add('dark');
                 html.classList.add('dark');
-                html.dataset.theme = 'dark'; // DaisyUI
-                body.style.backgroundColor = '#101622'; // Keep original custom override? Or trust DaisyUI? DaisyUI sets base-100.
-                // Remove inline styles to let DaisyUI handle it
-                 body.style.backgroundColor = '';
-                 body.style.color = '';
+                html.dataset.theme = 'dark';
+                body.style.backgroundColor = '';
+                body.style.color = '';
             } else {
                 body.classList.remove('dark');
                 html.classList.remove('dark');
-                html.dataset.theme = 'light'; // DaisyUI
-                // Remove inline styles
+                html.dataset.theme = 'light';
                 body.style.backgroundColor = '';
                 body.style.color = '';
             }
@@ -86,26 +80,25 @@
             var config = navLangConfig[lang];
             if (!config) return;
             
-            // Visual update handled on reload but usually good to update instantly
             document.getElementById('nav-current-lang').textContent = config.name;
             document.getElementById('nav-current-flag').src = config.flag;
             
             // Set GTranslate cookie
             var date = new Date();
             date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
-            document.cookie = "googtrans=/en/" + lang + "; expires=" + date.toUTCString() + "; path=/";
-            document.cookie = "googtrans=/en/" + lang + "; expires=" + date.toUTCString() + "; path=/; domain=." + window.location.hostname;
+            document.cookie = "googtrans=/fr/" + lang + "; expires=" + date.toUTCString() + "; path=/";
+            document.cookie = "googtrans=/fr/" + lang + "; expires=" + date.toUTCString() + "; path=/; domain=." + window.location.hostname;
             
             window.location.reload();
         }
 
         // Helper to get lang
         function getNavCurrentLang() {
-            var match = document.cookie.match(/googtrans=\/en\/(\w+)/);
+            var match = document.cookie.match(/googtrans=\/fr\/(\w+)/);
             if (match && navSupportedLangs.includes(match[1])) {
                 return match[1];
             }
-            return navigator.language.split('-')[0].toLowerCase() in navLangConfig ? navigator.language.split('-')[0].toLowerCase() : 'en';
+            return 'fr'; // Default to French
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -114,7 +107,6 @@
             const checkbox = document.getElementById('theme-toggle-check');
             const html = document.documentElement;
             
-            // Logic: Checked = Light (Sun), Unchecked = Dark (Moon)
             if (savedTheme === 'light') {
                 checkbox.checked = true;
                 html.classList.remove('dark');
@@ -127,7 +119,7 @@
             
             // Initialize Language
             var currentLang = getNavCurrentLang();
-            var config = navLangConfig[currentLang] || navLangConfig['en'];
+            var config = navLangConfig[currentLang] || navLangConfig['fr'];
             
             var flagEl = document.getElementById('nav-current-flag');
             var langEl = document.getElementById('nav-current-lang');
@@ -141,9 +133,9 @@
 <div th:fragment="gtranslate-config">
     <script>
         window.gtranslateSettings = {
-            "default_language": "en",
-            "detect_browser_language": true,
-            "languages": ["en", "fr", "es", "de", "it", "nl", "pt", "lb"],
+            "default_language": "fr",
+            "detect_browser_language": false,
+            "languages": ["fr", "en", "es", "de", "it", "nl", "pt", "lb"],
             "wrapper_selector": ".gtranslate_wrapper",
             "flag_style": "3d",
             "alt_flags": {"en": "usa", "pt": "brazil", "es": "spain"}
@@ -151,3 +143,10 @@
     </script>
     <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </div>
+    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+</div>
+
+    </script>
+    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+</div>
+

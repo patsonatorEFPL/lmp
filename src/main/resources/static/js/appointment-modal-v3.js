@@ -431,16 +431,16 @@ const AppointmentModal = {
                 let title = '';
                 
                 if (isPast || isWeekend) {
-                    classes += 'bg-gray-100 text-gray-400 cursor-not-allowed';
+                    classes += 'bg-base-200/50 text-base-content/40 cursor-not-allowed';
                     title = isWeekend ? 'Week-end' : 'Date passée';
                 } else if (isTooFar) {
-                    classes += 'bg-orange-100 text-orange-400 hover:bg-orange-200';
+                    classes += 'bg-warning/20 text-warning hover:bg-warning/30';
                     title = 'Date trop éloignée (> 30 jours ouvrables)';
                 } else if (isToday) {
-                    classes += 'bg-blue-500 text-white font-bold hover:bg-blue-600';
+                    classes += 'bg-primary text-white font-bold hover:bg-primary/90';
                     title = "Aujourd'hui";
                 } else {
-                    classes += 'hover:bg-blue-100';
+                    classes += 'bg-base-200 text-base-content hover:bg-primary/20 hover:text-primary';
                     title = 'Disponible';
                 }
                 
@@ -588,7 +588,7 @@ const AppointmentModal = {
             html += '<h6 class="text-xs font-medium text-gray-500 mb-3">🌅 Matin</h6>';
             html += '<div class="grid grid-cols-4 gap-3">';
             morningSlots.forEach(slot => {
-                html += `<button type="button" class="time-slot-btn notranslate text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}" translate="no">${slot}</button>`;
+                html += `<button type="button" class="time-slot-btn notranslate text-center text-xs bg-base-200 hover:bg-primary/20 hover:text-primary text-base-content font-medium py-2 px-2 rounded-lg border border-base-300 transition-all" data-time="${slot}" translate="no">${slot}</button>`;
             });
             html += '</div>';
             html += '</div>';
@@ -600,7 +600,7 @@ const AppointmentModal = {
             html += '<h6 class="text-xs font-medium text-gray-500 mb-3">☀️ Après-midi</h6>';
             html += '<div class="grid grid-cols-4 gap-3">';
             afternoonSlots.forEach(slot => {
-                html += `<button type="button" class="time-slot-btn notranslate text-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 font-medium py-2 px-2 rounded-lg border border-blue-200 transition-all" data-time="${slot}" translate="no">${slot}</button>`;
+                html += `<button type="button" class="time-slot-btn notranslate text-center text-xs bg-base-200 hover:bg-primary/20 hover:text-primary text-base-content font-medium py-2 px-2 rounded-lg border border-base-300 transition-all" data-time="${slot}" translate="no">${slot}</button>`;
             });
             html += '</div>';
             html += '</div>';
@@ -626,8 +626,8 @@ const AppointmentModal = {
         $('#appointmentTime').val(time);
         
         // Mettre en évidence le créneau sélectionné
-        $('.time-slot-btn').removeClass('bg-green-500 text-white').addClass('bg-blue-50 text-blue-800');
-        $(button).removeClass('bg-blue-50 text-blue-800').addClass('bg-green-500 text-white');
+        $('.time-slot-btn').removeClass('bg-primary text-primary-content').addClass('bg-base-200 text-base-content');
+        $(button).removeClass('bg-base-200 text-base-content').addClass('bg-primary text-primary-content');
         
         // Activer le bouton de soumission
         $('#appointmentSubmitBtn').prop('disabled', false);

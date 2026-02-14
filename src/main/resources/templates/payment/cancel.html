@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" data-theme="lmp">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,68 +7,68 @@
     <meta name="description" content="Votre paiement a été annulé.">
     
     <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
+    <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="min-h-screen bg-base-200">
     <!-- Header -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+    <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <main class="py-16">
         <div class="container mx-auto px-4 max-w-2xl">
             <!-- Cancel Card -->
-            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div class="bg-base-100 rounded-xl shadow-lg p-8 text-center">
                 <!-- Cancel Icon -->
-                <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-times text-orange-600 text-3xl"></i>
+                <div class="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-times text-orange-600 dark:text-orange-400 text-3xl"></i>
                 </div>
                 
                 <!-- Cancel Title -->
-                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                <h1 class="text-3xl font-bold text-base-content mb-4">
                     Paiement annulé
                 </h1>
                 
                 <!-- Cancel Message -->
-                <p class="text-lg text-gray-600 mb-8">
+                <p class="text-lg text-base-content/70 mb-8">
                     Votre paiement a été annulé. Aucun montant n'a été débité de votre compte.
                 </p>
                 
                 <!-- Order Details -->
-                <div class="bg-gray-50 rounded-lg p-6 mb-8 text-left" th:if="${order}">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Détails de la commande annulée</h3>
+                <div class="bg-base-200 rounded-lg p-6 mb-8 text-left" th:if="${order}">
+                    <h3 class="text-lg font-semibold text-base-content mb-4">Détails de la commande annulée</h3>
                     
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Numéro de commande :</span>
-                            <span class="font-semibold" th:text="${order.id}">123456</span>
+                            <span class="text-base-content/70">Numéro de commande :</span>
+                            <span class="font-semibold text-base-content" th:text="${order.id}">123456</span>
                         </div>
                         
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Montant :</span>
-                            <span class="font-semibold text-gray-900"
+                            <span class="text-base-content/70">Montant :</span>
+                            <span class="font-semibold text-base-content"
                                   th:text="${#numbers.formatCurrency(totalAmount)} + ' EUR'">750.79 EUR</span>
                         </div>
                         
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Statut :</span>
-                            <span class="text-orange-600 font-semibold">Annulé</span>
+                            <span class="text-base-content/70">Statut :</span>
+                            <span class="text-orange-600 dark:text-orange-400 font-semibold">Annulé</span>
                         </div>
                         
                         <div class="flex justify-between" th:if="${sessionId}">
-                            <span class="text-gray-600">Session ID :</span>
-                            <span class="font-mono text-sm text-gray-500" th:text="${sessionId}">cs_123456</span>
+                            <span class="text-base-content/70">Session ID :</span>
+                            <span class="font-mono text-sm text-base-content/50" th:text="${sessionId}">cs_123456</span>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Why was it cancelled -->
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 text-left">
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 mb-8 text-left">
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <i class="fas fa-exclamation-triangle text-yellow-400"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-semibold text-yellow-900">Paiement annulé</h4>
-                            <div class="mt-2 text-sm text-yellow-700">
+                            <h4 class="text-sm font-semibold text-yellow-900 dark:text-yellow-200">Paiement annulé</h4>
+                            <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
                                 <p>Votre paiement a été annulé et aucun montant n'a été débité. Les raisons possibles :</p>
                                 <ul class="list-disc list-inside mt-2 space-y-1">
                                     <li>Vous avez cliqué sur le bouton "Annuler" pendant le processus</li>
@@ -81,14 +81,14 @@
                 </div>
                 
                 <!-- What to do next -->
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8 text-left">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-4 mb-8 text-left">
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <i class="fas fa-info-circle text-blue-400"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-semibold text-blue-900">Que faire maintenant ?</h4>
-                            <div class="mt-2 text-sm text-blue-700">
+                            <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">Que faire maintenant ?</h4>
+                            <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
                                 <ul class="list-disc list-inside space-y-1">
                                     <li>Vous pouvez réessayer le paiement à tout moment</li>
                                     <li>Votre panier a été sauvegardé</li>
@@ -114,8 +114,8 @@
                 </div>
                 
                 <!-- Additional Help -->
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <p class="text-sm text-gray-500 mb-4">
+                <div class="mt-8 pt-6 border-t border-base-300">
+                    <p class="text-sm text-base-content/50 mb-4">
                         Besoin d'aide avec votre paiement ?
                     </p>
                     
@@ -136,23 +136,23 @@
             </div>
             
             <!-- FAQ Section -->
-            <div class="mt-8 bg-white rounded-xl shadow-lg p-8">
-                <h3 class="text-xl font-semibold text-gray-900 mb-6 text-center">Questions fréquentes</h3>
+            <div class="mt-8 bg-base-100 rounded-xl shadow-lg p-8">
+                <h3 class="text-xl font-semibold text-base-content mb-6 text-center">Questions fréquentes</h3>
                 
                 <div class="space-y-6">
                     <div>
-                        <h4 class="font-semibold text-gray-900 mb-2">Mon argent a-t-il été débité ?</h4>
-                        <p class="text-gray-600 text-sm">Non, aucun montant n'a été débité de votre compte. Le paiement a été annulé avant tout prélèvement.</p>
+                        <h4 class="font-semibold text-base-content mb-2">Mon argent a-t-il été débité ?</h4>
+                        <p class="text-base-content/70 text-sm">Non, aucun montant n'a été débité de votre compte. Le paiement a été annulé avant tout prélèvement.</p>
                     </div>
                     
                     <div>
-                        <h4 class="font-semibold text-gray-900 mb-2">Puis-je réessayer immédiatement ?</h4>
-                        <p class="text-gray-600 text-sm">Oui, vous pouvez réessayer le paiement immédiatement en cliquant sur "Réessayer le paiement".</p>
+                        <h4 class="font-semibold text-base-content mb-2">Puis-je réessayer immédiatement ?</h4>
+                        <p class="text-base-content/70 text-sm">Oui, vous pouvez réessayer le paiement immédiatement en cliquant sur "Réessayer le paiement".</p>
                     </div>
                     
                     <div>
-                        <h4 class="font-semibold text-gray-900 mb-2">Mes informations de commande sont-elles conservées ?</h4>
-                        <p class="text-gray-600 text-sm">Oui, votre sélection de services a été sauvegardée. Vous n'avez pas besoin de tout recommencer.</p>
+                        <h4 class="font-semibold text-base-content mb-2">Mes informations de commande sont-elles conservées ?</h4>
+                        <p class="text-base-content/70 text-sm">Oui, votre sélection de services a été sauvegardée. Vous n'avez pas besoin de tout recommencer.</p>
                     </div>
                 </div>
             </div>
@@ -160,7 +160,7 @@
     </main>
     
     <!-- Footer -->
-    <div th:replace="fragments/footer :: footer"></div>
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
 
     <!-- Scripts -->
     <script>

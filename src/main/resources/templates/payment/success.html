@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" data-theme="lmp">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,74 +7,74 @@
     <meta name="description" content="Votre paiement a été traité avec succès.">
     
     <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
+    <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="min-h-screen bg-base-200">
     <!-- Header -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+    <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <main class="py-16">
         <div class="container mx-auto px-4 max-w-2xl">
             <!-- Success Card -->
-            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div class="bg-base-100 rounded-xl shadow-lg p-8 text-center">
                 <!-- Success Icon -->
-                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-check text-green-600 text-3xl"></i>
+                <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-check text-green-600 dark:text-green-400 text-3xl"></i>
                 </div>
                 
                 <!-- Success Title -->
-                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                <h1 class="text-3xl font-bold text-base-content mb-4">
                     Paiement réussi !
                 </h1>
                 
                 <!-- Success Message -->
-                <p class="text-lg text-gray-600 mb-8">
+                <p class="text-lg text-base-content/70 mb-8">
                     Votre paiement a été traité avec succès. Vous recevrez une confirmation par email sous peu.
                 </p>
                 
                 <!-- Order Details -->
-                <div class="bg-gray-50 rounded-lg p-6 mb-8 text-left" th:if="${order}">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Détails de votre commande</h3>
+                <div class="bg-base-200 rounded-lg p-6 mb-8 text-left" th:if="${order}">
+                    <h3 class="text-lg font-semibold text-base-content mb-4">Détails de votre commande</h3>
                     
                     <div class="space-y-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Numéro de commande :</span>
-                            <span class="font-semibold" th:text="${order.id}">123456</span>
+                            <span class="text-base-content/70">Numéro de commande :</span>
+                            <span class="font-semibold text-base-content" th:text="${order.id}">123456</span>
                         </div>
                         
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Montant total :</span>
-                            <span class="font-semibold text-green-600"
+                            <span class="text-base-content/70">Montant total :</span>
+                            <span class="font-semibold text-green-600 dark:text-green-400"
                                   th:text="${#numbers.formatDecimal(totalAmount, 1, 2)} + ' ' + ${currency}">750.79 EUR</span>
                         </div>
                         
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Méthode de paiement :</span>
-                            <span class="font-semibold" th:text="${paymentMethod}">Stripe Checkout</span>
+                            <span class="text-base-content/70">Méthode de paiement :</span>
+                            <span class="font-semibold text-base-content" th:text="${paymentMethod}">Stripe Checkout</span>
                         </div>
                         
                         <div class="flex justify-between" th:if="${transaction}">
-                            <span class="text-gray-600">ID de transaction :</span>
-                            <span class="font-mono text-sm text-gray-500" th:text="${transaction.transactionId}">cs_123456</span>
+                            <span class="text-base-content/70">ID de transaction :</span>
+                            <span class="font-mono text-sm text-base-content/50" th:text="${transaction.transactionId}">cs_123456</span>
                         </div>
                         
                         <div class="flex justify-between" th:if="${transaction}">
-                            <span class="text-gray-600">Date de paiement :</span>
-                            <span class="text-gray-500" 
+                            <span class="text-base-content/70">Date de paiement :</span>
+                            <span class="text-base-content/50" 
                                   th:text="${#temporals.format(transaction.updatedAt, 'dd/MM/yyyy à HH:mm')}">18/08/2025 à 14:30</span>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Next Steps -->
-                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8 text-left">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-4 mb-8 text-left">
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <i class="fas fa-info-circle text-blue-400"></i>
                         </div>
                         <div class="ml-3">
-                            <h4 class="text-sm font-semibold text-blue-900">Prochaines étapes</h4>
-                            <div class="mt-2 text-sm text-blue-700">
+                            <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">Prochaines étapes</h4>
+                            <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
                                 <ul class="list-disc list-inside space-y-1">
                                     <li>Vous recevrez une confirmation par email dans quelques minutes</li>
                                     <li>Notre équipe prendra contact avec vous sous 24h pour planifier votre service</li>
@@ -106,8 +106,8 @@
                 </div>
                 
                 <!-- Support Contact -->
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <p class="text-sm text-gray-500">
+                <div class="mt-8 pt-6 border-t border-base-300">
+                    <p class="text-sm text-base-content/50">
                         Une question sur votre commande ? 
                         <a href="mailto:lmp.assistance@gmail.com" class="text-primary hover:underline">
                             Contactez notre support
@@ -119,7 +119,7 @@
     </main>
     
     <!-- Footer -->
-    <div th:replace="fragments/footer :: footer"></div>
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
 
     <!-- Scripts -->
     <script>
