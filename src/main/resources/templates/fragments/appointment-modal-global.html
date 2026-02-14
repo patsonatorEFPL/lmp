@@ -6,29 +6,29 @@
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             
             <!-- Overlay Backdrop -->
-            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="AppointmentModal.close()"></div>
+            <div class="fixed inset-0 bg-base-300/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="AppointmentModal.close()"></div>
 
             <!-- Centre le modal -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
             <!-- Contenu du modal Glassmorphism -->
-            <div class="inline-block align-bottom bg-white/95 backdrop-blur-xl border border-white/50 rounded-3xl text-left overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full animate-fade-in-up relative">
+            <div class="inline-block align-bottom bg-base-100/95 backdrop-blur-xl border border-base-300/50 rounded-3xl text-left overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full animate-fade-in-up relative">
                 
                 <!-- Decorative Top Gradient Line -->
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-600 to-primary"></div>
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-blue-500 to-primary"></div>
 
                 <!-- Header -->
-                <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white/50">
+                <div class="px-6 py-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                             <i class="far fa-calendar-check text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-xl font-bold text-gray-900" id="modal-title">Prendre rendez-vous</h3>
-                            <p class="text-xs text-gray-500">Sélectionnez une date et un horaire</p>
+                            <h3 class="text-xl font-bold text-base-content" id="modal-title">Prendre rendez-vous</h3>
+                            <p class="text-xs text-base-content/60">Sélectionnez une date et un horaire</p>
                         </div>
                     </div>
-                    <button type="button" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center" onclick="AppointmentModal.close()">
+                    <button type="button" class="w-8 h-8 rounded-full bg-base-200 hover:bg-red-50 dark:hover:bg-red-900/30 text-base-content/40 hover:text-red-500 transition-colors flex items-center justify-center" onclick="AppointmentModal.close()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -41,7 +41,7 @@
                         <div class="space-y-5">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">1</span>
-                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Vos informations</h4>
+                                <h4 class="text-sm font-semibold text-base-content uppercase tracking-wide">Vos informations</h4>
                             </div>
 
                             <!-- Zone de message (Alert) -->
@@ -51,33 +51,33 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <!-- Nom -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentName" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Nom complet *</label>
+                                        <label for="appointmentName" class="block text-xs font-medium text-base-content/60 mb-1 ml-1">Nom complet *</label>
                                         <input type="text" id="appointmentName" name="name" required placeholder="Jean Dupont"
-                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
-                                        <div id="appointmentNameError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                            class="w-full px-4 py-2.5 bg-base-200 border border-base-300 rounded-xl focus:bg-base-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-base-content">
+                                        <div id="appointmentNameError" class="text-error text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Email -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentEmail" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Email *</label>
+                                        <label for="appointmentEmail" class="block text-xs font-medium text-base-content/60 mb-1 ml-1">Email *</label>
                                         <input type="email" id="appointmentEmail" name="email" required placeholder="jean@exemple.com"
-                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
-                                        <div id="appointmentEmailError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                            class="w-full px-4 py-2.5 bg-base-200 border border-base-300 rounded-xl focus:bg-base-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-base-content">
+                                        <div id="appointmentEmailError" class="text-error text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Téléphone -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentPhone" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Téléphone *</label>
+                                        <label for="appointmentPhone" class="block text-xs font-medium text-base-content/60 mb-1 ml-1">Téléphone *</label>
                                         <input type="tel" id="appointmentPhone" name="phone" required placeholder="+32 470 00 00 00"
-                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm">
-                                        <div id="appointmentPhoneError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                            class="w-full px-4 py-2.5 bg-base-200 border border-base-300 rounded-xl focus:bg-base-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-base-content">
+                                        <div id="appointmentPhoneError" class="text-error text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Service -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentService" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Service *</label>
+                                        <label for="appointmentService" class="block text-xs font-medium text-base-content/60 mb-1 ml-1">Service *</label>
                                         <select id="appointmentService" name="service" required
-                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm cursor-pointer">
+                                            class="w-full px-4 py-2.5 bg-base-200 border border-base-300 rounded-xl focus:bg-base-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm cursor-pointer text-base-content">
                                             <option value="">Sélectionnez un service...</option>
                                             <option value="Consultation">Consultation générale</option>
                                             <option value="Développement Web">Développement Web</option>
@@ -88,14 +88,14 @@
                                             <option value="Sécurité Web">Sécurité Web</option>
                                             <option value="Autre">Autre</option>
                                         </select>
-                                        <div id="appointmentServiceError" class="text-red-500 text-xs mt-1 hidden font-medium"></div>
+                                        <div id="appointmentServiceError" class="text-error text-xs mt-1 hidden font-medium"></div>
                                     </div>
 
                                     <!-- Message -->
                                     <div class="col-span-1 md:col-span-2">
-                                        <label for="appointmentMessageField" class="block text-xs font-medium text-gray-500 mb-1 ml-1">Message (optionnel)</label>
+                                        <label for="appointmentMessageField" class="block text-xs font-medium text-base-content/60 mb-1 ml-1">Message (optionnel)</label>
                                         <textarea id="appointmentMessageField" name="message" rows="2"
-                                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none"
+                                            class="w-full px-4 py-2.5 bg-base-200 border border-base-300 rounded-xl focus:bg-base-100 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm resize-none text-base-content"
                                             placeholder="Brève description..."></textarea>
                                     </div>
                                 </div>
@@ -107,32 +107,32 @@
                         </div>
 
                         <!-- Col 2: Calendrier & Slots -->
-                        <div class="bg-gray-50/80 rounded-2xl p-5 border border-gray-100 flex flex-col h-full">
+                        <div class="bg-base-200/80 rounded-2xl p-5 border border-base-300 flex flex-col h-full">
                             <div class="flex items-center gap-2 mb-4">
-                                <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-600 text-xs font-bold flex items-center justify-center">2</span>
-                                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Disponibilités</h4>
+                                <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-xs font-bold flex items-center justify-center">2</span>
+                                <h4 class="text-sm font-semibold text-base-content uppercase tracking-wide">Disponibilités</h4>
                             </div>
 
                             <!-- Calendrier -->
-                            <div id="calendar" class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-2">
+                            <div id="calendar" class="mb-4 bg-base-100 rounded-xl shadow-sm border border-base-300 p-2">
                                 <div class="flex items-center justify-between mb-2 px-1">
-                                    <button type="button" id="prevMonth" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+                                    <button type="button" id="prevMonth" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-base-200 text-base-content/70 transition-colors">
                                         <i class="fas fa-chevron-left text-xs"></i>
                                     </button>
-                                    <h4 id="currentMonth" class="text-sm font-bold text-gray-800 capitalize"></h4>
-                                    <button type="button" id="nextMonth" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors">
+                                    <h4 id="currentMonth" class="text-sm font-bold text-base-content capitalize"></h4>
+                                    <button type="button" id="nextMonth" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-base-200 text-base-content/70 transition-colors">
                                         <i class="fas fa-chevron-right text-xs"></i>
                                     </button>
                                 </div>
                                 
                                 <div class="grid grid-cols-7 gap-1 mb-1 text-center">
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Dim</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Lun</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Mar</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Mer</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Jeu</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Ven</div>
-                                    <div class="text-[0.65rem] font-bold text-gray-400 uppercase">Sam</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Dim</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Lun</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Mar</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Mer</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Jeu</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Ven</div>
+                                    <div class="text-[0.65rem] font-bold text-base-content/40 uppercase">Sam</div>
                                 </div>
                                 <div id="calendarDays" class="grid grid-cols-7 gap-1">
                                     <!-- Jours générés dynamiquement avec style propre -->
@@ -141,9 +141,9 @@
 
                             <!-- Créneaux -->
                             <div class="flex-1 overflow-y-auto min-h-[100px] mb-4 custom-scrollbar">
-                                <h5 class="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Créneaux disponibles</h5>
+                                <h5 class="text-xs font-medium text-base-content/50 mb-2 uppercase tracking-wider">Créneaux disponibles</h5>
                                 <div id="timeSlotsContainer">
-                                    <div class="col-span-full text-center py-6 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
+                                    <div class="col-span-full text-center py-6 text-base-content/50 text-sm bg-base-100 rounded-xl border border-dashed border-base-300">
                                         <i class="far fa-calendar-alt mb-2 block text-2xl opacity-30"></i>
                                         Sélectionnez une date
                                     </div>
@@ -151,13 +151,13 @@
                             </div>
 
                             <!-- Résumé Sélection -->
-                            <div id="appointmentSummary" class="mt-auto p-3 bg-blue-50/80 border border-blue-100 rounded-xl hidden flex items-center gap-3 animate-fade-in">
-                                <div class="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center text-blue-600 shadow-sm text-lg">
+                            <div id="appointmentSummary" class="mt-auto p-3 bg-primary/10 border border-primary/20 rounded-xl hidden flex items-center gap-3 animate-fade-in">
+                                <div class="w-10 h-10 rounded-full bg-base-100 flex-shrink-0 flex items-center justify-center text-primary shadow-sm text-lg">
                                     ✨
                                 </div>
                                 <div>
-                                    <h5 class="text-xs font-bold text-blue-800 uppercase">Votre sélection</h5>
-                                    <div id="summaryContent" class="text-sm font-medium text-blue-900"></div>
+                                    <h5 class="text-xs font-bold text-primary uppercase">Votre sélection</h5>
+                                    <div id="summaryContent" class="text-sm font-medium text-base-content"></div>
                                 </div>
                             </div>
                         </div>
@@ -165,13 +165,13 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="bg-gray-50/80 px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-gray-100">
+                <div class="bg-base-200/80 px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-base-300">
                     <button type="button" onclick="AppointmentModal.close()"
-                        class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all text-sm">
+                        class="px-6 py-2.5 rounded-xl border border-base-300 text-base-content/70 font-medium hover:bg-base-100 hover:border-base-content/30 transition-all text-sm">
                         Annuler
                     </button>
                     <button type="button" id="appointmentSubmitBtn" onclick="AppointmentModal.submitAppointment()"
-                        class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white font-semibold text-sm shadow-lg shadow-primary/30 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" disabled>
+                        class="px-6 py-2.5 rounded-xl text-white font-semibold text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" style="background: linear-gradient(to right, #1a3cff, #2563eb); box-shadow: 0 10px 15px -3px rgba(26, 60, 255, 0.3);" disabled>
                         <span id="appointmentSubmitText">Confirmer le rendez-vous</span>
                         <span id="appointmentSubmitLoader" class="hidden flex items-center gap-2">
                              <i class="fas fa-circle-notch fa-spin"></i>
@@ -183,7 +183,7 @@
         </div>
         
         <style>
-            /* Custom styles for calendar interactivity that Tailwind handles best with @apply but here inline to avoid build steps for css */
+            /* Custom styles for calendar interactivity - Dark mode compatible */
             .day-cell {
                 aspect-ratio: 1;
                 display: flex;
@@ -194,25 +194,27 @@
                 transition: all 0.2s;
                 font-size: 0.85rem;
                 font-weight: 500;
-                color: #374151;
+                color: var(--bc);
             }
             .day-cell:hover:not(.disabled):not(.selected) {
-                 background-color: #f3f4f6;
-                 color: var(--primary-color);
+                 background-color: var(--b2);
+                 color: var(--p);
             }
             .day-cell.selected {
-                background: linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%);
+                background: linear-gradient(135deg, var(--p) 0%, #2563eb 100%);
                 color: white;
-                box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+                box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
             }
             .day-cell.disabled {
-                opacity: 0.3;
+                opacity: 0.4;
                 cursor: not-allowed;
+                color: var(--bc);
+                opacity: 0.35;
             }
             .day-cell.today {
                 font-weight: 800;
-                color: var(--primary-color);
-                background-color: #eff6ff;
+                color: var(--p);
+                background-color: var(--b2);
             }
 
             .time-slot-btn {
@@ -221,24 +223,24 @@
                 border-radius: 0.75rem;
                 font-size: 0.8rem;
                 font-weight: 600;
-                color: #4b5563;
-                background-color: white;
-                border: 1px solid #e5e7eb;
+                color: var(--bc);
+                background-color: var(--b1);
+                border: 1px solid var(--b3);
                 cursor: pointer;
                 transition: all 0.2s;
             }
             .time-slot-btn:hover {
-                border-color: var(--primary-color);
-                color: var(--primary-color);
+                border-color: var(--p);
+                color: var(--p);
                 transform: translateY(-1px);
-                background-color: #f9fafb;
+                background-color: var(--b2);
                 box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             }
             .time-slot-btn.selected {
-                background: linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%);
+                background: linear-gradient(135deg, var(--p) 0%, #2563eb 100%);
                 color: white;
                 border-color: transparent;
-                box-shadow: 0 3px 10px rgba(79, 70, 229, 0.2);
+                box-shadow: 0 3px 10px rgba(37, 99, 235, 0.2);
             }
         </style>
     </div>

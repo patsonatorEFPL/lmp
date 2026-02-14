@@ -37,7 +37,7 @@
                         lmp: {
                             "primary": "#1a3cff",
                             "secondary": "#6c757d",
-                            "accent": "#8b5cf6",
+                            "accent": "#2563eb",
                             "neutral": "#212529",
                             "base-100": "#ffffff",
                             "info": "#3b82f6",
@@ -45,9 +45,29 @@
                             "warning": "#f59e0b",
                             "error": "#ef4444",
                         },
+                        light: {
+                            "primary": "#1a3cff",
+                            "secondary": "#6c757d",
+                            "accent": "#2563eb",
+                            "neutral": "#212529",
+                            "base-100": "#ffffff",
+                            "info": "#3b82f6",
+                            "success": "#22c55e",
+                            "warning": "#f59e0b",
+                            "error": "#ef4444",
+                        },
+                        dark: {
+                            "primary": "#1a3cff",
+                            "secondary": "#6c757d",
+                            "accent": "#2563eb",
+                            "neutral": "#212529",
+                            "base-100": "#1a1a2e",
+                            "info": "#3b82f6",
+                            "success": "#22c55e",
+                            "warning": "#f59e0b",
+                            "error": "#ef4444",
+                        },
                     },
-                    "dark",
-                    "light",
                 ],
             },
         }
@@ -240,3 +260,23 @@
     <div class="gtranslate_wrapper"></div>
     <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </div>
+                }
+            });
+            
+            enButtons.forEach(function(btn) {
+                if (currentLang === 'en') {
+                    btn.classList.add('bg-primary', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-primary', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+        });
+    </script>
+    
+    <!-- GTranslate Widget -->
+    <div class="gtranslate_wrapper"></div>
+    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
+</div>
+
