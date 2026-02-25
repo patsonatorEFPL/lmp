@@ -13,6 +13,14 @@
         <!-- Moon icon (shown when checkbox is unchecked = currently light, click to go dark) -->
         <span class="material-symbols-outlined swap-off text-lg leading-none">dark_mode</span>
     </label>
+    <!-- Immediately set checkbox state to prevent icon flash -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('lmp-theme') || 'dark';
+            var cb = document.currentScript.previousElementSibling.querySelector('.theme-toggle-check');
+            if (cb) cb.checked = (t === 'dark');
+        })();
+    </script>
 
     <!-- Language Dropdown (DaisyUI) -->
     <details class="dropdown dropdown-end">
