@@ -12,7 +12,6 @@ WORKDIR /app
 COPY pom.xml .
 COPY .mvn .mvn
 COPY mvnw .
-COPY mvnw.cmd .
 
 # Donner les permissions d'exécution au wrapper Maven
 RUN chmod +x mvnw
