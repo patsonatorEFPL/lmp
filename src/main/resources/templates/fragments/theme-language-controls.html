@@ -15,13 +15,13 @@
     </label>
 
     <!-- Language Dropdown (DaisyUI) -->
-    <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-2 px-2 font-normal language-btn">
+    <details class="dropdown dropdown-end">
+        <summary class="btn btn-ghost btn-sm gap-2 px-2 font-normal language-btn m-0 list-none [&::-webkit-details-marker]:hidden">
             <img id="nav-current-flag" src="https://flagcdn.com/w40/fr.png" alt="" class="w-5 h-3.5 rounded-sm object-cover shadow-sm">
             <span id="nav-current-lang" class="hidden sm:inline text-base-content">FR</span>
             <i class="fas fa-chevron-down text-[10px] opacity-70 text-base-content"></i>
-        </div>
-        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-48 mt-2 border border-base-200 text-base-content">
+        </summary>
+        <ul class="dropdown-content z-[2] menu p-2 shadow-lg bg-base-100 rounded-box w-48 mt-2 border border-base-200 text-base-content">
             <li><a onclick="changeNavGTranslateLang('fr')"><img src="https://flagcdn.com/w40/fr.png" class="w-5 h-3.5 rounded-sm"> Français</a></li>
             <li><a onclick="changeNavGTranslateLang('en')"><img src="https://flagcdn.com/w40/us.png" class="w-5 h-3.5 rounded-sm"> English</a></li>
             <li><a onclick="changeNavGTranslateLang('es')"><img src="https://flagcdn.com/w40/es.png" class="w-5 h-3.5 rounded-sm"> Español</a></li>
@@ -31,7 +31,7 @@
             <li><a onclick="changeNavGTranslateLang('pt')"><img src="https://flagcdn.com/w40/br.png" class="w-5 h-3.5 rounded-sm"> Português</a></li>
             <li><a onclick="changeNavGTranslateLang('lb')"><img src="https://flagcdn.com/w40/lu.png" class="w-5 h-3.5 rounded-sm"> Lëtzebuergesch</a></li>
         </ul>
-    </div>
+    </details>
 
     <!-- Hidden GTranslate wrapper -->
     <div class="gtranslate_wrapper" style="display: none;"></div>
