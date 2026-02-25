@@ -75,3 +75,4 @@ old_footer.html
 old_footer.tmp
 
 .kilocode/
+git_status*.txt
