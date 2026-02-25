@@ -24,7 +24,7 @@
 
     <!-- Language Dropdown (DaisyUI) -->
     <details class="dropdown dropdown-end">
-        <summary class="btn btn-ghost btn-sm gap-2 px-2 font-normal language-btn m-0 list-none [&::-webkit-details-marker]:hidden">
+        <summary class="btn btn-ghost btn-sm gap-2 px-2 font-normal language-btn m-0 list-none [&::-webkit-details-marker]:hidden" style="visibility:hidden">
             <img class="nav-current-flag w-5 h-3.5 rounded-sm object-cover shadow-sm" src="https://flagcdn.com/w40/fr.png" alt="">
             <span class="nav-current-lang hidden sm:inline text-base-content">FR</span>
             <i class="fas fa-chevron-down text-[10px] opacity-70 text-base-content"></i>
@@ -64,6 +64,8 @@
                 flags.forEach(function(el) { el.src = langMap[saved].flag; });
                 langs.forEach(function(el) { el.textContent = langMap[saved].name; });
             }
+            // Reveal all language buttons now that values are correct
+            document.querySelectorAll('.language-btn').forEach(function(el) { el.style.visibility = 'visible'; });
         })();
     </script>
 
