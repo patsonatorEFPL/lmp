@@ -40,6 +40,32 @@
             <li><a onclick="changeNavGTranslateLang('lb')"><img src="https://flagcdn.com/w40/lu.png" class="w-5 h-3.5 rounded-sm"> Lëtzebuergesch</a></li>
         </ul>
     </details>
+    <!-- Immediately set language flag/label to prevent flash of French defaults -->
+    <script>
+        (function() {
+            var langMap = {
+                fr: { name: 'FR', flag: 'https://flagcdn.com/w40/fr.png' },
+                en: { name: 'EN', flag: 'https://flagcdn.com/w40/us.png' },
+                es: { name: 'ES', flag: 'https://flagcdn.com/w40/es.png' },
+                de: { name: 'DE', flag: 'https://flagcdn.com/w40/de.png' },
+                it: { name: 'IT', flag: 'https://flagcdn.com/w40/it.png' },
+                nl: { name: 'NL', flag: 'https://flagcdn.com/w40/nl.png' },
+                pt: { name: 'PT', flag: 'https://flagcdn.com/w40/br.png' },
+                lb: { name: 'LB', flag: 'https://flagcdn.com/w40/lu.png' }
+            };
+            var saved = localStorage.getItem('lmp-lang');
+            if (!saved) {
+                var m = document.cookie.match(/googtrans=\/fr\/(\w+)/);
+                if (m) saved = m[1];
+            }
+            if (saved && langMap[saved]) {
+                var flags = document.querySelectorAll('.nav-current-flag');
+                var langs = document.querySelectorAll('.nav-current-lang');
+                flags.forEach(function(el) { el.src = langMap[saved].flag; });
+                langs.forEach(function(el) { el.textContent = langMap[saved].name; });
+            }
+        })();
+    </script>
 
     <!-- Hidden GTranslate wrapper -->
     <div class="gtranslate_wrapper" style="display: none;"></div>
