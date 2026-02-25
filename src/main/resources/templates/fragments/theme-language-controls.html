@@ -84,6 +84,9 @@
             document.getElementById('nav-current-lang').textContent = config.name;
             document.getElementById('nav-current-flag').src = config.flag;
             
+            // Save to localStorage for reliable persistence
+            localStorage.setItem('lmp-lang', lang);
+            
             // Set GTranslate cookie
             var date = new Date();
             date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
@@ -93,8 +96,14 @@
             window.location.reload();
         }
 
-        // Helper to get lang
+        // Helper to get lang (localStorage first, then cookie fallback)
         function getNavCurrentLang() {
+            // Check localStorage first (most reliable)
+            var saved = localStorage.getItem('lmp-lang');
+            if (saved && navSupportedLangs.includes(saved)) {
+                return saved;
+            }
+            // Fallback to GTranslate cookie
             var match = document.cookie.match(/googtrans=\/fr\/(\w+)/);
             if (match && navSupportedLangs.includes(match[1])) {
                 return match[1];
