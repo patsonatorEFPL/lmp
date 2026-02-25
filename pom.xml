@@ -160,6 +160,10 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Override DevTools flag that crashes Java 24 (EXCEPTION_ILLEGAL_INSTRUCTION in G1 GC) -->
+					<jvmArguments>-XX:TieredStopAtLevel=4</jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
