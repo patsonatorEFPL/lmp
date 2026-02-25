@@ -5,12 +5,12 @@
     
     <!-- Theme Toggle (DaisyUI Swap) -->
     <label class="swap swap-rotate btn btn-ghost btn-circle btn-sm items-center justify-center">
-        <input type="checkbox" class="theme-controller bg-base-100 opacity-0 border-0 absolute w-0 h-0" value="default" id="theme-toggle-check" onchange="toggleThemeFromCheckbox(this)" />
+        <input type="checkbox" class="bg-base-100 opacity-0 border-0 absolute w-0 h-0" id="theme-toggle-check" onchange="toggleThemeFromCheckbox(this)" />
         
-        <!-- Sun icon -->
+        <!-- Sun icon (shown when checkbox is checked = currently dark, click to go light) -->
         <span class="material-symbols-outlined swap-on text-lg leading-none">light_mode</span>
         
-        <!-- Moon icon -->
+        <!-- Moon icon (shown when checkbox is unchecked = currently light, click to go dark) -->
         <span class="material-symbols-outlined swap-off text-lg leading-none">dark_mode</span>
     </label>
 
@@ -51,27 +51,28 @@
         const navSupportedLangs = ['fr', 'en', 'es', 'de', 'it', 'nl', 'pt', 'lb'];
 
         // Theme Toggle via Checkbox (DaisyUI Swap)
+        // swap-on (sun) shows when checked, swap-off (moon) shows when unchecked
+        // checked = dark mode active (sun icon visible = "click to switch to light")
+        // unchecked = light mode active (moon icon visible = "click to switch to dark")
         function toggleThemeFromCheckbox(checkbox) {
             const body = document.body;
             const html = document.documentElement;
             
-            const isLight = checkbox.checked;
-            const newTheme = isLight ? 'light' : 'dark';
+            // checked => switch to dark, unchecked => switch to light
+            const newTheme = checkbox.checked ? 'dark' : 'light';
             
             if (newTheme === 'dark') {
                 body.classList.add('dark');
                 html.classList.add('dark');
                 html.dataset.theme = 'dark';
-                body.style.backgroundColor = '';
-                body.style.color = '';
             } else {
                 body.classList.remove('dark');
                 html.classList.remove('dark');
                 html.dataset.theme = 'light';
-                body.style.backgroundColor = '';
-                body.style.color = '';
             }
             
+            body.style.backgroundColor = '';
+            body.style.color = '';
             localStorage.setItem('lmp-theme', newTheme);
         }
 
@@ -103,18 +104,14 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Theme
+            // checked = dark (shows sun icon), unchecked = light (shows moon icon)
             const savedTheme = localStorage.getItem('lmp-theme') || 'dark';
             const checkbox = document.getElementById('theme-toggle-check');
-            const html = document.documentElement;
             
-            if (savedTheme === 'light') {
-                checkbox.checked = true;
-                html.classList.remove('dark');
-                html.dataset.theme = 'light';
+            if (savedTheme === 'dark') {
+                checkbox.checked = true;  // show sun icon (swap-on)
             } else {
-                checkbox.checked = false;
-                html.classList.add('dark');
-                html.dataset.theme = 'dark';
+                checkbox.checked = false; // show moon icon (swap-off)
             }
             
             // Initialize Language
@@ -143,10 +140,3 @@
     </script>
     <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
 </div>
-    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
-</div>
-
-    </script>
-    <script src="https://cdn.gtranslate.net/widgets/latest/float.js" defer></script>
-</div>
-
