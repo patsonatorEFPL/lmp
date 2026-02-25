@@ -1,60 +1,49 @@
 package com.lmp.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.Locale;
+
 /**
  * Contrôleur pour la page À propos
- * 
+ *
  * Ce contrôleur gère l'affichage des informations sur l'entreprise Lmp,
  * sa mission, son équipe et ses valeurs.
  */
 @Controller
 public class AboutController {
 
+    @Autowired
+    private MessageSource messageSource;
+
     /**
      * Affiche la page À propos
-     * 
+     *
      * @param model L'objet Model pour passer des données à la vue
      * @return Le nom du template à utiliser
      */
     @GetMapping("/about")
     public String about(Model model) {
-        // Informations sur l'entreprise
-        model.addAttribute("title", "À Propos de <span class=\"text-primary\">LMP</span>");
-        model.addAttribute("subtitle", "Découvrez notre mission et notre équipe");
+        Locale locale = LocaleContextHolder.getLocale();
         
-        // Mission de l'entreprise
-        model.addAttribute("mission", "<span class=\"text-primary font-semibold\">LMP</span> (Local Map Profil) est une plateforme innovante " +
-                "qui connecte les utilisateurs aux meilleures solutions locales. Notre mission " +
-                "est de faciliter la découverte et l'accès aux services, entreprises et opportunités " +
-                "qui vous entourent.");
+        // Informations sur l'entreprise (internationalisées)
+        String titleKey = messageSource.getMessage("about.page.header.title", null, locale);
+        model.addAttribute("title", titleKey);
+        model.addAttribute("subtitle", messageSource.getMessage("about.page.header.subtitle", null, locale));
         
-        // Vision de l'entreprise
-        model.addAttribute("vision", "Nous imaginons un monde où chaque personne peut facilement " +
-                "trouver et accéder aux ressources locales qui répondent à ses besoins, " +
-                "créant ainsi des communautés plus connectées et prospères.");
+        // Mission de l'entreprise (internationalisée)
+        model.addAttribute("mission", messageSource.getMessage("about.page.mission.content", null, locale));
         
-        // Valeurs de l'entreprise
-        model.addAttribute("values", new String[]{
-            "Innovation - Nous repoussons constamment les limites de la technologie",
-            "Communauté - Nous croyons au pouvoir des connexions locales",
-            "Transparence - Nous fournissons des informations claires et fiables",
-            "Accessibilité - Nos solutions sont conçues pour tous les utilisateurs",
-            "Durabilité - Nous soutenons les pratiques durables et responsables"
-        });
-        
-        // Statistiques fictives
-        model.addAttribute("stats", new Object[][]{
-            {"1000+", "Entreprises partenaires"},
-            {"50+", "Villes couvertes"},
-            {"10,000+", "Utilisateurs satisfaits"},
-            {"24/7", "Support disponible"}
-        });
+        // Vision de l'entreprise (internationalisée)
+        model.addAttribute("vision", messageSource.getMessage("about.page.vision.content", null, locale));
         
         model.addAttribute("currentPage", "about");
         
         return "about";
     }
-} 
+}

@@ -32,8 +32,8 @@ public class I18nConfig implements WebMvcConfigurer {
     public MessageSource messageSource() {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
         
-        // Définir le nom de base des fichiers de messages
-        messageSource.setBasename("classpath:messages");
+        // Définir le nom de base des fichiers de messages (i18n/messages_*.properties)
+        messageSource.setBasenames("i18n/messages", "messages");
         
         // Encodage UTF-8 pour supporter les caractères spéciaux
         messageSource.setDefaultEncoding("UTF-8");
