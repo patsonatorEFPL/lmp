@@ -161,8 +161,12 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<!-- Override DevTools flag that crashes Java 24 (EXCEPTION_ILLEGAL_INSTRUCTION in G1 GC) -->
-					<jvmArguments>-XX:TieredStopAtLevel=4</jvmArguments>
+					<!--
+					  Java 24 has a JIT C2 compiler bug with Spring Boot (ResolvableType crash).
+					  The permanent fix is to downgrade to Java 21 LTS.
+					  This flag disables the C2 compiler for dev runs as a workaround.
+					-->
+					<jvmArguments>-XX:UseAVX=0 -XX:TieredStopAtLevel=1</jvmArguments>
 				</configuration>
 			</plugin>
 		</plugins>
