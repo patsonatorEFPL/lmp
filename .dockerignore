@@ -1,7 +1,10 @@
 # ========================================
-# .dockerignore pour Railway.com
+# .dockerignore pour Coolify Deployment
 # Application Spring Boot LMP
 # ========================================
+
+# Git (exclure le repo .git pour réduire le contexte Docker)
+.git/
 
 # Fichiers et dossiers à exclure du contexte Docker
 
@@ -9,6 +12,9 @@
 *.md
 docs/
 *.txt
+
+# Deployment logs
+deployment-*
 
 # Fichiers de développement
 .gitignore
