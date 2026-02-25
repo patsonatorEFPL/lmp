@@ -68,7 +68,7 @@
 
             <!-- Bottom Bar -->
             <div class="border-t border-gray-200 dark:border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-                 <p>&copy; 2024 LMP (Local Map Profil). Tous droits réservés.</p>
+                 <p>&copy; <span th:text="${#dates.year(#dates.createNow())}">2024</span> LMP (Local Map Profil). Tous droits réservés.</p>
                  <div class="flex gap-8">
                     <a href="/privacy" class="hover:text-primary dark:hover:text-white transition-colors duration-200">Politique de confidentialité</a>
                     <a href="/terms" class="hover:text-primary dark:hover:text-white transition-colors duration-200">Conditions d'utilisation</a>
