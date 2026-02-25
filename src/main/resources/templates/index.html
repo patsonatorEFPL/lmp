@@ -32,32 +32,33 @@
 
     <main>
         <!-- Hero Section Premium with DaisyUI -->
-        <section id="home" class="relative min-h-[90vh] flex items-center py-20 lg:py-28 overflow-hidden bg-gradient-to-br from-base-100 via-primary/5 to-secondary/10">
-            <!-- Animated Background Elements -->
-            <div class="absolute top-20 right-[10%] w-64 h-64 bg-primary/20 rounded-full blur-[100px] animate-pulse"></div>
-            <div class="absolute bottom-20 left-[10%] w-96 h-96 bg-accent/20 rounded-full blur-[120px] animate-pulse" style="animation-delay: 1s;"></div>
+        <section id="home" class="relative min-h-[90vh] flex items-center py-20 lg:py-28 overflow-hidden bg-gradient-to-br from-base-100 via-primary/5 to-secondary/10 group cursor-default">
+            
+            <!-- Mouse Tracking Glow -->
+            <div id="hero-glow" class="absolute w-[800px] h-[800px] bg-gradient-to-r from-primary/30 to-accent/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 transition-opacity duration-700 group-hover:opacity-100 mix-blend-screen z-0"></div>
 
             <div class="container mx-auto px-4 relative z-10">
                 <div class="flex flex-col lg:flex-row items-center justify-between gap-16">
                     <!-- Hero Text -->
                     <div class="flex-1 lg:max-w-2xl relative">
-                        <div class="badge badge-primary badge-lg gap-2 mb-8 shadow-lg">
+                        <div id="update-badge" class="badge badge-primary badge-lg gap-2 mb-8 shadow-lg hero-reveal">
                             <span class="loading loading-dot loading-xs text-success"></span>
                             <span>Nouvelle mise à jour Google 2026 disponible</span>
                         </div>
                         
-                        <h1 class="text-5xl lg:text-7xl font-bold text-base-content mb-6 leading-[1.1] tracking-tight">
-                            LMP
-                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary/80 to-accent/80">Marketing Digital</span>
-                            <span class="block text-4xl lg:text-5xl mt-2 font-medium text-base-content/80">L'excellence locale.</span>
+                        <h1 class="text-5xl lg:text-7xl font-bold text-base-content mb-6 leading-[1.1] tracking-tight min-h-[160px] lg:min-h-[220px]">
+                            <span id="type-1"></span>
+                            <span id="type-2" class="text-transparent bg-clip-text bg-gradient-to-r from-primary/80 to-accent/80"></span>
+                            <span class="block text-4xl lg:text-5xl mt-2 font-medium text-base-content/80 hero-reveal">L'excellence locale.</span>
                         </h1>
                         
-                        <p class="text-xl text-base-content/70 mb-10 leading-relaxed max-w-xl">
+                        <p class="text-xl text-base-content/70 mb-10 leading-relaxed max-w-xl hero-reveal">
                             Propulsez votre visibilité au sommet. Technologie de pointe et expertise humaine pour dominer votre marché local.
                         </p>
                         
+            
                         <!-- Premium Email Form with DaisyUI -->
-                        <div class="relative max-w-lg mb-12 group">
+                        <div class="relative max-w-lg mb-12 group hero-reveal">
                             <form onsubmit="handleEmailSubmit(event)" class="join w-full shadow-xl hover:shadow-2xl transition-all duration-300">
                                 <input
                                     type="email"
@@ -75,7 +76,7 @@
                         </div>
 
                         <!-- Trust Indicators with DaisyUI -->
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-4 hero-reveal">
                             <div class="flex items-center gap-2 badge badge-ghost badge-lg whitespace-nowrap">
                                 <div class="text-success"><i class="fas fa-check"></i></div>
                                 <span>Pas de frais cachés</span>
@@ -91,90 +92,220 @@
                         </div>
                     </div>
 
-                    <!-- Hero Visual with DaisyUI Card -->
-                    <div class="flex-1 lg:max-w-xl relative">
-                        <div class="relative animate-float">
-                            <!-- Main Card -->
-                            <div class="card bg-neutral text-neutral-content shadow-2xl">
-                                <div class="card-body">
-                                    <div class="flex items-center justify-between mb-6">
-                                        <div>
-                                            <div class="text-sm opacity-70 mb-1">Croissance Mensuelle</div>
-                                            <div class="text-3xl font-bold flex items-center gap-2">
-                                                +127%
-                                                <span class="badge badge-success badge-sm">+2.4%</span>
-                                            </div>
-                                        </div>
-                                        <div class="avatar placeholder">
-                                            <div class="bg-gradient-to-br from-primary to-accent text-white w-12 rounded-xl">
-                                                <i class="fas fa-chart-bar text-xl"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Mockup Graph -->
-                                    <div class="h-32 flex items-end justify-between gap-2 mb-6">
-                                        <div class="w-full bg-base-300 rounded-t-lg h-[40%] hover:h-[45%] transition-all duration-300 hover:bg-primary/50"></div>
-                                        <div class="w-full bg-base-300 rounded-t-lg h-[60%] hover:h-[70%] transition-all duration-300 hover:bg-primary/50"></div>
-                                        <div class="w-full bg-base-300 rounded-t-lg h-[50%] hover:h-[55%] transition-all duration-300 hover:bg-primary/50"></div>
-                                        <div class="w-full bg-base-300 rounded-t-lg h-[75%] hover:h-[85%] transition-all duration-300 hover:bg-accent/50"></div>
-                                        <div class="w-full bg-gradient-to-t from-primary to-accent rounded-t-lg h-[90%] shadow-lg shadow-primary/50 relative group">
-                                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-base-100 text-neutral text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Top</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="divider my-0"></div>
-                                    
-                                    <div class="flex items-center justify-between text-sm opacity-70 pt-4">
-                                        <div class="flex items-center gap-2">
-                                            <span class="loading loading-dot loading-xs text-success"></span>
-                                            <span>Système Actif</span>
-                                        </div>
-                                        <span>Mise à jour: Il y a 2 min</span>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Hero Visual - Professional 3D Animated Orb -->
+                    <div class="flex-1 lg:flex-grow w-full relative min-h-[500px] lg:min-h-[600px] flex items-center justify-center perspective-1000 hero-reveal">
+                        <div class="relative w-72 h-72 md:w-96 md:h-96 orb-3d-container">
+                            <!-- Glowing background halos -->
+                            <div class="absolute inset-0 bg-primary/30 rounded-full blur-[80px] animate-pulse-slow"></div>
+                            <div class="absolute inset-[-20%] bg-accent/20 rounded-full blur-[100px] animate-pulse-slower" style="animation-delay: -2s;"></div>
                             
-                            <!-- Floating Card 1 -->
-                            <div class="absolute -top-12 -right-12 card bg-base-100 shadow-xl z-20 max-w-[180px] animate-bounce" style="animation-duration: 3s;">
-                                <div class="card-body p-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="avatar placeholder">
-                                            <div class="bg-warning/20 text-warning w-10 rounded-full">
-                                                <i class="fas fa-star text-sm"></i>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="text-xs opacity-50">Note Moyenne</div>
-                                            <div class="font-bold text-base-content">4.9/5.0</div>
-                                        </div>
-                                    </div>
-                                    <progress class="progress progress-warning w-full" value="95" max="100"></progress>
+                            <!-- The 3D Orb -->
+                            <div class="w-full h-full rounded-full relative transform-style-3d orb-3d">
+                                <!-- Mesh gradient surface -->
+                                <div class="absolute inset-0 rounded-full overflow-hidden shadow-[inset_0_0_50px_rgba(255,255,255,0.2),0_20px_50px_rgba(0,0,0,0.3)]">
+                                    <div class="w-[200%] h-[200%] absolute top-[-50%] left-[-50%] orb-surface"></div>
                                 </div>
-                            </div>
-
-                            <!-- Floating Card 2 -->
-                            <div class="absolute -bottom-10 -left-10 card bg-base-100 shadow-xl z-20 flex items-center animate-bounce" style="animation-duration: 4s; animation-delay: 1s;">
-                                <div class="card-body p-4 flex-row items-center gap-4">
-                                    <div class="avatar">
-                                        <div class="w-12 rounded-full bg-success/20 border-2 border-success">
-                                            <img src="https://ui-avatars.com/api/?name=Client+Top&background=random" alt="Client">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="text-sm font-bold text-base-content">Nouveau Client</div>
-                                        <div class="text-xs text-success font-medium">+ 350€ Revenus</div>
-                                    </div>
-                                </div>
+                                
+                                <!-- Outer glass reflection -->
+                                <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/40 shadow-[inset_0_4px_20px_rgba(255,255,255,0.5)]"></div>
+                                
+                                <!-- Inner floating rings (Decorative) -->
+                                <div class="absolute inset-[15%] rounded-full border border-white/20 orb-ring-1"></div>
+                                <div class="absolute inset-[25%] rounded-full border border-primary/30 orb-ring-2"></div>
+                                <div class="absolute inset-[35%] rounded-full border border-accent/20 orb-ring-3"></div>
                             </div>
                         </div>
                     </div>
+                    
+                    <style>
+                        /* Antigravity Style Reveal Animation */
+                        .hero-reveal, .scroll-reveal {
+                            opacity: 0;
+                            transform: translateY(20px);
+                            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+                        }
+                        .hero-reveal.revealed, .scroll-reveal.revealed {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+
+                        .perspective-1000 {
+                            perspective: 1000px;
+                        }
+                        .transform-style-3d {
+                            transform-style: preserve-3d;
+                        }
+                        
+                        /* Orb Surface Background */
+                        .orb-surface {
+                            background: 
+                                radial-gradient(circle at 50% 50%, var(--p) 0%, transparent 50%),
+                                radial-gradient(circle at 80% 20%, var(--a) 0%, transparent 50%),
+                                radial-gradient(circle at 20% 80%, var(--s) 0%, transparent 50%),
+                                radial-gradient(circle at 80% 80%, var(--in) 0%, transparent 50%),
+                                radial-gradient(circle at 20% 20%, #8b5cf6 0%, transparent 50%);
+                            background-size: 100% 100%;
+                            filter: blur(15px);
+                            animation: spin-surface 20s linear infinite;
+                        }
+                        
+                        /* Main Orb Animation */
+                        .orb-3d {
+                            animation: float-orb 8s ease-in-out infinite;
+                        }
+                        
+                        /* Ring Animations */
+                        .orb-ring-1 { animation: spin-ring-x 15s linear infinite; }
+                        .orb-ring-2 { animation: spin-ring-y 20s linear infinite reverse; }
+                        .orb-ring-3 { animation: spin-ring-z 25s linear infinite; }
+                        
+                        .animate-pulse-slow {
+                            animation: pulse-glow 6s ease-in-out infinite;
+                        }
+                        .animate-pulse-slower {
+                            animation: pulse-glow 8s ease-in-out infinite;
+                        }
+                        
+                        @keyframes spin-surface {
+                            0% { transform: rotate(0deg) scale(1.2); }
+                            50% { transform: rotate(180deg) scale(1.5); }
+                            100% { transform: rotate(360deg) scale(1.2); }
+                        }
+                        
+                        @keyframes float-orb {
+                            0%, 100% { transform: translateY(0) rotateX(10deg) rotateY(10deg); }
+                            50% { transform: translateY(-20px) rotateX(-5deg) rotateY(-15deg); }
+                        }
+                        
+                        @keyframes spin-ring-x {
+                            0% { transform: rotateX(0deg) rotateY(30deg); }
+                            100% { transform: rotateX(360deg) rotateY(30deg); }
+                        }
+                        @keyframes spin-ring-y {
+                            0% { transform: rotateX(45deg) rotateY(0deg); }
+                            100% { transform: rotateX(45deg) rotateY(360deg); }
+                        }
+                        @keyframes spin-ring-z {
+                            0% { transform: rotateX(60deg) rotateY(60deg) rotateZ(0deg); }
+                            100% { transform: rotateX(60deg) rotateY(60deg) rotateZ(360deg); }
+                        }
+                        
+                        /* Initial state for Floating Contact Button on Index page only */
+                        #floatingContactBtn:not(.revealed-btn) {
+                            opacity: 0;
+                            visibility: hidden;
+                            margin-right: -150px;
+                        }
+                    </style>
+                    
+                    <script>
+                        document.addEventListener("DOMContentLoaded", () => {
+                            // 1. Mouse Glow Tracking
+                            const homeSection = document.getElementById('home');
+                            const heroGlow = document.getElementById('hero-glow');
+                            
+                            if (homeSection && heroGlow) {
+                                homeSection.addEventListener('mousemove', (e) => {
+                                    const rect = homeSection.getBoundingClientRect();
+                                    const x = e.clientX - rect.left;
+                                    const y = e.clientY - rect.top;
+                                    
+                                    requestAnimationFrame(() => {
+                                        heroGlow.style.left = `${x}px`;
+                                        heroGlow.style.top = `${y}px`;
+                                    });
+                                });
+                            }
+
+                            // 2. Typewriter Effect
+                            const typedText1 = "LMP ";
+                            const typedText2 = "Marketing Digital";
+                            
+                            const span1 = document.getElementById("type-1");
+                            const span2 = document.getElementById("type-2");
+                            
+                            const cursor = document.createElement("span");
+                            cursor.className = "inline-block w-[3px] h-[0.9em] bg-base-content mx-1 animate-pulse align-middle";
+                            
+                            if(span1 && span2) {
+                                span1.appendChild(cursor);
+                                
+                                let isTyping1 = true;
+                                let i = 0;
+                                let j = 0;
+                                
+                                const type = () => {
+                                    if (isTyping1) {
+                                        if (i < typedText1.length) {
+                                            span1.insertBefore(document.createTextNode(typedText1.charAt(i)), cursor);
+                                            i++;
+                                            setTimeout(type, 70 + Math.random() * 50); // Random typing speed
+                                        } else {
+                                            isTyping1 = false;
+                                            span1.removeChild(cursor);
+                                            span2.appendChild(cursor);
+                                            setTimeout(type, 300); // Pause before second word
+                                        }
+                                    } else {
+                                        if (j < typedText2.length) {
+                                            span2.insertBefore(document.createTextNode(typedText2.charAt(j)), cursor);
+                                            j++;
+                                            setTimeout(type, 70 + Math.random() * 50);
+                                        } else {
+                                            // Finish typing
+                                            setTimeout(() => {
+                                                cursor.style.display = 'none';
+                                                revealElements();
+                                            }, 200);
+                                        }
+                                    }
+                                };
+                                
+                                // Start typing 0.5s after load
+                                setTimeout(type, 500);
+                            }
+
+                            // 3. Cascade Reveal
+                            function revealElements() {
+                                const elements = document.querySelectorAll('.hero-reveal');
+                                elements.forEach((el, index) => {
+                                    setTimeout(() => {
+                                        el.classList.add('revealed');
+                                    }, index * 100); // 100ms cascade delay
+                                });
+
+                                // Reveal secondary sections on scroll
+                                activateScrollReveals();
+                                
+                                // Show floating contact button
+                                const floatBtn = document.getElementById('floatingContactBtn');
+                                if (floatBtn) {
+                                    setTimeout(() => {
+                                        floatBtn.classList.add('revealed-btn');
+                                    }, 500); // 500ms after the hero elements start revealing
+                                }
+                            }
+
+                            function activateScrollReveals() {
+                                const observer = new IntersectionObserver((entries) => {
+                                    entries.forEach(entry => {
+                                        if (entry.isIntersecting) {
+                                            entry.target.classList.add('revealed');
+                                            observer.unobserve(entry.target);
+                                        }
+                                    });
+                                }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+                                document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+                            }
+                        });
+                    </script>
                 </div>
             </div>
         </section>
 
         <!-- Stats Section with DaisyUI Stats -->
-        <section class="py-20 bg-base-100 relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-xl">
+        <section class="py-20 bg-base-100 relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-xl hero-reveal">
             <div class="container mx-auto px-4">
                 <div class="stats stats-vertical lg:stats-horizontal shadow-xl w-full bg-base-100">
                     <!-- Stat 1 -->
@@ -245,7 +376,7 @@
         </section>
 
         <!-- Services Section with DaisyUI Cards -->
-        <section id="services" class="py-32 bg-base-200/50">
+        <section id="services" class="py-32 bg-base-200/50 scroll-reveal">
             <div class="container mx-auto px-4">
                 <div class="text-center mb-20">
                     <h2 class="text-4xl lg:text-5xl font-bold text-base-content dark:text-white mb-6">
@@ -420,7 +551,7 @@
         </section>
         
         <!-- About Section with DaisyUI -->
-        <section id="about" class="py-32 bg-base-100 relative overflow-hidden">
+        <section id="about" class="py-32 bg-base-100 relative overflow-hidden scroll-reveal">
             <!-- Background Decoration -->
             <div class="absolute top-0 right-0 w-1/3 h-full bg-base-200/50 skew-x-12 opacity-50 -z-10"></div>
             
@@ -476,7 +607,7 @@
         </section>
 
         <!-- Testimonials Section with DaisyUI -->
-        <section id="temoignages" class="py-24 bg-base-200 relative overflow-hidden">
+        <section id="temoignages" class="py-24 bg-base-200 relative overflow-hidden scroll-reveal">
             <!-- Decorative Elements -->
             <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
                 <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary rounded-full blur-[120px]"></div>
@@ -590,7 +721,7 @@
         </section>
         
         <!-- Contact Section with DaisyUI -->
-        <section id="contact" class="py-32 bg-base-200 text-base-content relative overflow-hidden">
+        <section id="contact" class="py-32 bg-base-200 text-base-content relative overflow-hidden scroll-reveal">
              <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
              <!-- Minimalist Gradient Glow -->
              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 blur-[150px] rounded-full pointer-events-none"></div>
@@ -712,6 +843,17 @@
                 AppointmentModal.init();
                 console.log('Modal de rendez-vous initialisé sur la page d\'accueil');
             }
+
+            // Faire disparaître le badge de mise à jour après quelques instants (5 secondes)
+            setTimeout(function() {
+                var badge = document.getElementById('update-badge');
+                if (badge) {
+                    badge.classList.remove('revealed');
+                    setTimeout(function() {
+                        badge.style.display = 'none';
+                    }, 1200); // Attendre la fin de la transition hero-reveal avant de masquer complètement
+                }
+            }, 5000); // 5000 ms = 5 secondes
         });
     </script>
     <!-- GTranslate Config -->

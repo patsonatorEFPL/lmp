@@ -14,9 +14,9 @@
     <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <!-- Header Section -->
-    <section class="py-16 bg-gradient-to-br from-base-200 to-base-100">
+    <section class="py-16 bg-gradient-to-br from-base-200 to-base-100 section-animation">
         <div class="container mx-auto px-4">
-            <div class="text-center">
+            <div class="text-center title-animation delay-100">
                 <h1 class="text-4xl lg:text-5xl font-bold text-base-content mb-4">Politique de Confidentialité</h1>
                 <p class="text-lg text-base-content/80 max-w-2xl mx-auto">Comment nous protégeons et utilisons vos données personnelles</p>
             </div>
@@ -24,15 +24,15 @@
     </section>
 
     <!-- Content Section -->
-    <section class="py-16 bg-base-100">
+    <section class="py-16 bg-base-100 section-animation">
         <div class="container mx-auto px-4">
             <div class="max-w-4xl mx-auto prose prose-lg">
-                <div class="bg-primary/10 border-l-4 border-primary p-6 mb-8 rounded-r-lg">
+                <div class="bg-primary/10 border-l-4 border-primary p-6 mb-8 rounded-r-lg fade-in-up delay-100">
                     <p class="text-primary font-semibold mb-2">Dernière mise à jour : Janvier 2025</p>
                     <p class="text-base-content/80 mb-0">Cette politique de confidentialité explique comment <strong>LMP Local Map Profil</strong> collecte, utilise et protège vos informations personnelles.</p>
                 </div>
 
-                <div class="space-y-8">
+                <div class="space-y-8 fade-in-up delay-200">
                     <section>
                         <h2 class="text-2xl font-bold text-base-content mb-4">Présentation</h2>
                         <p class="text-base-content/80 leading-relaxed">
@@ -146,5 +146,8 @@
 
     <!-- Navigation Scripts -->
     <th:block th:replace="~{fragments/scripts :: navigation-scripts}"></th:block>
+
+    <!-- Animations de défilement JS -->
+    <th:block th:replace="~{fragments/scroll-animations :: scroll-animations-js}"></th:block>
 </body>
 </html>

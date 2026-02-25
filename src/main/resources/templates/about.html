@@ -14,7 +14,7 @@
     <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
 
     <!-- Header Section -->
-    <section class="py-16 bg-gradient-to-br from-base-200 to-base-100">
+    <section class="py-16 bg-gradient-to-br from-base-200 to-base-100 section-animation">
         <div class="container mx-auto px-4">
             <div class="text-center">
                 <h1 class="text-4xl lg:text-5xl font-bold text-base-content mb-4" th:utext="${title}">À Propos - Équipe Marketing Digital</h1>
@@ -24,11 +24,11 @@
     </section>
 
     <!-- Mission Section -->
-    <section class="py-16 bg-base-100">
+    <section class="py-16 bg-base-100 section-animation">
         <div class="container mx-auto px-4">
             <div class="max-w-6xl mx-auto">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div>
+                    <div class="fade-in-left delay-100">
                         <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-6">Notre Mission Marketing Local</h2>
                         <p class="text-lg text-base-content/80 mb-8 leading-relaxed" th:utext="${mission}">
                             LMP (Local Map Profil) est une plateforme innovante qui connecte les utilisateurs aux meilleures solutions locales. 
@@ -42,7 +42,7 @@
                         </p>
                     </div>
                     
-                    <div class="text-center">
+                    <div class="text-center fade-in-right delay-300">
                         <div class="text-8xl text-primary mb-6" aria-label="Innovation locale marketing digital solutions">💡</div>
                         <div class="text-2xl font-semibold text-base-content">Innovation Locale</div>
                     </div>
@@ -52,7 +52,7 @@
     </section>
 
     <!-- Values Section -->
-    <section class="py-16 bg-gradient-to-br from-base-100 to-base-200">
+    <section class="py-16 bg-gradient-to-br from-base-100 to-base-200 section-animation">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Valeurs Marketing Digital</h2>
@@ -60,22 +60,22 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="text-center">
+                <div class="text-center fade-in-up delay-100">
                     <div class="text-4xl mb-4 text-primary" aria-label="Excellence marketing digital qualité services">⭐</div>
                     <h3 class="text-xl font-semibold text-base-content mb-2">Excellence</h3>
                     <p class="text-base-content/80">Nous visons l'excellence dans tout ce que nous faisons</p>
                 </div>
-                <div class="text-center">
+                <div class="text-center fade-in-up delay-200">
                     <div class="text-4xl mb-4 text-primary" aria-label="Collaboration partenariat équipe clients">🤝</div>
                     <h3 class="text-xl font-semibold text-base-content mb-2">Collaboration</h3>
                     <p class="text-base-content/80">Nous croyons au pouvoir de la collaboration</p>
                 </div>
-                <div class="text-center">
+                <div class="text-center fade-in-up delay-300">
                     <div class="text-4xl mb-4 text-primary" aria-label="Innovation technologie marketing digital moderne">💡</div>
                     <h3 class="text-xl font-semibold text-base-content mb-2">Innovation</h3>
                     <p class="text-base-content/80">Nous repoussons constamment les limites</p>
                 </div>
-                <div class="text-center">
+                <div class="text-center fade-in-up delay-400">
                     <div class="text-4xl mb-4 text-primary" aria-label="Impact positif communautés locales">🎯</div>
                     <h3 class="text-xl font-semibold text-base-content mb-2">Impact</h3>
                     <p class="text-base-content/80">Nous créons un impact positif dans nos communautés</p>
@@ -85,7 +85,7 @@
     </section>
 
     <!-- Stats Section -->
-    <section class="py-16 bg-base-100">
+    <section class="py-16 bg-base-100 section-animation">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Performance Marketing</h2>
@@ -93,20 +93,20 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-primary mb-2">1000+</div>
+                <div class="text-center counter-animation delay-100">
+                    <div class="text-4xl font-bold text-primary mb-2" data-target="1000">0+</div>
                     <div class="text-base-content/80">Entreprises partenaires</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-primary mb-2">50K+</div>
+                <div class="text-center counter-animation delay-200">
+                    <div class="text-4xl font-bold text-primary mb-2" data-target="50">0K+</div>
                     <div class="text-base-content/80">Utilisateurs actifs</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-primary mb-2">95%</div>
+                <div class="text-center counter-animation delay-300">
+                    <div class="text-4xl font-bold text-primary mb-2" data-target="95">0%</div>
                     <div class="text-base-content/80">Taux de satisfaction</div>
                 </div>
-                <div class="text-center">
-                    <div class="text-4xl font-bold text-primary mb-2">10+</div>
+                <div class="text-center counter-animation delay-400">
+                    <div class="text-4xl font-bold text-primary mb-2" data-target="10">0+</div>
                     <div class="text-base-content/80">Années d'expérience</div>
                 </div>
             </div>
@@ -114,7 +114,7 @@
     </section>
 
     <!-- Team Section - Carrousel Horizontal -->
-    <section class="py-16 bg-gradient-to-br from-base-100 to-base-200">
+    <section class="py-16 bg-gradient-to-br from-base-100 to-base-200 section-animation">
         <div class="container mx-auto px-4">
             <div class="text-center mb-12">
                 <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">Équipe Experts SEO</h2>
@@ -196,5 +196,8 @@
 
     <!-- Navigation Scripts -->
     <th:block th:replace="~{fragments/scripts :: navigation-scripts}"></th:block>
+
+    <!-- Animations de défilement JS -->
+    <th:block th:replace="~{fragments/scroll-animations :: scroll-animations-js}"></th:block>
 </body>
 </html>

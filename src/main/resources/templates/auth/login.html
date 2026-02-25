@@ -100,7 +100,7 @@
                 </div>
                 
                 <!-- Testimonial -->
-                <div class="max-w-md">
+                <div class="max-w-md hero-reveal">
                     <div class="mb-6 text-primary">
                         <span class="material-symbols-outlined text-4xl notranslate" translate="no">format_quote</span>
                     </div>
@@ -121,7 +121,7 @@
                 </div>
                 
                 <!-- Footer Links -->
-                <div class="flex gap-6 text-sm text-slate-400">
+                <div class="flex gap-6 text-sm text-slate-400 hero-reveal">
                     <a class="hover:text-white transition-colors" th:href="@{/privacy}">Privacy Policy</a>
                     <a class="hover:text-white transition-colors" th:href="@{/terms}">Terms of Service</a>
                 </div>
@@ -146,28 +146,30 @@
                 
                 <!-- Header -->
                 <div class="mb-10">
-                    <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Welcome back</h1>
-                    <p class="text-slate-500 dark:text-slate-400">Please enter your details to access your dashboard.</p>
+                    <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
+                        <span id="type-1"></span><span id="type-2" class="text-primary"></span>
+                    </h1>
+                    <p class="text-slate-500 dark:text-slate-400 hero-reveal">Please enter your details to access your dashboard.</p>
                 </div>
 
                 <!-- Alert Messages -->
-                <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3 text-sm">
+                <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3 text-sm hero-reveal">
                     <span class="material-symbols-outlined notranslate" translate="no">error</span>
                     <span th:text="${errorMessage}">Error message</span>
                 </div>
                 
-                <div th:if="${successMessage}" class="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3 text-sm">
+                <div th:if="${successMessage}" class="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 flex items-center gap-3 text-sm hero-reveal">
                     <span class="material-symbols-outlined notranslate" translate="no">check_circle</span>
                     <span th:text="${successMessage}">Success message</span>
                 </div>
                 
-                <div th:if="${warningMessage}" class="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 flex items-center gap-3 text-sm">
+                <div th:if="${warningMessage}" class="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 flex items-center gap-3 text-sm hero-reveal">
                     <span class="material-symbols-outlined notranslate" translate="no">warning</span>
                     <span th:text="${warningMessage}">Warning message</span>
                 </div>
 
                 <!-- Form -->
-                <form th:action="@{/perform-login}" method="post" class="flex flex-col gap-5">
+                <form th:action="@{/perform-login}" method="post" class="flex flex-col gap-5 hero-reveal">
                     <!-- Email Field -->
                     <div class="space-y-1.5">
                         <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="email">Email Address</label>
@@ -212,7 +214,7 @@
                 </form>
                 
                 <!-- Divider -->
-                <div class="relative my-8">
+                <div class="relative my-8 hero-reveal">
                     <div aria-hidden="true" class="absolute inset-0 flex items-center">
                         <div class="w-full border-t border-slate-200 dark:border-border-dark"></div>
                     </div>
@@ -222,7 +224,7 @@
                 </div>
                 
                 <!-- Social Auth -->
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-4 hero-reveal">
                     <a href="/oauth2/authorization/google" class="flex items-center justify-center gap-2 rounded-lg border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-border-dark transition-colors focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-border-dark">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -241,12 +243,12 @@
                 </div>
                 
                 <!-- Footer Sign up -->
-                <div class="mt-8 text-center text-sm">
+                <div class="mt-8 text-center text-sm hero-reveal">
                     <span class="text-slate-500 dark:text-slate-400">Don't have an account?</span>
                     <a class="ml-1 font-semibold text-primary hover:text-primary-hover transition-colors" th:href="@{/register}">Sign up</a>
                 </div>
                 
-                <div class="mt-12 lg:hidden flex justify-center text-xs text-slate-400 gap-4">
+                <div class="mt-12 lg:hidden flex justify-center text-xs text-slate-400 gap-4 hero-reveal">
                     <a th:href="@{/privacy}">Privacy</a>
                     <a th:href="@{/terms}">Terms</a>
                 </div>
@@ -271,7 +273,83 @@
                 toggleIcon.textContent = 'visibility_off';
             }
         }
+
+        // Animation Logic
+        document.addEventListener("DOMContentLoaded", () => {
+            // Typewriter Effect
+            const typedText1 = "Welcome ";
+            const typedText2 = "back";
+            
+            const span1 = document.getElementById("type-1");
+            const span2 = document.getElementById("type-2");
+            
+            if (!span1 || !span2) {
+                revealElements();
+                return;
+            }
+
+            const cursor = document.createElement("span");
+            cursor.className = "inline-block w-[3px] h-[0.9em] bg-slate-900 dark:bg-white mx-1 animate-pulse align-middle";
+            span1.appendChild(cursor);
+            
+            let isTyping1 = true;
+            let i = 0;
+            let j = 0;
+            
+            const type = () => {
+                if (isTyping1) {
+                    if (i < typedText1.length) {
+                        span1.insertBefore(document.createTextNode(typedText1.charAt(i)), cursor);
+                        i++;
+                        setTimeout(type, 70 + Math.random() * 50); // Random typing speed
+                    } else {
+                        isTyping1 = false;
+                        span1.removeChild(cursor);
+                        span2.appendChild(cursor);
+                        setTimeout(type, 300); // Pause before second word
+                    }
+                } else {
+                    if (j < typedText2.length) {
+                        span2.insertBefore(document.createTextNode(typedText2.charAt(j)), cursor);
+                        j++;
+                        setTimeout(type, 70 + Math.random() * 50);
+                    } else {
+                        // Finish typing
+                        setTimeout(() => {
+                            cursor.style.display = 'none';
+                            revealElements();
+                        }, 200);
+                    }
+                }
+            };
+            
+            // Start typing 0.5s after load
+            setTimeout(type, 500);
+
+            // Cascade Reveal
+            function revealElements() {
+                const elements = document.querySelectorAll('.hero-reveal');
+                elements.forEach((el, index) => {
+                    setTimeout(() => {
+                        el.classList.add('revealed');
+                    }, index * 100); // 100ms cascade delay
+                });
+            }
+        });
     </script>
+    
+    <style>
+        /* Antigravity Style Reveal Animation */
+        .hero-reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .hero-reveal.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 
     <!-- GTranslate Config -->
     <th:block th:replace="~{fragments/theme-language-controls :: gtranslate-config}"></th:block>
