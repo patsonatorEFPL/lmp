@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" data-theme="dark">
+<html class="dark" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -42,10 +42,8 @@
             const savedTheme = localStorage.getItem('lmp-theme') || 'dark';
             if (savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
-                document.documentElement.setAttribute('data-theme', 'dark');
             } else {
                 document.documentElement.classList.remove('dark');
-                document.documentElement.setAttribute('data-theme', 'light');
             }
         })();
     </script>
@@ -106,18 +104,18 @@
                     <div class="mb-6 text-primary">
                         <span class="material-symbols-outlined text-4xl notranslate" translate="no">format_quote</span>
                     </div>
-                    <blockquote class="text-2xl font-medium leading-relaxed text-white">
+                    <blockquote id="testimonial-text" class="text-2xl font-medium leading-relaxed text-white">
                         "LMP helped us streamline our workflow effortlessly. Un service essentiel pour les PME québécoises."
                     </blockquote>
                     <div class="mt-8 flex items-center gap-4">
                         <div class="h-12 w-12 rounded-full bg-surface-dark border border-border-dark overflow-hidden">
-                            <img alt="Portrait of a business executive" 
+                            <img id="testimonial-avatar" alt="Portrait" 
                                  class="h-full w-full object-cover" 
                                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbnXJuj3zET-uKeaIHr7XtFDCOXq10qq0uMsCBlqIabUHkA29VDtE8uq229HV4RgnzFe24grNLGgKpbJgq9qEp-bW5lKSAKqHs4m6f8qKHAnyE63FDLU9bYz81rCN7Z3YZUyA7Kj-PaIHeguCk8ni9lsyEb8bwhF8gYgXtKH0sL54dsEX0aCYy786QUxgtJ5qN_BQOTtwFLu9ejFUjLtVdq7ErZ6hE2gVSUR5miATur4qiP_nnloDjIaI2wKXYHo1DQA5Ld1uOF3oG"/>
                         </div>
                         <div>
-                            <div class="text-base font-semibold text-white">Jean-Francois L.</div>
-                            <div class="text-sm text-slate-400">CEO, NordicTech Solutions</div>
+                            <div id="testimonial-author" class="text-base font-semibold text-white">Jean-Francois L.</div>
+                            <div id="testimonial-role" class="text-sm text-slate-400">CEO, NordicTech Solutions</div>
                         </div>
                     </div>
                 </div>
@@ -148,10 +146,10 @@
                 
                 <!-- Header -->
                 <div class="mb-10">
-                    <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
-                        <span id="type-1"></span><span id="type-2" class="text-primary"></span>
+                    <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-2 hero-reveal">
+                        <span id="type-1">Bienvenue </span><span id="type-2" class="text-primary">de retour</span>
                     </h1>
-                    <p class="text-slate-500 dark:text-slate-400 hero-reveal">Please enter your details to access your dashboard.</p>
+                    <p class="text-slate-500 dark:text-slate-400 hero-reveal">Veuillez entrer vos identifiants pour accéder.</p>
                 </div>
 
                 <!-- Alert Messages -->
@@ -278,55 +276,103 @@
 
         // Animation Logic
         document.addEventListener("DOMContentLoaded", () => {
-            // Typewriter Effect
-            const typedText1 = "Welcome ";
-            const typedText2 = "back";
+            // Random Welcome Messages
+            const messages = [
+                { p1: "Bienvenue ", p2: "de retour" },
+                { p1: "Ravi de ", p2: "vous revoir" },
+                { p1: "Accédez à ", p2: "votre espace" },
+                { p1: "Gérez ", p2: "votre activité" },
+                { p1: "Prêt à ", p2: "vous connecter ?" }
+            ];
             
+            // Random Testimonials
+            const testimonials = [
+                {
+                    text: "\"LMP helped us streamline our workflow effortlessly. Un service essentiel pour les PME québécoises.\"",
+                    author: "Jean-Francois L.",
+                    role: "CEO, NordicTech Solutions",
+                    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAbnXJuj3zET-uKeaIHr7XtFDCOXq10qq0uMsCBlqIabUHkA29VDtE8uq229HV4RgnzFe24grNLGgKpbJgq9qEp-bW5lKSAKqHs4m6f8qKHAnyE63FDLU9bYz81rCN7Z3YZUyA7Kj-PaIHeguCk8ni9lsyEb8bwhF8gYgXtKH0sL54dsEX0aCYy786QUxgtJ5qN_BQOTtwFLu9ejFUjLtVdq7ErZ6hE2gVSUR5miATur4qiP_nnloDjIaI2wKXYHo1DQA5Ld1uOF3oG"
+                },
+                {
+                    text: "\"Une équipe réactive et une expertise technique indéniable. Je recommande vivement leurs services pour la digitalisation.\"",
+                    author: "Thomas Laurent",
+                    role: "Fondateur, StartupHub",
+                    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"LMP a considérablement amélioré notre présence en ligne en quelques semaines. Un partenaire de confiance et performant !\"",
+                    author: "Marie Dubois",
+                    role: "Directrice Marketing, TechVision",
+                    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"Grâce à leurs solutions sur mesure, nous avons doublé notre acquisition client en 6 mois. Résultats exceptionnels.\"",
+                    author: "Sophie Martin",
+                    role: "E-commerce Manager",
+                    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"Leur interface de gestion est incroyablement intuitive. Toute l'équipe a adopté l'outil LMP dès le premier jour.\"",
+                    author: "Nicolas Renaud",
+                    role: "Directeur Opérations",
+                    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"Le support client est fantastique, toujours disponible pour résoudre nos problèmes en un clin d'œil. Merci LMP!\"",
+                    author: "Camille Tremblay",
+                    role: "Propriétaire de Boutique",
+                    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"La refonte de notre site web par LMP nous a permis d'augmenter notre taux de conversion de manière spectaculaire.\"",
+                    author: "Alexandre Petit",
+                    role: "CEO, InnovWeb",
+                    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"Une plateforme robuste et un accompagnement de haute qualité. Nous nous sentons écoutés et conseillés à chaque étape.\"",
+                    author: "Julien Moreau",
+                    role: "DRH Associé",
+                    avatar: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"LMP offre vraiment les outils nécessaires pour dominer le paysage numérique aujourd'hui. Mon ROI n'a jamais été aussi bon.\"",
+                    author: "Emilie Rousseau",
+                    role: "Consultante Financière",
+                    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100&h=100"
+                },
+                {
+                    text: "\"Nos flux de travail administratifs sont devenus limpides. Un gain de temps faramineux grâce à leur technologie.\"",
+                    author: "David Bergeron",
+                    role: "Directeur Logistique",
+                    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=100&h=100"
+                }
+            ];
+
+            // Assign Welcome Text
             const span1 = document.getElementById("type-1");
             const span2 = document.getElementById("type-2");
-            
-            if (!span1 || !span2) {
-                revealElements();
-                return;
+            if (span1 && span2) {
+                const rMsg = messages[Math.floor(Math.random() * messages.length)];
+                span1.textContent = rMsg.p1;
+                span2.textContent = rMsg.p2;
             }
 
-            const cursor = document.createElement("span");
-            cursor.className = "inline-block w-[3px] h-[0.9em] bg-slate-900 dark:bg-white mx-1 animate-pulse align-middle";
-            span1.appendChild(cursor);
-            
-            let isTyping1 = true;
-            let i = 0;
-            let j = 0;
-            
-            const type = () => {
-                if (isTyping1) {
-                    if (i < typedText1.length) {
-                        span1.insertBefore(document.createTextNode(typedText1.charAt(i)), cursor);
-                        i++;
-                        setTimeout(type, 70 + Math.random() * 50); // Random typing speed
-                    } else {
-                        isTyping1 = false;
-                        span1.removeChild(cursor);
-                        span2.appendChild(cursor);
-                        setTimeout(type, 300); // Pause before second word
-                    }
-                } else {
-                    if (j < typedText2.length) {
-                        span2.insertBefore(document.createTextNode(typedText2.charAt(j)), cursor);
-                        j++;
-                        setTimeout(type, 70 + Math.random() * 50);
-                    } else {
-                        // Finish typing
-                        setTimeout(() => {
-                            cursor.style.display = 'none';
-                            revealElements();
-                        }, 200);
-                    }
-                }
-            };
-            
-            // Start typing 0.5s after load
-            setTimeout(type, 500);
+            // Assign Testimonial
+            const tText = document.getElementById("testimonial-text");
+            const tAuthor = document.getElementById("testimonial-author");
+            const tRole = document.getElementById("testimonial-role");
+            const tAvatar = document.getElementById("testimonial-avatar");
+            if (tText && tAuthor && tRole && tAvatar) {
+                const rTestimonial = testimonials[Math.floor(Math.random() * testimonials.length)];
+                tText.textContent = rTestimonial.text;
+                tAuthor.textContent = rTestimonial.author;
+                tRole.textContent = rTestimonial.role;
+                tAvatar.src = rTestimonial.avatar;
+            }
+
+            // Reveal Animation
+            setTimeout(revealElements, 100);
 
             // Cascade Reveal
             function revealElements() {
