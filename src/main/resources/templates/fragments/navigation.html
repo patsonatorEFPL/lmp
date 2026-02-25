@@ -4,9 +4,10 @@
     <header th:fragment="navigation" class="sticky top-0 z-50 bg-base-100/90 backdrop-blur shadow-sm transition-all duration-300">
         <div class="navbar container mx-auto">
             <!-- Navbar Start: Logo -->
-            <div class="navbar-start">
-                <a href="/" class="btn btn-ghost text-xl px-2 group">
-                    <img src="/images/Logo LMP.webp" alt="LMP Logo" class="h-10 w-auto group-hover:scale-105 transition-transform duration-300">
+            <div class="navbar-start relative">
+                <a href="/" class="flex items-center px-2 group h-10 w-32 relative z-[60]">
+                    <img id="nav-main-logo" src="/images/Logo LMP.webp" alt="LMP Logo" 
+                         class="absolute -top-3 left-2 h-20 lg:h-28 w-auto origin-top-left transition-all duration-500 drop-shadow-lg group-hover:scale-105">
                 </a>
             </div>
 
@@ -91,6 +92,29 @@
 
             </div>
         </div>
+
+        <!-- Script Logo Shrink -->
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const logo = document.getElementById("nav-main-logo");
+                if (!logo) return;
+                
+                const handleScroll = () => {
+                    if (window.scrollY > 30) {
+                        // Scrolled: shrink back into navbar
+                        logo.classList.remove("h-20", "lg:h-28", "-top-3", "drop-shadow-lg");
+                        logo.classList.add("h-10", "top-0", "drop-shadow-sm");
+                    } else {
+                        // Top: expanded and overhanging
+                        logo.classList.add("h-20", "lg:h-28", "-top-3", "drop-shadow-lg");
+                        logo.classList.remove("h-10", "top-0", "drop-shadow-sm");
+                    }
+                };
+                
+                window.addEventListener("scroll", handleScroll, { passive: true });
+                handleScroll(); // Initialize
+            });
+        </script>
     </header>
 </body>
 </html>
