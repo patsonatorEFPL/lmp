@@ -23,6 +23,36 @@
 
             <!-- Navbar End: Controls, Auth & Mobile Menu -->
             <div class="navbar-end gap-2">
+                <!-- Mobile Dropdown Menu -->
+                <div class="dropdown dropdown-end lg:hidden">
+                    <div tabindex="0" role="button" class="btn btn-ghost p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </div>
+                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-200">
+                        <li><a href="/" th:classappend="${currentPage == 'home' ? 'font-bold text-primary' : ''}">Accueil</a></li>
+                        <li><a href="/services" th:classappend="${currentPage == 'services' ? 'font-bold text-primary' : ''}">Services</a></li>
+                        <li><a href="/map" th:classappend="${currentPage == 'map' ? 'font-bold text-primary' : ''}">Carte</a></li>
+                        <li><a href="/about" th:classappend="${currentPage == 'about' ? 'font-bold text-primary' : ''}">À propos</a></li>
+                        <li><a href="/contact" th:classappend="${currentPage == 'contact' ? 'font-bold text-primary' : ''}">Contact</a></li>
+                        
+                        <!-- Mobile Theme and Auth -->
+                        <div class="divider my-1"></div>
+                        <li class="px-2 py-1 flex flex-row items-center justify-between">
+                            <span class="opacity-70">Thème</span>
+                            <th:block th:replace="~{fragments/theme-language-controls :: theme-language-controls}"></th:block>
+                        </li>
+                        <div class="divider my-1"></div>
+                        <li sec:authorize="!isAuthenticated()"><a href="/login" class="text-primary font-bold"><i class="fas fa-sign-in-alt mr-2"></i>Connexion</a></li>
+                        <li sec:authorize="isAuthenticated()"><a href="/dashboard" class="text-primary font-bold"><i class="fas fa-columns mr-2"></i>Tableau de bord</a></li>
+                        <li sec:authorize="isAuthenticated()">
+                            <form action="/logout" method="post" class="w-full">
+                                <input type="hidden" name="_csrf" th:value="${_csrf?.token}"/>
+                                <button type="submit" class="w-full text-left text-error hover:bg-error/10 flex items-center"><i class="fas fa-sign-out-alt mr-2"></i>Déconnexion</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- Desktop: Theme & Language Controls -->
                 <div class="hidden lg:flex items-center gap-2">
                     <th:block th:replace="~{fragments/theme-language-controls :: theme-language-controls}"></th:block>
