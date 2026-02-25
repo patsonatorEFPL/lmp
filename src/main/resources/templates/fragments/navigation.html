@@ -27,7 +27,7 @@
                 <!-- Mobile Dropdown Menu -->
                 <div class="flex items-center lg:hidden">
                     <div class="dropdown dropdown-end">
-                        <div tabindex="0" role="button" class="btn btn-ghost p-2">
+                        <div tabindex="0" role="button" class="btn btn-ghost p-2" onclick="const dd=this.closest('.dropdown');if(dd.matches(':focus-within')){setTimeout(()=>{document.activeElement.blur()},0)}">
                             <i class="fas fa-bars text-xl"></i>
                         </div>
                         <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-200 text-base-content">
