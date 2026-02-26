@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" data-theme="lmp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traitement du paiement - LMP</title>
+    <meta name="description" content="Votre paiement est en cours de vérification.">
+    
+    <!-- Global Styles -->
+    <th:block th:replace="~{fragments/styles :: global-styles}"></th:block>
+
+    <style>
+        /* Pulse animation for payment icon */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.5; }
+            100% { transform: scale(0.9); opacity: 1; }
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s ease-in-out infinite;
+        }
+        .spin-slow {
+            animation: spin-slow 3s linear infinite;
+        }
+        .fade-in-up {
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
+        .shimmer-bar {
+            background: linear-gradient(90deg, 
+                oklch(var(--p)/0.2) 0%, 
+                oklch(var(--p)/0.5) 50%, 
+                oklch(var(--p)/0.2) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+
+        /* Step indicator styles */
+        .step-item {
+            transition: all 0.4s ease;
+        }
+        .step-item.active .step-dot {
+            background-color: oklch(var(--p));
+            box-shadow: 0 0 0 4px oklch(var(--p)/0.2);
+        }
+        .step-item.completed .step-dot {
+            background-color: oklch(var(--su));
+        }
+        .step-item.completed .step-dot i {
+            display: inline;
+        }
+        .step-item.pending .step-dot {
+            background-color: oklch(var(--bc)/0.15);
+        }
+        .step-line {
+            transition: background-color 0.4s ease;
+        }
+        .step-line.completed {
+            background-color: oklch(var(--su));
+        }
+        .step-line.active {
+            background-color: oklch(var(--p));
+        }
+
+        /* Message rotation */
+        .reassurance-msg {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .reassurance-msg.hidden {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        /* Timeout state */
+        .timeout-card {
+            animation: fade-in-up 0.6s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-base-200">
+    <!-- Header -->
+    <th:block th:replace="~{fragments/navigation :: navigation}"></th:block>
+
+    <main class="py-16">
+        <div class="container mx-auto px-4 max-w-2xl">
+
+            <!-- Processing Card -->
+            <div id="processing-card" class="bg-base-100 rounded-xl shadow-lg p-8 text-center">
+                
+                <!-- Animated Icon -->
+                <div class="relative w-24 h-24 mx-auto mb-8">
+                    <div class="absolute inset-0 rounded-full bg-primary/10 pulse-ring"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                            <i class="fas fa-credit-card text-primary text-2xl spin-slow" id="processing-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <h1 class="text-2xl font-bold text-base-content mb-2">
+                    Traitement de votre paiement
+                </h1>
+                <p class="text-base-content/60 mb-8">
+                    Veuillez patienter pendant la vérification...
+                </p>
+
+                <!-- Order Summary -->
+                <div class="bg-base-200 rounded-lg p-4 mb-8 inline-block">
+                    <span class="text-base-content/60">Service:</span>
+                    <span class="font-semibold text-base-content" th:text="${serviceName}">Service</span>
+                    <span class="mx-2 text-base-content/30">|</span>
+                    <span class="text-base-content/60">Montant:</span>
+                    <span class="font-semibold text-primary" 
+                          th:text="${#numbers.formatDecimal(totalAmount, 1, 2)} + ' ' + ${currency}">100.00 EUR</span>
+                </div>
+
+                <!-- Progress Steps -->
+                <div class="max-w-md mx-auto mb-8">
+                    <!-- Step 1 -->
+                    <div class="step-item completed flex items-center gap-3 mb-1" id="step-1">
+                        <div class="step-dot w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <span class="text-sm font-medium text-base-content text-left">Paiement initié avec succès</span>
+                    </div>
+                    <div class="step-line completed h-6 w-0.5 ml-4 rounded" id="line-1"></div>
+
+                    <!-- Step 2 -->
+                    <div class="step-item active flex items-center gap-3 mb-1" id="step-2">
+                        <div class="step-dot w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs" style="display:none"></i>
+                            <i class="fas fa-spinner fa-spin text-white text-xs step-spinner"></i>
+                        </div>
+                        <span class="text-sm font-medium text-base-content text-left">Vérification du paiement...</span>
+                    </div>
+                    <div class="step-line h-6 w-0.5 ml-4 rounded bg-base-300" id="line-2"></div>
+
+                    <!-- Step 3 -->
+                    <div class="step-item pending flex items-center gap-3 mb-1" id="step-3">
+                        <div class="step-dot w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs" style="display:none"></i>
+                            <i class="fas fa-spinner fa-spin text-white text-xs step-spinner" style="display:none"></i>
+                        </div>
+                        <span class="text-sm text-base-content/50 text-left">Confirmation bancaire</span>
+                    </div>
+                    <div class="step-line h-6 w-0.5 ml-4 rounded bg-base-300" id="line-3"></div>
+
+                    <!-- Step 4 -->
+                    <div class="step-item pending flex items-center gap-3" id="step-4">
+                        <div class="step-dot w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs" style="display:none"></i>
+                            <i class="fas fa-spinner fa-spin text-white text-xs step-spinner" style="display:none"></i>
+                        </div>
+                        <span class="text-sm text-base-content/50 text-left">Finalisation de votre commande</span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full bg-base-200 rounded-full h-2 mb-6 overflow-hidden">
+                    <div class="shimmer-bar h-full rounded-full transition-all duration-500" 
+                         id="progress-bar" style="width: 25%"></div>
+                </div>
+
+                <!-- Reassuring Messages -->
+                <div class="h-12 flex items-center justify-center">
+                    <p class="reassurance-msg text-sm text-base-content/50 italic" id="reassurance-text">
+                        🔒 Votre paiement est sécurisé par Stripe
+                    </p>
+                </div>
+            </div>
+
+            <!-- Timeout Card (hidden by default) -->
+            <div id="timeout-card" class="hidden bg-base-100 rounded-xl shadow-lg p-8 text-center timeout-card">
+                
+                <!-- Warning Icon -->
+                <div class="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-clock text-amber-600 dark:text-amber-400 text-3xl"></i>
+                </div>
+
+                <h2 class="text-2xl font-bold text-base-content mb-4">
+                    La vérification prend plus de temps que prévu
+                </h2>
+                <p class="text-base-content/60 mb-6">
+                    Votre paiement a probablement été accepté, mais la confirmation automatique n'a pas encore été reçue.
+                    Cela peut arriver lorsque les serveurs sont temporairement chargés.
+                </p>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-4 mb-8 text-left">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-200">Que faire ?</h4>
+                            <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Vérifiez votre email pour une confirmation de paiement</li>
+                                    <li>Consultez votre tableau de bord pour le statut de la commande</li>
+                                    <li>Si besoin, contactez notre support</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="retryPolling()" 
+                            class="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        Vérifier à nouveau
+                    </button>
+                    <a href="/dashboard" 
+                       class="border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all duration-200">
+                        Mon tableau de bord
+                    </a>
+                    <a href="mailto:lmp.assistance@gmail.com" 
+                       class="border-2 border-base-300 text-base-content/60 px-6 py-3 rounded-lg font-semibold hover:border-primary hover:text-primary transition-all duration-200">
+                        Nous contacter
+                    </a>
+                </div>
+            </div>
+
+            <!-- Success redirect card (hidden by default) -->
+            <div id="success-card" class="hidden bg-base-100 rounded-xl shadow-lg p-8 text-center fade-in-up">
+                <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-check text-green-600 dark:text-green-400 text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-base-content mb-4">Paiement confirmé !</h2>
+                <p class="text-base-content/60">Redirection vers votre récapitulatif...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const ORDER_ID = /*[[${orderId}]]*/ 0;
+        const SESSION_ID = /*[[${sessionId}]]*/ '';
+        const POLL_INTERVAL = 3000;     // 3 seconds
+        const TIMEOUT_MS = 120000;      // 2 minutes
+        const STEP_ADVANCE_MS = 6000;   // Advance visual steps every 6s
+
+        const MESSAGES = [
+            '🔒 Votre paiement est sécurisé par Stripe',
+            '⏱️ La vérification prend généralement quelques secondes',
+            '🏦 Communication avec votre banque en cours...',
+            '✨ Votre facture sera disponible dès la confirmation',
+            '📧 Vous recevrez également un email de confirmation',
+            '🛡️ Toutes vos données sont chiffrées de bout en bout'
+        ];
+
+        let pollTimer = null;
+        let timeoutTimer = null;
+        let stepTimer = null;
+        let msgIndex = 0;
+        let currentStep = 2;
+
+        // Start polling on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            startPolling();
+            startMessageRotation();
+            startStepAdvancement();
+        });
+
+        function startPolling() {
+            // Clear any existing timers
+            if (pollTimer) clearInterval(pollTimer);
+            if (timeoutTimer) clearTimeout(timeoutTimer);
+
+            // Poll immediately
+            checkPaymentStatus();
+
+            // Then poll every POLL_INTERVAL
+            pollTimer = setInterval(checkPaymentStatus, POLL_INTERVAL);
+
+            // Set timeout
+            timeoutTimer = setTimeout(onTimeout, TIMEOUT_MS);
+        }
+
+        function checkPaymentStatus() {
+            fetch('/api/payment-status/' + ORDER_ID)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.ready) {
+                        onPaymentConfirmed();
+                    }
+                })
+                .catch(error => {
+                    console.warn('Polling error:', error);
+                    // Don't stop polling on transient errors
+                });
+        }
+
+        function onPaymentConfirmed() {
+            // Stop timers
+            clearInterval(pollTimer);
+            clearTimeout(timeoutTimer);
+            clearInterval(stepTimer);
+
+            // Complete all steps visually
+            completeAllSteps();
+
+            // Update progress bar
+            document.getElementById('progress-bar').style.width = '100%';
+            document.getElementById('progress-bar').classList.remove('shimmer-bar');
+            document.getElementById('progress-bar').style.backgroundColor = 'oklch(var(--su))';
+
+            // Show success state briefly then redirect
+            setTimeout(function() {
+                document.getElementById('processing-card').classList.add('hidden');
+                document.getElementById('success-card').classList.remove('hidden');
+
+                // Redirect after a brief pause
+                setTimeout(function() {
+                    window.location.href = '/stripe/checkout/success?order_id=' + ORDER_ID 
+                                         + '&session_id=' + encodeURIComponent(SESSION_ID) 
+                                         + '&type=success';
+                }, 1500);
+            }, 800);
+        }
+
+        function onTimeout() {
+            clearInterval(pollTimer);
+            clearInterval(stepTimer);
+
+            document.getElementById('processing-card').classList.add('hidden');
+            document.getElementById('timeout-card').classList.remove('hidden');
+        }
+
+        function retryPolling() {
+            document.getElementById('timeout-card').classList.add('hidden');
+            document.getElementById('processing-card').classList.remove('hidden');
+
+            // Reset steps to step 2
+            currentStep = 2;
+            resetSteps();
+
+            startPolling();
+            startStepAdvancement();
+        }
+
+        // Visual step advancement (cosmetic progression)
+        function startStepAdvancement() {
+            if (stepTimer) clearInterval(stepTimer);
+            stepTimer = setInterval(function() {
+                if (currentStep < 4) {
+                    advanceStep(currentStep);
+                    currentStep++;
+                }
+            }, STEP_ADVANCE_MS);
+        }
+
+        function advanceStep(stepNum) {
+            // Complete current step
+            var step = document.getElementById('step-' + stepNum);
+            step.classList.remove('active');
+            step.classList.add('completed');
+            step.querySelector('.step-spinner').style.display = 'none';
+            step.querySelector('.fa-check').style.display = 'inline';
+            step.querySelector('span').classList.remove('text-base-content/50');
+            step.querySelector('span').classList.add('text-base-content');
+
+            // Complete line
+            var line = document.getElementById('line-' + stepNum);
+            if (line) {
+                line.classList.remove('bg-base-300');
+                line.classList.add('completed');
+            }
+
+            // Activate next step
+            var nextStep = stepNum + 1;
+            if (nextStep <= 4) {
+                var next = document.getElementById('step-' + nextStep);
+                next.classList.remove('pending');
+                next.classList.add('active');
+                next.querySelector('.step-spinner').style.display = 'inline';
+                next.querySelector('span').classList.remove('text-base-content/50');
+                next.querySelector('span').classList.add('text-base-content');
+            }
+
+            // Update progress bar
+            var progressPercent = (stepNum / 4) * 100;
+            document.getElementById('progress-bar').style.width = progressPercent + '%';
+        }
+
+        function completeAllSteps() {
+            for (var i = 2; i <= 4; i++) {
+                var step = document.getElementById('step-' + i);
+                step.classList.remove('active', 'pending');
+                step.classList.add('completed');
+                var spinner = step.querySelector('.step-spinner');
+                if (spinner) spinner.style.display = 'none';
+                step.querySelector('.fa-check').style.display = 'inline';
+                step.querySelector('span').classList.remove('text-base-content/50');
+                step.querySelector('span').classList.add('text-base-content');
+
+                var line = document.getElementById('line-' + i);
+                if (line) {
+                    line.classList.remove('bg-base-300');
+                    line.classList.add('completed');
+                }
+            }
+        }
+
+        function resetSteps() {
+            for (var i = 2; i <= 4; i++) {
+                var step = document.getElementById('step-' + i);
+                step.classList.remove('completed', 'active');
+                step.querySelector('.fa-check').style.display = 'none';
+                step.querySelector('span').classList.remove('text-base-content');
+
+                var line = document.getElementById('line-' + i);
+                if (line) {
+                    line.classList.remove('completed', 'active');
+                    line.classList.add('bg-base-300');
+                }
+
+                if (i === 2) {
+                    step.classList.add('active');
+                    step.querySelector('.step-spinner').style.display = 'inline';
+                    step.querySelector('span').classList.add('text-base-content');
+                } else {
+                    step.classList.add('pending');
+                    step.querySelector('.step-spinner').style.display = 'none';
+                    step.querySelector('span').classList.add('text-base-content/50');
+                }
+            }
+            document.getElementById('progress-bar').style.width = '25%';
+        }
+
+        // Rotating reassurance messages
+        function startMessageRotation() {
+            setInterval(function() {
+                var el = document.getElementById('reassurance-text');
+                el.classList.add('hidden');
+
+                setTimeout(function() {
+                    msgIndex = (msgIndex + 1) % MESSAGES.length;
+                    el.textContent = MESSAGES[msgIndex];
+                    el.classList.remove('hidden');
+                }, 400);
+            }, 4000);
+        }
+        /*]]>*/
+    </script>
+</body>
+</html>

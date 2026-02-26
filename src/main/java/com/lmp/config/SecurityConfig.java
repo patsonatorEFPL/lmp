@@ -44,149 +44,144 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(auth -> auth
-                // Pages publiques accessibles à tous (visiteurs)
-                .requestMatchers(
-                    "/",
-                    "/about",
-                    "/services",
-                    "/contact",
-                    "/contact/success",
-                    "/map",
-                    "/privacy",
-                    "/terms",
-                    "/register",
-                    "/register-and-checkout",
-                    "/auth/register-and-checkout",
-                    "/login",
-                    "/verify-email",
-                    "/css/**",
-                    "/js/**",
-                    "/images/**",
-                    "/favicon.ico",
-                    "/error"
-                ).permitAll()
-                
-                // Endpoints SEO - accès public pour les moteurs de recherche
-                .requestMatchers(
-                    "/sitemap.xml",
-                    "/robots.txt",
-                    "/googleb72d4c095922c4a8.html"
-                ).permitAll()
-                
-                // Endpoints Stripe Checkout - accès public pour le processus de paiement
-                .requestMatchers(
-                    "/api/payments/**",
-                    "/api/webhooks/**",
-                    "/stripe/checkout/**",
-                    "/stripe/webhook/**"
-                ).permitAll()
-                
-                // Endpoints d'API pour intentions de paiement - accès public
-                .requestMatchers(
-                    "/api/orders/save-purchase-intent",
-                    "/api/orders/get-purchase-intent",
-                    "/api/orders/clear-purchase-intent"
-                ).permitAll()
-                
-                // Endpoints temporaires de test - À SUPPRIMER en production
-                .requestMatchers(
-                    "/temp/**"
-                ).permitAll()
-                
-                // Endpoints de rendez-vous publics (consultation créneaux et création)
-                .requestMatchers(
-                    "/appointments/available-slots",
-                    "/appointments/create"
-                ).permitAll()
-                
-                // Endpoints d'API sécurisés - authentification requise
-                .requestMatchers(
-                    "/api/orders/**"
-                ).authenticated()
-                
-                // Pages d'administration - rôle ADMIN requis
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                
-                // Pages utilisateur - rôle USER ou ADMIN requis
-                .requestMatchers(
-                    "/dashboard/**", 
-                    "/profile/**", 
-                    "/orders/**",
-                    "/reviews/**"
-                ).hasAnyRole("USER", "ADMIN")
-                
-                // Toutes les autres requêtes nécessitent une authentification
-                .anyRequest().authenticated()
-            )
-            
-            // Configuration du formulaire de connexion
-            .formLogin(form -> form
-                .loginPage("/login")
-                .loginProcessingUrl("/perform-login")
-                .usernameParameter("email")
-                .passwordParameter("password")
-                .successHandler(purchaseIntentAuthenticationSuccessHandler)
-                .failureUrl("/login?error=true")
-                .permitAll()
-            )
-            
-            // Configuration de la déconnexion
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
-                .deleteCookies("JSESSIONID")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true)
-                .permitAll()
-            )
-            
-            // Configuration "Se souvenir de moi"
-            .rememberMe(remember -> remember
-                .key("lmpSecretKey")
-                .tokenValiditySeconds(86400) // 24 heures
-                .userDetailsService(userDetailsService)
-                .rememberMeParameter("rememberMe")
-            )
-            
-            // Configuration de la gestion des sessions avec SessionRegistry
-            .sessionManagement(session -> session
-                .maximumSessions(2) // Maximum 2 sessions par utilisateur
-                .maxSessionsPreventsLogin(false)
-                .expiredUrl("/login?expired=true")
-                .sessionRegistry(sessionRegistry()) // Ajout du SessionRegistry
-            )
-            
-            // Désactiver CSRF pour les webhooks et endpoints de paiement + appointments temporairement
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers(
-                    "/webhook/**", 
-                    "/api/**", 
-                    "/stripe/**", 
-                    "/register-and-checkout", 
-                    "/auth/register-and-checkout",
-                    "/appointments/create",  // Temporaire pour debug
-                    "/appointments/available-slots",
-                    "/temp/**"  // Endpoints temporaires de test - À SUPPRIMER en production
+                .authorizeHttpRequests(auth -> auth
+                        // Pages publiques accessibles à tous (visiteurs)
+                        .requestMatchers(
+                                "/",
+                                "/about",
+                                "/services",
+                                "/contact",
+                                "/contact/success",
+                                "/map",
+                                "/privacy",
+                                "/terms",
+                                "/register",
+                                "/register-and-checkout",
+                                "/auth/register-and-checkout",
+                                "/login",
+                                "/verify-email",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico",
+                                "/error")
+                        .permitAll()
+
+                        // Endpoints SEO - accès public pour les moteurs de recherche
+                        .requestMatchers(
+                                "/sitemap.xml",
+                                "/robots.txt",
+                                "/googleb72d4c095922c4a8.html")
+                        .permitAll()
+
+                        // Endpoints Stripe Checkout - accès public pour le processus de paiement
+                        .requestMatchers(
+                                "/api/payments/**",
+                                "/api/payment-status/**",
+                                "/api/webhooks/**",
+                                "/stripe/checkout/**",
+                                "/stripe/webhook/**")
+                        .permitAll()
+
+                        // Endpoints d'API pour intentions de paiement - accès public
+                        .requestMatchers(
+                                "/api/orders/save-purchase-intent",
+                                "/api/orders/get-purchase-intent",
+                                "/api/orders/clear-purchase-intent")
+                        .permitAll()
+
+                        // Endpoints temporaires de test - À SUPPRIMER en production
+                        .requestMatchers(
+                                "/temp/**")
+                        .permitAll()
+
+                        // Endpoints de rendez-vous publics (consultation créneaux et création)
+                        .requestMatchers(
+                                "/appointments/available-slots",
+                                "/appointments/create")
+                        .permitAll()
+
+                        // Endpoints d'API sécurisés - authentification requise
+                        .requestMatchers(
+                                "/api/orders/**")
+                        .authenticated()
+
+                        // Pages d'administration - rôle ADMIN requis
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        // Pages utilisateur - rôle USER ou ADMIN requis
+                        .requestMatchers(
+                                "/dashboard/**",
+                                "/profile/**",
+                                "/orders/**",
+                                "/reviews/**")
+                        .hasAnyRole("USER", "ADMIN")
+
+                        // Toutes les autres requêtes nécessitent une authentification
+                        .anyRequest().authenticated())
+
+                // Configuration du formulaire de connexion
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .loginProcessingUrl("/perform-login")
+                        .usernameParameter("email")
+                        .passwordParameter("password")
+                        .successHandler(purchaseIntentAuthenticationSuccessHandler)
+                        .failureUrl("/login?error=true")
+                        .permitAll())
+
+                // Configuration de la déconnexion
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                        .deleteCookies("JSESSIONID")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .permitAll())
+
+                // Configuration "Se souvenir de moi"
+                .rememberMe(remember -> remember
+                        .key("lmpSecretKey")
+                        .tokenValiditySeconds(86400) // 24 heures
+                        .userDetailsService(userDetailsService)
+                        .rememberMeParameter("rememberMe"))
+
+                // Configuration de la gestion des sessions avec SessionRegistry
+                .sessionManagement(session -> session
+                        .maximumSessions(2) // Maximum 2 sessions par utilisateur
+                        .maxSessionsPreventsLogin(false)
+                        .expiredUrl("/login?expired=true")
+                        .sessionRegistry(sessionRegistry()) // Ajout du SessionRegistry
                 )
-            )
-            
-            // Configuration CORS globale
-            .cors(cors -> cors.configurationSource(request -> {
-                var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOriginPatterns(java.util.List.of(
-                    "http://localhost:*",
-                    "https://lmp-services.ca"
-                ));
-                corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                corsConfig.setAllowedHeaders(java.util.List.of("*"));
-                corsConfig.setAllowCredentials(true);
-                return corsConfig;
-            }));
+
+                // Désactiver CSRF pour les webhooks et endpoints de paiement + appointments
+                // temporairement
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/webhook/**",
+                                "/api/**",
+                                "/stripe/**",
+                                "/register-and-checkout",
+                                "/auth/register-and-checkout",
+                                "/appointments/create", // Temporaire pour debug
+                                "/appointments/available-slots",
+                                "/temp/**" // Endpoints temporaires de test - À SUPPRIMER en production
+                        ))
+
+                // Configuration CORS globale
+                .cors(cors -> cors.configurationSource(request -> {
+                    var corsConfig = new org.springframework.web.cors.CorsConfiguration();
+                    corsConfig.setAllowedOriginPatterns(java.util.List.of(
+                            "http://localhost:*",
+                            "https://lmp-services.ca"));
+                    corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    corsConfig.setAllowedHeaders(java.util.List.of("*"));
+                    corsConfig.setAllowCredentials(true);
+                    return corsConfig;
+                }));
 
         return http.build();
     }
-
 
     /**
      * Encodeur de mots de passe BCrypt.
@@ -233,4 +228,3 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 }
-

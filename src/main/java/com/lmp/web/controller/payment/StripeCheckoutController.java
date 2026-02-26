@@ -408,6 +408,58 @@ public class StripeCheckoutController {
     }
 
     /**
+     * Page intermédiaire de traitement du paiement.
+     * Affiche une progression animée pendant que le webhook Stripe confirme le
+     * paiement.
+     * Redirige automatiquement vers la page succès une fois le paiement confirmé.
+     */
+    @GetMapping("/processing")
+    public String paymentProcessing(@RequestParam("order_id") Long orderId,
+            @RequestParam("session_id") String sessionId,
+            @RequestParam(defaultValue = "success") String type,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        logger.info("Displaying payment processing page - Order: {}, Session: {}", orderId, sessionId);
+
+        try {
+            // Récupérer la commande
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée: " + orderId));
+
+            // Si le paiement est déjà confirmé (webhook rapide), rediriger directement vers
+            // succès
+            if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+                logger.info("Payment already confirmed for order #{}, redirecting to success", orderId);
+                return "redirect:/stripe/checkout/success?order_id=" + orderId
+                        + "&session_id=" + sessionId + "&type=success";
+            }
+
+            // Sinon, afficher la page de traitement avec les infos nécessaires au polling
+            model.addAttribute("orderId", orderId);
+            model.addAttribute("sessionId", sessionId);
+            model.addAttribute("serviceName", order.getServiceName());
+            model.addAttribute("totalAmount", order.getTotalAmount());
+            model.addAttribute("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
+
+            return "payment/processing";
+
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Order not found in processing callback: {}", orderId);
+            redirectAttributes.addFlashAttribute("error",
+                    "Commande non trouvée. Veuillez contacter le support.");
+            return "redirect:/services";
+
+        } catch (Exception e) {
+            logger.error("Error processing payment processing callback - Order: {}, Session: {}: {}",
+                    orderId, sessionId, e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("error",
+                    "Une erreur s'est produite. Veuillez contacter le support.");
+            return "redirect:/services";
+        }
+    }
+
+    /**
      * Page de succès après paiement Stripe Checkout
      * Architecture webhook-driven : le statut de la commande est mis à jour par le
      * webhook.
