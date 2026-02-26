@@ -57,10 +57,12 @@
                     <!-- Hero Text -->
                     <div class="flex-1 lg:max-w-2xl relative">
 
-                        <!-- Premium Live Badge -->
-                        <div id="update-badge" class="hero-live-badge hero-reveal mb-8 inline-flex items-center gap-2.5">
-                            <span class="hero-live-dot"></span>
-                            <span class="text-xs sm:text-sm font-medium">Nouvelle mise à jour Google 2026 disponible</span>
+                        <!-- Premium Live Badge — wrapper handles smooth height collapse -->
+                        <div id="update-badge-wrapper" class="hero-badge-wrapper mb-8">
+                            <div id="update-badge" class="hero-live-badge hero-reveal inline-flex items-center gap-2.5">
+                                <span class="hero-live-dot"></span>
+                                <span class="text-xs sm:text-sm font-medium">Nouvelle mise à jour Google 2026 disponible</span>
+                            </div>
                         </div>
 
                         <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold text-base-content mb-4 sm:mb-6 leading-[1.2] lg:leading-[1.1] tracking-tight min-h-[120px] sm:min-h-[160px] lg:min-h-[220px]">
@@ -210,6 +212,19 @@
                             0%, 100% { transform: translate(0,0) scale(1); opacity: 0.7; }
                             33%       { transform: translate(12px,-18px) scale(1.2); opacity: 1; }
                             66%       { transform: translate(-10px,10px) scale(0.85); opacity: 0.5; }
+                        }
+
+                        /* ── Badge wrapper: smooth height collapse ── */
+                        .hero-badge-wrapper {
+                            max-height: 80px;
+                            overflow: hidden;
+                            /* Delay height collapse until after opacity fades (0.4s) */
+                            transition: max-height 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s,
+                                        margin-bottom 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
+                        }
+                        .hero-badge-wrapper.collapsing {
+                            max-height: 0;
+                            margin-bottom: 0 !important;
                         }
 
                         /* ── Live badge ── */
@@ -1108,13 +1123,13 @@
 
             // Faire disparaître le badge de mise à jour après quelques instants (5 secondes)
             setTimeout(function() {
-                var badge = document.getElementById('update-badge');
-                if (badge) {
-                    badge.classList.remove('revealed');
-                    setTimeout(function() {
-                        badge.style.display = 'none';
-                    }, 1200); // Attendre la fin de la transition hero-reveal avant de masquer complètement
-                }
+                var badge   = document.getElementById('update-badge');
+                var wrapper = document.getElementById('update-badge-wrapper');
+                // 1. Fade out the badge (opacity + transform via .hero-reveal transition)
+                if (badge)   badge.classList.remove('revealed');
+                // 2. Smoothly collapse the wrapper height + margin (delayed 0.4s by CSS)
+                //    Never use display:none — that causes an instant layout jump
+                if (wrapper) wrapper.classList.add('collapsing');
             }, 5000); // 5000 ms = 5 secondes
         });
     </script>
