@@ -124,10 +124,10 @@ public class StripeCheckoutController {
                         "message", "Le montant doit être supérieur à 0"));
             }
 
-            if (currency == null || !currency.equals("EUR")) {
+            if (currency == null || currency.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "error", "INVALID_CURRENCY",
-                        "message", "Seule la devise EUR est supportée"));
+                        "message", "La devise est requise"));
             }
 
             Long userId;

@@ -296,12 +296,6 @@ public class AuthController {
                         "message", "Le montant doit être supérieur à 0"));
             }
 
-            if (!"CAD".equals(registerWithOrderDto.getCurrency())) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_CURRENCY",
-                        "message", "Seule la devise CAD est supportée"));
-            }
-
             // 4. Créer l'utilisateur
             RegisterDto registerDto = registerWithOrderDto.toRegisterDto();
             User newUser = authService.registerUser(registerDto);
