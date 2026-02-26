@@ -581,75 +581,161 @@
             </div>
         </section>
 
-        <!-- Stats Section with DaisyUI Stats -->
-        <section class="py-20 bg-base-100 relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-xl hero-reveal">
-            <div class="container mx-auto px-4">
-                <div class="stats stats-vertical lg:stats-horizontal shadow-xl w-full bg-base-100">
-                    <!-- Stat 1 -->
-                    <div class="stat">
-                        <div class="stat-figure text-primary">
-                            <div class="avatar placeholder">
-                                <div class="bg-primary/10 text-primary w-16 rounded-full">
-                                    <i class="fas fa-users text-2xl"></i>
-                                </div>
-                            </div>
+        <!-- Stats Section - Premium Redesign -->
+        <section class="stats-premium-section relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-2xl scroll-reveal overflow-hidden
+                        bg-white dark:bg-[#0d1117]
+                        border border-gray-100 dark:border-white/[0.06]">
+
+            <!-- Decorative top gradient line -->
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent"></div>
+
+            <!-- Ambient background blobs -->
+            <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                <div class="absolute -top-32 left-1/4 w-80 h-80 bg-primary/5 dark:bg-primary/8 rounded-full blur-[90px]"></div>
+                <div class="absolute -bottom-16 right-1/4 w-60 h-60 bg-accent/5 dark:bg-accent/8 rounded-full blur-[70px]"></div>
+            </div>
+
+            <div class="container mx-auto px-4 py-14 lg:py-20 relative z-10">
+
+                <!-- Section label + title -->
+                <div class="text-center mb-12">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4
+                                bg-primary/8 dark:bg-primary/15
+                                border border-primary/20 dark:border-primary/30
+                                text-primary text-[11px] font-semibold tracking-[0.12em] uppercase">
+                        <span class="w-1.5 h-1.5 rounded-full bg-primary inline-block" style="animation: live-pulse 2s ease-out infinite"></span>
+                        Chiffres clés
+                    </div>
+                    <h2 class="text-2xl lg:text-3xl font-bold text-base-content">
+                        Des résultats qui <span class="hero-gradient-text">parlent d'eux-mêmes</span>
+                    </h2>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+
+                    <!-- Stat 1 - Clients -->
+                    <div class="stats-card group relative overflow-hidden rounded-2xl p-5 lg:p-7 cursor-default
+                                bg-gray-50/80 dark:bg-white/[0.04]
+                                border border-gray-200/80 dark:border-white/[0.07]
+                                hover:border-primary/40 dark:hover:border-primary/40
+                                transition-all duration-350 hover:-translate-y-1.5 hover:shadow-xl dark:hover:shadow-primary/10">
+                        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                    bg-gradient-to-br from-primary/4 via-transparent to-transparent pointer-events-none"></div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5
+                                    bg-primary/10 dark:bg-primary/20 text-primary
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-users text-base"></i>
                         </div>
-                        <div class="stat-value text-base-content dark:text-primary">500+</div>
-                        <div class="stat-title text-gray-600 dark:text-base-content/70">Clients satisfaits</div>
-                        <div class="stat-desc text-gray-500 dark:text-success">
-                            <i class="fas fa-arrow-up text-xs"></i> accompagnés en Europe
+                        <div class="text-3xl lg:text-4xl font-extrabold text-base-content tracking-tight mb-1">
+                            <span class="stat-counter" data-target="500" data-suffix="+">500+</span>
+                        </div>
+                        <div class="text-sm font-semibold text-base-content/80 mb-2">Clients satisfaits</div>
+                        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full
+                                    bg-success/10 dark:bg-success/15 text-success text-[11px] font-semibold">
+                            <i class="fas fa-arrow-trend-up text-[10px]"></i>
+                            <span>en Europe</span>
                         </div>
                     </div>
-                    
-                    <div class="divider lg:divider-horizontal"></div>
-                    
-                    <!-- Stat 2 -->
-                    <div class="stat">
-                        <div class="stat-figure text-primary">
-                            <div class="avatar placeholder">
-                                <div class="bg-primary/10 text-primary w-16 rounded-full">
-                                    <i class="fas fa-chart-line text-2xl"></i>
-                                </div>
-                            </div>
+
+                    <!-- Stat 2 - Rétention -->
+                    <div class="stats-card group relative overflow-hidden rounded-2xl p-5 lg:p-7 cursor-default
+                                bg-gray-50/80 dark:bg-white/[0.04]
+                                border border-gray-200/80 dark:border-white/[0.07]
+                                hover:border-blue-400/40 dark:hover:border-blue-400/40
+                                transition-all duration-350 hover:-translate-y-1.5 hover:shadow-xl dark:hover:shadow-blue-500/10">
+                        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                    bg-gradient-to-br from-blue-500/4 via-transparent to-transparent pointer-events-none"></div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5
+                                    bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-chart-line text-base"></i>
                         </div>
-                        <div class="stat-value text-base-content dark:text-primary">98%</div>
-                        <div class="stat-title text-gray-600 dark:text-base-content/70">Taux de rétention</div>
-                        <div class="stat-desc text-gray-500 dark:text-base-content/60">Clients fidèles depuis 2020</div>
-                    </div>
-                    
-                    <div class="divider lg:divider-horizontal"></div>
-                    
-                    <!-- Stat 3 -->
-                    <div class="stat">
-                        <div class="stat-figure text-accent">
-                            <div class="avatar placeholder">
-                                <div class="bg-accent/10 text-accent w-16 rounded-full">
-                                    <i class="fas fa-headset text-2xl"></i>
-                                </div>
-                            </div>
+                        <div class="text-3xl lg:text-4xl font-extrabold text-base-content tracking-tight mb-1">
+                            <span class="stat-counter" data-target="98" data-suffix="%">98%</span>
                         </div>
-                        <div class="stat-value text-base-content dark:text-accent">24/7</div>
-                        <div class="stat-title text-gray-600 dark:text-base-content/70">Support Expert</div>
-                        <div class="stat-desc text-gray-500 dark:text-base-content/60">Disponible à tout moment</div>
+                        <div class="text-sm font-semibold text-base-content/80 mb-2">Taux de rétention</div>
+                        <div class="text-[11px] text-base-content/50 font-medium">Fidèles depuis 2020</div>
                     </div>
-                    
-                    <div class="divider lg:divider-horizontal"></div>
-                    
-                    <!-- Stat 4 -->
-                    <div class="stat">
-                        <div class="stat-figure text-success">
-                            <div class="avatar placeholder">
-                                <div class="bg-success/10 text-success w-16 rounded-full">
-                                    <i class="fas fa-award text-2xl"></i>
-                                </div>
-                            </div>
+
+                    <!-- Stat 3 - Support -->
+                    <div class="stats-card group relative overflow-hidden rounded-2xl p-5 lg:p-7 cursor-default
+                                bg-gray-50/80 dark:bg-white/[0.04]
+                                border border-gray-200/80 dark:border-white/[0.07]
+                                hover:border-accent/40 dark:hover:border-accent/40
+                                transition-all duration-350 hover:-translate-y-1.5 hover:shadow-xl dark:hover:shadow-accent/10">
+                        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                    bg-gradient-to-br from-accent/4 via-transparent to-transparent pointer-events-none"></div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5
+                                    bg-accent/10 dark:bg-accent/20 text-accent
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-headset text-base"></i>
                         </div>
-                        <div class="stat-value text-base-content dark:text-success">10+</div>
-                        <div class="stat-title text-gray-600 dark:text-base-content/70">Années d'expérience</div>
-                        <div class="stat-desc text-gray-500 dark:text-base-content/60">Expertise Google certifiée</div>
+                        <div class="text-3xl lg:text-4xl font-extrabold text-base-content tracking-tight mb-1">24/7</div>
+                        <div class="text-sm font-semibold text-base-content/80 mb-2">Support Expert</div>
+                        <div class="text-[11px] text-base-content/50 font-medium">Disponible à tout moment</div>
                     </div>
+
+                    <!-- Stat 4 - Expérience -->
+                    <div class="stats-card group relative overflow-hidden rounded-2xl p-5 lg:p-7 cursor-default
+                                bg-gray-50/80 dark:bg-white/[0.04]
+                                border border-gray-200/80 dark:border-white/[0.07]
+                                hover:border-success/40 dark:hover:border-success/40
+                                transition-all duration-350 hover:-translate-y-1.5 hover:shadow-xl dark:hover:shadow-success/10">
+                        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                    bg-gradient-to-br from-success/4 via-transparent to-transparent pointer-events-none"></div>
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5
+                                    bg-success/10 dark:bg-success/20 text-success
+                                    group-hover:scale-110 transition-transform duration-300">
+                            <i class="fas fa-award text-base"></i>
+                        </div>
+                        <div class="text-3xl lg:text-4xl font-extrabold text-base-content tracking-tight mb-1">
+                            <span class="stat-counter" data-target="10" data-suffix="+">10+</span>
+                        </div>
+                        <div class="text-sm font-semibold text-base-content/80 mb-2">Années d'expérience</div>
+                        <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full
+                                    bg-warning/10 dark:bg-warning/15 text-warning text-[11px] font-semibold">
+                            <i class="fas fa-certificate text-[10px]"></i>
+                            <span>Certifié Google</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+
+            <!-- Counter animation: fires once per card when it enters viewport -->
+            <script>
+                (function () {
+                    function animateCount(el) {
+                        var target = parseInt(el.dataset.target, 10);
+                        var suffix = el.dataset.suffix || '';
+                        var duration = 1600;
+                        var start = null;
+                        function tick(ts) {
+                            if (!start) start = ts;
+                            var p = Math.min((ts - start) / duration, 1);
+                            var ease = 1 - Math.pow(1 - p, 3); // cubic ease-out
+                            el.textContent = Math.floor(ease * target) + suffix;
+                            if (p < 1) requestAnimationFrame(tick);
+                            else el.textContent = target + suffix;
+                        }
+                        requestAnimationFrame(tick);
+                    }
+
+                    var io = new IntersectionObserver(function (entries) {
+                        entries.forEach(function (entry) {
+                            if (entry.isIntersecting) {
+                                entry.target.querySelectorAll('.stat-counter').forEach(animateCount);
+                                io.unobserve(entry.target);
+                            }
+                        });
+                    }, { threshold: 0.4 });
+
+                    document.querySelectorAll('.stats-card').forEach(function (card) {
+                        if (card.querySelector('.stat-counter')) io.observe(card);
+                    });
+                })();
+            </script>
         </section>
 
         <!-- Services Section with DaisyUI Cards -->
