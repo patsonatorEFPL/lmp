@@ -59,7 +59,7 @@
             
                         <!-- Premium Email Form with DaisyUI -->
                         <div class="relative max-w-lg mb-12 group hero-reveal">
-                            <form onsubmit="handleEmailSubmit(event)" class="flex flex-col sm:flex-row join w-full shadow-xl hover:shadow-2xl transition-all duration-300">
+                            <form id="hero-email-form" onsubmit="handleEmailSubmit(event)" class="flex flex-col sm:flex-row join w-full shadow-xl hover:shadow-2xl transition-all duration-300">
                                 <input
                                     type="email"
                                     placeholder="votre@email.com"
@@ -68,7 +68,7 @@
                                 />
                                 <button type="submit" class="btn bg-black text-white hover:bg-gray-800 dark:btn-primary border-none btn-lg join-item gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                                     <span>Débuter</span>
-                                    <i class="fas fa-arrow-right text-xs"></i>
+                                    <i class="fas fa-arrow-right"></i>
                                 </button>
                             </form>
                             <!-- Decorative blur behind form -->
@@ -195,6 +195,56 @@
                             opacity: 0;
                             visibility: hidden;
                             margin-right: -150px;
+                        }
+
+                        /* ── Mobile: Hero email form ── */
+                        @media (max-width: 639px) {
+                            /* Input: fully rounded on mobile (not half-open join style) */
+                            #hero-email-form .input.join-item {
+                                border-radius: 14px !important;
+                            }
+
+                            /* Button: fully rounded, premium gradient, elevated shadow */
+                            #hero-email-form .btn.join-item {
+                                border-radius: 14px !important;
+                                margin-left: 0 !important;
+                                min-height: 56px;
+                                font-size: 1rem;
+                                font-weight: 700;
+                                letter-spacing: 0.04em;
+                                color: #ffffff !important;
+                                background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1d4ed8 100%) !important;
+                                box-shadow:
+                                    0 4px 20px rgba(29, 78, 216, 0.35),
+                                    0 2px 8px rgba(0, 0, 0, 0.25),
+                                    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                                transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+                            }
+
+                            #hero-email-form .btn.join-item:hover,
+                            #hero-email-form .btn.join-item:focus-visible {
+                                transform: translateY(-2px);
+                                box-shadow:
+                                    0 8px 28px rgba(29, 78, 216, 0.45),
+                                    0 4px 12px rgba(0, 0, 0, 0.3),
+                                    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+                            }
+
+                            #hero-email-form .btn.join-item:active {
+                                transform: scale(0.98) translateY(0) !important;
+                                box-shadow:
+                                    0 2px 10px rgba(29, 78, 216, 0.3),
+                                    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+                            }
+
+                            /* Arrow icon: slide-in animation on hover */
+                            #hero-email-form .btn.join-item .fa-arrow-right {
+                                transition: transform 0.25s ease;
+                                font-size: 0.875rem;
+                            }
+                            #hero-email-form .btn.join-item:hover .fa-arrow-right {
+                                transform: translateX(4px);
+                            }
                         }
                     </style>
                     

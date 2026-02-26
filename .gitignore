@@ -65,6 +65,8 @@ ${project.build.directory}/
 .kilocode/
 .qwen/
 .roo/
+.kombai/
+.kombai
 
 ### Duplicate/Obsolete Folders ###
 LMP/
