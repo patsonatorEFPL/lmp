@@ -33,7 +33,22 @@
     <main>
         <!-- Hero Section Premium with DaisyUI -->
         <section id="home" class="relative min-h-[90vh] flex items-center py-20 lg:py-28 overflow-hidden bg-gradient-to-br from-base-100 via-primary/5 to-secondary/10 group cursor-default">
-            
+
+            <!-- Animated dot-grid background -->
+            <div class="hero-dot-grid absolute inset-0 pointer-events-none z-0"></div>
+
+            <!-- Floating ambient particles -->
+            <div class="hero-particles absolute inset-0 pointer-events-none z-0" aria-hidden="true">
+                <span class="hero-particle" style="--x:12%;--y:18%;--d:6s;--size:6px;--delay:0s"></span>
+                <span class="hero-particle" style="--x:88%;--y:12%;--d:8s;--size:4px;--delay:1s"></span>
+                <span class="hero-particle" style="--x:72%;--y:75%;--d:7s;--size:5px;--delay:2s"></span>
+                <span class="hero-particle" style="--x:25%;--y:82%;--d:9s;--size:3px;--delay:0.5s"></span>
+                <span class="hero-particle" style="--x:55%;--y:30%;--d:5s;--size:4px;--delay:1.5s"></span>
+                <span class="hero-particle" style="--x:40%;--y:65%;--d:10s;--size:6px;--delay:3s"></span>
+                <span class="hero-particle" style="--x:92%;--y:50%;--d:6.5s;--size:3px;--delay:0.8s"></span>
+                <span class="hero-particle" style="--x:8%;--y:55%;--d:8.5s;--size:5px;--delay:2.5s"></span>
+            </div>
+
             <!-- Mouse Tracking Glow -->
             <div id="hero-glow" class="absolute w-[800px] h-[800px] bg-gradient-to-r from-primary/30 to-accent/30 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 transition-opacity duration-700 group-hover:opacity-100 mix-blend-screen z-0"></div>
 
@@ -41,24 +56,25 @@
                 <div class="flex flex-col lg:flex-row items-center justify-between gap-16">
                     <!-- Hero Text -->
                     <div class="flex-1 lg:max-w-2xl relative">
-                        <div id="update-badge" class="badge badge-primary badge-lg gap-2 mb-6 shadow-lg hero-reveal max-w-full h-auto py-2 text-center">
-                            <span class="loading loading-dot loading-xs text-success shrink-0"></span>
-                            <span class="text-xs sm:text-sm whitespace-normal">Nouvelle mise à jour Google 2026 disponible</span>
+
+                        <!-- Premium Live Badge -->
+                        <div id="update-badge" class="hero-live-badge hero-reveal mb-8 inline-flex items-center gap-2.5">
+                            <span class="hero-live-dot"></span>
+                            <span class="text-xs sm:text-sm font-medium">Nouvelle mise à jour Google 2026 disponible</span>
                         </div>
-                        
+
                         <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold text-base-content mb-4 sm:mb-6 leading-[1.2] lg:leading-[1.1] tracking-tight min-h-[120px] sm:min-h-[160px] lg:min-h-[220px]">
                             <span id="type-1" class="notranslate"></span>
-                            <span id="type-2" class="text-transparent bg-clip-text bg-gradient-to-r from-[#253cff] to-[#8a38ff] notranslate"></span>
+                            <span id="type-2" class="hero-gradient-text notranslate"></span>
                             <span class="block text-2xl sm:text-4xl lg:text-5xl mt-2 font-medium text-base-content/80 hero-reveal">L'excellence locale.</span>
                         </h1>
-                        
+
                         <p class="text-lg sm:text-xl text-base-content/70 mb-8 sm:mb-10 leading-relaxed max-w-xl hero-reveal">
                             Propulsez votre visibilité au sommet. Technologie de pointe et expertise humaine pour dominer votre marché local.
                         </p>
-                        
-            
-                        <!-- Premium Email Form with DaisyUI -->
-                        <div class="relative max-w-lg mb-12 group hero-reveal">
+
+                        <!-- Premium Email Form -->
+                        <div class="relative max-w-lg mb-10 hero-form-group hero-reveal">
                             <form id="hero-email-form" onsubmit="handleEmailSubmit(event)" class="flex flex-col sm:flex-row join w-full shadow-xl hover:shadow-2xl transition-all duration-300">
                                 <input
                                     type="email"
@@ -66,59 +82,101 @@
                                     class="input input-bordered input-lg join-item flex-1 w-full"
                                     required
                                 />
-                                <button type="submit" class="btn bg-black text-white hover:bg-gray-800 dark:btn-primary border-none btn-lg join-item gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                <button type="submit" class="btn bg-black text-white hover:bg-gray-800 dark:btn-primary border-none btn-lg join-item gap-2 w-full sm:w-auto mt-2 sm:mt-0 hero-cta-btn">
                                     <span>Débuter</span>
-                                    <i class="fas fa-arrow-right"></i>
+                                    <i class="fas fa-arrow-right hero-cta-arrow"></i>
                                 </button>
                             </form>
-                            <!-- Decorative blur behind form -->
-                            <div class="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20 -z-10 group-hover:opacity-30 transition-opacity"></div>
+                            <!-- Animated glow border -->
+                            <div class="hero-form-glow absolute -inset-[2px] rounded-2xl -z-10"></div>
                         </div>
 
-                        <!-- Trust Indicators with DaisyUI -->
-                        <div class="flex flex-wrap items-center gap-3 sm:gap-4 hero-reveal">
-                            <div class="flex items-center gap-2 badge badge-ghost badge-md sm:badge-lg whitespace-nowrap">
-                                <div class="text-success"><i class="fas fa-check"></i></div>
-                                <span class="text-xs sm:text-sm">Pas de frais cachés</span>
+                        <!-- Trust Indicators - Glassmorphism style -->
+                        <div class="flex flex-wrap items-center gap-3 hero-reveal">
+                            <div class="hero-trust-badge">
+                                <i class="fas fa-check text-success text-xs"></i>
+                                <span>Pas de frais cachés</span>
                             </div>
-                            <div class="flex items-center gap-2 badge badge-ghost badge-md sm:badge-lg whitespace-nowrap">
-                                <div class="text-info"><i class="fas fa-shield-alt"></i></div>
-                                <span class="text-xs sm:text-sm">Paiement sécurisé</span>
+                            <div class="hero-trust-badge">
+                                <i class="fas fa-shield-alt text-info text-xs"></i>
+                                <span>Paiement sécurisé</span>
                             </div>
-                            <div class="flex items-center gap-2 badge badge-ghost badge-md sm:badge-lg whitespace-nowrap">
-                                <div class="text-warning"><i class="fas fa-bolt"></i></div>
-                                <span class="text-xs sm:text-sm">Mise en place rapide</span>
+                            <div class="hero-trust-badge">
+                                <i class="fas fa-bolt text-warning text-xs"></i>
+                                <span>Mise en place rapide</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Hero Visual - Professional 3D Animated Orb -->
+                    <!-- Hero Visual - Enhanced 3D Orb with orbiting elements -->
                     <div class="flex-1 lg:flex-grow w-full relative min-h-[500px] lg:min-h-[600px] flex items-center justify-center perspective-1000 hero-reveal">
+
+                        <!-- Floating stat chips -->
+                        <div class="hero-stat-chip hero-stat-chip--top-left hero-reveal">
+                            <div class="flex items-center gap-2">
+                                <div class="hero-stat-chip-icon bg-success/20 text-success"><i class="fas fa-arrow-trend-up text-xs"></i></div>
+                                <div>
+                                    <div class="text-xs font-bold text-base-content">+500 Clients</div>
+                                    <div class="text-[10px] text-base-content/50">en Europe</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hero-stat-chip hero-stat-chip--bottom-right hero-reveal">
+                            <div class="flex items-center gap-2">
+                                <div class="hero-stat-chip-icon bg-primary/20 text-primary"><i class="fas fa-star text-xs"></i></div>
+                                <div>
+                                    <div class="text-xs font-bold text-base-content">98% Rétention</div>
+                                    <div class="text-[10px] text-base-content/50">clients satisfaits</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="relative w-72 h-72 md:w-96 md:h-96 orb-3d-container">
-                            <!-- Glowing background halos -->
-                            <div class="absolute inset-0 bg-primary/30 rounded-full blur-[80px] animate-pulse-slow"></div>
-                            <div class="absolute inset-[-20%] bg-accent/20 rounded-full blur-[100px] animate-pulse-slower" style="animation-delay: -2s;"></div>
-                            
+                            <!-- Deep ambient halos -->
+                            <div class="absolute inset-[-30%] bg-primary/20 rounded-full blur-[100px] animate-pulse-slow"></div>
+                            <div class="absolute inset-[-20%] bg-accent/15 rounded-full blur-[80px] animate-pulse-slower" style="animation-delay: -2s;"></div>
+                            <div class="absolute inset-[-10%] bg-violet-500/10 rounded-full blur-[60px] animate-pulse-slow" style="animation-delay: -4s;"></div>
+
+                            <!-- Orbiting satellite ring 1 -->
+                            <div class="orb-orbit orb-orbit--1">
+                                <div class="orb-satellite orb-satellite--blue"></div>
+                            </div>
+                            <!-- Orbiting satellite ring 2 -->
+                            <div class="orb-orbit orb-orbit--2">
+                                <div class="orb-satellite orb-satellite--violet"></div>
+                            </div>
+                            <!-- Orbiting satellite ring 3 -->
+                            <div class="orb-orbit orb-orbit--3">
+                                <div class="orb-satellite orb-satellite--cyan"></div>
+                            </div>
+
                             <!-- The 3D Orb -->
                             <div class="w-full h-full rounded-full relative transform-style-3d orb-3d">
                                 <!-- Mesh gradient surface -->
-                                <div class="absolute inset-0 rounded-full overflow-hidden shadow-[inset_0_0_50px_rgba(255,255,255,0.2),0_20px_50px_rgba(0,0,0,0.3)]">
+                                <div class="absolute inset-0 rounded-full overflow-hidden shadow-[inset_0_0_60px_rgba(255,255,255,0.15),0_30px_80px_rgba(0,0,0,0.4)]">
                                     <div class="w-[200%] h-[200%] absolute top-[-50%] left-[-50%] orb-surface"></div>
                                 </div>
-                                
+
                                 <!-- Outer glass reflection -->
-                                <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/40 shadow-[inset_0_4px_20px_rgba(255,255,255,0.5)]"></div>
-                                
-                                <!-- Inner floating rings (Decorative) -->
-                                <div class="absolute inset-[15%] rounded-full border border-white/20 orb-ring-1"></div>
-                                <div class="absolute inset-[25%] rounded-full border border-primary/30 orb-ring-2"></div>
-                                <div class="absolute inset-[35%] rounded-full border border-accent/20 orb-ring-3"></div>
+                                <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/8 to-white/30 shadow-[inset_0_4px_30px_rgba(255,255,255,0.4)]"></div>
+
+                                <!-- Specular highlight (top-left) -->
+                                <div class="absolute top-[10%] left-[15%] w-[30%] h-[20%] rounded-full bg-white/20 blur-[8px] rotate-[-30deg]"></div>
+
+                                <!-- Inner floating rings -->
+                                <div class="absolute inset-[10%] rounded-full border border-white/15 orb-ring-1"></div>
+                                <div class="absolute inset-[22%] rounded-full border border-primary/25 orb-ring-2"></div>
+                                <div class="absolute inset-[34%] rounded-full border border-accent/20 orb-ring-3"></div>
+
+                                <!-- Core glow -->
+                                <div class="absolute inset-[38%] rounded-full bg-primary/30 blur-[10px] animate-pulse-slow"></div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <style>
-                        /* Antigravity Style Reveal Animation */
+                        /* ── Reveal animations ── */
                         .hero-reveal, .scroll-reveal {
                             opacity: 0;
                             transform: translateY(20px);
@@ -129,68 +187,272 @@
                             transform: translateY(0);
                         }
 
-                        .perspective-1000 {
-                            perspective: 1000px;
+                        /* ── Dot-grid background ── */
+                        .hero-dot-grid {
+                            background-image: radial-gradient(circle, rgba(99,102,241,0.18) 1px, transparent 1px);
+                            background-size: 36px 36px;
+                            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
                         }
-                        .transform-style-3d {
-                            transform-style: preserve-3d;
+
+                        /* ── Floating particles ── */
+                        .hero-particle {
+                            position: absolute;
+                            left: var(--x);
+                            top: var(--y);
+                            width: var(--size);
+                            height: var(--size);
+                            border-radius: 50%;
+                            background: radial-gradient(circle, rgba(139,92,246,0.9), rgba(59,130,246,0.5));
+                            animation: particle-float var(--d) ease-in-out infinite var(--delay);
+                            box-shadow: 0 0 8px 2px rgba(139,92,246,0.4);
                         }
-                        
-                        /* Orb Surface Background */
+                        @keyframes particle-float {
+                            0%, 100% { transform: translate(0,0) scale(1); opacity: 0.7; }
+                            33%       { transform: translate(12px,-18px) scale(1.2); opacity: 1; }
+                            66%       { transform: translate(-10px,10px) scale(0.85); opacity: 0.5; }
+                        }
+
+                        /* ── Live badge ── */
+                        .hero-live-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 6px 14px 6px 10px;
+                            border-radius: 999px;
+                            background: rgba(99,102,241,0.12);
+                            border: 1px solid rgba(99,102,241,0.25);
+                            backdrop-filter: blur(8px);
+                            color: oklch(var(--p));
+                            font-size: 0.8rem;
+                        }
+                        .hero-live-dot {
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background: #22c55e;
+                            box-shadow: 0 0 0 0 rgba(34,197,94,0.6);
+                            animation: live-pulse 2s ease-out infinite;
+                            flex-shrink: 0;
+                        }
+                        @keyframes live-pulse {
+                            0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+                            70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+                            100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+                        }
+
+                        /* ── Gradient headline text ── */
+                        .hero-gradient-text {
+                            background: linear-gradient(135deg, #253cff 0%, #8a38ff 50%, #c026d3 100%);
+                            background-size: 200% 200%;
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            animation: shimmer-text 4s ease-in-out infinite;
+                        }
+                        @keyframes shimmer-text {
+                            0%,100% { background-position: 0% 50%; }
+                            50%     { background-position: 100% 50%; }
+                        }
+
+                        /* ── Form glow ── */
+                        .hero-form-glow {
+                            background: linear-gradient(135deg, rgba(37,60,255,0.5), rgba(138,56,255,0.5));
+                            opacity: 0;
+                            filter: blur(10px);
+                            transition: opacity 0.4s ease;
+                            border-radius: 18px;
+                        }
+                        .hero-form-group:hover .hero-form-glow,
+                        .hero-form-group:focus-within .hero-form-glow { opacity: 1; }
+
+                        /* CTA button arrow animation */
+                        .hero-cta-arrow { transition: transform 0.25s ease; }
+                        .hero-cta-btn:hover .hero-cta-arrow { transform: translateX(5px); }
+
+                        /* ── Trust badges - glassmorphism ── */
+                        .hero-trust-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            padding: 6px 14px;
+                            border-radius: 999px;
+                            background: rgba(255,255,255,0.06);
+                            border: 1px solid rgba(255,255,255,0.12);
+                            backdrop-filter: blur(10px);
+                            font-size: 0.78rem;
+                            color: oklch(var(--bc) / 0.8);
+                            white-space: nowrap;
+                            transition: background 0.2s, border-color 0.2s, transform 0.2s;
+                        }
+                        .hero-trust-badge:hover {
+                            background: rgba(255,255,255,0.1);
+                            border-color: rgba(255,255,255,0.22);
+                            transform: translateY(-2px);
+                        }
+
+                        /* ── Floating stat chips ── */
+                        .hero-stat-chip {
+                            position: absolute;
+                            z-index: 20;
+                            padding: 10px 14px;
+                            border-radius: 16px;
+                            background: rgba(15,23,42,0.75);
+                            border: 1px solid rgba(255,255,255,0.12);
+                            backdrop-filter: blur(16px);
+                            box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07);
+                            animation: chip-float 6s ease-in-out infinite;
+                        }
+                        .hero-stat-chip--top-left    { top: 10%; left: 2%; animation-delay: 0s; }
+                        .hero-stat-chip--bottom-right { bottom: 15%; right: 2%; animation-delay: -3s; }
+                        @keyframes chip-float {
+                            0%,100% { transform: translateY(0px); }
+                            50%     { transform: translateY(-8px); }
+                        }
+                        .hero-stat-chip-icon {
+                            width: 28px; height: 28px;
+                            border-radius: 8px;
+                            display: flex; align-items: center; justify-content: center;
+                            flex-shrink: 0;
+                        }
+
+                        /* ── 3D helpers ── */
+                        .perspective-1000 { perspective: 1000px; }
+                        .transform-style-3d { transform-style: preserve-3d; }
+
+                        /* ── Orb surface ── */
                         .orb-surface {
-                            background: 
-                                radial-gradient(circle at 50% 50%, var(--p) 0%, transparent 50%),
-                                radial-gradient(circle at 80% 20%, var(--a) 0%, transparent 50%),
-                                radial-gradient(circle at 20% 80%, var(--s) 0%, transparent 50%),
-                                radial-gradient(circle at 80% 80%, var(--in) 0%, transparent 50%),
-                                radial-gradient(circle at 20% 20%, #8b5cf6 0%, transparent 50%);
-                            background-size: 100% 100%;
-                            filter: blur(15px);
-                            animation: spin-surface 20s linear infinite;
+                            background:
+                                radial-gradient(circle at 50% 50%, rgba(37,60,255,0.7) 0%, transparent 45%),
+                                radial-gradient(circle at 80% 20%, rgba(138,56,255,0.6) 0%, transparent 45%),
+                                radial-gradient(circle at 20% 80%, rgba(6,182,212,0.5) 0%, transparent 45%),
+                                radial-gradient(circle at 80% 80%, rgba(99,102,241,0.5) 0%, transparent 45%),
+                                radial-gradient(circle at 20% 20%, rgba(139,92,246,0.7) 0%, transparent 45%);
+                            filter: blur(18px);
+                            animation: spin-surface 24s linear infinite;
                         }
-                        
-                        /* Main Orb Animation */
-                        .orb-3d {
-                            animation: float-orb 8s ease-in-out infinite;
+                        .orb-3d { animation: float-orb 8s ease-in-out infinite; }
+
+                        /* ── Orbiting rings & satellites ── */
+                        .orb-orbit {
+                            position: absolute;
+                            border-radius: 50%;
+                            border: 1px solid rgba(255,255,255,0.1);
+                            top: 50%; left: 50%;
+                            transform-origin: 0 0;
                         }
-                        
-                        /* Ring Animations */
+                        .orb-orbit--1 {
+                            width: 120%; height: 120%;
+                            margin: -60% 0 0 -60%;
+                            animation: orbit-spin 12s linear infinite;
+                            border-color: rgba(99,102,241,0.25);
+                        }
+                        .orb-orbit--2 {
+                            width: 140%; height: 140%;
+                            margin: -70% 0 0 -70%;
+                            animation: orbit-spin 18s linear infinite reverse;
+                            border-color: rgba(139,92,246,0.2);
+                            transform: rotateX(70deg);
+                        }
+                        .orb-orbit--3 {
+                            width: 160%; height: 160%;
+                            margin: -80% 0 0 -80%;
+                            animation: orbit-spin 24s linear infinite;
+                            border-color: rgba(6,182,212,0.15);
+                            transform: rotateY(60deg);
+                        }
+                        .orb-satellite {
+                            position: absolute;
+                            width: 10px; height: 10px;
+                            border-radius: 50%;
+                            top: -5px; left: 50%;
+                            margin-left: -5px;
+                        }
+                        .orb-satellite--blue   { background: #3b82f6; box-shadow: 0 0 10px 3px rgba(59,130,246,0.8); }
+                        .orb-satellite--violet { background: #8b5cf6; box-shadow: 0 0 10px 3px rgba(139,92,246,0.8); }
+                        .orb-satellite--cyan   { background: #06b6d4; box-shadow: 0 0 10px 3px rgba(6,182,212,0.8); }
+
+                        @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+                        /* Ring animations */
                         .orb-ring-1 { animation: spin-ring-x 15s linear infinite; }
                         .orb-ring-2 { animation: spin-ring-y 20s linear infinite reverse; }
                         .orb-ring-3 { animation: spin-ring-z 25s linear infinite; }
-                        
-                        .animate-pulse-slow {
-                            animation: pulse-glow 6s ease-in-out infinite;
-                        }
-                        .animate-pulse-slower {
-                            animation: pulse-glow 8s ease-in-out infinite;
-                        }
-                        
+
+                        .animate-pulse-slow   { animation: pulse-glow 6s ease-in-out infinite; }
+                        .animate-pulse-slower { animation: pulse-glow 8s ease-in-out infinite; }
+
                         @keyframes spin-surface {
-                            0% { transform: rotate(0deg) scale(1.2); }
-                            50% { transform: rotate(180deg) scale(1.5); }
+                            0%   { transform: rotate(0deg) scale(1.2); }
+                            50%  { transform: rotate(180deg) scale(1.5); }
                             100% { transform: rotate(360deg) scale(1.2); }
                         }
-                        
                         @keyframes float-orb {
-                            0%, 100% { transform: translateY(0) rotateX(10deg) rotateY(10deg); }
-                            50% { transform: translateY(-20px) rotateX(-5deg) rotateY(-15deg); }
+                            0%,100% { transform: translateY(0) rotateX(10deg) rotateY(10deg); }
+                            50%     { transform: translateY(-20px) rotateX(-5deg) rotateY(-15deg); }
                         }
-                        
                         @keyframes spin-ring-x {
-                            0% { transform: rotateX(0deg) rotateY(30deg); }
+                            0%   { transform: rotateX(0deg) rotateY(30deg); }
                             100% { transform: rotateX(360deg) rotateY(30deg); }
                         }
                         @keyframes spin-ring-y {
-                            0% { transform: rotateX(45deg) rotateY(0deg); }
+                            0%   { transform: rotateX(45deg) rotateY(0deg); }
                             100% { transform: rotateX(45deg) rotateY(360deg); }
                         }
                         @keyframes spin-ring-z {
-                            0% { transform: rotateX(60deg) rotateY(60deg) rotateZ(0deg); }
+                            0%   { transform: rotateX(60deg) rotateY(60deg) rotateZ(0deg); }
                             100% { transform: rotateX(60deg) rotateY(60deg) rotateZ(360deg); }
                         }
-                        
-                        /* Initial state for Floating Contact Button on Index page only */
+                        @keyframes pulse-glow {
+                            0%,100% { opacity: 0.4; transform: scale(1); }
+                            50%     { opacity: 0.8; transform: scale(1.05); }
+                        }
+
+                        /* ══════════════════════════════
+                           LIGHT MODE OVERRIDES
+                           ══════════════════════════════ */
+
+                        /* Dot grid: slightly stronger dots in light mode */
+                        html:not(.dark) .hero-dot-grid {
+                            background-image: radial-gradient(circle, rgba(99,102,241,0.22) 1px, transparent 1px);
+                        }
+
+                        /* Live badge: more contrast on light bg */
+                        html:not(.dark) .hero-live-badge {
+                            background: rgba(99,102,241,0.1);
+                            border-color: rgba(99,102,241,0.35);
+                            color: #4338ca;
+                        }
+
+                        /* Trust badges: opaque light variant instead of invisible glass */
+                        html:not(.dark) .hero-trust-badge {
+                            background: rgba(99,102,241,0.07);
+                            border-color: rgba(99,102,241,0.25);
+                            color: #374151;
+                        }
+                        html:not(.dark) .hero-trust-badge:hover {
+                            background: rgba(99,102,241,0.13);
+                            border-color: rgba(99,102,241,0.4);
+                        }
+
+                        /* Form glow: keep it visible in light mode */
+                        html:not(.dark) .hero-form-glow {
+                            background: linear-gradient(135deg, rgba(37,60,255,0.35), rgba(138,56,255,0.35));
+                        }
+
+                        /* Particles: slightly more opaque in light mode */
+                        html:not(.dark) .hero-particle {
+                            background: radial-gradient(circle, rgba(79,70,229,0.85), rgba(37,99,235,0.5));
+                            box-shadow: 0 0 8px 2px rgba(79,70,229,0.35);
+                        }
+
+                        /* Stat chips: white glass in light mode so text stays readable */
+                        html:not(.dark) .hero-stat-chip {
+                            background: rgba(255,255,255,0.88);
+                            border-color: rgba(99,102,241,0.2);
+                            box-shadow: 0 8px 32px rgba(99,102,241,0.12), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.95);
+                        }
+
+                        /* ── Floating contact button ── */
                         #floatingContactBtn:not(.revealed-btn) {
                             opacity: 0;
                             visibility: hidden;
@@ -199,12 +461,7 @@
 
                         /* ── Mobile: Hero email form ── */
                         @media (max-width: 639px) {
-                            /* Input: fully rounded on mobile (not half-open join style) */
-                            #hero-email-form .input.join-item {
-                                border-radius: 14px !important;
-                            }
-
-                            /* Button: fully rounded, premium gradient, elevated shadow */
+                            #hero-email-form .input.join-item { border-radius: 14px !important; }
                             #hero-email-form .btn.join-item {
                                 border-radius: 14px !important;
                                 margin-left: 0 !important;
@@ -214,52 +471,34 @@
                                 letter-spacing: 0.04em;
                                 color: #ffffff !important;
                                 background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1d4ed8 100%) !important;
-                                box-shadow:
-                                    0 4px 20px rgba(29, 78, 216, 0.35),
-                                    0 2px 8px rgba(0, 0, 0, 0.25),
-                                    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+                                box-shadow: 0 4px 20px rgba(29,78,216,0.35), 0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08) !important;
                                 transition: transform 0.2s ease, box-shadow 0.2s ease !important;
                             }
-
                             #hero-email-form .btn.join-item:hover,
                             #hero-email-form .btn.join-item:focus-visible {
                                 transform: translateY(-2px);
-                                box-shadow:
-                                    0 8px 28px rgba(29, 78, 216, 0.45),
-                                    0 4px 12px rgba(0, 0, 0, 0.3),
-                                    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+                                box-shadow: 0 8px 28px rgba(29,78,216,0.45), 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1) !important;
                             }
-
                             #hero-email-form .btn.join-item:active {
                                 transform: scale(0.98) translateY(0) !important;
-                                box-shadow:
-                                    0 2px 10px rgba(29, 78, 216, 0.3),
-                                    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+                                box-shadow: 0 2px 10px rgba(29,78,216,0.3), inset 0 1px 0 rgba(255,255,255,0.05) !important;
                             }
-
-                            /* Arrow icon: slide-in animation on hover */
-                            #hero-email-form .btn.join-item .fa-arrow-right {
-                                transition: transform 0.25s ease;
-                                font-size: 0.875rem;
-                            }
-                            #hero-email-form .btn.join-item:hover .fa-arrow-right {
-                                transform: translateX(4px);
-                            }
+                            /* Stat chips: hide on very small screens to avoid clutter */
+                            .hero-stat-chip { display: none; }
                         }
                     </style>
-                    
+
                     <script>
                         document.addEventListener("DOMContentLoaded", () => {
                             // 1. Mouse Glow Tracking
                             const homeSection = document.getElementById('home');
                             const heroGlow = document.getElementById('hero-glow');
-                            
+
                             if (homeSection && heroGlow) {
                                 homeSection.addEventListener('mousemove', (e) => {
                                     const rect = homeSection.getBoundingClientRect();
                                     const x = e.clientX - rect.left;
                                     const y = e.clientY - rect.top;
-                                    
                                     requestAnimationFrame(() => {
                                         heroGlow.style.left = `${x}px`;
                                         heroGlow.style.top = `${y}px`;
@@ -270,31 +509,25 @@
                             // 2. Typewriter Effect
                             const typedText1 = "LMP ";
                             const typedText2 = "Marketing Digital";
-                            
                             const span1 = document.getElementById("type-1");
                             const span2 = document.getElementById("type-2");
-                            
                             const cursor = document.createElement("span");
                             cursor.className = "inline-block w-[3px] h-[0.9em] bg-base-content mx-1 animate-pulse align-middle";
-                            
-                            if(span1 && span2) {
+
+                            if (span1 && span2) {
                                 span1.appendChild(cursor);
-                                
-                                let isTyping1 = true;
-                                let i = 0;
-                                let j = 0;
-                                
+                                let isTyping1 = true, i = 0, j = 0;
                                 const type = () => {
                                     if (isTyping1) {
                                         if (i < typedText1.length) {
                                             span1.insertBefore(document.createTextNode(typedText1.charAt(i)), cursor);
                                             i++;
-                                            setTimeout(type, 70 + Math.random() * 50); // Random typing speed
+                                            setTimeout(type, 70 + Math.random() * 50);
                                         } else {
                                             isTyping1 = false;
                                             span1.removeChild(cursor);
                                             span2.appendChild(cursor);
-                                            setTimeout(type, 300); // Pause before second word
+                                            setTimeout(type, 300);
                                         }
                                     } else {
                                         if (j < typedText2.length) {
@@ -302,50 +535,29 @@
                                             j++;
                                             setTimeout(type, 70 + Math.random() * 50);
                                         } else {
-                                            // Finish typing
-                                            setTimeout(() => {
-                                                cursor.style.display = 'none';
-                                                revealElements();
-                                            }, 200);
+                                            setTimeout(() => { cursor.style.display = 'none'; revealElements(); }, 200);
                                         }
                                     }
                                 };
-                                
-                                // Start typing 0.5s after load
                                 setTimeout(type, 500);
                             }
 
                             // 3. Cascade Reveal
                             function revealElements() {
-                                const elements = document.querySelectorAll('.hero-reveal');
-                                elements.forEach((el, index) => {
-                                    setTimeout(() => {
-                                        el.classList.add('revealed');
-                                    }, index * 100); // 100ms cascade delay
+                                document.querySelectorAll('.hero-reveal').forEach((el, index) => {
+                                    setTimeout(() => el.classList.add('revealed'), index * 100);
                                 });
-
-                                // Reveal secondary sections on scroll
                                 activateScrollReveals();
-                                
-                                // Show floating contact button
                                 const floatBtn = document.getElementById('floatingContactBtn');
-                                if (floatBtn) {
-                                    setTimeout(() => {
-                                        floatBtn.classList.add('revealed-btn');
-                                    }, 500); // 500ms after the hero elements start revealing
-                                }
+                                if (floatBtn) setTimeout(() => floatBtn.classList.add('revealed-btn'), 500);
                             }
 
                             function activateScrollReveals() {
                                 const observer = new IntersectionObserver((entries) => {
                                     entries.forEach(entry => {
-                                        if (entry.isIntersecting) {
-                                            entry.target.classList.add('revealed');
-                                            observer.unobserve(entry.target);
-                                        }
+                                        if (entry.isIntersecting) { entry.target.classList.add('revealed'); observer.unobserve(entry.target); }
                                     });
                                 }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
                                 document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
                             }
                         });
