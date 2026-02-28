@@ -280,6 +280,15 @@ public class StripeCheckoutController {
                 auditLogger.info("Direct Stripe Checkout session created successfully - Service: {}, Session: {}",
                         serviceName, response.getProviderTransactionId());
 
+                // 🆕 SAUVEGARDER LE PAYMENT INTENT ET LA SESSION DANS L'ORDER
+                savedOrder.setStripeSessionId(response.getProviderTransactionId());
+                if (response.getPaymentIntentId() != null) {
+                    savedOrder.setStripePaymentIntentId(response.getPaymentIntentId());
+                    logger.info("Saved PaymentIntent ID {} to Order {}", response.getPaymentIntentId(),
+                            savedOrder.getId());
+                }
+                orderRepository.save(savedOrder);
+
                 Map<String, Object> successResponse = new HashMap<>();
                 successResponse.put("success", true);
                 successResponse.put("redirectUrl", response.getRedirectUrl());
