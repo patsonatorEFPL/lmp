@@ -1,1100 +1,395 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Gestion des utilisateurs - LMP Admin</title>
-    
-    <!-- Bootstrap CSS -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <!-- Bootstrap CSS for modals only -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <style>
-        .admin-header {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+        /* Additional users-specific styles */
+        .db-filter-bar {
+            display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
         }
-        
-        .content-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
+        .db-filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .db-filter-group label {
+            font-size: 11px; font-weight: 600; color: var(--db-text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        
-        .card-header-admin {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 1.5rem;
-            border: none;
+        .db-filter-select, .db-filter-input {
+            padding: 7px 12px; border-radius: 8px; border: 1px solid var(--db-border);
+            background: var(--db-input-bg); color: var(--db-text-primary);
+            font-size: 13px; font-family: inherit; outline: none;
+            transition: border-color 0.15s;
         }
-        
-        .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            border-left: 4px solid;
-            height: 100%;
+        /* Modal overrides for dark mode */
+        [data-theme="dark"] .modal-content {
+            background: var(--db-card-bg); color: var(--db-text-primary);
+            border: 1px solid var(--db-border);
         }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        [data-theme="dark"] .modal-header { border-color: var(--db-border); }
+        [data-theme="dark"] .modal-body { color: var(--db-text-secondary); }
+        [data-theme="dark"] .form-control, [data-theme="dark"] .form-select {
+            background: var(--db-input-bg); color: var(--db-text-primary);
+            border-color: var(--db-border);
         }
-        
-        .stat-card.users { border-left-color: #007bff; }
-        .stat-card.active { border-left-color: #28a745; }
-        .stat-card.inactive { border-left-color: #ffc107; }
-        .stat-card.locked { border-left-color: #dc3545; }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
+
+        @media (max-width: 900px) {
+            .db-col-company, .db-col-login { display: none; }
         }
-        
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .stat-icon {
-            font-size: 2.5rem;
-            opacity: 0.7;
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .status-badge {
-            padding: 0.375rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status-inactive {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        
-        .locked-badge {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .table-users {
-            margin-bottom: 0;
-        }
-        
-        .table-users th {
-            background-color: #f8f9fa;
-            border-top: none;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-            color: #495057;
-        }
-        
-        .table-users td {
-            vertical-align: middle;
-            padding: 1rem 0.75rem;
-        }
-        
-        .table-users tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .action-btn {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            margin: 0 0.125rem;
-        }
-        
-        .filters-section {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .pagination-wrapper {
-            background: white;
-            border-radius: 15px;
-            padding: 1rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .alert-admin {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            color: white;
-            border: none;
-            border-radius: 15px;
-        }
-        
-        .btn-admin {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            border: none;
-            color: white;
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-admin:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
-            color: white;
-        }
-        
-        .sort-link {
-            color: #495057;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        
-        .sort-link:hover {
-            color: #dc3545;
-        }
-        
-        .sort-active {
-            color: #dc3545;
-            font-weight: 600;
+        @media (max-width: 600px) {
+            .db-col-date { display: none; }
         }
     </style>
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);">
-        <div class="container">
-            <a class="navbar-brand fw-bold" th:href="@{/}">
-                <i class="fas fa-shield-alt me-2"></i>
-                LMP Admin
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/dashboard}">
-                            <i class="fas fa-tachometer-alt me-1"></i>
-                            Tableau de bord
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/users}">
-                            <i class="fas fa-users me-1"></i>
-                            Utilisateurs
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/statistics}">
-                            <i class="fas fa-chart-bar me-1"></i>
-                            Statistiques
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/settings}">
-                            <i class="fas fa-cogs me-1"></i>
-                            Paramètres
-                        </a>
-                    </li>
-                </ul>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/dashboard}">
-                            <i class="fas fa-user me-1"></i>
-                            Mode utilisateur
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-shield me-1"></i>
-                            Admin
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" th:href="@{/profile}">
-                                <i class="fas fa-user me-2"></i>Mon profil
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="/logout" method="post" class="d-inline">
-                                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
-                                    <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
+<body>
+
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root db-admin-root" id="db-root">
+
+    <!-- SIDEBAR -->
+    <div th:replace="~{admin/fragments/admin-sidebar :: sidebar(activeNav='users')}"></div>
+
+    <!-- ═══════════════ MAIN ═══════════════ -->
+    <div class="db-main">
+
+        <div th:replace="~{admin/fragments/admin-header :: header(title='Utilisateurs', subtitle='Gestion des comptes utilisateurs')}"></div>
+
+        <div class="db-content">
+
+            <!-- Error/Success Messages -->
+            <div th:if="${errorMessage}" class="db-alert db-alert-warning">
+                <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px;"></i>
+                <span th:text="${errorMessage}">Message d'erreur</span>
+                <button class="db-alert-close" onclick="this.parentElement.remove()">&times;</button>
             </div>
-        </div>
-    </nav>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <!-- Header Alert -->
-        <div class="alert alert-admin d-flex align-items-center mb-4">
-            <i class="fas fa-users me-3 fs-4"></i>
-            <div>
-                <h6 class="mb-1">Gestion des utilisateurs</h6>
-                <small>Administrez les comptes utilisateurs et leurs permissions</small>
+            <!-- Stat Cards -->
+            <div class="db-stat-grid-4">
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-users"></i> Total</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalUsers}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-user-check"></i> Actifs</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${activeUsers}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-user-times"></i> Inactifs</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${inactiveUsers}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-user-lock"></i> Verrouillés</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${lockedUsers}">0</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Error/Success Messages -->
-        <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <span th:text="${errorMessage}">Message d'erreur</span>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="stat-card users">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-number text-primary" th:text="${totalUsers}">0</div>
-                            <div class="stat-label">Total utilisateurs</div>
+            <!-- Filters -->
+            <div class="db-card">
+                <form method="get" th:action="@{/admin/users}">
+                    <div class="db-filter-bar">
+                        <div class="db-filter-group">
+                            <label>Statut</label>
+                            <select class="db-filter-select" name="status">
+                                <option value="">Tous</option>
+                                <option value="ACTIVE" th:selected="${currentStatus == 'ACTIVE'}">Actif</option>
+                                <option value="INACTIVE" th:selected="${currentStatus == 'INACTIVE'}">Inactif</option>
+                            </select>
                         </div>
-                        <i class="fas fa-users stat-icon text-primary"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="stat-card active">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-number text-success" th:text="${activeUsers}">0</div>
-                            <div class="stat-label">Actifs</div>
+                        <div class="db-filter-group" style="flex:1;min-width:180px;">
+                            <label>Recherche</label>
+                            <input type="text" class="db-filter-input" name="search"
+                                   th:value="${currentSearch}" placeholder="Rechercher par email…">
                         </div>
-                        <i class="fas fa-user-check stat-icon text-success"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="stat-card inactive">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-number text-warning" th:text="${inactiveUsers}">0</div>
-                            <div class="stat-label">Inactifs</div>
+                        <div class="db-filter-group">
+                            <label>Trier par</label>
+                            <select class="db-filter-select" name="sortBy">
+                                <option value="registrationDate" th:selected="${currentSort == 'registrationDate'}">Date</option>
+                                <option value="email" th:selected="${currentSort == 'email'}">Email</option>
+                                <option value="lastLoginDate" th:selected="${currentSort == 'lastLoginDate'}">Connexion</option>
+                            </select>
                         </div>
-                        <i class="fas fa-user-times stat-icon text-warning"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3 mb-3">
-                <div class="stat-card locked">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <div class="stat-number text-danger" th:text="${lockedUsers}">0</div>
-                            <div class="stat-label">Verrouillés</div>
+                        <div class="db-filter-group">
+                            <label>Ordre</label>
+                            <select class="db-filter-select" name="sortDir">
+                                <option value="desc" th:selected="${currentSortDir == 'desc'}">Desc</option>
+                                <option value="asc" th:selected="${currentSortDir == 'asc'}">Asc</option>
+                            </select>
                         </div>
-                        <i class="fas fa-user-lock stat-icon text-danger"></i>
+                        <div class="db-filter-group" style="justify-content:flex-end;">
+                            <label>&nbsp;</label>
+                            <button type="submit" class="db-btn db-btn-accent"><i class="fas fa-search"></i> Filtrer</button>
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
-        </div>
 
-        <!-- Filters Section -->
-        <div class="filters-section">
-            <form method="get" th:action="@{/admin/users}">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="status" class="form-label fw-bold">Statut</label>
-                        <select class="form-select" id="status" name="status">
-                            <option value="">Tous les statuts</option>
-                            <option value="ACTIVE" th:selected="${currentStatus == 'ACTIVE'}">Actif</option>
-                            <option value="INACTIVE" th:selected="${currentStatus == 'INACTIVE'}">Inactif</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="search" class="form-label fw-bold">Recherche</label>
-                        <input type="text" class="form-control" id="search" name="search" 
-                               th:value="${currentSearch}" placeholder="Rechercher par email...">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="sortBy" class="form-label fw-bold">Trier par</label>
-                        <select class="form-select" id="sortBy" name="sortBy">
-                            <option value="registrationDate" th:selected="${currentSort == 'registrationDate'}">Date d'inscription</option>
-                            <option value="email" th:selected="${currentSort == 'email'}">Email</option>
-                            <option value="lastLoginDate" th:selected="${currentSort == 'lastLoginDate'}">Dernière connexion</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="sortDir" class="form-label fw-bold">Ordre</label>
-                        <select class="form-select" id="sortDir" name="sortDir">
-                            <option value="desc" th:selected="${currentSortDir == 'desc'}">Décroissant</option>
-                            <option value="asc" th:selected="${currentSortDir == 'asc'}">Croissant</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-admin w-100">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
+            <!-- Users Table -->
+            <div class="db-card" style="padding:0;overflow:hidden;">
+                <div style="padding:14px 20px;border-bottom:1px solid var(--db-border);display:flex;align-items:center;justify-content:space-between;">
+                    <span class="db-card-title"><i class="fas fa-users"></i> Utilisateurs <span style="font-weight:400;color:var(--db-text-muted);margin-left:6px;" th:text="'(' + ${totalElements} + ')'"></span></span>
+                    <span style="font-size:12px;color:var(--db-text-muted);">
+                        Page <span th:text="${currentPage + 1}">1</span> / <span th:text="${totalPages}">1</span>
+                    </span>
                 </div>
-            </form>
-        </div>
 
-        <!-- Users Table -->
-        <div class="content-card">
-            <div class="card-header-admin">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-users me-2"></i>
-                        Utilisateurs
-                        <span class="badge bg-light text-dark ms-2" th:text="${totalElements}">0</span>
-                    </h5>
-                    <div class="text-end">
-                        <small>Page <span th:text="${currentPage + 1}">1</span> sur <span th:text="${totalPages}">1</span></small>
-                    </div>
+                <div th:if="${#lists.isEmpty(usersPage.content)}" class="db-empty">
+                    <i class="fas fa-users"></i>
+                    <p>Aucun utilisateur trouvé</p>
                 </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-users">
-                    <thead>
-                        <tr>
-                            <th scope="col">Utilisateur</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Statut</th>
-                            <th scope="col">Inscription</th>
-                            <th scope="col">Dernière connexion</th>
-                            <th scope="col" class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:if="${#lists.isEmpty(usersPage.content)}">
-                            <td colspan="6" class="text-center py-4">
-                                <i class="fas fa-users fs-1 text-muted mb-3 d-block"></i>
-                                <p class="text-muted mb-0">Aucun utilisateur trouvé</p>
-                            </td>
-                        </tr>
-                        
-                        <tr th:each="user : ${usersPage.content}">
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="user-avatar me-3">
-                                        <span th:text="${user.getDisplayName().substring(0,1).toUpperCase()}">J</span>
+
+                <div th:unless="${#lists.isEmpty(usersPage.content)}" style="overflow-x:auto;">
+                    <table class="db-table">
+                        <thead>
+                            <tr>
+                                <th>Utilisateur</th>
+                                <th>Email</th>
+                                <th>Statut</th>
+                                <th class="db-col-date">Inscription</th>
+                                <th class="db-col-login">Dernière connexion</th>
+                                <th style="text-align:center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="user : ${usersPage.content}">
+                                <td>
+                                    <div class="db-table-app">
+                                        <div class="db-user-avatar" style="width:32px;height:32px;font-size:12px;">
+                                            <span th:text="${user.getDisplayName().substring(0,1).toUpperCase()}">U</span>
+                                        </div>
+                                        <div>
+                                            <div class="db-table-app-name" th:text="${user.getDisplayName()}">Utilisateur</div>
+                                            <div class="db-table-type" th:text="${user.companyName ?: 'Particulier'}">Entreprise</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h6 class="mb-0" th:text="${user.getDisplayName()}">John Doe</h6>
-                                        <small class="text-muted" th:text="${user.companyName ?: 'Particulier'}">Entreprise</small>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span th:text="${user.email}">john@example.com</span>
-                                <div th:if="${user.emailVerified}">
-                                    <i class="fas fa-check-circle text-success" title="Email vérifié"></i>
-                                </div>
-                                <div th:unless="${user.emailVerified}">
-                                    <i class="fas fa-exclamation-circle text-warning" title="Email non vérifié"></i>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="status-badge" 
-                                      th:classappend="${user.status.name() == 'ACTIVE'} ? 'status-active' : 'status-inactive'"
-                                      th:text="${user.status.name()}">Actif</span>
-                                <div th:if="${user.accountLocked}">
-                                    <span class="status-badge locked-badge mt-1">
-                                        <i class="fas fa-lock me-1"></i>Verrouillé
+                                </td>
+                                <td>
+                                    <span th:text="${user.email}">email@example.com</span>
+                                    <i th:if="${user.emailVerified}" class="fas fa-check-circle" style="color:var(--db-success);margin-left:4px;font-size:11px;" title="Vérifié"></i>
+                                    <i th:unless="${user.emailVerified}" class="fas fa-exclamation-circle" style="color:var(--db-warning);margin-left:4px;font-size:11px;" title="Non vérifié"></i>
+                                </td>
+                                <td>
+                                    <span class="db-status-badge"
+                                          th:classappend="${user.status.name() == 'ACTIVE'} ? 'db-status-done' : 'db-status-pending'"
+                                          th:text="${user.status.name()}">ACTIVE</span>
+                                    <span th:if="${user.accountLocked}" class="db-status-badge db-status-cancel" style="margin-left:4px;">
+                                        <i class="fas fa-lock" style="font-size:9px;"></i>
                                     </span>
-                                </div>
-                            </td>
-                            <td>
-                                <span th:text="${user.registrationDate != null ? #temporals.format(user.registrationDate, 'dd/MM/yyyy HH:mm') : 'N/A'}">01/01/2024</span>
-                            </td>
-                            <td>
-                                <span th:text="${user.lastLoginDate != null ? #temporals.format(user.lastLoginDate, 'dd/MM/yyyy HH:mm') : 'Jamais'}">01/01/2024</span>
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group" role="group">
-                                    <!-- Bouton Détails -->
-                                    <button type="button" class="btn btn-outline-info action-btn" 
-                                            th:onclick="'showUserDetails(' + ${user.id} + ')'" 
-                                            title="Voir les détails">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    
-                                    <!-- Bouton Éditer -->
-                                    <button type="button" class="btn btn-outline-primary action-btn" 
-                                            th:onclick="'editUser(' + ${user.id} + ')'" 
-                                            title="Éditer l'utilisateur">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    
-                                    <!-- Bouton Activer/Désactiver -->
-                                    <button th:if="${user.status.name() == 'ACTIVE'}" 
-                                            type="button" class="btn btn-outline-warning action-btn" 
-                                            th:onclick="'deactivateUser(' + ${user.id} + ')'" 
-                                            title="Désactiver">
-                                        <i class="fas fa-user-times"></i>
-                                    </button>
-                                    <button th:if="${user.status.name() != 'ACTIVE'}" 
-                                            type="button" class="btn btn-outline-success action-btn" 
-                                            th:onclick="'activateUser(' + ${user.id} + ')'" 
-                                            title="Activer">
-                                        <i class="fas fa-user-check"></i>
-                                    </button>
-                                    
-                                    <!-- Bouton Verrouiller/Déverrouiller -->
-                                    <button th:if="${user.accountLocked}"
-                                            type="button" class="btn btn-outline-success action-btn"
-                                            th:onclick="'unlockUser(' + ${user.id} + ')'"
-                                            title="Déverrouiller">
-                                        <i class="fas fa-unlock"></i>
-                                    </button>
-                                    <button th:unless="${user.accountLocked}"
-                                            type="button" class="btn btn-outline-danger action-btn"
-                                            th:onclick="'lockUser(' + ${user.id} + ')'"
-                                            title="Verrouiller">
-                                        <i class="fas fa-lock"></i>
-                                    </button>
-                                    
-                                    <!-- Bouton Supprimer (Hard Delete) -->
-                                    <button type="button" class="btn btn-outline-danger action-btn"
-                                            th:onclick="'deleteUser(' + ${user.id} + ')'"
-                                            title="Supprimer définitivement (irréversible)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Pagination -->
-        <div class="pagination-wrapper" th:if="${totalPages > 1}">
-            <nav aria-label="Pagination des utilisateurs">
-                <ul class="pagination justify-content-center mb-0">
-                    <!-- Previous -->
-                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                        <a class="page-link" th:href="@{/admin/users(page=${currentPage - 1}, size=20, status=${currentStatus}, search=${currentSearch}, sortBy=${currentSort}, sortDir=${currentSortDir})}">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    </li>
-                    
-                    <!-- Page numbers -->
-                    <li th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}" 
-                        class="page-item" th:classappend="${pageNum == currentPage} ? 'active'">
-                        <a class="page-link" th:href="@{/admin/users(page=${pageNum}, size=20, status=${currentStatus}, search=${currentSearch}, sortBy=${currentSort}, sortDir=${currentSortDir})}"
-                           th:text="${pageNum + 1}">1</a>
-                    </li>
-                    
-                    <!-- Next -->
-                    <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
-                        <a class="page-link" th:href="@{/admin/users(page=${currentPage + 1}, size=20, status=${currentStatus}, search=${currentSearch}, sortBy=${currentSort}, sortDir=${currentSortDir})}">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </div>
-
-    <!-- User Details Modal -->
-    <div class="modal fade" id="userDetailsModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%); color: white;">
-                    <h5 class="modal-title">
-                        <i class="fas fa-user me-2"></i>
-                        Détails de l'utilisateur
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </td>
+                                <td class="db-col-date">
+                                    <span th:text="${user.registrationDate != null ? #temporals.format(user.registrationDate, 'dd/MM/yyyy') : 'N/A'}">01/01/2024</span>
+                                </td>
+                                <td class="db-col-login">
+                                    <span th:text="${user.lastLoginDate != null ? #temporals.format(user.lastLoginDate, 'dd/MM/yyyy HH:mm') : 'Jamais'}">Jamais</span>
+                                </td>
+                                <td style="text-align:center;">
+                                    <div class="db-table-actions" style="justify-content:center;">
+                                        <button class="db-action-btn" th:onclick="'showUserDetails(' + ${user.id} + ')'" title="Détails">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="db-action-btn" th:onclick="'editUser(' + ${user.id} + ')'" title="Éditer">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button th:if="${user.status.name() == 'ACTIVE'}" class="db-action-btn" th:onclick="'deactivateUser(' + ${user.id} + ')'" title="Désactiver">
+                                            <i class="fas fa-user-times"></i>
+                                        </button>
+                                        <button th:if="${user.status.name() != 'ACTIVE'}" class="db-action-btn" th:onclick="'activateUser(' + ${user.id} + ')'" title="Activer">
+                                            <i class="fas fa-user-check"></i>
+                                        </button>
+                                        <button th:if="${user.accountLocked}" class="db-action-btn" th:onclick="'unlockUser(' + ${user.id} + ')'" title="Déverrouiller">
+                                            <i class="fas fa-unlock"></i>
+                                        </button>
+                                        <button th:unless="${user.accountLocked}" class="db-action-btn db-action-btn-danger" th:onclick="'lockUser(' + ${user.id} + ')'" title="Verrouiller">
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                        <button class="db-action-btn db-action-btn-danger" th:onclick="'deleteUser(' + ${user.id} + ')'" title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="modal-body" id="userDetailsContent">
-                    <!-- Content will be loaded via AJAX -->
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Chargement...</span>
-                        </div>
-                    </div>
+
+                <!-- Pagination -->
+                <div class="db-pagination" th:if="${totalPages > 1}" style="padding:12px;">
+                    <a class="db-page-btn" th:classappend="${currentPage == 0} ? 'disabled'"
+                       th:href="@{/admin/users(page=${currentPage - 1}, size=20, status=${currentStatus}, search=${currentSearch}, sortBy=${currentSort}, sortDir=${currentSortDir})}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}"
+                       class="db-page-btn" th:classappend="${pageNum == currentPage} ? 'active'"
+                       th:href="@{/admin/users(page=${pageNum}, size=20, status=${currentStatus}, search=${currentSearch}, sortBy=${currentSort}, sortDir=${currentSortDir})}"
+                       th:text="${pageNum + 1}">1</a>
+                    <a class="db-page-btn" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'"
+                       th:href="@{/admin/users(page=${currentPage + 1}, size=20, status=${currentStatus}, search=${currentSearch}, sortBy=${currentSort}, sortDir=${currentSortDir})}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Toast Container -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="actionToast" class="toast" role="alert">
-            <div class="toast-header">
-                <i class="fas fa-info-circle text-primary me-2"></i>
-                <strong class="me-auto">Information</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
+
+<!-- User Details Modal (Bootstrap) -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:var(--db-accent);color:#fff;border:none;">
+                <h5 class="modal-title"><i class="fas fa-user me-2"></i> Détails de l'utilisateur</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="toast-body" id="toastMessage">
-                <!-- Message will be set via JavaScript -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JavaScript -->
-    <script>
-        // Get CSRF token for AJAX requests
-        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-        
-        console.log('🔍 CSRF DEBUG - Token:', csrfToken ? 'présent' : 'absent');
-        console.log('🔍 CSRF DEBUG - Header:', csrfHeader ? 'présent' : 'absent');
-
-        // Toast notification function
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('actionToast');
-            const toastBody = document.getElementById('toastMessage');
-            const toastIcon = toast.querySelector('.toast-header i');
-            
-            toastBody.textContent = message;
-            
-            // Update icon and color based on type
-            toastIcon.className = `fas me-2 ${type === 'success' ? 'fa-check-circle text-success' : 
-                                             type === 'error' ? 'fa-exclamation-triangle text-danger' : 
-                                             'fa-info-circle text-primary'}`;
-            
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
-        }
-
-        // User action functions
-        function activateUser(userId) {
-            if (confirm('Êtes-vous sûr de vouloir activer cet utilisateur ?')) {
-                console.log('🔍 ADMIN DEBUG - Activation utilisateur:', userId);
-                
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
-                // Add CSRF token if available
-                if (csrfToken && csrfHeader) {
-                    headers[csrfHeader] = csrfToken;
-                    console.log('🔍 CSRF DEBUG - Token ajouté aux headers');
-                } else {
-                    console.warn('⚠️ CSRF DEBUG - Token CSRF manquant!');
-                }
-                
-                fetch(`/admin/users/${userId}/activate`, {
-                    method: 'POST',
-                    headers: headers
-                })
-                .then(response => {
-                    console.log('🔍 ADMIN DEBUG - Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('🔍 ADMIN DEBUG - Response data:', data);
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showToast(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ ADMIN DEBUG - Erreur activation:', error);
-                    showToast('Erreur lors de l\'activation: ' + error.message, 'error');
-                });
-            }
-        }
-
-        function deactivateUser(userId) {
-            if (confirm('Êtes-vous sûr de vouloir désactiver cet utilisateur ?')) {
-                console.log('🔍 ADMIN DEBUG - Désactivation utilisateur:', userId);
-                
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
-                if (csrfToken && csrfHeader) {
-                    headers[csrfHeader] = csrfToken;
-                }
-                
-                fetch(`/admin/users/${userId}/deactivate`, {
-                    method: 'POST',
-                    headers: headers
-                })
-                .then(response => {
-                    console.log('🔍 ADMIN DEBUG - Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('🔍 ADMIN DEBUG - Response data:', data);
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showToast(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ ADMIN DEBUG - Erreur désactivation:', error);
-                    showToast('Erreur lors de la désactivation: ' + error.message, 'error');
-                });
-            }
-        }
-
-        function lockUser(userId) {
-            if (confirm('Êtes-vous sûr de vouloir verrouiller ce compte ?')) {
-                console.log('🔍 ADMIN DEBUG - Verrouillage utilisateur:', userId);
-                
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
-                if (csrfToken && csrfHeader) {
-                    headers[csrfHeader] = csrfToken;
-                }
-                
-                fetch(`/admin/users/${userId}/lock`, {
-                    method: 'POST',
-                    headers: headers
-                })
-                .then(response => {
-                    console.log('🔍 ADMIN DEBUG - Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('🔍 ADMIN DEBUG - Response data:', data);
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showToast(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ ADMIN DEBUG - Erreur verrouillage:', error);
-                    showToast('Erreur lors du verrouillage: ' + error.message, 'error');
-                });
-            }
-        }
-
-        function unlockUser(userId) {
-            if (confirm('Êtes-vous sûr de vouloir déverrouiller ce compte ?')) {
-                console.log('🔍 ADMIN DEBUG - Déverrouillage utilisateur:', userId);
-                
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                
-                if (csrfToken && csrfHeader) {
-                    headers[csrfHeader] = csrfToken;
-                }
-                
-                fetch(`/admin/users/${userId}/unlock`, {
-                    method: 'POST',
-                    headers: headers
-                })
-                .then(response => {
-                    console.log('🔍 ADMIN DEBUG - Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('🔍 ADMIN DEBUG - Response data:', data);
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        setTimeout(() => location.reload(), 1000);
-                    } else {
-                        showToast(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ ADMIN DEBUG - Erreur déverrouillage:', error);
-                    showToast('Erreur lors du déverrouillage: ' + error.message, 'error');
-                });
-            }
-        }
-
-        function deleteUser(userId) {
-            // Double confirmation pour hard delete
-            if (confirm('⚠️ ATTENTION: Voulez-vous supprimer DÉFINITIVEMENT cet utilisateur ?\n\n' +
-                       '🚨 Cette action est IRRÉVERSIBLE !\n' +
-                       '• L\'utilisateur sera complètement supprimé\n' +
-                       '• Les commandes et avis seront anonymisés\n' +
-                       '• Les rendez-vous seront anonymisés\n' +
-                       '• Les sessions seront invalidées\n\n' +
-                       'Continuer avec la suppression définitive ?')) {
-                
-                if (confirm('🔴 DERNIÈRE CONFIRMATION\n\nÊtes-vous ABSOLUMENT sûr de vouloir supprimer définitivement cet utilisateur ?\n\nCette action ne peut pas être annulée !')) {
-                    
-                    console.log('🚨 ADMIN DEBUG - Suppression DÉFINITIVE utilisateur:', userId);
-                    
-                    const headers = {
-                        'Content-Type': 'application/json'
-                    };
-                    
-                    if (csrfToken && csrfHeader) {
-                        headers[csrfHeader] = csrfToken;
-                    }
-                    
-                    fetch(`/admin/users/${userId}/delete`, {
-                        method: 'POST',
-                        headers: headers
-                    })
-                    .then(response => {
-                        console.log('🔍 ADMIN DEBUG - Response status:', response.status);
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('🔍 ADMIN DEBUG - Response data:', data);
-                        if (data.success) {
-                            showToast(data.message, 'success');
-                            setTimeout(() => location.reload(), 2000);
-                        } else {
-                            showToast(data.message, 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ ADMIN DEBUG - Erreur suppression DÉFINITIVE:', error);
-                        showToast('Erreur lors de la suppression définitive: ' + error.message, 'error');
-                    });
-                }
-            }
-        }
-
-
-        function showUserDetails(userId) {
-            const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
-            const content = document.getElementById('userDetailsContent');
-            
-            // Show loading spinner
-            content.innerHTML = `
+            <div class="modal-body" id="userDetailsContent">
                 <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Chargement...</span>
-                    </div>
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Chargement…</span></div>
                 </div>
-            `;
-            
-            modal.show();
-            
-            // Fetch user details
-            fetch(`/admin/users/${userId}/details`)
-                .then(response => response.json())
-                .then(data => {
-                    content.innerHTML = `
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-muted text-uppercase mb-3">Informations personnelles</h6>
-                                <p><strong>Nom d'affichage:</strong> ${data.displayName || 'N/A'}</p>
-                                <p><strong>Email:</strong> ${data.email}</p>
-                                <p><strong>Téléphone:</strong> ${data.phone || 'N/A'}</p>
-                                <p><strong>Entreprise:</strong> ${data.companyName || 'N/A'}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted text-uppercase mb-3">Adresse</h6>
-                                <p><strong>Adresse:</strong> ${data.address || 'N/A'}</p>
-                                <p><strong>Ville:</strong> ${data.city || 'N/A'}</p>
-                                <p><strong>Code postal:</strong> ${data.postalCode || 'N/A'}</p>
-                                <p><strong>Pays:</strong> ${data.country || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-muted text-uppercase mb-3">Statut du compte</h6>
-                                <p><strong>Statut:</strong> 
-                                    <span class="badge ${data.status === 'ACTIVE' ? 'bg-success' : data.status === 'INACTIVE' ? 'bg-warning' : 'bg-danger'}">
-                                        ${data.status}
-                                    </span>
-                                </p>
-                                <p><strong>Compte verrouillé:</strong> 
-                                    <span class="badge ${data.accountLocked ? 'bg-danger' : 'bg-success'}">
-                                        ${data.accountLocked ? 'Oui' : 'Non'}
-                                    </span>
-                                </p>
-                                <p><strong>Email vérifié:</strong> 
-                                    <span class="badge ${data.emailVerified ? 'bg-success' : 'bg-warning'}">
-                                        ${data.emailVerified ? 'Oui' : 'Non'}
-                                    </span>
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-muted text-uppercase mb-3">Dates importantes</h6>
-                                <p><strong>Inscription:</strong> ${data.registrationDate ? new Date(data.registrationDate).toLocaleString('fr-FR') : 'N/A'}</p>
-                                <p><strong>Dernière connexion:</strong> ${data.lastLoginDate ? new Date(data.lastLoginDate).toLocaleString('fr-FR') : 'Jamais'}</p>
-                            </div>
-                        </div>
-                    `;
-                })
-                .catch(error => {
-                    content.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Erreur lors du chargement des détails de l'utilisateur
-                        </div>
-                    `;
-                });
-        }
-        
-        // Nouvelle fonction pour éditer un utilisateur
-        function editUser(userId) {
-            // Récupérer d'abord les détails de l'utilisateur
-            fetch(`/admin/users/${userId}/details`)
-                .then(response => response.json())
-                .then(data => {
-                    // Créer le formulaire d'édition
-                    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
-                    const content = document.getElementById('userDetailsContent');
-                    
-                    content.innerHTML = `
-                        <form id="editUserForm">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="text-muted text-uppercase mb-3">Informations personnelles</h6>
-                                    <div class="mb-3">
-                                        <label for="firstName" class="form-label">Prénom</label>
-                                        <input type="text" class="form-control" id="firstName" value="${data.displayName ? data.displayName.split(' ')[0] : ''}" placeholder="Prénom">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="lastName" class="form-label">Nom</label>
-                                        <input type="text" class="form-control" id="lastName" value="${data.displayName ? data.displayName.split(' ').slice(1).join(' ') : ''}" placeholder="Nom">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="email" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="email" value="${data.email}" placeholder="Email">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-muted text-uppercase mb-3">Informations complémentaires</h6>
-                                    <div class="mb-3">
-                                        <label for="phone" class="form-label">Téléphone</label>
-                                        <input type="tel" class="form-control" id="phone" value="${data.phone || ''}" placeholder="Téléphone">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="companyName" class="form-label">Entreprise</label>
-                                        <input type="text" class="form-control" id="companyName" value="${data.companyName || ''}" placeholder="Nom de l'entreprise">
-                                    </div>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <button type="button" class="btn btn-outline-primary" onclick="showUserAppointments(${userId})">
-                                        <i class="fas fa-calendar me-2"></i>Voir les rendez-vous
-                                    </button>
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Annuler</button>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save me-2"></i>Sauvegarder
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    `;
-                    
-                    // Gestionnaire du formulaire
-                    document.getElementById('editUserForm').addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        
-                        const updateData = {
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="db-toast" id="db-toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="db-toast-message"></span>
+</div>
+
+<!-- Bootstrap JS for modals -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
+
+<script>
+    /* ── Admin AJAX helpers ── */
+    function adminAction(url, confirmMsg) {
+        if (confirmMsg && !confirm(confirmMsg)) return;
+        adminFetch(url, { method: 'POST' })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (d) { if (d.success) { showToast(d.message, 'success'); setTimeout(function () { location.reload(); }, 1000); } else { showToast(d.message, 'error'); } })
+            .catch(function (e) { showToast('Erreur: ' + e.message, 'error'); });
+    }
+
+    function activateUser(id) { adminAction('/admin/users/' + id + '/activate', 'Activer cet utilisateur ?'); }
+    function deactivateUser(id) { adminAction('/admin/users/' + id + '/deactivate', 'Désactiver cet utilisateur ?'); }
+    function lockUser(id) { adminAction('/admin/users/' + id + '/lock', 'Verrouiller ce compte ?'); }
+    function unlockUser(id) { adminAction('/admin/users/' + id + '/unlock', 'Déverrouiller ce compte ?'); }
+
+    function deleteUser(id) {
+        if (!confirm('⚠️ ATTENTION: Suppression DÉFINITIVE et IRRÉVERSIBLE !\n\nContinuer ?')) return;
+        if (!confirm('🔴 DERNIÈRE CONFIRMATION\n\nÊtes-vous ABSOLUMENT sûr ?')) return;
+        adminAction('/admin/users/' + id + '/delete', '');
+        // Force run since confirmMsg is empty
+        var h = { 'Content-Type': 'application/json' };
+        if (csrfToken && csrfHeader) h[csrfHeader] = csrfToken;
+        fetch('/admin/users/' + id + '/delete', { method: 'POST', headers: h })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (d) { if (d.success) { showToast(d.message, 'success'); setTimeout(function () { location.reload(); }, 2000); } else { showToast(d.message, 'error'); } })
+            .catch(function (e) { showToast('Erreur: ' + e.message, 'error'); });
+    }
+
+    function showUserDetails(userId) {
+        var modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+        var content = document.getElementById('userDetailsContent');
+        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+        modal.show();
+        fetch('/admin/users/' + userId + '/details')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                content.innerHTML =
+                    '<div class="row"><div class="col-md-6">' +
+                    '<h6 class="text-muted text-uppercase mb-3">Informations personnelles</h6>' +
+                    '<p><strong>Nom:</strong> ' + (data.displayName || 'N/A') + '</p>' +
+                    '<p><strong>Email:</strong> ' + data.email + '</p>' +
+                    '<p><strong>Téléphone:</strong> ' + (data.phone || 'N/A') + '</p>' +
+                    '<p><strong>Entreprise:</strong> ' + (data.companyName || 'N/A') + '</p>' +
+                    '</div><div class="col-md-6">' +
+                    '<h6 class="text-muted text-uppercase mb-3">Compte</h6>' +
+                    '<p><strong>Statut:</strong> <span class="db-status-badge ' + (data.status === 'ACTIVE' ? 'db-status-done' : 'db-status-pending') + '">' + data.status + '</span></p>' +
+                    '<p><strong>Verrouillé:</strong> ' + (data.accountLocked ? 'Oui' : 'Non') + '</p>' +
+                    '<p><strong>Email vérifié:</strong> ' + (data.emailVerified ? 'Oui' : 'Non') + '</p>' +
+                    '<p><strong>Inscription:</strong> ' + (data.registrationDate ? new Date(data.registrationDate).toLocaleString('fr-FR') : 'N/A') + '</p>' +
+                    '<p><strong>Dernière connexion:</strong> ' + (data.lastLoginDate ? new Date(data.lastLoginDate).toLocaleString('fr-FR') : 'Jamais') + '</p>' +
+                    '</div></div>';
+            })
+            .catch(function () {
+                content.innerHTML = '<div class="db-alert db-alert-warning"><i class="fas fa-exclamation-triangle"></i> Erreur lors du chargement</div>';
+            });
+    }
+
+    function editUser(userId) {
+        fetch('/admin/users/' + userId + '/details')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+                var content = document.getElementById('userDetailsContent');
+                content.innerHTML =
+                    '<form id="editUserForm">' +
+                    '<div class="row"><div class="col-md-6">' +
+                    '<div class="mb-3"><label class="form-label">Prénom</label><input type="text" class="form-control" id="firstName" value="' + (data.displayName ? data.displayName.split(' ')[0] : '') + '"></div>' +
+                    '<div class="mb-3"><label class="form-label">Nom</label><input type="text" class="form-control" id="lastName" value="' + (data.displayName ? data.displayName.split(' ').slice(1).join(' ') : '') + '"></div>' +
+                    '<div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-control" id="editEmail" value="' + data.email + '"></div>' +
+                    '</div><div class="col-md-6">' +
+                    '<div class="mb-3"><label class="form-label">Téléphone</label><input type="tel" class="form-control" id="phone" value="' + (data.phone || '') + '"></div>' +
+                    '<div class="mb-3"><label class="form-label">Entreprise</label><input type="text" class="form-control" id="companyName" value="' + (data.companyName || '') + '"></div>' +
+                    '</div></div>' +
+                    '<hr><div class="d-flex justify-content-end gap-2">' +
+                    '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>' +
+                    '<button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Sauvegarder</button>' +
+                    '</div></form>';
+
+                document.getElementById('editUserForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var h = { 'Content-Type': 'application/json' };
+                    if (csrfToken && csrfHeader) h[csrfHeader] = csrfToken;
+                    fetch('/admin/users/' + userId + '/update', {
+                        method: 'POST', headers: h,
+                        body: JSON.stringify({
                             firstName: document.getElementById('firstName').value,
                             lastName: document.getElementById('lastName').value,
-                            email: document.getElementById('email').value,
+                            email: document.getElementById('editEmail').value,
                             phone: document.getElementById('phone').value,
                             companyName: document.getElementById('companyName').value
-                        };
-                        
-                        console.log('🔄 ADMIN DEBUG - Mise à jour utilisateur:', userId, updateData);
-                        
-                        const headers = {
-                            'Content-Type': 'application/json'
-                        };
-                        
-                        if (csrfToken && csrfHeader) {
-                            headers[csrfHeader] = csrfToken;
-                        }
-                        
-                        fetch(`/admin/users/${userId}/update`, {
-                            method: 'POST',
-                            headers: headers,
-                            body: JSON.stringify(updateData)
                         })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.success) {
-                                showToast(data.message, 'success');
-                                modal.hide();
-                                setTimeout(() => location.reload(), 1000);
-                            } else {
-                                showToast(data.message, 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('❌ ADMIN DEBUG - Erreur mise à jour:', error);
-                            showToast('Erreur lors de la mise à jour: ' + error.message, 'error');
-                        });
-                    });
-                    
-                    modal.show();
-                })
-                .catch(error => {
-                    showToast('Erreur lors du chargement des détails utilisateur: ' + error.message, 'error');
+                    })
+                    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                    .then(function (d) { if (d.success) { showToast(d.message, 'success'); modal.hide(); setTimeout(function () { location.reload(); }, 1000); } else { showToast(d.message, 'error'); } })
+                    .catch(function (e) { showToast('Erreur: ' + e.message, 'error'); });
                 });
-        }
-        
-        // Nouvelle fonction pour afficher les rendez-vous d'un utilisateur
-        function showUserAppointments(userId) {
-            const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
-            const content = document.getElementById('userDetailsContent');
-            
-            // Show loading spinner
-            content.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Chargement des rendez-vous...</span>
-                    </div>
-                    <p class="mt-2 text-muted">Chargement des rendez-vous...</p>
-                </div>
-            `;
-            
-            if (!document.getElementById('userDetailsModal').classList.contains('show')) {
                 modal.show();
-            }
-            
-            // Fetch appointments
-            fetch(`/admin/users/${userId}/appointments`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(appointments => {
-                    console.log('📅 ADMIN DEBUG - Rendez-vous récupérés:', appointments);
-                    
-                    if (appointments.length === 0) {
-                        content.innerHTML = `
-                            <div class="text-center py-5">
-                                <i class="fas fa-calendar-times fs-1 text-muted mb-3"></i>
-                                <h5 class="text-muted">Aucun rendez-vous</h5>
-                                <p class="text-muted mb-0">Cet utilisateur n'a aucun rendez-vous enregistré.</p>
-                            </div>
-                        `;
-                    } else {
-                        let appointmentsHtml = `
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5><i class="fas fa-calendar me-2"></i>Rendez-vous (${appointments.length})</h5>
-                                <span class="badge bg-primary">${appointments.length} total</span>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Service</th>
-                                            <th>Statut</th>
-                                            <th>Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                        `;
-                        
-                        appointments.forEach(appointment => {
-                            const statusColor = {
-                                'PENDING': 'warning',
-                                'CONFIRMED': 'success', 
-                                'COMPLETED': 'primary',
-                                'CANCELLED': 'danger'
-                            }[appointment.status] || 'secondary';
-                            
-                            appointmentsHtml += `
-                                <tr>
-                                    <td><strong>${appointment.appointmentDate}</strong></td>
-                                    <td>${appointment.serviceName || 'N/A'}</td>
-                                    <td><span class="badge bg-${statusColor}">${appointment.status}</span></td>
-                                    <td>
-                                        ${appointment.notes ? `<small class="text-muted">Client: ${appointment.notes}</small><br>` : ''}
-                                        ${appointment.adminNotes ? `<small class="text-info">Admin: ${appointment.adminNotes}</small>` : ''}
-                                    </td>
-                                </tr>
-                            `;
-                        });
-                        
-                        appointmentsHtml += `
-                                    </tbody>
-                                </table>
-                            </div>
-                        `;
-                        
-                        content.innerHTML = appointmentsHtml;
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ ADMIN DEBUG - Erreur chargement rendez-vous:', error);
-                    content.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Erreur lors du chargement des rendez-vous: ${error.message}
-                        </div>
-                    `;
-                });
-        }
-    </script>
+            })
+            .catch(function (e) { showToast('Erreur: ' + e.message, 'error'); });
+    }
+</script>
+
 </body>
 </html>

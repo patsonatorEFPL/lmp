@@ -69,6 +69,7 @@ ${project.build.directory}/
 .kombai
 .agents/skills/
 .agents/workflows/
+.agents/plan/
 
 ### Duplicate/Obsolete Folders ###
 LMP/

@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.lmp.domain.entity.Order;
+import com.lmp.domain.entity.ServiceOffer;
 import com.lmp.domain.entity.User;
 import com.lmp.repository.OrderRepository;
 import com.lmp.repository.UserRepository;
+import com.lmp.service.catalog.ServiceCatalogService;
 import com.lmp.web.dto.PurchaseIntent;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,6 +50,9 @@ public class OrderController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ServiceCatalogService serviceCatalogService;
+
     /**
      * Prépare les données de service pour création de session Stripe directe
      * Architecture webhook-driven : retourne uniquement les données nécessaires
@@ -71,46 +76,72 @@ public class OrderController {
             String serviceName = (String) request.get("serviceName");
             Object amountObj = request.get("amount");
             String currency = (String) request.get("currency");
+            Object offerIdObj = request.get("offerId");
 
-            logger.debug("Validating request data - Service: {}, Amount: {}, Currency: {}",
-                    serviceName, amountObj, currency);
+            logger.debug("Validating request data - Service: {}, Amount: {}, Currency: {}, OfferId: {}",
+                    serviceName, amountObj, currency, offerIdObj);
 
-            if (serviceName == null || serviceName.trim().isEmpty()) {
-                logger.warn("Invalid service name received: {}", serviceName);
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_SERVICE_NAME",
-                        "message", "Le nom du service est requis"));
-            }
-
+            // ── Sécurisation par offerId ──
             BigDecimal amount;
-            try {
-                if (amountObj instanceof Number) {
-                    amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
-                } else if (amountObj instanceof String) {
-                    amount = new BigDecimal((String) amountObj);
-                } else {
-                    logger.error("Invalid amount format: {}", amountObj);
-                    throw new IllegalArgumentException("Format de montant invalide");
-                }
-            } catch (Exception e) {
-                logger.error("Error parsing amount: {}", e.getMessage());
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_AMOUNT",
-                        "message", "Montant invalide"));
-            }
+            Long offerId = null;
 
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                logger.warn("Invalid amount received: {}", amount);
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_AMOUNT",
-                        "message", "Le montant doit être supérieur à 0"));
+            if (offerIdObj != null) {
+                try {
+                    if (offerIdObj instanceof Number) {
+                        offerId = ((Number) offerIdObj).longValue();
+                    } else {
+                        offerId = Long.valueOf(String.valueOf(offerIdObj));
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_OFFER_ID",
+                            "message", "ID d'offre invalide"));
+                }
+
+                java.util.Optional<ServiceOffer> offerOpt = serviceCatalogService.getValidOffer(offerId);
+                if (offerOpt.isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_OFFER",
+                            "message", "L'offre demandée n'existe pas, est inactive ou a expiré"));
+                }
+
+                ServiceOffer offer = offerOpt.get();
+                amount = offer.getPrice();
+                serviceName = offer.getService().getTitle();
+                logger.info("SECURE_CHECKOUT - offerId={}, price={}, service='{}'", offerId, amount, serviceName);
+            } else {
+                // Legacy: accepter le montant du frontend (rétrocompatibilité)
+                logger.warn("LEGACY_CHECKOUT - create-temp sans offerId");
+
+                if (serviceName == null || serviceName.trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_SERVICE_NAME",
+                            "message", "Le nom du service est requis"));
+                }
+
+                try {
+                    if (amountObj instanceof Number) {
+                        amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
+                    } else if (amountObj instanceof String) {
+                        amount = new BigDecimal((String) amountObj);
+                    } else {
+                        throw new IllegalArgumentException("Format de montant invalide");
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_AMOUNT",
+                            "message", "Montant invalide"));
+                }
+
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_AMOUNT",
+                            "message", "Le montant doit être supérieur à 0"));
+                }
             }
 
             if (currency == null || currency.trim().isEmpty()) {
-                logger.warn("Invalid currency received: {}", currency);
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_CURRENCY",
-                        "message", "La devise est requise"));
+                currency = "CAD";
             }
 
             // Récupérer l'utilisateur authentifié
@@ -153,6 +184,9 @@ public class OrderController {
             response.put("userEmail", authenticatedUser.getEmail());
             response.put("userFirstName", authenticatedUser.getFirstName());
             response.put("userLastName", authenticatedUser.getLastName());
+            if (offerId != null) {
+                response.put("offerId", offerId);
+            }
 
             auditLogger.info("Service data prepared successfully - Service: {}, Amount: {} {}, User: {}",
                     serviceName, amount, currency, authenticatedUser.getId());

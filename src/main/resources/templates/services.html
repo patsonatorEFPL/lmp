@@ -55,354 +55,52 @@
         <section class="py-24 bg-base-200/50 section-animation">
             <div class="container mx-auto px-4">                
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 px-4">
-                    
-                    <!-- Service 1: GMB Optimisation -->
-                    <div id="securisations-gmb" class="service-card-premium group h-full fade-in-up delay-100">
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-map-marked-alt"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Local SEO</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Optimisation Map</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Sécurisation avancée et optimisation technique de votre fiche Google pour un positionnement durable.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-                                <i class="fas fa-check text-green-500"></i> Rapports mensuels détaillés
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-green-500"></i> Assistance prioritaire 12 mois
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-green-500"></i> Protection anti-spam
-                            </li>
-                        </ul>
 
-                        <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                            <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">353€</div>
-                                <div class="text-xs text-gray-400 dark:text-gray-500">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('Sécurisations et Accès Google My Business', 353.89)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="glow-effect"></div>
-                    </div>
+                    <!-- Dynamic Service Cards from DB -->
+                    <th:block th:each="service, iterStat : ${services}">
+                        <!-- Compute animation delay class based on column position -->
+                        <div th:id="${#strings.replace(service.title.toLowerCase(), ' ', '-')}"
+                             class="service-card-premium group h-full fade-in-up"
+                             th:classappend="${iterStat.index % 3 == 0 ? 'delay-100' : (iterStat.index % 3 == 1 ? 'delay-200' : 'delay-300')}">
 
-                    <!-- Service 2: SEO Premium (Featured) -->
-                    <div id="referencement-vip" class="service-card-premium group h-full relative ring-2 ring-primary/5 fade-in-up delay-200">
-                        <div class="absolute top-0 right-0 bg-gradient-to-l from-primary to-purple-600 text-white text-xs font-bold px-4 py-1.5 rounded-bl-2xl z-10 shadow-lg">
-                            BEST SELLER
-                        </div>
-                        
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-purple-500/20">
-                                <i class="fas fa-crown"></i>
+                            <div class="flex justify-between items-start mb-6">
+                                <div class="w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary text-2xl group-hover:scale-110 transition-transform duration-500">
+                                    <span th:text="${service.icon}" style="font-size:24px;">📦</span>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                                      th:text="${service.category}">Catégorie</span>
                             </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mt-2">Premium</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white">SEO VIP+ Garantie</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            L'excellence opérationnelle. Garantie de résultats sur 5 mots-clés stratégiques et maintenance proactive.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check-circle text-purple-500"></i> 5 Mots-clés garantis 1ère page
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check-circle text-purple-500"></i> Maintenance proactive 24/7
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check-circle text-purple-500"></i> Accès compte pub Facebook
-                            </li>
-                        </ul>
 
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                            <div>
-                                <div class="text-3xl font-bold text-black dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-primary dark:to-purple-600">750€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('Référencement Optimale avec Sécurisations Garantie VIP+', 750.79)" class="px-6 py-3 rounded-full bg-gradient-to-r from-primary to-purple-600 text-white font-semibold hover:shadow-xl hover:-translate-y-0.5 transition-all">
-                                Commander
-                            </button>
-                        </div>
-                    </div>
+                            <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors"
+                                th:text="${service.title}">Service</h3>
+                            <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100"
+                               th:text="${service.description}">Description du service.</p>
 
-                    <!-- Service 3: Gestion Avis -->
-                    <div id="gestion-avis" class="service-card-premium group h-full fade-in-up delay-300">
-                         <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Réputation</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Gestion Avis</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Transformez vos clients en ambassadeurs. Stratégies de collecte et modération professionnelle.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-green-500"></i> Modération des avis négatifs
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-green-500"></i> Campagnes de collecte d'avis
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-green-500"></i> Badge "Top Rated"
-                            </li>
-                        </ul>
+                            <ul class="space-y-3 mb-8">
+                                <li th:each="benefit : ${service.benefits}"
+                                    class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                                    <i class="fas fa-check text-green-500"></i>
+                                    <span th:text="${benefit}">Avantage</span>
+                                </li>
+                            </ul>
 
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                             <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">747€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
+                            <div class="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                <div>
+                                    <div class="text-3xl font-bold text-black dark:text-base-content" th:text="${service.price}">0 €</div>
+                                    <div class="text-xs text-gray-400 dark:text-gray-500"
+                                         th:text="${service.duration == 'MONTHLY' ? 'Par mois' : (service.duration == 'YEARLY' ? 'Par an' : 'Paiement unique')}">Paiement unique</div>
+                                </div>
+                                <button th:data-service-title="${service.title}"
+                                        th:data-price-value="${service.priceValue}"
+                                        th:data-offer-id="${service.offerId}"
+                                        onclick="openBookingModal(this.getAttribute('data-service-title'), parseFloat(this.getAttribute('data-price-value')), 'CAD', this.getAttribute('data-offer-id') !== '' ? parseInt(this.getAttribute('data-offer-id')) : null)"
+                                        class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
+                                    <i class="fas fa-plus"></i>
+                                </button>
                             </div>
-                            <button onclick="openBookingModal('Gestion des Avis', 747.43)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                            <div class="glow-effect"></div>
                         </div>
-                        <div class="glow-effect"></div>
-                    </div>
-
-                    <!-- Service 4: Presence Locale -->
-                    <div id="presence-locales" class="service-card-premium group h-full fade-in-up delay-100">
-                         <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-store"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Multi-Diffusion</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Présence Locale</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Multi-diffusion de vos informations sur +50 plateformes, GPS et annuaires numériques.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-orange-500"></i> Top 3 Google Maps garanti
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-orange-500"></i> Diffusion sur Waze, Apple Maps...
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-orange-500"></i> Synchronisation automatique
-                            </li>
-                        </ul>
-
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                             <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">2.200€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('Présence Locales', 2200.00)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="glow-effect"></div>
-                    </div>
-
-                    <!-- Service 5: Site Web -->
-                    <div id="creation-site-web" class="service-card-premium group h-full fade-in-up delay-200">
-                         <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-laptop-code"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Web Dev</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Site Web Pro</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                             Développement sur mesure, rapide, sécurisé (SSL) et optimisé pour la conversion mobile.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-teal-500"></i> Design Responsive & SSL
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-teal-500"></i> Optimisé SEO On-Page
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-teal-500"></i> Hébergement inclus
-                            </li>
-                        </ul>
-
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                             <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">550€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('Création Site Web', 100.99)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="glow-effect"></div>
-                    </div>
-
-                    <!-- Service 6: SEO Avancé -->
-                    <div id="seo-referencement-naturel" class="service-card-premium group h-full fade-in-up delay-300">
-                         <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-search-dollar"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">SEO Naturel</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">SEO & Naturel</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Stratégie de contenu et netlinking haute performance pour dominer les SERPs Google.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-indigo-500"></i> Audit technique complet
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-indigo-500"></i> Netlinking & Backlinks
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-indigo-500"></i> Suivi de positionnement
-                            </li>
-                        </ul>
-
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                             <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">5.500€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('SEO et Référencement Naturel', 5500.00)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="glow-effect"></div>
-                    </div>
-
-                    <!-- Service 7: Google Premium -->
-                    <div id="mise-a-jour-2026" class="service-card-premium group h-full fade-in-up delay-100">
-                         <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-rocket"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Mise à jour</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Update 2026</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Anticipez les changements d'algorithme. Mise à jour complète selon les standards 2026.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-red-500"></i> Conformité Algorithme 2026
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-red-500"></i> Optimisation Mobile First
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-red-500"></i> Sécurisation renforcée
-                            </li>
-                        </ul>
-
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                             <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">1.000€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('Optimisations Google+', 11121.00)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="glow-effect"></div>
-                    </div>
-
-                     <!-- Service 8: Support -->
-                    <div id="assistance-technique" class="service-card-premium group h-full fade-in-up delay-200">
-                         <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-tools"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">Support</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-black dark:text-white group-hover:text-primary transition-colors">Assistance Tech</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Support technique dédié pour la maintenance et la résolution rapide de conflits.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-gray-500"></i> Intervention sous 4h
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-gray-500"></i> Monitoring permanent
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-gray-500"></i> Rapport d'incident
-                            </li>
-                        </ul>
-
-                        <div class="mt-auto pt-6 border-t border-gray-100 flex items-center justify-between">
-                             <div>
-                                <div class="text-3xl font-bold text-black dark:text-base-content">475€</div>
-                                <div class="text-xs text-gray-400">Paiement unique</div>
-                            </div>
-                            <button onclick="openBookingModal('Assistance Technique', 402.00)" class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="glow-effect"></div>
-                    </div>
-
-                     <!-- Service 9: Black Friday (Special) -->
-                    <div id="black-friday" class="service-card-premium group h-full relative overflow-hidden bg-gradient-to-br from-base-100 to-red-50/50 dark:from-gray-800 dark:to-red-900/20 border-red-100 dark:border-red-800 fade-in-up delay-300">
-                         <div class="absolute -right-8 top-8 bg-red-600 text-white text-xs font-bold px-8 py-1 rotate-45 shadow-sm">
-                            LIMITED TIME
-                        </div>
-                        
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="w-14 h-14 rounded-2xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 text-2xl group-hover:scale-110 transition-transform duration-500">
-                                <i class="fas fa-gift"></i>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">Offre Spéciale</span>
-                        </div>
-                        
-                        <h3 class="text-2xl font-bold mb-3 text-red-600 group-hover:text-red-700 transition-colors">Pack Black Friday</h3>
-                        <p class="text-gray-700 text-sm leading-relaxed mb-8 min-h-[60px] dark:text-gray-100">
-                            Le tout-en-un ultime. Authentification + Avis + Mise à jour Map.
-                        </p>
-                        
-                        <ul class="space-y-3 mb-8">
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-red-500"></i> Authentification Sécurisée
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-red-500"></i> Booster d'Avis Clients
-                            </li>
-                            <li class="flex items-center gap-3 text-sm text-gray-600">
-                                <i class="fas fa-check text-red-500"></i> Mise à jour Prioritaire
-                            </li>
-                        </ul>
-
-                        <div class="mt-auto pt-6 border-t border-red-100 dark:border-red-800 flex items-center justify-between">
-                             <div>
-                                <span class="text-xs text-red-400 line-through font-medium">1200€</span>
-                                <div class="text-3xl font-bold text-red-600">600€</div>
-                            </div>
-                            <button onclick="openBookingModal('Black Friday : Authentification, Gestion des avis et Mise à jour map', 600.00)" class="px-5 py-3 rounded-full bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors hover:shadow-lg hover:-translate-y-0.5">
-                                Profiter
-                            </button>
-                        </div>
-                    </div>
+                    </th:block>
 
                 </div>
             </div>

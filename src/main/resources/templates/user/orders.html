@@ -1,787 +1,595 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes Commandes - LMP</title>
-    
-    <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+        .db-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 90; }
+        .db-overlay.open { display: block; }
+
+        .db-mobile-toggle {
+            display: none; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border: 1px solid var(--db-border);
+            border-radius: 8px; background: var(--db-card-bg); color: var(--db-text-secondary);
+            cursor: pointer; font-size: 14px; margin-right: 12px; flex-shrink: 0;
         }
-        
-        .orders-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+        @media (max-width: 768px) {
+            .db-mobile-toggle { display: flex; }
+            .db-sidebar { position: fixed; left: -260px; top: 0; bottom: 0; transition: left 0.25s ease; z-index: 100; }
+            .db-sidebar.open { left: 0; }
+            .db-orders-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
-        
-        .orders-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            border: none;
+        @media (max-width: 480px) {
+            .db-orders-stat-grid { grid-template-columns: 1fr !important; }
         }
-        
-        .search-filters {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-bottom: 1px solid #dee2e6;
+
+        /* ── Stats row ── */
+        .db-orders-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
         }
-        
-        .order-card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-        
-        .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        .order-header {
-            background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        .order-body {
-            padding: 1.5rem;
-        }
-        
-        .order-number {
-            font-weight: bold;
-            color: #667eea;
-            font-size: 1.1rem;
-        }
-        
-        .order-date {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .order-amount {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #28a745;
-        }
-        
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-pending {
-            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-        
-        .status-in_progress {
-            background: linear-gradient(45deg, #cce5ff, #74b9ff);
-            color: #004085;
-            border: 1px solid #74b9ff;
-        }
-        
-        .status-completed {
-            background: linear-gradient(45deg, #d4edda, #00b894);
-            color: #155724;
-            border: 1px solid #00b894;
-        }
-        
-        .status-cancelled {
-            background: linear-gradient(45deg, #f8d7da, #e17055);
-            color: #721c24;
-            border: 1px solid #e17055;
-        }
-        
-        .order-actions {
+
+        /* ── Toolbar ── */
+        .db-toolbar {
             display: flex;
-            gap: 0.5rem;
+            align-items: center;
+            gap: 10px;
             flex-wrap: wrap;
         }
-        
-        .action-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            border: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-primary-custom {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-        }
-        
-        .btn-primary-custom:hover {
-            background: linear-gradient(45deg, #5a6fd8, #6a3f87);
-            transform: translateY(-1px);
-            color: white;
-        }
-        
-        .btn-outline-custom {
-            background: transparent;
-            color: #667eea;
-            border: 1px solid #667eea;
-        }
-        
-        .btn-outline-custom:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-1px);
-        }
-        
-        .filter-btn {
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .filter-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 1rem;
-        }
-        
-        .search-box {
+        .db-search-wrap {
             position: relative;
+            flex: 1;
+            min-width: 180px;
         }
-        
-        .search-box .form-control {
-            padding-left: 2.5rem;
-            border-radius: 25px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-        }
-        
-        .search-box .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .search-box i {
+        .db-search-wrap i {
             position: absolute;
-            left: 1rem;
+            left: 10px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6c757d;
+            color: var(--db-text-muted);
+            font-size: 13px;
+            pointer-events: none;
         }
-        
-        .sidebar {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .sidebar-menu li {
-            margin-bottom: 0.5rem;
-        }
-        
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            color: #495057;
-            text-decoration: none;
+        .db-search-input {
+            width: 100%;
+            padding: 7px 12px 7px 32px;
             border-radius: 8px;
-            transition: all 0.3s ease;
+            border: 1px solid var(--db-border);
+            background: var(--db-input-bg);
+            color: var(--db-text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+            box-sizing: border-box;
         }
-        
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            background-color: #667eea;
-            color: white;
+        .db-search-input:focus { border-color: var(--db-accent); }
+        .db-search-input::placeholder { color: var(--db-text-muted); }
+
+        /* ── Filter tabs ── */
+        .db-filter-strip {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
         }
-        
-        .sidebar-menu i {
-            margin-right: 0.75rem;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .pagination-custom .page-link {
+        .db-filter-tab {
+            padding: 5px 13px;
             border-radius: 20px;
-            margin: 0 0.2rem;
-            border: none;
-            color: #667eea;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--db-border);
+            background: transparent;
+            color: var(--db-text-secondary);
+            transition: all 0.15s;
+            font-family: inherit;
+            white-space: nowrap;
         }
-        
-        .pagination-custom .page-item.active .page-link {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border: none;
+        .db-filter-tab:hover { border-color: var(--db-accent); color: var(--db-accent); }
+        .db-filter-tab.active { background: var(--db-accent); border-color: var(--db-accent); color: #fff; }
+
+        /* ── Table actions ── */
+        .db-table-actions { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+        .db-action-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 500;
+            cursor: pointer; border: 1px solid var(--db-border); background: var(--db-card-bg);
+            color: var(--db-text-secondary); text-decoration: none; transition: all 0.15s;
+            font-family: inherit;
         }
-        
-        .order-timeline {
-            position: relative;
-            padding-left: 2rem;
+        .db-action-btn:hover { border-color: var(--db-accent); color: var(--db-accent); background: var(--db-accent-light); }
+        .db-action-btn-danger:hover { border-color: var(--db-danger); color: var(--db-danger); background: var(--db-danger-light); }
+        .db-action-btn-primary { background: var(--db-accent-light); border-color: var(--db-accent); color: var(--db-accent); }
+
+        /* ── Service cell ── */
+        .db-service-name { font-weight: 600; color: var(--db-text-primary); font-size: 13px; }
+        .db-service-sub { font-size: 11px; color: var(--db-text-muted); margin-top: 2px; }
+
+        /* ── Date badge in header ── */
+        .db-date-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 8px; font-size: 12px;
+            color: var(--db-text-secondary); border: 1px solid var(--db-border);
+            background: var(--db-card-bg);
         }
-        
-        .order-timeline::before {
-            content: '';
-            position: absolute;
-            left: 0.5rem;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #dee2e6;
+
+        /* ── No-results message ── */
+        .db-no-results {
+            text-align: center; padding: 20px; color: var(--db-text-muted);
+            font-size: 13px; display: none;
         }
-        
-        .timeline-item {
-            position: relative;
-            margin-bottom: 1rem;
+        .db-no-results i { font-size: 24px; display: block; margin-bottom: 8px; opacity: 0.4; }
+
+        /* ── Amount cell ── */
+        .db-amount { font-weight: 600; color: var(--db-text-primary); font-size: 13px; }
+
+        /* ── Responsive table ── */
+        @media (max-width: 900px) {
+            .db-col-service { display: none; }
         }
-        
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -1.25rem;
-            top: 0.25rem;
-            width: 0.75rem;
-            height: 0.75rem;
-            background: #667eea;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 0 2px #667eea;
-        }
-        
-        @media (max-width: 768px) {
-            .order-actions {
-                justify-content: center;
-                margin-top: 1rem;
-            }
-            
-            .search-filters {
-                padding: 1rem;
-            }
-            
-            .order-card {
-                margin-bottom: 1rem;
-            }
-            
-            .order-body {
-                padding: 1rem;
-            }
+        @media (max-width: 680px) {
+            .db-col-date { display: none; }
+            .db-table thead th.db-col-date { display: none; }
         }
     </style>
 </head>
-<body class="bg-light">
-    <!-- Interactive Components -->
-    <div th:replace="fragments/dashboard-components :: interactive-modals"></div>
-    <div th:replace="fragments/dashboard-components :: toast-notifications"></div>
-    <div th:replace="fragments/dashboard-components :: loading-overlays"></div>
-    <div th:replace="fragments/dashboard-components :: component-styles"></div>
-    
-    <!-- Navigation -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+<body>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-shopping-cart me-3"></i>
-                        Mes Commandes
-                    </h1>
-                    <p class="mb-0 mt-2 opacity-75">Gérez et suivez toutes vos commandes</p>
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root" id="db-root">
+
+    <!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+    <aside class="db-sidebar" id="db-sidebar">
+
+        <a th:href="@{/}" class="db-logo">
+            <img th:src="@{/images/Logo LMP.webp}" alt="LMP Logo" class="db-logo-icon-img">
+            <span class="db-logo-name">LMP</span>
+        </a>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Général</div>
+            <a th:href="@{/dashboard}" class="db-nav-item">
+                <i class="fas fa-th-large"></i>
+                Tableau de bord
+            </a>
+            <a th:href="@{/dashboard/orders}" class="db-nav-item active">
+                <i class="fas fa-shopping-cart"></i>
+                Mes commandes
+            </a>
+            <a th:href="@{/services}" class="db-nav-item">
+                <i class="fas fa-concierge-bell"></i>
+                Services
+            </a>
+            <a th:href="@{/dashboard/reviews}" class="db-nav-item">
+                <i class="fas fa-star"></i>
+                Mes avis
+            </a>
+        </div>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Outils</div>
+            <a th:href="@{/profile}" class="db-nav-item">
+                <i class="fas fa-user"></i>
+                Mon profil
+            </a>
+            <a th:href="@{/dashboard/invoices}" class="db-nav-item">
+                <i class="fas fa-file-invoice"></i>
+                Factures
+            </a>
+        </div>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Compte</div>
+            <a th:href="@{/dashboard/settings}" class="db-nav-item">
+                <i class="fas fa-cog"></i>
+                Paramètres
+            </a>
+        </div>
+
+        <div class="db-sidebar-bottom">
+            <a th:href="@{/profile}" class="db-sidebar-user">
+                <div class="db-sidebar-avatar"
+                     th:text="${user.displayName != null and !user.displayName.isEmpty() ? user.displayName.substring(0,1).toUpperCase() : 'U'}">U</div>
+                <div class="db-sidebar-user-info">
+                    <div class="db-sidebar-user-name" th:text="${user.displayName}">Utilisateur</div>
+                    <div class="db-sidebar-user-email" th:text="${user.email}">email@example.com</div>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <span class="badge bg-light text-dark fs-6 px-3 py-2">
-                        <i class="fas fa-list me-2"></i>
-                        <span th:text="${orders.size()}">0</span> commande(s)
-                    </span>
+            </a>
+            <form th:action="@{/logout}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf?.token}"/>
+                <button type="submit" class="db-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Déconnexion
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════ MAIN ═══════════════════════ -->
+    <div class="db-main">
+
+        <!-- Header -->
+        <div class="db-header">
+            <div style="display:flex;align-items:center;">
+                <button class="db-mobile-toggle" onclick="openSidebar()" aria-label="Ouvrir le menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h1 class="db-header-title" style="margin:0;">Mes commandes</h1>
+                    <div style="font-size:12px;color:var(--db-text-muted);margin-top:2px;">
+                        <span th:text="${orders.size()}">0</span> commande(s) au total
+                    </div>
                 </div>
+            </div>
+
+            <div class="db-header-controls">
+                <span class="db-date-badge">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="current-date"></span>
+                </span>
+                <a th:href="@{/dashboard}" class="db-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Tableau de bord
+                </a>
+                <a th:href="@{/services}" class="db-btn db-btn-accent">
+                    <i class="fas fa-plus"></i>
+                    Nouvelle commande
+                </a>
+                <button class="db-btn db-theme-toggle" onclick="toggleTheme()" title="Changer le thème">
+                    <i id="theme-icon" class="fas fa-moon"></i>
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="container">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-3">
-                <div class="sidebar">
-                    <div class="text-center mb-3">
-                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                            <i class="fas fa-user fs-2 text-white"></i>
-                        </div>
-                        <h5 class="mt-2 mb-1" th:text="${user.getDisplayName()}">Nom Utilisateur</h5>
-                        <small class="text-muted" th:text="${user.email}">email@example.com</small>
+        <!-- Content -->
+        <div class="db-content">
+
+            <!-- ── Mini stats ── -->
+            <div class="db-orders-stat-grid">
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-layer-group"></i> Total</span>
                     </div>
-                    
-                    <ul class="sidebar-menu">
-                        <li><a th:href="@{/dashboard}">
-                            <i class="fas fa-tachometer-alt"></i>
-                            Tableau de bord
-                        </a></li>
-                        <li><a href="#" class="active">
-                            <i class="fas fa-shopping-cart"></i>
-                            Mes commandes
-                        </a></li>
-                        <li><a th:href="@{/dashboard/reviews}">
-                            <i class="fas fa-star"></i>
-                            Mes avis
-                        </a></li>
-                        <li><a th:href="@{/profile}">
-                            <i class="fas fa-user"></i>
-                            Mon profil
-                        </a></li>
-                        <li><a th:href="@{/dashboard/settings}">
-                            <i class="fas fa-cog"></i>
-                            Paramètres
-                        </a></li>
-                    </ul>
+                    <div class="db-stat-value" th:text="${orders.size()}">0</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-list"></i> Toutes</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-clock"></i> En cours</span>
+                    </div>
+                    <div class="db-stat-value"
+                         th:text="${orders.?[status.name() == 'PENDING' or status.name() == 'IN_PROGRESS'].size()}">0</div>
+                    <span class="db-stat-badge" style="background:var(--db-warning-light);color:var(--db-warning);">En attente</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-check-circle"></i> Terminées</span>
+                    </div>
+                    <div class="db-stat-value"
+                         th:text="${orders.?[status.name() == 'COMPLETED' or status.name() == 'DELIVERED'].size()}">0</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-check"></i> OK</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-times-circle"></i> Annulées</span>
+                    </div>
+                    <div class="db-stat-value"
+                         th:text="${orders.?[status.name() == 'CANCELLED'].size()}">0</div>
+                    <span class="db-stat-badge" style="background:var(--db-danger-light);color:var(--db-danger);">Annulées</span>
                 </div>
             </div>
 
-            <!-- Orders Content -->
-            <div class="col-lg-9">
-                <div class="orders-container">
-                    <!-- Orders Header -->
-                    <div class="orders-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">
-                                <i class="fas fa-list me-2"></i>
-                                Liste de vos commandes
-                            </h4>
-                            <button class="btn btn-light btn-sm" onclick="location.reload()">
-                                <i class="fas fa-sync-alt me-1"></i>
-                                Actualiser
-                            </button>
+            <!-- ── Orders Card ── -->
+            <div class="db-card" style="padding:0;overflow:hidden;">
+
+                <!-- Toolbar -->
+                <div style="padding:16px 20px;border-bottom:1px solid var(--db-border);display:flex;flex-direction:column;gap:12px;">
+                    <div class="db-toolbar">
+                        <div class="db-search-wrap">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="db-search-input" id="searchInput"
+                                   placeholder="Rechercher par numéro, service, montant…"
+                                   oninput="applyFilters()">
                         </div>
+                        <button class="db-btn" onclick="location.reload()" title="Actualiser">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
-
-                    <!-- Search and Filters -->
-                    <div class="search-filters">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="search-box">
-                                    <i class="fas fa-search"></i>
-                                    <input type="text" class="form-control" id="searchOrders" 
-                                           placeholder="Rechercher par numéro, montant...">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="d-flex flex-wrap">
-                                    <button class="btn btn-outline-primary btn-sm filter-btn active" data-filter="all">
-                                        <i class="fas fa-list me-1"></i>Toutes
-                                    </button>
-                                    <button class="btn btn-outline-warning btn-sm filter-btn" data-filter="PENDING">
-                                        <i class="fas fa-clock me-1"></i>En attente
-                                    </button>
-                                    <button class="btn btn-outline-info btn-sm filter-btn" data-filter="IN_PROGRESS">
-                                        <i class="fas fa-spinner me-1"></i>En cours
-                                    </button>
-                                    <button class="btn btn-outline-success btn-sm filter-btn" data-filter="COMPLETED">
-                                        <i class="fas fa-check me-1"></i>Terminées
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm filter-btn" data-filter="CANCELLED">
-                                        <i class="fas fa-times me-1"></i>Annulées
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Orders List -->
-                    <div class="p-3">
-                        <!-- Empty State -->
-                        <div th:if="${#lists.isEmpty(orders)}" class="empty-state">
-                            <i class="fas fa-shopping-cart"></i>
-                            <h5>Aucune commande trouvée</h5>
-                            <p>Vous n'avez pas encore passé de commande.</p>
-                            <a th:href="@{/services}" class="btn btn-primary-custom">
-                                <i class="fas fa-plus me-2"></i>
-                                Passer ma première commande
-                            </a>
-                        </div>
-
-                        <!-- Orders Cards -->
-                        <div th:each="order : ${orders}" class="order-card" th:data-status="${order.status.name()}">
-                            <div class="order-header">
-                                <div class="row align-items-center">
-                                    <div class="col-md-6">
-                                        <div class="order-number">
-                                            <i class="fas fa-hashtag me-1"></i>
-                                            Commande #<span th:text="${order.id}">001</span>
-                                        </div>
-                                        <div class="order-date">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy à HH:mm')}">01/01/2024 à 10:00</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 text-md-end">
-                                        <div class="order-amount mb-2">
-                                            <i class="fas fa-euro-sign me-1"></i>
-                                            <span th:text="${order.totalAmount + ' ' + (order.currency != null ? order.currency : 'EUR')}">150.00 EUR</span>
-                                        </div>
-                                        <span class="status-badge"
-                                              th:classappend="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'} ? 'status-pending' :
-                                                             (${order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING'} ? 'status-in_progress' :
-                                                             (${order.status.name() == 'COMPLETED' or order.status.name() == 'CONFIRMED' or order.status.name() == 'DELIVERED'} ? 'status-completed' : 'status-cancelled'))"
-                                              th:text="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'} ? 'En attente' :
-                                                       (${order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING'} ? 'En cours' :
-                                                       (${order.status.name() == 'COMPLETED' or order.status.name() == 'CONFIRMED'} ? 'Confirmée' :
-                                                       (${order.status.name() == 'DELIVERED'} ? 'Livrée' : 'Annulée')))">En attente</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="order-body">
-                                <!-- Order Details -->
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <div class="mb-3">
-                                            <h6 class="text-muted mb-2">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                Détails de la commande
-                                            </h6>
-                                            <p class="mb-1 fw-medium" th:text="${order.serviceName ?: 'Service non spécifié'}">Nom du service</p>
-                                            <small class="text-muted" th:if="${order.notes != null}" th:text="${order.notes}"></small>
-                                        </div>
-                                        
-                                        <!-- Order Timeline (for confirmed/completed/in-progress orders) -->
-                                        <div th:if="${order.status.name() != 'PENDING' and order.status.name() != 'PAYMENT_PENDING'}" class="mb-3">
-                                            <h6 class="text-muted mb-2">
-                                                <i class="fas fa-history me-1"></i>
-                                                Progression
-                                            </h6>
-                                            <div class="order-timeline">
-                                                <div class="timeline-item">
-                                                    <small class="text-muted">Commande créée</small>
-                                                    <div class="fw-medium" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</div>
-                                                </div>
-                                                <div th:if="${order.status.name() == 'CONFIRMED' or order.status.name() == 'PROCESSING' or order.status.name() == 'IN_PROGRESS' or order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" class="timeline-item">
-                                                    <small class="text-muted">Paiement confirmé</small>
-                                                    <div class="fw-medium" th:text="${order.paidAt != null} ? ${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')} : ${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</div>
-                                                </div>
-                                                <div th:if="${order.status.name() == 'PROCESSING' or order.status.name() == 'IN_PROGRESS' or order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" class="timeline-item">
-                                                    <small class="text-muted">Traitement en cours</small>
-                                                    <div class="fw-medium" th:text="${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 11:00</div>
-                                                </div>
-                                                <div th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" class="timeline-item">
-                                                    <small class="text-muted">Commande terminée</small>
-                                                    <div class="fw-medium" th:text="${order.deliveredAt != null} ? ${#temporals.format(order.deliveredAt, 'dd/MM/yyyy HH:mm')} : ${#temporals.format(order.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 12:00</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4">
-                                        <div class="order-actions">
-                                            <a href="#" class="action-btn btn-primary-custom" th:data-order-id="${order.id}" onclick="showOrderDetails(this)">
-                                                <i class="fas fa-eye"></i>
-                                                Voir détails
-                                            </a>
-                                            <a th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'CONFIRMED' or order.status.name() == 'DELIVERED'}" href="#" class="action-btn btn-outline-custom" th:onclick="'downloadInvoice(' + ${order.id} + ')'">
-                                                <i class="fas fa-download"></i>
-                                                Facture
-                                            </a>
-                                            <a th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}" th:href="@{/dashboard/reviews?order=} + ${order.id}" class="action-btn btn-outline-custom">
-                                                <i class="fas fa-star"></i>
-                                                Donner un avis
-                                            </a>
-                                            <a th:if="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'}" href="#" class="action-btn btn-outline-custom text-danger" th:data-order-id="${order.id}" onclick="cancelOrder(this)">
-                                                <i class="fas fa-times"></i>
-                                                Annuler
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="db-filter-strip">
+                        <button class="db-filter-tab active" data-filter="all" onclick="setFilter(this)">
+                            Toutes
+                        </button>
+                        <button class="db-filter-tab" data-filter="PENDING" onclick="setFilter(this)">
+                            <i class="fas fa-clock"></i> En attente
+                        </button>
+                        <button class="db-filter-tab" data-filter="IN_PROGRESS" onclick="setFilter(this)">
+                            <i class="fas fa-spinner"></i> En cours
+                        </button>
+                        <button class="db-filter-tab" data-filter="COMPLETED" onclick="setFilter(this)">
+                            <i class="fas fa-check"></i> Terminées
+                        </button>
+                        <button class="db-filter-tab" data-filter="CANCELLED" onclick="setFilter(this)">
+                            <i class="fas fa-times"></i> Annulées
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Espace personnel Components Scripts -->
-    <div th:replace="fragments/dashboard-components :: component-scripts"></div>
-    
-    <script>
-        // Search functionality
-        document.getElementById('searchOrders').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const orderCards = document.querySelectorAll('.order-card');
-            
-            orderCards.forEach(card => {
-                const orderNumber = card.querySelector('.order-number').textContent.toLowerCase();
-                const orderAmount = card.querySelector('.order-amount').textContent.toLowerCase();
-                const orderNotes = card.querySelector('.order-body p').textContent.toLowerCase();
-                
-                if (orderNumber.includes(searchTerm) || 
-                    orderAmount.includes(searchTerm) || 
-                    orderNotes.includes(searchTerm)) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
+                <!-- Empty state -->
+                <div class="db-empty" th:if="${#lists.isEmpty(orders)}">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Aucune commande pour l'instant</p>
+                    <a th:href="@{/services}" class="db-btn db-btn-accent" style="font-size:12px;">
+                        <i class="fas fa-plus"></i> Passer votre première commande
+                    </a>
+                </div>
 
-        // Filter functionality with support for multiple statuses
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Remove active class from all buttons
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                const filter = this.dataset.filter;
-                const orderCards = document.querySelectorAll('.order-card');
-                
-                orderCards.forEach(card => {
-                    const status = card.dataset.status;
-                    let isVisible = false;
-                    
-                    if (filter === 'all') {
-                        isVisible = true;
-                    } else if (filter === 'PENDING') {
-                        // Include PENDING and PAYMENT_PENDING
-                        isVisible = (status === 'PENDING' || status === 'PAYMENT_PENDING');
-                    } else if (filter === 'IN_PROGRESS') {
-                        // Include IN_PROGRESS and PROCESSING
-                        isVisible = (status === 'IN_PROGRESS' || status === 'PROCESSING');
-                    } else if (filter === 'COMPLETED') {
-                        // Include COMPLETED, CONFIRMED, and DELIVERED
-                        isVisible = (status === 'COMPLETED' || status === 'CONFIRMED' || status === 'DELIVERED');
-                    } else if (filter === 'CANCELLED') {
-                        isVisible = (status === 'CANCELLED');
-                    }
-                    
-                    card.style.display = isVisible ? 'block' : 'none';
-                });
-            });
-        });
+                <!-- Table -->
+                <div th:unless="${#lists.isEmpty(orders)}" style="overflow-x:auto;">
+                    <table class="db-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Commande</th>
+                                <th class="db-col-service">Service</th>
+                                <th class="db-col-date">Date</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="order : ${orders}"
+                                th:data-status="${order.status.name()}"
+                                th:data-search="${'#' + order.id + ' ' + (order.serviceName ?: '') + ' ' + order.totalAmount}"
+                                class="order-row">
+                                <!-- # ID -->
+                                <td>
+                                    <div class="db-table-app">
+                                        <div class="db-table-app-icon"
+                                             style="background:var(--db-accent-light);color:var(--db-accent);">
+                                            <i class="fas fa-box" style="font-size:12px;"></i>
+                                        </div>
+                                        <div>
+                                            <div class="db-table-app-name">#<span th:text="${order.id}">001</span></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <!-- Service -->
+                                <td class="db-col-service">
+                                    <div class="db-service-name"
+                                         th:text="${order.serviceName ?: 'Service'}">Service</div>
+                                    <div class="db-service-sub" th:if="${order.notes != null}"
+                                         th:text="${#strings.abbreviate(order.notes, 50)}"></div>
+                                </td>
+                                <!-- Date -->
+                                <td class="db-col-date db-table-type"
+                                    th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy')}">01/01/2024</td>
+                                <!-- Montant -->
+                                <td>
+                                    <span class="db-amount"
+                                          th:text="${order.totalAmount + ' ' + (order.currency ?: 'EUR')}">0 EUR</span>
+                                </td>
+                                <!-- Statut -->
+                                <td>
+                                    <span class="db-status-badge"
+                                          th:classappend="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'} ? 'db-status-done' :
+                                                         (${order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING' or order.status.name() == 'CONFIRMED'} ? 'db-status-progress' :
+                                                         (${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'} ? 'db-status-pending' : 'db-status-cancel'))"
+                                          th:text="${order.status.name() == 'PENDING'} ? 'En attente' :
+                                                   (${order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING'} ? 'En cours' :
+                                                   (${order.status.name() == 'COMPLETED'} ? 'Terminée' :
+                                                   (${order.status.name() == 'DELIVERED'} ? 'Livrée' :
+                                                   (${order.status.name() == 'CONFIRMED'} ? 'Confirmée' : 
+                                                   (${order.status.name() == 'PAYMENT_PENDING'} ? 'Paiement en attente' : 'Annulée')))))">Statut</span>
+                                </td>
+                                <!-- Actions -->
+                                <td>
+                                    <div class="db-table-actions">
+                                        <!-- Télécharger facture -->
+                                        <button th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED' or order.status.name() == 'CONFIRMED' or order.status.name() == 'IN_PROGRESS' or order.status.name() == 'PROCESSING'}"
+                                                class="db-action-btn db-action-btn-primary"
+                                                th:onclick="'downloadInvoice(' + ${order.id} + ', this)'"
+                                                title="Télécharger la facture PDF">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <!-- Donner un avis -->
+                                        <a th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'DELIVERED'}"
+                                           th:href="@{/dashboard/reviews(order=${order.id})}"
+                                           class="db-action-btn"
+                                           title="Donner un avis">
+                                            <i class="fas fa-star"></i>
+                                        </a>
+                                        <!-- Annuler -->
+                                        <button th:if="${order.status.name() == 'PENDING' or order.status.name() == 'PAYMENT_PENDING'}"
+                                                class="db-action-btn db-action-btn-danger"
+                                                th:data-order-id="${order.id}"
+                                                onclick="cancelOrder(this)"
+                                                title="Annuler la commande">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
 
-        // Enhanced show order details using new components
-        function showOrderDetails(element) {
-            const orderId = element.dataset.orderId;
-            window.dashboardComponents.showModal('orderDetailsModal', { orderId });
-        }
+                    <!-- No results message -->
+                    <div class="db-no-results" id="noResults">
+                        <i class="fas fa-search"></i>
+                        Aucune commande ne correspond à votre recherche.
+                    </div>
+                </div>
+            </div><!-- /orders card -->
 
-        // Enhanced cancel order with confirmation modal
-        function cancelOrder(element) {
-            const orderId = element.dataset.orderId;
-            
-            window.dashboardComponents.showConfirmation(
-                'Annuler la commande',
-                `Êtes-vous sûr de vouloir annuler la commande #${orderId} ? Cette action est irréversible.`,
-                function() {
-                    window.dashboardComponents.showLoading('action', 'Annulation de la commande...');
-                    
-                    // Simulate API call
-                    setTimeout(() => {
-                        window.dashboardComponents.hideLoading('action');
-                        window.dashboardComponents.showToast('success', `Commande #${orderId} annulée avec succès`);
-                        
-                        // Update UI
-                        const card = element.closest('.order-card');
-                        if (card) {
-                            card.dataset.status = 'CANCELLED';
-                            const statusBadge = card.querySelector('.status-badge');
-                            statusBadge.className = 'status-badge status-cancelled';
-                            statusBadge.textContent = 'Annulée';
-                            
-                            // Remove cancel button
-                            element.remove();
-                        }
-                    }, 2000);
-                },
-                'danger'
-            );
-        }
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
 
-        // Add tooltip functionality
-        function initializeTooltips() {
-            // Add tooltips to action buttons
-            document.querySelectorAll('.action-btn').forEach(btn => {
-                const tooltipText = btn.querySelector('i').className.includes('fa-eye') ? 'Afficher les détails de cette commande' :
-                                  btn.querySelector('i').className.includes('fa-download') ? 'Télécharger la facture PDF' :
-                                  btn.querySelector('i').className.includes('fa-star') ? 'Donner votre avis sur ce service' :
-                                  btn.querySelector('i').className.includes('fa-times') ? 'Annuler cette commande' : '';
-                
-                if (tooltipText) {
-                    btn.setAttribute('data-bs-toggle', 'tooltip');
-                    btn.setAttribute('data-bs-placement', 'top');
-                    btn.setAttribute('title', tooltipText);
-                }
-            });
+<!-- Toast container -->
+<div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:10px;"></div>
 
-            // Add tooltips to status badges
-            document.querySelectorAll('.status-badge').forEach(badge => {
-                const status = badge.textContent.trim();
-                let tooltipText = '';
-                
-                switch(status) {
-                    case 'En attente':
-                        tooltipText = 'Commande en attente de traitement';
-                        break;
-                    case 'En cours':
-                        tooltipText = 'Service en cours d\'exécution';
-                        break;
-                    case 'Terminée':
-                        tooltipText = 'Service terminé avec succès';
-                        break;
-                    case 'Annulée':
-                        tooltipText = 'Commande annulée';
-                        break;
-                }
-                
-                if (tooltipText) {
-                    badge.setAttribute('data-bs-toggle', 'tooltip');
-                    badge.setAttribute('data-bs-placement', 'top');
-                    badge.setAttribute('title', tooltipText);
-                }
-            });
-        }
+<script th:inline="javascript">
+/*<![CDATA[*/
 
-        // Enhanced search with real-time feedback
-        function enhancedSearch() {
-            const searchInput = document.getElementById('searchOrders');
-            const orderCards = document.querySelectorAll('.order-card');
-            
-            searchInput.addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                let visibleCount = 0;
-                
-                orderCards.forEach(card => {
-                    const orderNumber = card.querySelector('.order-number').textContent.toLowerCase();
-                    const orderAmount = card.querySelector('.order-amount').textContent.toLowerCase();
-                    const orderNotes = card.querySelector('.order-body p').textContent.toLowerCase();
-                    
-                    const isVisible = orderNumber.includes(searchTerm) ||
-                                     orderAmount.includes(searchTerm) ||
-                                     orderNotes.includes(searchTerm);
-                    
-                    card.style.display = isVisible ? 'block' : 'none';
-                    if (isVisible) visibleCount++;
-                });
-                
-                // Show feedback
-                if (searchTerm && visibleCount === 0) {
-                    window.dashboardComponents.showToast('warning', 'Aucune commande ne correspond à votre recherche');
-                }
-            });
-        }
+/* ── Theme ── */
+function getTheme() { return document.documentElement.getAttribute('data-theme') || 'light'; }
+function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('lmp-dashboard-theme', t);
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.className = t === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
 
-        // Download invoice with feedback
-        function downloadInvoice(orderId) {
-            window.dashboardComponents.showLoading('action', 'Génération de la facture...');
-            
-            // Télécharger la facture PDF depuis le serveur
-            const invoiceUrl = '/dashboard/orders/' + orderId + '/invoice';
-            
-            fetch(invoiceUrl, {
-                method: 'GET',
-                credentials: 'same-origin'
-            })
-            .then(response => {
-                window.dashboardComponents.hideLoading('action');
-                
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error('Vous devez être connecté pour télécharger la facture');
-                    } else if (response.status === 403) {
-                        throw new Error('Vous n\'êtes pas autorisé à télécharger cette facture');
-                    } else if (response.status === 404) {
-                        throw new Error('Commande non trouvée');
-                    } else if (response.status === 400) {
-                        throw new Error('Cette commande n\'est pas éligible pour une facture');
-                    } else {
-                        throw new Error('Erreur lors de la génération de la facture');
-                    }
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                // Créer un lien de téléchargement
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = 'Facture_LMP_Commande_' + orderId + '.pdf';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-                
-                window.dashboardComponents.showToast('success', 'Facture téléchargée avec succès');
-            })
-            .catch(error => {
-                window.dashboardComponents.hideLoading('action');
-                window.dashboardComponents.showToast('error', error.message);
-                console.error('Erreur téléchargement facture:', error);
-            });
-        }
+/* ── Mobile sidebar ── */
+function openSidebar() {
+    document.getElementById('db-sidebar').classList.add('open');
+    document.getElementById('db-overlay').classList.add('open');
+}
+function closeSidebar() {
+    document.getElementById('db-sidebar').classList.remove('open');
+    document.getElementById('db-overlay').classList.remove('open');
+}
 
-        // Initialize enhanced features
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeTooltips();
-            enhancedSearch();
-            
-            // Initialize Bootstrap tooltips
-            setTimeout(() => {
-                window.dashboardComponents.initializeTooltips();
-            }, 500);
-        });
+/* ── Date ── */
+function updateDate() {
+    var el = document.getElementById('current-date');
+    if (!el) return;
+    el.textContent = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
-        // Auto-refresh every 30 seconds for status updates
-        setInterval(() => {
-            // Only refresh if there are pending orders
-            if (document.querySelector('[data-status="PENDING"]') || document.querySelector('[data-status="IN_PROGRESS"]')) {
-                console.log('Auto-refreshing order status...');
-                // location.reload();
+/* ── Toast ── */
+function showToast(type, message) {
+    var colors = { success: 'var(--db-success)', error: 'var(--db-danger)', info: 'var(--db-accent)', warning: 'var(--db-warning)' };
+    var icons  = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    var toast = document.createElement('div');
+    toast.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid var(--db-border);background:var(--db-card-bg);box-shadow:var(--db-shadow-md);font-size:13px;color:var(--db-text-primary);min-width:260px;max-width:360px;animation:fadeIn 0.2s ease;';
+    toast.innerHTML = '<i class="fas ' + (icons[type] || icons.info) + '" style="color:' + (colors[type] || colors.info) + ';flex-shrink:0;"></i>' + message;
+    var container = document.getElementById('toast-container');
+    container.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+    }, 4000);
+}
+
+/* ── Filter & Search ── */
+var currentFilter = 'all';
+
+function setFilter(btn) {
+    document.querySelectorAll('.db-filter-tab').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    applyFilters();
+}
+
+function applyFilters() {
+    var term = (document.getElementById('searchInput').value || '').toLowerCase();
+    var rows = document.querySelectorAll('.order-row');
+    var visible = 0;
+
+    rows.forEach(function(row) {
+        var status = row.dataset.status || '';
+        var search = (row.dataset.search || '').toLowerCase();
+
+        var matchFilter = currentFilter === 'all' ||
+            (currentFilter === 'PENDING'    && (status === 'PENDING' || status === 'PAYMENT_PENDING')) ||
+            (currentFilter === 'IN_PROGRESS' && (status === 'IN_PROGRESS' || status === 'PROCESSING')) ||
+            (currentFilter === 'COMPLETED'  && (status === 'COMPLETED' || status === 'DELIVERED' || status === 'CONFIRMED')) ||
+            (currentFilter === 'CANCELLED'  && status === 'CANCELLED');
+
+        var matchSearch = !term || search.includes(term);
+
+        row.style.display = (matchFilter && matchSearch) ? '' : 'none';
+        if (matchFilter && matchSearch) visible++;
+    });
+
+    var noResults = document.getElementById('noResults');
+    if (noResults) noResults.style.display = visible === 0 ? 'block' : 'none';
+}
+
+/* ── Download Invoice ── */
+function downloadInvoice(orderId, btn) {
+    var originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+
+    fetch('/dashboard/orders/' + orderId + '/invoice', { credentials: 'same-origin' })
+        .then(function(response) {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            if (!response.ok) {
+                var msgs = { 401: 'Connexion requise', 403: 'Accès refusé', 404: 'Commande introuvable', 400: 'Facture non disponible' };
+                throw new Error(msgs[response.status] || 'Erreur serveur');
             }
-        }, 30000);
-    </script>
+            return response.blob();
+        })
+        .then(function(blob) {
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url; a.download = 'Facture_LMP_Commande_' + orderId + '.pdf';
+            document.body.appendChild(a); a.click();
+            window.URL.revokeObjectURL(url); document.body.removeChild(a);
+            showToast('success', 'Facture téléchargée avec succès');
+        })
+        .catch(function(err) {
+            btn.innerHTML = originalHtml; btn.disabled = false;
+            showToast('error', err.message || 'Erreur lors du téléchargement');
+        });
+}
+
+/* ── Cancel Order ── */
+function cancelOrder(btn) {
+    var orderId = btn.dataset.orderId;
+    if (!confirm('Annuler la commande #' + orderId + ' ? Cette action est irréversible.')) return;
+
+    var row = btn.closest('tr');
+    var csrfToken = document.querySelector('meta[name="_csrf"]') ? document.querySelector('meta[name="_csrf"]').content : '';
+    var csrfHeader = document.querySelector('meta[name="_csrf_header"]') ? document.querySelector('meta[name="_csrf_header"]').content : 'X-CSRF-TOKEN';
+
+    var headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrfToken) headers[csrfHeader] = csrfToken;
+
+    // Optimistic UI update
+    var statusCell = row.querySelector('.db-status-badge');
+    if (statusCell) {
+        statusCell.className = 'db-status-badge db-status-cancel';
+        statusCell.textContent = 'Annulée';
+    }
+    btn.remove();
+    showToast('success', 'Commande #' + orderId + ' annulée');
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.className = getTheme() === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    updateDate();
+});
+
+/*]]>*/
+</script>
 </body>
 </html>

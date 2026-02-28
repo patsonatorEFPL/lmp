@@ -17,6 +17,7 @@ let selectedService = {
   name: "",
   amount: 0,
   currency: "EUR",
+  offerId: null,
 };
 
 /**
@@ -24,42 +25,25 @@ let selectedService = {
  * @param {string} serviceName - Nom du service (optionnel, défaut: "Consultation")
  * @param {number} amount - Montant du service (optionnel, défaut: 0)
  * @param {string} currency - Devise (par défaut EUR)
+ * @param {number|null} offerId - ID de l'offre pour validation côté serveur (sécurisé)
  */
 function openBookingModal(
   serviceName = "Consultation",
   amount = 0,
-  currency = "EUR"
+  currency = "EUR",
+  offerId = null
 ) {
-  // DEBUG: Ajouter des logs pour diagnostiquer le problème d'authentification
-  console.log("DEBUG: openBookingModal appelé pour service:", serviceName);
-  console.log(
-    "DEBUG: Paramètres reçus - service:",
-    serviceName,
-    "amount:",
-    amount,
-    "currency:",
-    currency
-  );
-  console.log("DEBUG: Vérification état d'authentification...");
-  console.log("DEBUG: AUTH_INFO disponible:", window.AUTH_INFO);
+  console.log("DEBUG: openBookingModal appelé pour service:", serviceName, "offerId:", offerId);
 
   // Vérifier si l'utilisateur est connecté
   if (window.AUTH_INFO && window.AUTH_INFO.isAuthenticated) {
-    console.log(
-      "DEBUG: Utilisateur connecté - redirection vers flux utilisateur connecté"
-    );
-    // Utilisateur connecté : créer une commande directement
-    handleAuthenticatedUserOrder(serviceName, amount, currency);
+    console.log("DEBUG: Utilisateur connecté - redirection vers flux utilisateur connecté");
+    handleAuthenticatedUserOrder(serviceName, amount, currency, offerId);
     return;
   }
 
-  console.log(
-    "DEBUG: Utilisateur non connecté - ouverture modal d'inscription directe"
-  );
-
-  // Pour les utilisateurs non connectés : afficher directement le modal d'inscription
-  // Plus besoin de sauvegarder l'intention car l'endpoint /register-and-checkout gère tout
-  showRegistrationModal(serviceName, amount, currency);
+  console.log("DEBUG: Utilisateur non connecté - ouverture modal d'inscription directe");
+  showRegistrationModal(serviceName, amount, currency, offerId);
 }
 
 /**
@@ -70,15 +54,18 @@ function openBookingModal(
 /**
  * Affiche le modal d'inscription avec les informations du service
  */
-function showRegistrationModal(serviceName, amount, currency) {
+function showRegistrationModal(serviceName, amount, currency, offerId) {
   // Stocker les informations du service
   selectedService.name = serviceName;
   selectedService.amount = amount;
   selectedService.currency = currency;
+  selectedService.offerId = offerId;
 
   // Mettre à jour les champs cachés du formulaire
   document.getElementById("modalServiceName").value = serviceName;
   document.getElementById("modalAmount").value = amount;
+  var offerIdField = document.getElementById("modalOfferId");
+  if (offerIdField) offerIdField.value = offerId || "";
 
   // Mettre à jour le résumé de commande
   document.getElementById("orderSummaryService").textContent = serviceName;
@@ -150,6 +137,7 @@ async function handleRegisterAndCheckout(event) {
       serviceName: selectedService.name,
       amount: selectedService.amount,
       currency: selectedService.currency,
+      offerId: selectedService.offerId || null,
       acceptTerms: formData.get("acceptTerms") === "on",
     };
 
@@ -625,7 +613,8 @@ function toggleBillingAddress() {
 async function handleAuthenticatedUserOrder(
   serviceName,
   amount,
-  currency = "EUR"
+  currency = "EUR",
+  offerId = null
 ) {
   console.log(
     "DEBUG: Création de session Stripe directe pour utilisateur connecté:",
@@ -633,6 +622,7 @@ async function handleAuthenticatedUserOrder(
       service: serviceName,
       amount: amount,
       currency: currency,
+      offerId: offerId,
       user: window.AUTH_INFO.currentUser,
     }
   );
@@ -656,6 +646,13 @@ async function handleAuthenticatedUserOrder(
     // ÉTAPE 1 : Récupérer les données utilisateur depuis l'API (sans créer de commande)
     console.log("DEBUG: Récupération des données utilisateur...");
 
+    var tempPayload = {
+        serviceName: serviceName,
+        amount: amount,
+        currency: currency,
+    };
+    if (offerId) tempPayload.offerId = offerId;
+
     const userDataResponse = await fetch("/api/orders/create-temp", {
       method: "POST",
       headers: {
@@ -663,11 +660,7 @@ async function handleAuthenticatedUserOrder(
         "X-Requested-With": "XMLHttpRequest",
         [csrfHeaderName]: csrfToken,
       },
-      body: JSON.stringify({
-        serviceName: serviceName,
-        amount: amount,
-        currency: currency,
-      }),
+      body: JSON.stringify(tempPayload),
     });
 
     const userData = await userDataResponse.json();
@@ -694,6 +687,7 @@ async function handleAuthenticatedUserOrder(
       userLastName: userData.userLastName,
       userLanguage: getGTranslateLanguage(),
     };
+    if (userData.offerId) serviceData.offerId = userData.offerId;
 
     console.log(
       "DEBUG: Création de session Stripe directe avec les données:",

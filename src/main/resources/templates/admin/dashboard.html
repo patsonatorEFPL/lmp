@@ -1,568 +1,201 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration - LMP</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    
-    <!-- WebSocket Scripts -->
-    <th:block th:replace="~{fragments/websocket :: websocket-scripts}"></th:block>
-    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <style>
-        .admin-header {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-        
-        .admin-sidebar {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            min-height: 600px;
-        }
-        
-        .admin-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .admin-menu li {
-            margin-bottom: 0.5rem;
-        }
-        
-        .admin-menu a {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            color: #495057;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .admin-menu a:hover,
-        .admin-menu a.active {
-            background-color: #dc3545;
-            color: white;
-        }
-        
-        .admin-menu i {
-            margin-right: 0.75rem;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            border-left: 4px solid;
-            height: 100%;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        .stat-card.users {
-            border-left-color: #007bff;
-        }
-        
-        .stat-card.active {
-            border-left-color: #28a745;
-        }
-        
-        .stat-card.inactive {
-            border-left-color: #ffc107;
-        }
-        
-        .stat-card.locked {
-            border-left-color: #dc3545;
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .stat-icon {
-            font-size: 2.5rem;
-            opacity: 0.7;
-        }
-        
-        .content-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .card-header-admin {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 1.5rem;
-            border: none;
-        }
-        
-        .user-item {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #dee2e6;
-            transition: background-color 0.3s ease;
-        }
-        
-        .user-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .user-item:last-child {
-            border-bottom: none;
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .status-badge {
-            padding: 0.375rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status-inactive {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-deleted {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin: 1rem 0;
-        }
-        
-        .quick-actions {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-bottom: 2rem;
-        }
-        
-        .quick-action-btn {
-            flex: 1;
-            min-width: 200px;
-            padding: 1rem;
-            background: white;
-            border: 2px solid #dee2e6;
-            border-radius: 15px;
-            text-decoration: none;
-            color: #495057;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .quick-action-btn:hover {
-            border-color: #dc3545;
-            color: #dc3545;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .alert-admin {
-            background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);
-            color: white;
-            border: none;
-            border-radius: 15px;
-        }
-        
-        .websocket-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-            font-size: 0.8rem;
-        }
-        
-        .orders-stat-card {
-            border-left-color: #6f42c1;
-        }
-        
-        .revenue-stat-card {
-            border-left-color: #fd7e14;
-        }
-        
-        .new-orders-badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #dc3545;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 0.7rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
     </style>
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #dc3545 0%, #6f42c1 100%);">
-        <div class="container">
-            <a class="navbar-brand fw-bold" th:href="@{/}">
-                <i class="fas fa-shield-alt me-2"></i>
-                LMP Admin
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/dashboard}">
-                            <i class="fas fa-tachometer-alt me-1"></i>
-                            Tableau de bord
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/users}">
-                            <i class="fas fa-users me-1"></i>
-                            Utilisateurs
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/orders}">
-                            <i class="fas fa-shopping-cart me-1"></i>
-                            Commandes
-                            <span class="new-orders-badge" style="display: none;">0</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/appointments}">
-                            <i class="fas fa-calendar-alt me-1"></i>
-                            Rendez-vous
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/statistics}">
-                            <i class="fas fa-chart-bar me-1"></i>
-                            Statistiques
-                        </a>
-                    </li>
-                </ul>
-                
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/dashboard}">
-                            <i class="fas fa-user me-1"></i>
-                            Mode utilisateur
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-shield me-1"></i>
-                            Admin
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" th:href="@{/profile}">
-                                <i class="fas fa-user me-2"></i>Mon profil
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="/logout" method="post" class="d-inline">
-                                    <input type="hidden" name="_csrf" th:value="${_csrf.token}"/>
-                                    <button type="submit" class="dropdown-item border-0 bg-transparent w-100 text-start">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        <!-- WebSocket Status Indicator -->
-        <div class="websocket-status badge bg-secondary">
-            Connexion...
-        </div>
-        
-        <!-- Welcome Alert -->
-        <div class="alert alert-admin d-flex align-items-center mb-4">
-            <i class="fas fa-crown me-3 fs-4"></i>
-            <div>
-                <h6 class="mb-1">Tableau de bord administrateur</h6>
-                <small>Bienvenue dans l'interface d'administration LMP</small>
-            </div>
-        </div>
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
 
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-3">
-                <div class="admin-sidebar">
-                    <div class="text-center mb-3">
-                        <div class="bg-danger bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                            <i class="fas fa-user-shield fs-2 text-white"></i>
-                        </div>
-                        <h5 class="mt-2 mb-1">Administrateur</h5>
-                        <small class="text-muted" th:text="${admin.email}">admin@lmp.ca</small>
-                    </div>
-                    
-                    <ul class="admin-menu">
-                        <li><a href="#" class="active">
-                            <i class="fas fa-tachometer-alt"></i>
-                            Tableau de bord
-                        </a></li>
-                        <li><a th:href="@{/admin/users}">
+<div class="db-root db-admin-root" id="db-root">
+
+    <!-- SIDEBAR -->
+    <div th:replace="~{admin/fragments/admin-sidebar :: sidebar(activeNav='dashboard')}"></div>
+
+    <!-- ═══════════════ MAIN ═══════════════ -->
+    <div class="db-main">
+
+        <!-- Header -->
+        <div th:replace="~{admin/fragments/admin-header :: header(title='Tableau de bord', subtitle=null)}"></div>
+
+        <!-- Content -->
+        <div class="db-content">
+
+            <!-- Purchase transfer notice -->
+            <div class="db-alert db-alert-info" th:if="${processPurchase}">
+                <i class="fas fa-info-circle" style="margin-top:2px;flex-shrink:0;"></i>
+                <span th:text="${purchaseTransferNotice}">Une intention de paiement a été détectée.</span>
+                <button class="db-alert-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="db-quick-actions">
+                <a th:href="@{/admin/users}" class="db-quick-action">
+                    <i class="fas fa-users"></i>
+                    Gérer les utilisateurs
+                </a>
+                <a th:href="@{/admin/orders}" class="db-quick-action">
+                    <i class="fas fa-shopping-cart"></i>
+                    Gérer les commandes
+                </a>
+                <a th:href="@{/admin/appointments}" class="db-quick-action">
+                    <i class="fas fa-calendar-alt"></i>
+                    Gérer les rendez-vous
+                </a>
+                <a th:href="@{/admin/statistics}" class="db-quick-action">
+                    <i class="fas fa-chart-line"></i>
+                    Statistiques
+                </a>
+                <a th:href="@{/admin/settings}" class="db-quick-action">
+                    <i class="fas fa-cog"></i>
+                    Paramètres système
+                </a>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="db-stat-grid-4">
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-users"></i> Utilisateurs</span>
+                        <span class="db-stat-icon-badge" style="background:rgba(59,130,246,0.1);color:#3b82f6;">
                             <i class="fas fa-users"></i>
-                            Gestion utilisateurs
-                        </a></li>
-                        <li><a th:href="@{/admin/orders}">
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalUsers}">0</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-user-check"></i> Total</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-user-check"></i> Actifs</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-success-light);color:var(--db-success);">
+                            <i class="fas fa-user-check"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${activeUsers}">0</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-check"></i> Actifs</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-shopping-cart"></i> Commandes</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-accent-light);color:var(--db-accent);">
                             <i class="fas fa-shopping-cart"></i>
-                            Gestion commandes
-                            <span class="new-orders-badge" style="display: none;">0</span>
-                        </a></li>
-                        <li><a th:href="@{/admin/appointments}">
-                            <i class="fas fa-calendar-alt"></i>
-                            Gestion rendez-vous
-                        </a></li>
-                        <li><a th:href="@{/admin/statistics}">
-                            <i class="fas fa-chart-bar"></i>
-                            Statistiques
-                        </a></li>
-                        <li><a th:href="@{/admin/settings}">
-                            <i class="fas fa-cogs"></i>
-                            Paramètres système
-                        </a></li>
-                        <li><a href="#">
-                            <i class="fas fa-database"></i>
-                            Sauvegarde
-                        </a></li>
-                    </ul>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalOrders ?: 0}">0</div>
+                    <span class="db-stat-badge" style="background:var(--db-accent-light);color:var(--db-accent);"><i class="fas fa-box"></i> Total</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-dollar-sign"></i> Chiffre d'affaires</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
+                            <i class="fas fa-dollar-sign"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 2) + ' $' : '0 $'}">0 $</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-chart-line"></i> Revenu</span>
                 </div>
             </div>
 
-            <!-- Main Dashboard Content -->
-            <div class="col-lg-9">
-                <!-- Quick Actions -->
-                <div class="quick-actions">
-                    <a th:href="@{/admin/users}" class="quick-action-btn">
-                        <i class="fas fa-users fs-3 mb-2 d-block"></i>
-                        <strong>Gérer les utilisateurs</strong>
-                    </a>
-                    <a th:href="@{/admin/orders}" class="quick-action-btn" style="position: relative;">
-                        <i class="fas fa-shopping-cart fs-3 mb-2 d-block"></i>
-                        <strong>Gérer les commandes</strong>
-                        <span class="new-orders-badge" style="display: none;">0</span>
-                    </a>
-                    <a th:href="@{/admin/appointments}" class="quick-action-btn">
-                        <i class="fas fa-calendar-alt fs-3 mb-2 d-block"></i>
-                        <strong>Gérer les rendez-vous</strong>
-                    </a>
-                    <a th:href="@{/admin/statistics}" class="quick-action-btn">
-                        <i class="fas fa-chart-line fs-3 mb-2 d-block"></i>
-                        <strong>Voir les statistiques</strong>
-                    </a>
-                    <a th:href="@{/admin/settings}" class="quick-action-btn">
-                        <i class="fas fa-cogs fs-3 mb-2 d-block"></i>
-                        <strong>Paramètres système</strong>
-                    </a>
-                </div>
+            <!-- Two-column layout: Recent users + Locked accounts -->
+            <div class="db-chart-row">
 
-                <!-- Statistics Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-3 mb-3">
-                        <div class="stat-card users">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="stat-number text-primary" th:text="${totalUsers}">0</div>
-                                    <div class="stat-label">Total utilisateurs</div>
-                                </div>
-                                <i class="fas fa-users stat-icon text-primary"></i>
-                            </div>
+                <!-- Recent Users -->
+                <div class="db-card" style="padding:0;overflow:hidden;">
+                    <div style="padding:16px 20px;border-bottom:1px solid var(--db-border);">
+                        <div class="db-table-header" style="margin-bottom:0;">
+                            <span class="db-card-title"><i class="fas fa-user-plus"></i> Utilisateurs récents</span>
+                            <a th:href="@{/admin/users}" class="db-see-all">Voir tout →</a>
                         </div>
                     </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="stat-card active">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="stat-number text-success" th:text="${activeUsers}">0</div>
-                                    <div class="stat-label">Utilisateurs actifs</div>
-                                </div>
-                                <i class="fas fa-user-check stat-icon text-success"></i>
-                            </div>
-                        </div>
+
+                    <div th:if="${#lists.isEmpty(recentUsers)}" class="db-empty">
+                        <i class="fas fa-users"></i>
+                        <p>Aucun utilisateur récent</p>
                     </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="stat-card orders-stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="stat-number text-purple" th:text="${totalOrders ?: 0}">0</div>
-                                    <div class="stat-label">Total commandes</div>
-                                </div>
-                                <i class="fas fa-shopping-cart stat-icon" style="color: #6f42c1;"></i>
+
+                    <div th:unless="${#lists.isEmpty(recentUsers)}">
+                        <div th:each="user : ${recentUsers}" class="db-user-item">
+                            <div class="db-user-avatar">
+                                <span th:text="${user.getDisplayName().substring(0,1).toUpperCase()}">U</span>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="stat-card revenue-stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="stat-number" style="color: #fd7e14;" th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 2) + '€' : '0€'}">0€</div>
-                                    <div class="stat-label">Chiffre d'affaires</div>
-                                </div>
-                                <i class="fas fa-euro-sign stat-icon" style="color: #fd7e14;"></i>
+                            <div class="db-user-info">
+                                <div class="db-user-name" th:text="${user.getDisplayName()}">Utilisateur</div>
+                                <div class="db-user-email" th:text="${user.email}">email@example.com</div>
+                            </div>
+                            <div class="db-user-meta">
+                                <div class="db-user-date" th:text="${#temporals.format(user.registrationDate, 'dd/MM/yyyy')}">01/01/2024</div>
+                                <span class="db-status-badge"
+                                      th:classappend="${user.status.name() == 'ACTIVE'} ? 'db-status-done' : (${user.status.name() == 'INACTIVE'} ? 'db-status-pending' : 'db-status-cancel')"
+                                      th:text="${user.status.name()}">ACTIVE</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="row">
-                    <!-- Recent Users -->
-                    <div class="col-lg-8">
-                        <div class="content-card">
-                            <div class="card-header-admin">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-user-plus me-2"></i>
-                                    Utilisateurs récents
-                                </h5>
-                            </div>
-                            <div class="card-body p-0">
-                                <div th:if="${#lists.isEmpty(recentUsers)}" class="text-center py-4">
-                                    <i class="fas fa-users fs-1 text-muted mb-3"></i>
-                                    <p class="text-muted">Aucun utilisateur récent</p>
-                                </div>
-                                
-                                <div th:each="user : ${recentUsers}" class="user-item">
-                                    <div class="d-flex align-items-center">
-                                        <div class="user-avatar me-3">
-                                            <span th:text="${user.getDisplayName().substring(0,1).toUpperCase()}">J</span>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-1" th:text="${user.getDisplayName()}">John Doe</h6>
-                                            <small class="text-muted" th:text="${user.email}">john@example.com</small>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="mb-1">
-                                                <small class="text-muted" th:text="${#temporals.format(user.registrationDate, 'dd/MM/yyyy')}">01/01/2024</small>
-                                            </div>
-                                            <span class="status-badge" 
-                                                  th:classappend="${user.status.name() == 'ACTIVE'} ? 'status-active' : (${user.status.name() == 'INACTIVE'} ? 'status-inactive' : 'status-deleted')"
-                                                  th:text="${user.status.name()}">Actif</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-footer bg-transparent text-center">
-                                <a th:href="@{/admin/users}" class="btn btn-outline-danger btn-sm">
-                                    <i class="fas fa-eye me-1"></i>
-                                    Voir tous les utilisateurs
-                                </a>
-                            </div>
-                        </div>
+                <!-- Locked Accounts -->
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <span class="db-card-title"><i class="fas fa-lock"></i> Comptes verrouillés</span>
                     </div>
 
-                    <!-- Locked Users Alert -->
-                    <div class="col-lg-4">
-                        <div class="content-card">
-                            <div class="card-header-admin">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>
-                                    Comptes verrouillés
-                                </h5>
+                    <div th:if="${lockedUsersCount == 0}" class="db-empty" style="padding:40px 16px;">
+                        <i class="fas fa-check-circle" style="color:var(--db-success);opacity:1;"></i>
+                        <p style="color:var(--db-success);font-weight:500;">Aucun compte verrouillé</p>
+                    </div>
+
+                    <div th:if="${lockedUsersCount > 0}">
+                        <div class="db-alert db-alert-warning" style="margin-bottom:16px;">
+                            <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px;"></i>
+                            <span><strong th:text="${lockedUsersCount}">0</strong> compte(s) verrouillé(s) nécessitent votre attention.</span>
+                        </div>
+
+                        <div th:each="lockedUser : ${lockedUsers}" class="db-user-item">
+                            <div class="db-user-avatar" style="width:30px;height:30px;font-size:11px;">
+                                <span th:text="${lockedUser.getDisplayName().substring(0,1).toUpperCase()}">U</span>
                             </div>
-                            <div class="card-body">
-                                <div th:if="${lockedUsersCount == 0}" class="text-center py-3">
-                                    <i class="fas fa-check-circle fs-1 text-success mb-3"></i>
-                                    <p class="text-muted mb-0">Aucun compte verrouillé</p>
-                                </div>
-                                
-                                <div th:if="${lockedUsersCount > 0}">
-                                    <div class="alert alert-warning" role="alert">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <span th:text="${lockedUsersCount}">5</span> compte(s) verrouillé(s) nécessitent votre attention.
-                                    </div>
-                                    
-                                    <div th:each="lockedUser : ${lockedUsers}" class="d-flex align-items-center mb-2">
-                                        <div class="user-avatar me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
-                                            <span th:text="${lockedUser.getDisplayName().substring(0,1).toUpperCase()}">J</span>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <small th:text="${lockedUser.getDisplayName()}">John Doe</small>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="text-center mt-3">
-                                        <a th:href="@{/admin/users?status=locked}" class="btn btn-outline-warning btn-sm">
-                                            <i class="fas fa-unlock me-1"></i>
-                                            Gérer les comptes
-                                        </a>
-                                    </div>
-                                </div>
+                            <div class="db-user-info">
+                                <div class="db-user-name" th:text="${lockedUser.getDisplayName()}">Utilisateur</div>
+                                <div class="db-user-email" th:text="${lockedUser.email}">email@example.com</div>
                             </div>
+                        </div>
+
+                        <div style="text-align:center;margin-top:16px;">
+                            <a th:href="@{/admin/users?status=locked}" class="db-btn db-btn-accent" style="font-size:12px;">
+                                <i class="fas fa-unlock"></i> Gérer les comptes
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
+
+<th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
+
 </body>
 </html>

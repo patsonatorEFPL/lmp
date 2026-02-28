@@ -27,9 +27,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.lmp.domain.entity.Order;
 import com.lmp.domain.entity.User;
+import com.lmp.domain.entity.ServiceOffer;
 import com.lmp.domain.enums.OrderStatus;
 import com.lmp.repository.OrderRepository;
 import com.lmp.service.auth.AuthService;
+import com.lmp.service.catalog.ServiceCatalogService;
 import com.lmp.service.user.UserService;
 import com.lmp.web.dto.LoginDto;
 import com.lmp.web.dto.RegisterDto;
@@ -57,6 +59,9 @@ public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private ServiceCatalogService serviceCatalogService;
 
     /**
      * Affiche la page de connexion.
@@ -288,12 +293,29 @@ public class AuthController {
                         "message", "Un utilisateur avec cet email existe déjà"));
             }
 
-            // 3. Validation du montant et de la devise
-            if (registerWithOrderDto.getAmount() == null ||
-                    registerWithOrderDto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_AMOUNT",
-                        "message", "Le montant doit être supérieur à 0"));
+            // 3. Sécurisation prix : si offerId fourni, le prix vient de la DB
+            java.math.BigDecimal validatedAmount = registerWithOrderDto.getAmount();
+            String validatedServiceName = registerWithOrderDto.getServiceName();
+
+            if (registerWithOrderDto.getOfferId() != null) {
+                java.util.Optional<ServiceOffer> offerOpt = serviceCatalogService
+                        .getValidOffer(registerWithOrderDto.getOfferId());
+                if (offerOpt.isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_OFFER",
+                            "message", "L'offre demandée n'existe pas, est inactive ou a expiré"));
+                }
+                ServiceOffer offer = offerOpt.get();
+                validatedAmount = offer.getPrice();
+                validatedServiceName = offer.getService().getTitle();
+            } else {
+                // Legacy: validation basique du montant
+                if (validatedAmount == null ||
+                        validatedAmount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_AMOUNT",
+                            "message", "Le montant doit être supérieur à 0"));
+                }
             }
 
             // 4. Créer l'utilisateur
@@ -304,13 +326,13 @@ public class AuthController {
             authenticateUser(registerWithOrderDto.getEmail(),
                     registerWithOrderDto.getPassword(), request, response);
 
-            // 6. Créer la commande avec statut PAYMENT_PENDING
+            // 6. Créer la commande avec statut PAYMENT_PENDING (prix validé côté serveur)
             Order order = new Order();
             order.setUser(newUser);
-            order.setServiceName(registerWithOrderDto.getServiceName()); // FIX: Ajouter le nom du service manquant
+            order.setServiceName(validatedServiceName);
             order.setCurrency(registerWithOrderDto.getCurrency());
             order.setStatus(OrderStatus.PAYMENT_PENDING);
-            order.setTotalAmount(registerWithOrderDto.getAmount());
+            order.setTotalAmount(validatedAmount);
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
 

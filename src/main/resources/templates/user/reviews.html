@@ -1,768 +1,585 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mes Avis - LMP</title>
-    
-    <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        .db-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 90; }
+        .db-overlay.open { display: block; }
+        .db-mobile-toggle {
+            display: none; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border: 1px solid var(--db-border);
+            border-radius: 8px; background: var(--db-card-bg); color: var(--db-text-secondary);
+            cursor: pointer; font-size: 14px; margin-right: 12px; flex-shrink: 0;
         }
-        
-        .reviews-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .reviews-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            border: none;
-        }
-        
-        .review-card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-            overflow: hidden;
-            background: white;
-        }
-        
-        .review-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        .review-header {
-            background: linear-gradient(45deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        .review-body {
-            padding: 1.5rem;
-        }
-        
-        .rating-display {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .stars {
-            color: #ffc107;
-            font-size: 1.2rem;
-        }
-        
-        .stars i {
-            margin-right: 0.1rem;
-        }
-        
-        .rating-text {
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .review-comment {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 1rem;
-            border-radius: 0 8px 8px 0;
-            margin: 1rem 0;
-            font-style: italic;
-        }
-        
-        .review-meta {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .status-badge {
-            padding: 0.375rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-approved {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-        
-        .status-rejected {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .sidebar {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .sidebar-menu li {
-            margin-bottom: 0.5rem;
-        }
-        
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            color: #495057;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            background-color: #667eea;
-            color: white;
-        }
-        
-        .sidebar-menu i {
-            margin-right: 0.75rem;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 1rem;
-        }
-        
-        .btn-primary-custom {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border: none;
-            color: white;
-            border-radius: 25px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary-custom:hover {
-            background: linear-gradient(45deg, #5a6fd8, #6a3f87);
-            transform: translateY(-1px);
-            color: white;
-        }
-        
-        .review-form {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 2px dashed #dee2e6;
-            transition: all 0.3s ease;
-        }
-        
-        .review-form:hover {
-            border-color: #667eea;
-            background: #f0f8ff;
-        }
-        
-        .star-rating {
-            display: flex;
-            gap: 0.25rem;
-            margin-bottom: 1rem;
-        }
-        
-        .star-rating input[type="radio"] {
-            display: none;
-        }
-        
-        .star-rating label {
-            font-size: 2rem;
-            color: #ddd;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .star-rating label:hover,
-        .star-rating label:hover ~ label,
-        .star-rating input[type="radio"]:checked ~ label {
-            color: #ffc107;
-        }
-        
-        .star-rating input[type="radio"]:checked + label ~ label {
-            color: #ddd;
-        }
-        
-        .order-select {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 0.75rem;
-            transition: all 0.3s ease;
-        }
-        
-        .order-select:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .form-control-custom {
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 0.75rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control-custom:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .review-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .action-btn {
-            padding: 0.375rem 0.75rem;
-            border-radius: 15px;
-            border: none;
-            font-size: 0.8rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .btn-edit {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .btn-edit:hover {
-            background: #1976d2;
-            color: white;
-        }
-        
-        .btn-delete {
-            background: #ffebee;
-            color: #d32f2f;
-        }
-        
-        .btn-delete:hover {
-            background: #d32f2f;
-            color: white;
-        }
-        
-        .stats-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-            border-left: 4px solid;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        .stat-card.total {
-            border-left-color: #667eea;
-        }
-        
-        .stat-card.approved {
-            border-left-color: #28a745;
-        }
-        
-        .stat-card.pending {
-            border-left-color: #ffc107;
-        }
-        
-        .stat-card.average {
-            border-left-color: #17a2b8;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
         @media (max-width: 768px) {
-            .review-form {
-                padding: 1rem;
-            }
-            
-            .star-rating label {
-                font-size: 1.5rem;
-            }
-            
-            .stats-cards {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .review-body {
-                padding: 1rem;
-            }
+            .db-mobile-toggle { display: flex; }
+            .db-sidebar { position: fixed; left: -260px; top: 0; bottom: 0; transition: left 0.25s ease; z-index: 100; }
+            .db-sidebar.open { left: 0; }
+            .db-reviews-stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
+        @media (max-width: 480px) {
+            .db-reviews-stat-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* ── Stat grid ── */
+        .db-reviews-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        /* ── Date badge ── */
+        .db-date-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 8px; font-size: 12px;
+            color: var(--db-text-secondary); border: 1px solid var(--db-border);
+            background: var(--db-card-bg);
+        }
+
+        /* ── Review form ── */
+        .db-review-form-wrap {
+            display: none;
+            border: 1px dashed var(--db-border);
+            border-radius: 12px;
+            padding: 20px;
+            background: var(--db-card-bg);
+            transition: border-color 0.2s;
+        }
+        .db-review-form-wrap.open { display: block; border-color: var(--db-accent); }
+        .db-form-group { margin-bottom: 14px; }
+        .db-form-label {
+            display: block; font-size: 12.5px; font-weight: 500;
+            color: var(--db-text-secondary); margin-bottom: 6px;
+        }
+        .db-form-input, .db-form-textarea, .db-form-select {
+            width: 100%; padding: 8px 12px; border-radius: 8px;
+            border: 1px solid var(--db-border); background: var(--db-input-bg);
+            color: var(--db-text-primary); font-size: 13px; font-family: inherit;
+            outline: none; transition: border-color 0.15s; box-sizing: border-box;
+        }
+        .db-form-input:focus, .db-form-textarea:focus, .db-form-select:focus { border-color: var(--db-accent); }
+        .db-form-textarea { resize: vertical; min-height: 80px; }
+
+        /* ── Star rating (CSS trick: reverse row so click works) ── */
+        .db-star-rating {
+            display: inline-flex;
+            flex-direction: row-reverse;
+            gap: 4px;
+        }
+        .db-star-rating input { display: none; }
+        .db-star-rating label {
+            font-size: 26px;
+            color: var(--db-progress-bg);
+            cursor: pointer;
+            transition: color 0.1s;
+        }
+        .db-star-rating input:checked ~ label,
+        .db-star-rating label:hover,
+        .db-star-rating label:hover ~ label { color: var(--db-warning); }
+
+        /* ── Review card ── */
+        .db-review-card {
+            background: var(--db-card-bg);
+            border: 1px solid var(--db-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            transition: box-shadow 0.2s;
+        }
+        .db-review-card:hover { box-shadow: var(--db-shadow-md); }
+        .db-review-card-header {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+            margin-bottom: 10px;
+        }
+        .db-review-stars-display { color: var(--db-warning); font-size: 14px; letter-spacing: 1px; }
+        .db-review-order-ref { font-size: 11.5px; color: var(--db-text-muted); margin-top: 3px; }
+        .db-review-comment-block {
+            background: var(--db-accent-light);
+            border-left: 3px solid var(--db-accent);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            font-style: italic;
+            font-size: 13px;
+            color: var(--db-text-secondary);
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+        .db-review-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; flex-wrap: wrap; margin-top: 10px;
+        }
+        .db-review-date { font-size: 11.5px; color: var(--db-text-muted); }
+        .db-review-actions { display: flex; gap: 6px; }
+        .db-action-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 500;
+            cursor: pointer; border: 1px solid var(--db-border); background: var(--db-card-bg);
+            color: var(--db-text-secondary); text-decoration: none; transition: all 0.15s;
+            font-family: inherit;
+        }
+        .db-action-btn:hover { border-color: var(--db-accent); color: var(--db-accent); background: var(--db-accent-light); }
+        .db-action-btn-danger:hover { border-color: var(--db-danger); color: var(--db-danger); background: var(--db-danger-light); }
+
+        /* ── Featured badge ── */
+        .db-featured-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 600;
+            background: var(--db-warning-light); color: var(--db-warning);
+        }
+
+        /* ── Average rating display ── */
+        .db-avg-stars { color: var(--db-warning); font-size: 22px; letter-spacing: 2px; display: block; margin-bottom: 4px; }
+        .db-avg-value { font-size: 28px; font-weight: 700; color: var(--db-text-primary); letter-spacing: -0.5px; }
+        .db-avg-label { font-size: 11px; color: var(--db-text-muted); }
     </style>
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+<body>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-star me-3"></i>
-                        Mes Avis
-                    </h1>
-                    <p class="mb-0 mt-2 opacity-75">Gérez vos avis et partagez votre expérience</p>
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root" id="db-root">
+
+    <!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+    <aside class="db-sidebar" id="db-sidebar">
+
+        <a th:href="@{/}" class="db-logo">
+            <img th:src="@{/images/Logo LMP.webp}" alt="LMP Logo" class="db-logo-icon-img">
+            <span class="db-logo-name">LMP</span>
+        </a>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Général</div>
+            <a th:href="@{/dashboard}" class="db-nav-item">
+                <i class="fas fa-th-large"></i>
+                Tableau de bord
+            </a>
+            <a th:href="@{/dashboard/orders}" class="db-nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                Mes commandes
+            </a>
+            <a th:href="@{/services}" class="db-nav-item">
+                <i class="fas fa-concierge-bell"></i>
+                Services
+            </a>
+            <a th:href="@{/dashboard/reviews}" class="db-nav-item active">
+                <i class="fas fa-star"></i>
+                Mes avis
+            </a>
+        </div>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Outils</div>
+            <a th:href="@{/profile}" class="db-nav-item">
+                <i class="fas fa-user"></i>
+                Mon profil
+            </a>
+            <a th:href="@{/dashboard/invoices}" class="db-nav-item">
+                <i class="fas fa-file-invoice"></i>
+                Factures
+            </a>
+        </div>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Compte</div>
+            <a th:href="@{/dashboard/settings}" class="db-nav-item">
+                <i class="fas fa-cog"></i>
+                Paramètres
+            </a>
+        </div>
+
+        <div class="db-sidebar-bottom">
+            <a th:href="@{/profile}" class="db-sidebar-user">
+                <div class="db-sidebar-avatar"
+                     th:text="${user.displayName != null and !user.displayName.isEmpty() ? user.displayName.substring(0,1).toUpperCase() : 'U'}">U</div>
+                <div class="db-sidebar-user-info">
+                    <div class="db-sidebar-user-name" th:text="${user.displayName}">Utilisateur</div>
+                    <div class="db-sidebar-user-email" th:text="${user.email}">email@example.com</div>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <span class="badge bg-light text-dark fs-6 px-3 py-2">
-                        <i class="fas fa-comment me-2"></i>
-                        <span th:text="${reviews.size()}">0</span> avis donné(s)
-                    </span>
+            </a>
+            <form th:action="@{/logout}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf?.token}"/>
+                <button type="submit" class="db-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Déconnexion
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════ MAIN ═══════════════════════ -->
+    <div class="db-main">
+
+        <!-- Header -->
+        <div class="db-header">
+            <div style="display:flex;align-items:center;">
+                <button class="db-mobile-toggle" onclick="openSidebar()" aria-label="Ouvrir le menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h1 class="db-header-title" style="margin:0;">Mes avis</h1>
+                    <div style="font-size:12px;color:var(--db-text-muted);margin-top:2px;">
+                        Gérez vos avis et partagez votre expérience
+                    </div>
                 </div>
+            </div>
+
+            <div class="db-header-controls">
+                <span class="db-date-badge">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="current-date"></span>
+                </span>
+                <a th:href="@{/dashboard}" class="db-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Tableau de bord
+                </a>
+                <button class="db-btn db-btn-accent" onclick="toggleReviewForm()">
+                    <i class="fas fa-plus"></i>
+                    Nouvel avis
+                </button>
+                <button class="db-btn db-theme-toggle" onclick="toggleTheme()" title="Changer le thème">
+                    <i id="theme-icon" class="fas fa-moon"></i>
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="container">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-3">
-                <div class="sidebar">
-                    <div class="text-center mb-3">
-                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                            <i class="fas fa-user fs-2 text-white"></i>
-                        </div>
-                        <h5 class="mt-2 mb-1" th:text="${user.getDisplayName()}">Nom Utilisateur</h5>
-                        <small class="text-muted" th:text="${user.email}">email@example.com</small>
+        <!-- Content -->
+        <div class="db-content">
+
+            <!-- ── Stat Cards ── -->
+            <div class="db-reviews-stat-grid">
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-comment"></i> Total</span>
                     </div>
-                    
-                    <ul class="sidebar-menu">
-                        <li><a th:href="@{/dashboard}">
-                            <i class="fas fa-tachometer-alt"></i>
-                            Tableau de bord
-                        </a></li>
-                        <li><a th:href="@{/dashboard/orders}">
-                            <i class="fas fa-shopping-cart"></i>
-                            Mes commandes
-                        </a></li>
-                        <li><a href="#" class="active">
-                            <i class="fas fa-star"></i>
-                            Mes avis
-                        </a></li>
-                        <li><a th:href="@{/profile}">
-                            <i class="fas fa-user"></i>
-                            Mon profil
-                        </a></li>
-                        <li><a th:href="@{/dashboard/settings}">
-                            <i class="fas fa-cog"></i>
-                            Paramètres
-                        </a></li>
-                    </ul>
+                    <div class="db-stat-value" th:text="${reviews.size()}">0</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-list"></i> Avis donnés</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-check-circle"></i> Approuvés</span>
+                    </div>
+                    <div class="db-stat-value"
+                         th:text="${reviews.?[adminApproved == true].size()}">0</div>
+                    <span class="db-stat-badge db-badge-up"><i class="fas fa-check"></i> Publiés</span>
+                </div>
+
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-clock"></i> En attente</span>
+                    </div>
+                    <div class="db-stat-value"
+                         th:text="${reviews.?[adminApproved == false].size()}">0</div>
+                    <span class="db-stat-badge" style="background:var(--db-warning-light);color:var(--db-warning);">Modération</span>
+                </div>
+
+                <div class="db-stat-card" style="text-align:center;">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-star"></i> Moyenne</span>
+                    </div>
+                    <div th:if="${!#lists.isEmpty(reviews)}">
+                        <div class="db-stat-value"
+                             th:text="${#numbers.formatDecimal(#aggregates.avg(reviews.![rating]), 1, 1) + ' /5'}">0/5</div>
+                        <span class="db-stat-badge db-badge-up"><i class="fas fa-star"></i> Note</span>
+                    </div>
+                    <div th:if="${#lists.isEmpty(reviews)}">
+                        <div class="db-stat-value">—</div>
+                        <span class="db-stat-badge" style="background:var(--db-progress-bg);color:var(--db-text-muted);">Aucun</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Reviews Content -->
-            <div class="col-lg-9">
-                <!-- Statistics Cards -->
-                <div class="stats-cards">
-                    <div class="stat-card total">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="stat-number text-primary" th:text="${reviews.size()}">0</div>
-                                <div class="stat-label">Total avis</div>
-                            </div>
-                            <i class="fas fa-comment stat-icon text-primary opacity-50 fs-1"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card approved">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="stat-number text-success" th:text="${#lists.size(#lists.select(reviews, review -> review.adminApproved == true))}">0</div>
-                                <div class="stat-label">Approuvés</div>
-                            </div>
-                            <i class="fas fa-check-circle stat-icon text-success opacity-50 fs-1"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card pending">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="stat-number text-warning" th:text="${#lists.size(#lists.select(reviews, review -> review.adminApproved == false))}">0</div>
-                                <div class="stat-label">En attente</div>
-                            </div>
-                            <i class="fas fa-clock stat-icon text-warning opacity-50 fs-1"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card average">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <div class="stat-number text-info">
-                                    <span th:if="${!#lists.isEmpty(reviews)}" 
-                                          th:text="${#numbers.formatDecimal(#aggregates.avg(reviews.![rating]), 1, 1)}">0.0</span>
-                                    <span th:if="${#lists.isEmpty(reviews)}">0.0</span>
-                                </div>
-                                <div class="stat-label">Note moyenne</div>
-                            </div>
-                            <i class="fas fa-star stat-icon text-info opacity-50 fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- New Review Form -->
-                <div class="review-form" id="newReviewForm" style="display: none;">
-                    <h5 class="mb-3">
-                        <i class="fas fa-plus-circle me-2"></i>
+            <!-- ── New Review Form ── -->
+            <div class="db-review-form-wrap" id="reviewFormWrap">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                    <div style="font-size:14px;font-weight:600;color:var(--db-text-primary);display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-star" style="color:var(--db-warning);"></i>
                         Donner un nouvel avis
-                    </h5>
-                    
-                    <form id="reviewForm">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold">Commande concernée</label>
-                                <select class="form-select order-select" id="orderSelect" required>
-                                    <option value="">Choisir une commande...</option>
-                                    <!-- Options will be populated dynamically -->
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold">Note</label>
-                                <div class="star-rating">
-                                    <input type="radio" id="star5" name="rating" value="5">
-                                    <label for="star5"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="star4" name="rating" value="4">
-                                    <label for="star4"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="star3" name="rating" value="3">
-                                    <label for="star3"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="star2" name="rating" value="2">
-                                    <label for="star2"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="star1" name="rating" value="1">
-                                    <label for="star1"><i class="fas fa-star"></i></label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Votre commentaire</label>
-                            <textarea class="form-control form-control-custom" id="reviewComment" rows="4" 
-                                      placeholder="Partagez votre expérience avec nos services..." required></textarea>
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary-custom">
-                                <i class="fas fa-paper-plane me-2"></i>
-                                Publier l'avis
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="hideReviewForm()">
-                                <i class="fas fa-times me-2"></i>
-                                Annuler
-                            </button>
-                        </div>
-                    </form>
+                    </div>
+                    <button class="db-btn" onclick="toggleReviewForm()" style="padding:4px 10px;font-size:12px;">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <!-- Reviews Container -->
-                <div class="reviews-container">
-                    <!-- Reviews Header -->
-                    <div class="reviews-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">
-                                <i class="fas fa-list me-2"></i>
-                                Vos avis
-                            </h4>
-                            <button class="btn btn-light btn-sm" onclick="showReviewForm()">
-                                <i class="fas fa-plus me-1"></i>
-                                Nouvel avis
-                            </button>
+                <form id="reviewForm" onsubmit="submitReview(event)">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <div class="db-form-group">
+                            <label class="db-form-label">Commande concernée *</label>
+                            <select class="db-form-select" id="orderSelect" required>
+                                <option value="">Choisir une commande…</option>
+                            </select>
                         </div>
-                    </div>
-
-                    <!-- Reviews List -->
-                    <div class="p-3">
-                        <!-- Empty State -->
-                        <div th:if="${#lists.isEmpty(reviews)}" class="empty-state">
-                            <i class="fas fa-star"></i>
-                            <h5>Aucun avis donné</h5>
-                            <p>Vous n'avez pas encore donné d'avis sur nos services.</p>
-                            <button class="btn btn-primary-custom" onclick="showReviewForm()">
-                                <i class="fas fa-plus me-2"></i>
-                                Donner mon premier avis
-                            </button>
-                        </div>
-
-                        <!-- Reviews Cards -->
-                        <div th:each="review : ${reviews}" class="review-card">
-                            <div class="review-header">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="rating-display">
-                                                <div class="stars">
-                                                    <i th:each="star : ${#numbers.sequence(1, review.rating)}" class="fas fa-star"></i>
-                                                    <i th:each="star : ${#numbers.sequence(review.rating + 1, 5)}" class="far fa-star"></i>
-                                                </div>
-                                                <span class="rating-text" th:text="${review.rating + '/5'}">5/5</span>
-                                            </div>
-                                            <span class="status-badge" 
-                                                  th:classappend="${review.adminApproved} ? 'status-approved' : 'status-pending'"
-                                                  th:text="${review.adminApproved} ? 'Approuvé' : 'En attente'">Approuvé</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 text-md-end">
-                                        <div class="review-meta">
-                                            <i class="fas fa-calendar me-1"></i>
-                                            <span th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}">01/01/2024</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="review-body">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <div class="mb-3">
-                                            <h6 class="text-muted mb-2">
-                                                <i class="fas fa-shopping-cart me-1"></i>
-                                                Commande #<span th:text="${review.order.id}">001</span>
-                                            </h6>
-                                            <div class="review-comment" th:text="${review.comment}">
-                                                Excellent service ! Je recommande vivement cette entreprise pour leur professionnalisme et leur qualité de service.
-                                            </div>
-                                        </div>
-                                        
-                                        <div th:if="${review.featured}" class="mb-2">
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="fas fa-star me-1"></i>
-                                                Avis en vedette
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4">
-                                        <div class="review-actions">
-                                            <button class="action-btn btn-edit" th:data-review-id="${review.id}" onclick="editReview(this)">
-                                                <i class="fas fa-edit"></i>
-                                                Modifier
-                                            </button>
-                                            <button class="action-btn btn-delete" th:data-review-id="${review.id}" onclick="deleteReview(this)">
-                                                <i class="fas fa-trash"></i>
-                                                Supprimer
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="db-form-group">
+                            <label class="db-form-label">Note *</label>
+                            <div class="db-star-rating" id="starRating">
+                                <input type="radio" id="star5" name="rating" value="5" required>
+                                <label for="star5"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star4" name="rating" value="4">
+                                <label for="star4"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star3" name="rating" value="3">
+                                <label for="star3"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star2" name="rating" value="2">
+                                <label for="star2"><i class="fas fa-star"></i></label>
+                                <input type="radio" id="star1" name="rating" value="1">
+                                <label for="star1"><i class="fas fa-star"></i></label>
                             </div>
                         </div>
                     </div>
+                    <div class="db-form-group">
+                        <label class="db-form-label">Votre commentaire *</label>
+                        <textarea class="db-form-textarea" id="reviewComment"
+                                  placeholder="Partagez votre expérience avec nos services…" required></textarea>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button type="button" class="db-btn" onclick="toggleReviewForm()">Annuler</button>
+                        <button type="submit" class="db-btn db-btn-accent">
+                            <i class="fas fa-paper-plane"></i>
+                            Publier l'avis
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ── Reviews list or empty state ── -->
+            <div th:if="${#lists.isEmpty(reviews)}" class="db-card">
+                <div class="db-empty">
+                    <i class="fas fa-star"></i>
+                    <p>Vous n'avez pas encore donné d'avis</p>
+                    <button class="db-btn db-btn-accent" onclick="toggleReviewForm()" style="font-size:12px;">
+                        <i class="fas fa-plus"></i> Donner mon premier avis
+                    </button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Show new review form
-        function showReviewForm() {
-            document.getElementById('newReviewForm').style.display = 'block';
-            document.getElementById('newReviewForm').scrollIntoView({ behavior: 'smooth' });
-            loadCompletedOrders();
-        }
+            <!-- Reviews grid -->
+            <div th:unless="${#lists.isEmpty(reviews)}"
+                 style="display:flex;flex-direction:column;gap:12px;">
 
-        // Hide review form
-        function hideReviewForm() {
-            document.getElementById('newReviewForm').style.display = 'none';
-            document.getElementById('reviewForm').reset();
-        }
+                <div th:each="review : ${reviews}" class="db-review-card">
 
-        // Load completed orders for review
-        function loadCompletedOrders() {
-            // Simulate loading completed orders
-            const orderSelect = document.getElementById('orderSelect');
-            orderSelect.innerHTML = `
-                <option value="">Choisir une commande...</option>
-                <option value="1">Commande #001 - Consultation (150.00 EUR)</option>
-                <option value="2">Commande #002 - Service Premium (250.00 EUR)</option>
-                <option value="3">Commande #003 - Audit Complet (500.00 EUR)</option>
-            `;
-        }
+                    <!-- Header row: stars + status + featured -->
+                    <div class="db-review-card-header">
+                        <div>
+                            <div class="db-review-stars-display">
+                                <i th:each="s : ${#numbers.sequence(1, review.rating)}" class="fas fa-star"></i>
+                                <i th:each="s : ${#numbers.sequence(review.rating + 1, 5)}" class="far fa-star"></i>
+                                <span style="font-size:12px;font-weight:600;color:var(--db-text-primary);margin-left:6px;"
+                                      th:text="${review.rating + '/5'}">5/5</span>
+                            </div>
+                            <div class="db-review-order-ref">
+                                <i class="fas fa-shopping-cart"></i>
+                                Commande #<span th:text="${review.order?.id ?: '—'}">001</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span th:if="${review.featured}" class="db-featured-badge">
+                                <i class="fas fa-star"></i> En vedette
+                            </span>
+                            <span class="db-status-badge"
+                                  th:classappend="${review.adminApproved} ? 'db-status-done' : 'db-status-pending'"
+                                  th:text="${review.adminApproved} ? 'Approuvé' : 'En attente'">Approuvé</span>
+                        </div>
+                    </div>
 
-        // Handle star rating
-        document.querySelectorAll('.star-rating input').forEach(input => {
-            input.addEventListener('change', function() {
-                const rating = this.value;
-                console.log('Rating selected:', rating);
-            });
-        });
+                    <!-- Comment -->
+                    <div class="db-review-comment-block" th:text="${review.comment}">
+                        "Excellent service !"
+                    </div>
 
-        // Handle review form submission
-        document.getElementById('reviewForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const reviewData = {
-                orderId: document.getElementById('orderSelect').value,
-                rating: formData.get('rating'),
-                comment: document.getElementById('reviewComment').value
-            };
-            
-            if (!reviewData.orderId || !reviewData.rating || !reviewData.comment.trim()) {
-                alert('Veuillez remplir tous les champs obligatoires.');
-                return;
-            }
-            
-            // Simulate form submission
-            console.log('Submitting review:', reviewData);
-            
-            // Show success message
-            const successAlert = document.createElement('div');
-            successAlert.className = 'alert alert-success alert-dismissible fade show';
-            successAlert.innerHTML = `
-                <i class="fas fa-check-circle me-2"></i>
-                Votre avis a été soumis avec succès ! Il sera visible après validation par notre équipe.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const container = document.querySelector('.container .row .col-lg-9');
-            container.insertBefore(successAlert, container.firstChild);
-            
-            hideReviewForm();
-            
-            // Auto-remove alert after 5 seconds
-            setTimeout(() => {
-                if (successAlert.parentNode) {
-                    successAlert.remove();
-                }
-            }, 5000);
-        });
+                    <!-- Footer: date + actions -->
+                    <div class="db-review-footer">
+                        <span class="db-review-date">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}">01/01/2024</span>
+                        </span>
+                        <div class="db-review-actions" th:unless="${review.adminApproved}">
+                            <button class="db-action-btn"
+                                    th:data-review-id="${review.id}"
+                                    onclick="editReview(this)"
+                                    title="Modifier cet avis">
+                                <i class="fas fa-edit"></i> Modifier
+                            </button>
+                            <button class="db-action-btn db-action-btn-danger"
+                                    th:data-review-id="${review.id}"
+                                    onclick="deleteReview(this)"
+                                    title="Supprimer cet avis">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </div>
+                        <div class="db-review-actions" th:if="${review.adminApproved}">
+                            <span style="font-size:11.5px;color:var(--db-text-muted);">
+                                <i class="fas fa-lock"></i> Approuvé — non modifiable
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
-        // Edit review
-        function editReview(element) {
-            const reviewId = element.dataset.reviewId;
-            
-            // For demo purposes, show a simple prompt
-            const newComment = prompt('Modifier votre commentaire:');
-            if (newComment && newComment.trim()) {
-                console.log('Updating review', reviewId, 'with comment:', newComment);
-                alert('Avis modifié avec succès !');
-                // In real implementation, make AJAX call to update review
-            }
-        }
+            </div><!-- /reviews list -->
 
-        // Delete review
-        function deleteReview(element) {
-            const reviewId = element.dataset.reviewId;
-            
-            if (confirm('Êtes-vous sûr de vouloir supprimer cet avis ?')) {
-                console.log('Deleting review:', reviewId);
-                
-                // Simulate deletion
-                element.closest('.review-card').style.transition = 'all 0.5s ease';
-                element.closest('.review-card').style.opacity = '0';
-                element.closest('.review-card').style.transform = 'translateX(-100%)';
-                
-                setTimeout(() => {
-                    element.closest('.review-card').remove();
-                    
-                    // Show success message
-                    const successAlert = document.createElement('div');
-                    successAlert.className = 'alert alert-success alert-dismissible fade show';
-                    successAlert.innerHTML = `
-                        <i class="fas fa-check-circle me-2"></i>
-                        Avis supprimé avec succès !
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    
-                    const container = document.querySelector('.container .row .col-lg-9');
-                    container.insertBefore(successAlert, container.firstChild);
-                    
-                    // Auto-remove alert after 3 seconds
-                    setTimeout(() => {
-                        if (successAlert.parentNode) {
-                            successAlert.remove();
-                        }
-                    }, 3000);
-                }, 500);
-            }
-        }
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
 
-        // Check for order parameter in URL to show review form for specific order
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderParam = urlParams.get('order');
-        if (orderParam) {
-            showReviewForm();
-            setTimeout(() => {
-                document.getElementById('orderSelect').value = orderParam;
-            }, 100);
-        }
-    </script>
+<!-- Toast container -->
+<div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:10px;"></div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+
+/* ── Theme ── */
+function getTheme() { return document.documentElement.getAttribute('data-theme') || 'light'; }
+function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('lmp-dashboard-theme', t);
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.className = t === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+
+/* ── Mobile sidebar ── */
+function openSidebar() {
+    document.getElementById('db-sidebar').classList.add('open');
+    document.getElementById('db-overlay').classList.add('open');
+}
+function closeSidebar() {
+    document.getElementById('db-sidebar').classList.remove('open');
+    document.getElementById('db-overlay').classList.remove('open');
+}
+
+/* ── Date ── */
+function updateDate() {
+    var el = document.getElementById('current-date');
+    if (el) el.textContent = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+/* ── Toast ── */
+function showToast(type, message) {
+    var colors = { success: 'var(--db-success)', error: 'var(--db-danger)', info: 'var(--db-accent)', warning: 'var(--db-warning)' };
+    var icons  = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    var toast = document.createElement('div');
+    toast.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid var(--db-border);background:var(--db-card-bg);box-shadow:var(--db-shadow-md);font-size:13px;color:var(--db-text-primary);min-width:260px;max-width:360px;';
+    toast.innerHTML = '<i class="fas ' + (icons[type] || 'fa-info-circle') + '" style="color:' + (colors[type] || colors.info) + ';flex-shrink:0;"></i>' + message;
+    document.getElementById('toast-container').appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+    }, 4000);
+}
+
+/* ── Review form toggle ── */
+function toggleReviewForm() {
+    var wrap = document.getElementById('reviewFormWrap');
+    if (wrap.classList.contains('open')) {
+        wrap.classList.remove('open');
+    } else {
+        wrap.classList.add('open');
+        loadCompletedOrders();
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function loadCompletedOrders() {
+    var sel = document.getElementById('orderSelect');
+    if (sel.options.length > 1) return; // Already loaded
+    // Fetch completed orders from the page's data — placeholder:
+    sel.innerHTML = '<option value="">Choisir une commande…</option><option value="0">Aucune commande éligible</option>';
+    // In a real implementation, fetch from /api/orders?status=COMPLETED
+}
+
+/* ── Submit review ── */
+function submitReview(e) {
+    e.preventDefault();
+    var orderId  = document.getElementById('orderSelect').value;
+    var rating   = document.querySelector('input[name="rating"]:checked');
+    var comment  = document.getElementById('reviewComment').value.trim();
+
+    if (!orderId || !rating || !comment) {
+        showToast('warning', 'Veuillez remplir tous les champs');
+        return;
+    }
+
+    showToast('info', 'Soumission en cours…');
+    // TODO: POST to /dashboard/reviews with CSRF
+    setTimeout(function() {
+        showToast('success', 'Votre avis a été soumis et sera visible après validation.');
+        toggleReviewForm();
+        document.getElementById('reviewForm').reset();
+    }, 800);
+}
+
+/* ── Edit review ── */
+function editReview(btn) {
+    var reviewId = btn.dataset.reviewId;
+    var card = btn.closest('.db-review-card');
+    var commentBlock = card.querySelector('.db-review-comment-block');
+    var currentText  = commentBlock.textContent.trim();
+
+    var newText = prompt('Modifier votre commentaire :', currentText);
+    if (newText && newText.trim() && newText !== currentText) {
+        // TODO: PATCH /dashboard/reviews/{id}
+        commentBlock.textContent = newText.trim();
+        showToast('success', 'Avis modifié avec succès');
+    }
+}
+
+/* ── Delete review ── */
+function deleteReview(btn) {
+    var reviewId = btn.dataset.reviewId;
+    if (!confirm('Supprimer cet avis ? Cette action est irréversible.')) return;
+
+    var card = btn.closest('.db-review-card');
+    card.style.transition = 'opacity 0.3s, transform 0.3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(30px)';
+    setTimeout(function() {
+        card.remove();
+        showToast('success', 'Avis supprimé');
+        // TODO: DELETE /dashboard/reviews/{id}
+    }, 300);
+}
+
+/* ── URL param: pre-open form for a given order ── */
+function checkUrlParam() {
+    var params = new URLSearchParams(window.location.search);
+    var orderId = params.get('order');
+    if (orderId) {
+        toggleReviewForm();
+        setTimeout(function() {
+            var sel = document.getElementById('orderSelect');
+            var opt = document.createElement('option');
+            opt.value = orderId; opt.textContent = 'Commande #' + orderId; opt.selected = true;
+            sel.appendChild(opt);
+        }, 100);
+    }
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.className = getTheme() === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    updateDate();
+    checkUrlParam();
+});
+
+/*]]>*/
+</script>
 </body>
 </html>

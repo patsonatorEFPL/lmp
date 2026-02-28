@@ -3,406 +3,391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails Commande - Administration</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Commande #<span th:text="${order?.id ?: ''}"></span> - LMP Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
     <style>
-        .status-badge {
-            font-size: 0.875rem;
-            padding: 0.375rem 0.75rem;
-        }
-        .timeline {
-            position: relative;
-            padding-left: 2rem;
-        }
-        .timeline-item {
-            position: relative;
-            padding-bottom: 1.5rem;
-        }
-        .timeline-item:before {
-            content: '';
-            position: absolute;
-            left: -2rem;
-            top: 0.5rem;
-            width: 0.75rem;
-            height: 0.75rem;
-            border-radius: 50%;
-            background: #007bff;
-        }
-        .timeline-item:after {
-            content: '';
-            position: absolute;
-            left: -1.625rem;
-            top: 1.25rem;
-            width: 0.125rem;
-            height: calc(100% - 0.75rem);
-            background: #dee2e6;
-        }
-        .timeline-item:last-child:after {
-            display: none;
-        }
-        .order-card {
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-        }
-        .section-header {
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            padding: 1rem 1.5rem;
-            margin: -1.5rem -1.5rem 1.5rem -1.5rem;
-            border-radius: 0.5rem 0.5rem 0 0;
-        }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        .db-detail-row { display: flex; padding: 8px 0; border-bottom: 1px solid var(--db-border); font-size: 13px; }
+        .db-detail-row:last-child { border-bottom: none; }
+        .db-detail-label { width: 160px; flex-shrink: 0; font-weight: 600; color: var(--db-text-secondary); }
+        .db-detail-value { flex: 1; color: var(--db-text-primary); word-break: break-all; }
+        .db-detail-value.mono { font-family: 'Courier New', monospace; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div th:replace="~{fragments/navigation :: navigation}"></div>
 
-    <div class="container-fluid mt-4">
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="h3 mb-0">
-                            <i class="fas fa-file-invoice me-2"></i>
-                            Détails Commande #<span th:text="${order?.id ?: 'N/A'}">123</span>
-                        </h1>
-                        <p class="text-muted mb-0">Gestion complète de la commande</p>
-                    </div>
-                    <div class="btn-group" role="group">
-                        <a href="/admin/orders" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Retour
-                        </a>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editStatusModal">
-                            <i class="fas fa-edit me-1"></i> Modifier Statut
-                        </button>
-                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#refundModal" th:if="${canBeRefunded}">
-                            <i class="fas fa-undo me-1"></i> Remboursement
-                        </button>
-                    </div>
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root db-admin-root" id="db-root">
+
+    <!-- SIDEBAR -->
+    <div th:replace="~{admin/fragments/admin-sidebar :: sidebar(activeNav='orders')}"></div>
+
+    <!-- MAIN -->
+    <div class="db-main">
+
+        <div class="db-header">
+            <div style="display:flex;align-items:center;">
+                <button class="db-mobile-toggle" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h1 class="db-header-title" style="margin:0;">
+                        Commande #<span th:text="${order?.id ?: 'N/A'}">123</span>
+                    </h1>
+                    <div style="font-size:12px;color:var(--db-text-muted);margin-top:2px;">Détails et gestion</div>
                 </div>
+            </div>
+            <div class="db-header-controls">
+                <a th:href="@{/admin/orders}" class="db-btn">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                <button class="db-btn db-btn-accent" onclick="openModal('editStatusModal')">
+                    <i class="fas fa-edit"></i> Modifier statut
+                </button>
+                <button th:if="${canBeRefunded}" class="db-btn db-btn-warning" onclick="openModal('refundModal')">
+                    <i class="fas fa-undo"></i> Remboursement
+                </button>
+                <button class="db-btn db-theme-toggle" onclick="toggleTheme()">
+                    <i id="theme-icon" class="fas fa-moon"></i>
+                </button>
             </div>
         </div>
 
-        <!-- Alerte d'erreur -->
-        <div class="alert alert-danger" th:if="${error}">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <span th:text="${error}">Erreur</span>
-        </div>
+        <div class="db-content">
 
-        <!-- Contenu principal -->
-        <div class="row" th:if="${order}">
-            <!-- Informations principales -->
-            <div class="col-lg-8">
-                <!-- Détails de la commande -->
-                <div class="card order-card mb-4">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-shopping-cart me-2"></i>
-                                Informations de la Commande
-                            </h5>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <td class="fw-bold">ID Commande:</td>
-                                        <td th:text="${order.id}">123</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Date de création:</td>
-                                        <td th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Statut:</td>
-                                        <td>
-                                            <span class="badge status-badge" 
-                                                  th:classappend="${order.status == 'CONFIRMED' ? 'bg-success' : 
-                                                                   order.status == 'PENDING' ? 'bg-warning' : 
-                                                                   order.status == 'CANCELLED' ? 'bg-danger' : 'bg-secondary'}"
-                                                  th:text="${order.status}">PENDING</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Service:</td>
-                                        <td th:text="${order.serviceName ?: 'N/A'}">Service Premium</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div class="col-md-6">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <td class="fw-bold">Montant total:</td>
-                                        <td class="fs-5 fw-bold text-primary" th:text="${order.totalAmount + ' ' + order.currency}">150.00 EUR</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Statut paiement:</td>
-                                        <td>
-                                            <span class="badge" 
-                                                  th:classappend="${order.paymentStatus == 'succeeded' ? 'bg-success' : 
-                                                                   order.paymentStatus == 'pending' ? 'bg-warning' : 'bg-danger'}"
-                                                  th:text="${order.paymentStatus ?: 'N/A'}">succeeded</span>
-                                        </td>
-                                    </tr>
-                                    <tr th:if="${order.paidAt}">
-                                        <td class="fw-bold">Date de paiement:</td>
-                                        <td th:text="${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Priorité:</td>
-                                        <td>
-                                            <span class="badge" 
-                                                  th:classappend="${order.priority <= 3 ? 'bg-danger' : 
-                                                                   order.priority <= 7 ? 'bg-warning' : 'bg-success'}"
-                                                  th:text="${order.priority <= 3 ? 'Haute' : 
-                                                            order.priority <= 7 ? 'Moyenne' : 'Basse'}">Moyenne</span>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Informations client -->
-                <div class="card order-card mb-4">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-user me-2"></i>
-                                Informations Client
-                            </h5>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <td class="fw-bold">Email:</td>
-                                        <td th:text="${order.customerEmail ?: 'N/A'}">client@example.com</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Nom:</td>
-                                        <td th:text="${order.customerName ?: 'N/A'}">John Doe</td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div class="col-md-6">
-                                <table class="table table-borderless">
-                                    <tr th:if="${order.billingCity}">
-                                        <td class="fw-bold">Ville:</td>
-                                        <td th:text="${order.billingCity}">Montréal</td>
-                                    </tr>
-                                    <tr th:if="${order.billingCountry}">
-                                        <td class="fw-bold">Pays:</td>
-                                        <td th:text="${order.billingCountry}">Belgique</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Informations Stripe -->
-                <div class="card order-card mb-4" th:if="${order.stripeSessionId}">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <h5 class="mb-0">
-                                <i class="fab fa-stripe me-2"></i>
-                                Informations Stripe
-                            </h5>
-                        </div>
-                        
-                        <table class="table table-borderless">
-                            <tr th:if="${order.stripeSessionId}">
-                                <td class="fw-bold">Session ID:</td>
-                                <td class="font-monospace" th:text="${order.stripeSessionId}">cs_test_123...</td>
-                            </tr>
-                            <tr th:if="${order.stripePaymentIntentId}">
-                                <td class="fw-bold">Payment Intent ID:</td>
-                                <td class="font-monospace" th:text="${order.stripePaymentIntentId}">pi_test_123...</td>
-                            </tr>
-                            <tr th:if="${order.stripeCustomerId}">
-                                <td class="fw-bold">Customer ID:</td>
-                                <td class="font-monospace" th:text="${order.stripeCustomerId}">cus_123...</td>
-                            </tr>
-                            <tr th:if="${order.paymentMethod}">
-                                <td class="fw-bold">Méthode de paiement:</td>
-                                <td th:text="${order.paymentMethod}">card</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
+            <!-- Error Alert -->
+            <div th:if="${error}" class="db-alert db-alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span th:text="${error}">Erreur</span>
             </div>
 
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                <!-- Actions rapides -->
-                <div class="card order-card mb-4">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-bolt me-2"></i>
-                                Actions Rapides
-                            </h5>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary btn-sm" onclick="syncWithStripe()">
-                                <i class="fab fa-stripe me-1"></i> Synchroniser avec Stripe
-                            </button>
-                            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editNotesModal">
-                                <i class="fas fa-sticky-note me-1"></i> Modifier Notes
-                            </button>
-                            <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#editPriorityModal">
-                                <i class="fas fa-flag me-1"></i> Changer Priorité
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div th:if="${order}" style="display:grid;grid-template-columns:1fr 340px;gap:20px;">
 
-                <!-- Historique des statuts -->
-                <div class="card order-card mb-4" th:if="${history}">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-history me-2"></i>
-                                Historique des Statuts
-                            </h5>
+                <!-- Main Content -->
+                <div style="display:flex;flex-direction:column;gap:20px;">
+
+                    <!-- Order Info -->
+                    <div class="db-card">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-shopping-cart"></i> Informations commande</span>
                         </div>
-                        
-                        <div class="timeline">
-                            <div class="timeline-item" th:each="entry : ${history}">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 class="mb-1" th:text="${entry.newStatus}">CONFIRMED</h6>
-                                        <p class="text-muted mb-1" th:text="${entry.note ?: 'Changement automatique'}">Note du changement</p>
-                                        <small class="text-muted" th:text="${#temporals.format(entry.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:30</small>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+                            <div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">ID Commande</div>
+                                    <div class="db-detail-value" th:text="${order.id}">123</div>
+                                </div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Date création</div>
+                                    <div class="db-detail-value" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</div>
+                                </div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Statut</div>
+                                    <div class="db-detail-value">
+                                        <span class="db-status-badge"
+                                              th:classappend="${order.status == 'CONFIRMED' || order.status == 'DELIVERED' ? 'db-status-done' :
+                                                  order.status == 'PENDING' ? 'db-status-pending' :
+                                                  order.status == 'CANCELLED' || order.status == 'REFUNDED' ? 'db-status-cancel' : 'db-status-progress'}"
+                                              th:text="${order.status}">PENDING</span>
+                                    </div>
+                                </div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Service</div>
+                                    <div class="db-detail-value" th:text="${order.serviceName ?: 'N/A'}">Service</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Montant total</div>
+                                    <div class="db-detail-value" style="font-size:18px;font-weight:700;color:var(--db-accent);" th:text="${order.totalAmount + ' ' + order.currency}">150 CAD</div>
+                                </div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Paiement</div>
+                                    <div class="db-detail-value">
+                                        <span class="db-status-badge"
+                                              th:classappend="${order.paymentStatus == 'succeeded' ? 'db-status-done' :
+                                                  order.paymentStatus == 'pending' ? 'db-status-pending' : 'db-status-cancel'}"
+                                              th:text="${order.paymentStatus ?: 'N/A'}">succeeded</span>
+                                    </div>
+                                </div>
+                                <div class="db-detail-row" th:if="${order.paidAt}">
+                                    <div class="db-detail-label">Date paiement</div>
+                                    <div class="db-detail-value" th:text="${#temporals.format(order.paidAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</div>
+                                </div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Priorité</div>
+                                    <div class="db-detail-value">
+                                        <span class="db-status-badge"
+                                              th:classappend="${order.priority <= 3 ? 'db-status-cancel' : order.priority <= 7 ? 'db-status-pending' : 'db-status-done'}"
+                                              th:text="${order.priority <= 3 ? 'Haute' : order.priority <= 7 ? 'Moyenne' : 'Basse'}">Moyenne</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Client Info -->
+                    <div class="db-card">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-user"></i> Informations client</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+                            <div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Email</div>
+                                    <div class="db-detail-value" th:text="${order.customerEmail ?: 'N/A'}">email</div>
+                                </div>
+                                <div class="db-detail-row">
+                                    <div class="db-detail-label">Nom</div>
+                                    <div class="db-detail-value" th:text="${order.customerName ?: 'N/A'}">Nom</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="db-detail-row" th:if="${order.billingCity}">
+                                    <div class="db-detail-label">Ville</div>
+                                    <div class="db-detail-value" th:text="${order.billingCity}">Montréal</div>
+                                </div>
+                                <div class="db-detail-row" th:if="${order.billingCountry}">
+                                    <div class="db-detail-label">Pays</div>
+                                    <div class="db-detail-value" th:text="${order.billingCountry}">Canada</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stripe Info -->
+                    <div class="db-card" th:if="${order.stripeSessionId}">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fab fa-stripe"></i> Informations Stripe</span>
+                        </div>
+                        <div style="margin-top:12px;">
+                            <div class="db-detail-row" th:if="${order.stripeSessionId}">
+                                <div class="db-detail-label">Session ID</div>
+                                <div class="db-detail-value mono" th:text="${order.stripeSessionId}">cs_test_...</div>
+                            </div>
+                            <div class="db-detail-row" th:if="${order.stripePaymentIntentId}">
+                                <div class="db-detail-label">Payment Intent</div>
+                                <div class="db-detail-value mono" th:text="${order.stripePaymentIntentId}">pi_test_...</div>
+                            </div>
+                            <div class="db-detail-row" th:if="${order.stripeCustomerId}">
+                                <div class="db-detail-label">Customer ID</div>
+                                <div class="db-detail-value mono" th:text="${order.stripeCustomerId}">cus_...</div>
+                            </div>
+                            <div class="db-detail-row" th:if="${order.paymentMethod}">
+                                <div class="db-detail-label">Méthode</div>
+                                <div class="db-detail-value" th:text="${order.paymentMethod}">card</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Remboursements -->
-                <div class="card order-card" th:if="${refunds != null and #lists.size(refunds) > 0}">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-undo me-2"></i>
-                                Remboursements
-                            </h5>
+                <!-- Right Sidebar -->
+                <div style="display:flex;flex-direction:column;gap:20px;">
+
+                    <!-- Quick Actions -->
+                    <div class="db-card">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-bolt"></i> Actions rapides</span>
                         </div>
-                        
-                        <div th:each="refund : ${refunds}" class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
+                        <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
+                            <button class="db-btn db-btn-sm" onclick="syncWithStripe()" style="width:100%;justify-content:center;">
+                                <i class="fab fa-stripe-s"></i> Synchroniser Stripe
+                            </button>
+                            <button class="db-btn db-btn-sm" onclick="openModal('editNotesModal')" style="width:100%;justify-content:center;">
+                                <i class="fas fa-sticky-note"></i> Modifier Notes
+                            </button>
+                            <button class="db-btn db-btn-sm" onclick="openModal('editPriorityModal')" style="width:100%;justify-content:center;">
+                                <i class="fas fa-flag"></i> Changer Priorité
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status History -->
+                    <div class="db-card" th:if="${history}">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-history"></i> Historique</span>
+                        </div>
+                        <div class="db-timeline" style="margin-top:16px;">
+                            <div class="db-timeline-item" th:each="entry : ${history}">
+                                <div style="font-weight:600;color:var(--db-text-primary);font-size:13px;" th:text="${entry.newStatus}">CONFIRMED</div>
+                                <div class="db-timeline-text" th:text="${entry.note ?: 'Changement automatique'}">Note</div>
+                                <div class="db-timeline-date" th:text="${#temporals.format(entry.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Refunds -->
+                    <div class="db-card" th:if="${refunds != null and #lists.size(refunds) > 0}">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-undo"></i> Remboursements</span>
+                        </div>
+                        <div th:each="refund : ${refunds}" style="padding:10px 0;border-bottom:1px solid var(--db-border);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
                                 <div>
-                                    <span class="fw-bold" th:text="${refund.amount + ' ' + refund.currency}">50.00 EUR</span>
-                                    <br>
-                                    <small class="text-muted" th:text="${refund.reason}">Demande client</small>
+                                    <div style="font-weight:600;color:var(--db-text-primary);" th:text="${refund.amount + ' ' + refund.currency}">50 CAD</div>
+                                    <div style="font-size:11px;color:var(--db-text-muted);" th:text="${refund.reason}">Raison</div>
                                 </div>
-                                <span class="badge bg-info" th:text="${refund.status}">succeeded</span>
+                                <span class="db-status-badge db-status-progress" th:text="${refund.status}">succeeded</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Modals -->
-    <!-- Modal Modifier Statut -->
-    <div class="modal fade" id="editStatusModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Modifier le Statut</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="statusForm">
-                        <div class="mb-3">
-                            <label for="newStatus" class="form-label">Nouveau Statut</label>
-                            <select class="form-select" id="newStatus" required>
-                                <option th:each="status : ${statuses}" 
-                                        th:value="${status}" 
-                                        th:text="${status}"
-                                        th:selected="${status == order?.status}">PENDING</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="statusNote" class="form-label">Note (optionnel)</label>
-                            <textarea class="form-control" id="statusNote" rows="3" placeholder="Raison du changement de statut"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" onclick="updateStatus()">Modifier</button>
-                </div>
+            <!-- Responsive -->
+            <style>
+                @media (max-width: 900px) {
+                    .db-content > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+                    .db-detail-row .db-detail-label { width: 120px; }
+                }
+            </style>
+
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
+
+<!-- Edit Status Modal -->
+<div class="db-modal-overlay" id="editStatusModal">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-edit"></i> Modifier le statut</span>
+            <button class="db-modal-close" onclick="closeModal('editStatusModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-group">
+                <label class="db-form-label">Nouveau statut</label>
+                <select class="db-select" id="newStatus">
+                    <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}" th:selected="${status == order?.status}">PENDING</option>
+                </select>
+            </div>
+            <div class="db-form-group" style="margin-top:12px;">
+                <label class="db-form-label">Note (optionnel)</label>
+                <textarea class="db-textarea" id="statusNote" rows="3" placeholder="Raison du changement"></textarea>
             </div>
         </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('editStatusModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="updateStatus()">Modifier</button>
+        </div>
     </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const orderId = /*[[${order?.id}]]*/ null;
-        /*]]>*/
-        
-        function updateStatus() {
-            const newStatus = document.getElementById('newStatus').value;
-            const note = document.getElementById('statusNote').value;
-            
-            fetch(`/admin/orders/api/${orderId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `newStatus=${newStatus}&note=${encodeURIComponent(note)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Erreur lors de la mise à jour');
-            });
-        }
+<!-- Edit Notes Modal -->
+<div class="db-modal-overlay" id="editNotesModal">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-sticky-note"></i> Notes administratives</span>
+            <button class="db-modal-close" onclick="closeModal('editNotesModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-group">
+                <label class="db-form-label">Notes</label>
+                <textarea class="db-textarea" id="adminNotes" rows="5" placeholder="Notes internes…" th:text="${order?.adminNotes}"></textarea>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('editNotesModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="updateNotes()">Sauvegarder</button>
+        </div>
+    </div>
+</div>
 
-        function syncWithStripe() {
-            if (!confirm('Synchroniser cette commande avec Stripe ?')) return;
-            
-            fetch(`/admin/orders/api/${orderId}/sync-stripe`, {
-                method: 'POST'
+<!-- Edit Priority Modal -->
+<div class="db-modal-overlay" id="editPriorityModal">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-flag"></i> Changer la priorité</span>
+            <button class="db-modal-close" onclick="closeModal('editPriorityModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-group">
+                <label class="db-form-label">Priorité (1 = haute, 10 = basse)</label>
+                <input type="number" class="db-input" id="newPriority" min="1" max="10" th:value="${order?.priority ?: 5}">
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('editPriorityModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="updatePriority()">Modifier</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="db-toast" id="db-toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="db-toast-message"></span>
+</div>
+
+<th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
+
+<script th:inline="javascript">
+    var orderId = /*[[${order?.id}]]*/ null;
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function updateStatus() {
+        var status = document.getElementById('newStatus').value;
+        var note = document.getElementById('statusNote').value;
+        adminFetch('/admin/orders/api/' + orderId + '/status?newStatus=' + status + '&note=' + encodeURIComponent(note), { method: 'PUT' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) { showToast('Statut mis à jour', 'success'); setTimeout(function () { location.reload(); }, 800); }
+                else showToast(d.message, 'error');
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Synchronisation réussie');
-                    location.reload();
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
+            .catch(function () { showToast('Erreur', 'error'); });
+        closeModal('editStatusModal');
+    }
+
+    function updateNotes() {
+        adminFetch('/admin/orders/api/' + orderId + '/notes', {
+            method: 'PUT',
+            body: JSON.stringify({ notes: document.getElementById('adminNotes').value })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.success) showToast('Notes mises à jour', 'success');
+            else showToast(d.message, 'error');
+        })
+        .catch(function () { showToast('Erreur', 'error'); });
+        closeModal('editNotesModal');
+    }
+
+    function updatePriority() {
+        adminFetch('/admin/orders/api/' + orderId + '/priority?priority=' + document.getElementById('newPriority').value, { method: 'PUT' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) { showToast('Priorité mise à jour', 'success'); setTimeout(function () { location.reload(); }, 800); }
+                else showToast(d.message, 'error');
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Erreur lors de la synchronisation');
-            });
-        }
-    </script>
+            .catch(function () { showToast('Erreur', 'error'); });
+        closeModal('editPriorityModal');
+    }
+
+    function syncWithStripe() {
+        if (!confirmAction('Synchroniser avec Stripe ?')) return;
+        adminFetch('/admin/orders/api/' + orderId + '/sync-stripe', { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) { showToast('Synchronisation réussie', 'success'); setTimeout(function () { location.reload(); }, 800); }
+                else showToast(d.message, 'error');
+            })
+            .catch(function () { showToast('Erreur', 'error'); });
+    }
+</script>
+
 </body>
 </html>

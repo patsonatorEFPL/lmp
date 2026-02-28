@@ -27,9 +27,11 @@ import com.lmp.domain.entity.Order;
 import com.lmp.domain.entity.PaymentTransaction;
 import com.lmp.domain.enums.OrderStatus;
 import com.lmp.exception.ResourceNotFoundException;
+import com.lmp.domain.entity.ServiceOffer;
 import com.lmp.repository.OrderRepository;
 import com.lmp.repository.PaymentTransactionRepository;
 import com.lmp.repository.UserRepository;
+import com.lmp.service.catalog.ServiceCatalogService;
 import com.lmp.service.payment.PaymentService;
 import com.lmp.service.payment.dto.PaymentRequestDto;
 import com.lmp.service.payment.dto.PaymentResponseDto;
@@ -68,6 +70,9 @@ public class StripeCheckoutController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ServiceCatalogService serviceCatalogService;
+
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
 
@@ -96,38 +101,70 @@ public class StripeCheckoutController {
             String userEmail = (String) serviceData.get("userEmail");
             String userFirstName = (String) serviceData.get("userFirstName");
             String userLastName = (String) serviceData.get("userLastName");
+            Object offerIdObj = serviceData.get("offerId");
 
-            if (serviceName == null || serviceName.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_SERVICE_NAME",
-                        "message", "Le nom du service est requis"));
-            }
-
+            // ── Sécurisation par offerId ──
+            // Si offerId est fourni, le prix est récupéré côté serveur (mode sécurisé)
             BigDecimal amount;
-            try {
-                if (amountObj instanceof Number) {
-                    amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
-                } else if (amountObj instanceof String) {
-                    amount = new BigDecimal((String) amountObj);
-                } else {
-                    throw new IllegalArgumentException("Format de montant invalide");
+            if (offerIdObj != null) {
+                Long offerId;
+                try {
+                    if (offerIdObj instanceof Number) {
+                        offerId = ((Number) offerIdObj).longValue();
+                    } else {
+                        offerId = Long.valueOf(String.valueOf(offerIdObj));
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_OFFER_ID",
+                            "message", "ID d'offre invalide"));
                 }
-            } catch (Exception e) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_AMOUNT",
-                        "message", "Montant invalide"));
-            }
 
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_AMOUNT",
-                        "message", "Le montant doit être supérieur à 0"));
+                java.util.Optional<ServiceOffer> offerOpt = serviceCatalogService.getValidOffer(offerId);
+                if (offerOpt.isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_OFFER",
+                            "message", "L'offre demandée n'existe pas, est inactive ou a expiré"));
+                }
+
+                ServiceOffer offer = offerOpt.get();
+                amount = offer.getPrice();
+                serviceName = offer.getService().getTitle();
+                logger.info("SECURE_CHECKOUT - offerId={}, price={}, service='{}'", offerId, amount, serviceName);
+
+            } else {
+                // Legacy: accepter le montant du frontend (rétrocompatibilité)
+                logger.warn("LEGACY_CHECKOUT - Montant reçu du frontend (pas d'offerId)");
+
+                if (serviceName == null || serviceName.trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_SERVICE_NAME",
+                            "message", "Le nom du service est requis"));
+                }
+
+                try {
+                    if (amountObj instanceof Number) {
+                        amount = BigDecimal.valueOf(((Number) amountObj).doubleValue());
+                    } else if (amountObj instanceof String) {
+                        amount = new BigDecimal((String) amountObj);
+                    } else {
+                        throw new IllegalArgumentException("Format de montant invalide");
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_AMOUNT",
+                            "message", "Montant invalide"));
+                }
+
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "INVALID_AMOUNT",
+                            "message", "Le montant doit être supérieur à 0"));
+                }
             }
 
             if (currency == null || currency.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "error", "INVALID_CURRENCY",
-                        "message", "La devise est requise"));
+                currency = "CAD"; // Devise par défaut
             }
 
             Long userId;

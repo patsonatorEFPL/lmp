@@ -77,7 +77,14 @@ public class User {
     
     @Column(name = "reset_token_expiry")
     private LocalDateTime resetTokenExpiry;
-    
+
+    // OAuth2 fields
+    @Column(name = "oauth_provider")
+    private String oauthProvider; // "google", "microsoft", null for local
+
+    @Column(name = "oauth_provider_id")
+    private String oauthProviderId;
+
     // Relationships
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -336,5 +343,21 @@ public class User {
         
         // Fallback si l'email est invalide
         return "Utilisateur";
+    }
+
+    public String getOauthProvider() {
+        return oauthProvider;
+    }
+
+    public void setOauthProvider(String oauthProvider) {
+        this.oauthProvider = oauthProvider;
+    }
+
+    public String getOauthProviderId() {
+        return oauthProviderId;
+    }
+
+    public void setOauthProviderId(String oauthProviderId) {
+        this.oauthProviderId = oauthProviderId;
     }
 }

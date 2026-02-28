@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 
+import com.lmp.service.auth.CustomOAuth2UserService;
 import com.lmp.service.auth.CustomUserDetailsService;
 
 /**
@@ -33,6 +34,9 @@ public class SecurityConfig {
 
     @Autowired
     private PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler;
+
+    @Autowired(required = false)
+    private CustomOAuth2UserService customOAuth2UserService;
 
     /**
      * Configuration du filtre de sécurité HTTP.
@@ -129,6 +133,17 @@ public class SecurityConfig {
                         .successHandler(purchaseIntentAuthenticationSuccessHandler)
                         .failureUrl("/login?error=true")
                         .permitAll())
+
+                // Configuration OAuth2 Login (Google & Microsoft)
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
+                        .userInfoEndpoint(userInfo -> {
+                            if (customOAuth2UserService != null) {
+                                userInfo.userService(customOAuth2UserService);
+                            }
+                        })
+                        .defaultSuccessUrl("/", true)
+                        .failureUrl("/login?error=true"))
 
                 // Configuration de la déconnexion
                 .logout(logout -> logout

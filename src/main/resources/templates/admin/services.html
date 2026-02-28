@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Services - LMP Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        .db-services-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
+        .db-service-item { padding: 12px 16px; border: 1px solid var(--db-border); border-radius: 10px; margin-bottom: 8px; background: var(--db-card-bg); cursor: pointer; transition: all 0.15s; }
+        .db-service-item:hover { border-color: var(--db-accent); }
+        .db-service-item.active { border-color: var(--db-accent); background: var(--db-accent-light); }
+        .db-service-item-title { font-weight: 600; font-size: 13px; color: var(--db-text-primary); }
+        .db-service-item-meta { font-size: 11px; color: var(--db-text-muted); margin-top: 2px; }
+        .db-offer-card { padding: 12px 16px; border: 1px solid var(--db-border); border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .db-offer-price { font-size: 18px; font-weight: 700; color: var(--db-accent); }
+        .db-offer-original { font-size: 12px; color: var(--db-text-muted); text-decoration: line-through; margin-left: 6px; }
+        .db-benefit-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--db-text-secondary); }
+        .db-benefit-item i { color: var(--db-success); font-size: 11px; }
+        .db-cat-item { padding: 8px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--db-text-secondary); transition: all 0.15s; }
+        .db-cat-item:hover { background: var(--db-hover); color: var(--db-text-primary); }
+        .db-cat-item.active { background: var(--db-accent-light); color: var(--db-accent); font-weight: 600; }
+        @media (max-width: 900px) { .db-services-grid { grid-template-columns: 1fr !important; } }
+    </style>
+</head>
+<body>
+
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root db-admin-root" id="db-root">
+
+    <!-- SIDEBAR -->
+    <div th:replace="~{admin/fragments/admin-sidebar :: sidebar(activeNav='services')}"></div>
+
+    <!-- MAIN -->
+    <div class="db-main">
+
+        <div th:replace="~{admin/fragments/admin-header :: header(title='Services', subtitle='Gestion du catalogue de services')}"></div>
+
+        <div class="db-content">
+
+            <!-- Stat Cards -->
+            <div class="db-stat-grid-4" style="grid-template-columns:repeat(3,1fr);">
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-folder"></i> Catégories</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalCategories}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-concierge-bell"></i> Services</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalServices}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-tags"></i> Offres</span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalOffers}">0</div>
+                </div>
+            </div>
+
+            <div class="db-services-grid">
+
+                <!-- Left: Categories List -->
+                <div class="db-card" style="align-self:start;">
+                    <div class="db-card-header">
+                        <span class="db-card-title"><i class="fas fa-folder"></i> Catégories</span>
+                        <button class="db-btn db-btn-sm db-btn-accent" onclick="openModal('categoryModal'); resetCategoryForm();">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;">
+                        <div class="db-cat-item active" data-cat-id="all" onclick="filterByCategory('all', this)">
+                            <i class="fas fa-th"></i> Toutes
+                            <span style="margin-left:auto;font-size:11px;" th:text="${totalServices}">0</span>
+                        </div>
+                        <div th:each="cat : ${categories}"
+                             class="db-cat-item"
+                             th:attr="data-cat-id=${cat.id}"
+                             th:onclick="'filterByCategory(' + ${cat.id} + ', this)'">
+                            <span th:text="${cat.icon}">📁</span>
+                            <span th:text="${cat.name}">Catégorie</span>
+                            <div style="margin-left:auto;display:flex;gap:4px;">
+                                <button class="db-action-btn" style="width:22px;height:22px;font-size:10px;"
+                                        th:data-cat-id="${cat.id}"
+                                        th:data-cat-name="${cat.name}"
+                                        th:data-cat-icon="${cat.icon}"
+                                        th:data-cat-order="${cat.displayOrder}"
+                                        onclick="event.stopPropagation();editCategory(parseInt(this.dataset.catId), this.dataset.catName, this.dataset.catIcon, parseInt(this.dataset.catOrder))">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="db-action-btn db-action-btn-danger" style="width:22px;height:22px;font-size:10px;"
+                                        th:onclick="'event.stopPropagation();deleteCategory(' + ${cat.id} + ')'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Services & Offers -->
+                <div>
+                    <div class="db-card" style="margin-bottom:12px;">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-concierge-bell"></i> Services</span>
+                            <button class="db-btn db-btn-sm db-btn-accent" onclick="openModal('serviceModal'); resetServiceForm();">
+                                <i class="fas fa-plus"></i> Nouveau service
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="servicesContainer">
+                        <div th:each="service : ${services}" class="db-service-item" th:attr="data-category-id=${service.category.id}">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                                <div style="flex:1;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span th:text="${service.icon}" style="font-size:18px;">📦</span>
+                                        <div class="db-service-item-title" th:text="${service.title}">Service</div>
+                                        <span th:if="${service.featured}" class="db-status-badge db-status-progress" style="font-size:10px;">Featured</span>
+                                        <span th:unless="${service.active}" class="db-status-badge db-status-cancel" style="font-size:10px;">Inactif</span>
+                                    </div>
+                                    <div class="db-service-item-meta" th:text="${service.category.name}">Catégorie</div>
+                                </div>
+                                <div class="db-table-actions">
+                                    <button class="db-action-btn" th:onclick="'editService(' + ${service.id} + ')'" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="db-action-btn db-action-btn-accent" th:onclick="'manageOffers(' + ${service.id} + ')'" title="Offres">
+                                        <i class="fas fa-tags"></i>
+                                    </button>
+                                    <button class="db-action-btn db-action-btn-danger" th:onclick="'deleteService(' + ${service.id} + ')'" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Inline Offers -->
+                            <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">
+                                <th:block th:each="offer : ${offers}" th:if="${offer.service.id == service.id}">
+                                    <div class="db-offer-card" style="flex:1;min-width:200px;">
+                                        <div>
+                                            <div style="font-size:12px;font-weight:500;color:var(--db-text-secondary);" th:text="${offer.name}">Offre</div>
+                                            <div>
+                                                <span class="db-offer-price" th:text="${offer.price + ' €'}">0 €</span>
+                                                <span th:if="${offer.originalPrice != null}" class="db-offer-original" th:text="${offer.originalPrice + ' €'}">0 €</span>
+                                            </div>
+                                            <div style="display:flex;gap:4px;margin-top:4px;">
+                                                <span class="db-status-badge" th:classappend="${offer.active ? 'db-status-done' : 'db-status-cancel'}"
+                                                      style="font-size:9px;" th:text="${offer.active ? 'Actif' : 'Inactif'}">Actif</span>
+                                                <span th:if="${offer.isDefault}" class="db-status-badge db-status-progress" style="font-size:9px;">Défaut</span>
+                                                <span class="db-status-badge" style="font-size:9px;" th:text="${offer.durationType}">ONE_TIME</span>
+                                            </div>
+                                        </div>
+                                        <div class="db-table-actions" style="flex-direction:column;">
+                                            <button class="db-action-btn" style="width:24px;height:24px;font-size:10px;"
+                                                    th:data-offer-id="${offer.id}"
+                                                    th:data-offer-name="${offer.name}"
+                                                    th:data-offer-price="${offer.price}"
+                                                    th:data-offer-original-price="${offer.originalPrice}"
+                                                    th:data-offer-duration="${offer.durationType}"
+                                                    th:data-offer-default="${offer.isDefault}"
+                                                    th:data-offer-active="${offer.active}"
+                                                    th:data-service-id="${offer.service.id}"
+                                                    onclick="editOffer(parseInt(this.dataset.offerId), this.dataset.offerName, parseFloat(this.dataset.offerPrice), this.dataset.offerOriginalPrice !== '' ? parseFloat(this.dataset.offerOriginalPrice) : null, this.dataset.offerDuration, this.dataset.offerDefault === 'true', this.dataset.offerActive === 'true', parseInt(this.dataset.serviceId))">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="db-action-btn db-action-btn-danger" style="width:24px;height:24px;font-size:10px;"
+                                                    th:onclick="'deleteOffer(' + ${offer.id} + ')'">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </th:block>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
+
+<!-- Category Modal -->
+<div class="db-modal-overlay" id="categoryModal">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title" id="categoryModalTitle"><i class="fas fa-folder"></i> Nouvelle catégorie</span>
+            <button class="db-modal-close" onclick="closeModal('categoryModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <input type="hidden" id="catEditId" value="">
+            <div class="db-form-group">
+                <label class="db-form-label">Nom *</label>
+                <input type="text" class="db-input" id="catName" required>
+            </div>
+            <div class="db-form-row" style="margin-top:12px;">
+                <div class="db-form-group">
+                    <label class="db-form-label">Icône</label>
+                    <input type="text" class="db-input" id="catIcon" placeholder="📁" style="width:60px;">
+                </div>
+                <div class="db-form-group">
+                    <label class="db-form-label">Ordre</label>
+                    <input type="number" class="db-input" id="catOrder" value="0" min="0" style="width:80px;">
+                </div>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('categoryModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="saveCategory()"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
+    </div>
+</div>
+
+<!-- Service Modal -->
+<div class="db-modal-overlay" id="serviceModal">
+    <div class="db-modal" style="max-width:600px;">
+        <div class="db-modal-header">
+            <span class="db-modal-title" id="serviceModalTitle"><i class="fas fa-concierge-bell"></i> Nouveau service</span>
+            <button class="db-modal-close" onclick="closeModal('serviceModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <input type="hidden" id="svcEditId" value="">
+            <div class="db-form-row">
+                <div class="db-form-group" style="flex:2;">
+                    <label class="db-form-label">Titre *</label>
+                    <input type="text" class="db-input" id="svcTitle" required>
+                </div>
+                <div class="db-form-group">
+                    <label class="db-form-label">Icône</label>
+                    <input type="text" class="db-input" id="svcIcon" placeholder="📦" style="width:60px;">
+                </div>
+            </div>
+            <div class="db-form-group" style="margin-top:12px;">
+                <label class="db-form-label">Description</label>
+                <textarea class="db-textarea" id="svcDescription" rows="3"></textarea>
+            </div>
+            <div class="db-form-row" style="margin-top:12px;">
+                <div class="db-form-group" style="flex:2;">
+                    <label class="db-form-label">Catégorie *</label>
+                    <select class="db-select" id="svcCategory">
+                        <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}">Catégorie</option>
+                    </select>
+                </div>
+                <div class="db-form-group">
+                    <label class="db-form-label">Ordre</label>
+                    <input type="number" class="db-input" id="svcOrder" value="0" min="0" style="width:80px;">
+                </div>
+            </div>
+            <div class="db-form-row" style="margin-top:12px;">
+                <div class="db-form-group">
+                    <div class="db-checkbox-group">
+                        <input type="checkbox" id="svcFeatured">
+                        <label for="svcFeatured">Mis en avant</label>
+                    </div>
+                </div>
+                <div class="db-form-group">
+                    <div class="db-checkbox-group">
+                        <input type="checkbox" id="svcActive" checked>
+                        <label for="svcActive">Actif</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('serviceModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="saveService()"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
+    </div>
+</div>
+
+<!-- Offer Modal -->
+<div class="db-modal-overlay" id="offerModal">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title" id="offerModalTitle"><i class="fas fa-tags"></i> Nouvelle offre</span>
+            <button class="db-modal-close" onclick="closeModal('offerModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <input type="hidden" id="offerEditId" value="">
+            <input type="hidden" id="offerServiceId" value="">
+            <div class="db-form-group">
+                <label class="db-form-label">Nom *</label>
+                <input type="text" class="db-input" id="offerName" placeholder="Tarif Standard" required>
+            </div>
+            <div class="db-form-row" style="margin-top:12px;">
+                <div class="db-form-group">
+                    <label class="db-form-label">Prix (€) *</label>
+                    <input type="number" class="db-input" id="offerPrice" step="0.01" min="0" required>
+                </div>
+                <div class="db-form-group">
+                    <label class="db-form-label">Ancien prix (€)</label>
+                    <input type="number" class="db-input" id="offerOriginalPrice" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="db-form-row" style="margin-top:12px;">
+                <div class="db-form-group">
+                    <label class="db-form-label">Durée</label>
+                    <select class="db-select" id="offerDuration">
+                        <option value="ONE_TIME">Unique</option>
+                        <option value="MONTHLY">Mensuel</option>
+                        <option value="YEARLY">Annuel</option>
+                    </select>
+                </div>
+                <div class="db-form-group">
+                    <div class="db-checkbox-group" style="margin-top:18px;">
+                        <input type="checkbox" id="offerDefault">
+                        <label for="offerDefault">Offre par défaut</label>
+                    </div>
+                </div>
+                <div class="db-form-group">
+                    <div class="db-checkbox-group" style="margin-top:18px;">
+                        <input type="checkbox" id="offerActive" checked>
+                        <label for="offerActive">Active</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('offerModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="saveOffer()"><i class="fas fa-save"></i> Sauvegarder</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="db-toast" id="db-toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="db-toast-message"></span>
+</div>
+
+<th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
+
+<script>
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // ── Category ──
+    function resetCategoryForm() {
+        document.getElementById('catEditId').value = '';
+        document.getElementById('catName').value = '';
+        document.getElementById('catIcon').value = '📁';
+        document.getElementById('catOrder').value = '0';
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-folder"></i> Nouvelle catégorie';
+    }
+
+    function editCategory(id, name, icon, order) {
+        document.getElementById('catEditId').value = id;
+        document.getElementById('catName').value = name;
+        document.getElementById('catIcon').value = icon;
+        document.getElementById('catOrder').value = order;
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit"></i> Modifier la catégorie';
+        openModal('categoryModal');
+    }
+
+    function saveCategory() {
+        var id = document.getElementById('catEditId').value;
+        var data = {
+            name: document.getElementById('catName').value,
+            icon: document.getElementById('catIcon').value,
+            displayOrder: parseInt(document.getElementById('catOrder').value) || 0
+        };
+        var url = id ? '/admin/services/api/categories/' + id : '/admin/services/api/categories';
+        var method = id ? 'PUT' : 'POST';
+
+        adminFetch(url, { method: method, body: JSON.stringify(data) })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                showToast(d.message, d.success ? 'success' : 'error');
+                if (d.success) { closeModal('categoryModal'); setTimeout(function() { location.reload(); }, 600); }
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function deleteCategory(id) {
+        if (!confirmAction('Supprimer cette catégorie ?')) return;
+        adminFetch('/admin/services/api/categories/' + id, { method: 'DELETE' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                showToast(d.message, d.success ? 'success' : 'error');
+                if (d.success) setTimeout(function() { location.reload(); }, 600);
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    // ── Filter by category ──
+    function filterByCategory(catId, el) {
+        document.querySelectorAll('.db-cat-item').forEach(function(c) { c.classList.remove('active'); });
+        el.classList.add('active');
+        document.querySelectorAll('.db-service-item').forEach(function(s) {
+            if (catId === 'all' || s.getAttribute('data-category-id') == catId) {
+                s.style.display = '';
+            } else {
+                s.style.display = 'none';
+            }
+        });
+    }
+
+    // ── Service ──
+    function resetServiceForm() {
+        document.getElementById('svcEditId').value = '';
+        document.getElementById('svcTitle').value = '';
+        document.getElementById('svcIcon').value = '📦';
+        document.getElementById('svcDescription').value = '';
+        document.getElementById('svcOrder').value = '0';
+        document.getElementById('svcFeatured').checked = false;
+        document.getElementById('svcActive').checked = true;
+        document.getElementById('serviceModalTitle').innerHTML = '<i class="fas fa-concierge-bell"></i> Nouveau service';
+    }
+
+    function editService(id) {
+        fetch('/admin/services/api/services/' + id)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var s = data.service;
+                document.getElementById('svcEditId').value = s.id;
+                document.getElementById('svcTitle').value = s.title;
+                document.getElementById('svcIcon').value = s.icon;
+                document.getElementById('svcDescription').value = s.description;
+                document.getElementById('svcCategory').value = s.categoryId;
+                document.getElementById('svcOrder').value = s.displayOrder;
+                document.getElementById('svcFeatured').checked = s.featured;
+                document.getElementById('svcActive').checked = s.active;
+                document.getElementById('serviceModalTitle').innerHTML = '<i class="fas fa-edit"></i> Modifier le service';
+                openModal('serviceModal');
+            })
+            .catch(function() { showToast('Erreur chargement service', 'error'); });
+    }
+
+    function saveService() {
+        var id = document.getElementById('svcEditId').value;
+        var data = {
+            title: document.getElementById('svcTitle').value,
+            icon: document.getElementById('svcIcon').value,
+            description: document.getElementById('svcDescription').value,
+            categoryId: parseInt(document.getElementById('svcCategory').value),
+            displayOrder: parseInt(document.getElementById('svcOrder').value) || 0,
+            featured: document.getElementById('svcFeatured').checked,
+            active: document.getElementById('svcActive').checked
+        };
+        var url = id ? '/admin/services/api/services/' + id : '/admin/services/api/services';
+        var method = id ? 'PUT' : 'POST';
+
+        adminFetch(url, { method: method, body: JSON.stringify(data) })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                showToast(d.message, d.success ? 'success' : 'error');
+                if (d.success) { closeModal('serviceModal'); setTimeout(function() { location.reload(); }, 600); }
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function deleteService(id) {
+        if (!confirmAction('Supprimer ce service et ses offres ?')) return;
+        adminFetch('/admin/services/api/services/' + id, { method: 'DELETE' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                showToast(d.message, d.success ? 'success' : 'error');
+                if (d.success) setTimeout(function() { location.reload(); }, 600);
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    // ── Offers ──
+    function manageOffers(serviceId) {
+        document.getElementById('offerEditId').value = '';
+        document.getElementById('offerServiceId').value = serviceId;
+        document.getElementById('offerName').value = 'Tarif Standard';
+        document.getElementById('offerPrice').value = '';
+        document.getElementById('offerOriginalPrice').value = '';
+        document.getElementById('offerDuration').value = 'ONE_TIME';
+        document.getElementById('offerDefault').checked = false;
+        document.getElementById('offerActive').checked = true;
+        document.getElementById('offerModalTitle').innerHTML = '<i class="fas fa-tags"></i> Nouvelle offre';
+        openModal('offerModal');
+    }
+
+    function editOffer(id, name, price, originalPrice, durationType, isDefault, active, serviceId) {
+        document.getElementById('offerEditId').value = id;
+        document.getElementById('offerServiceId').value = serviceId;
+        document.getElementById('offerName').value = name;
+        document.getElementById('offerPrice').value = price;
+        document.getElementById('offerOriginalPrice').value = (originalPrice && originalPrice !== 'null') ? originalPrice : '';
+        document.getElementById('offerDuration').value = durationType;
+        document.getElementById('offerDefault').checked = isDefault;
+        document.getElementById('offerActive').checked = active;
+        document.getElementById('offerModalTitle').innerHTML = '<i class="fas fa-edit"></i> Modifier l\'offre';
+        openModal('offerModal');
+    }
+
+    function saveOffer() {
+        var id = document.getElementById('offerEditId').value;
+        var data = {
+            serviceId: parseInt(document.getElementById('offerServiceId').value),
+            name: document.getElementById('offerName').value,
+            price: parseFloat(document.getElementById('offerPrice').value),
+            originalPrice: document.getElementById('offerOriginalPrice').value || null,
+            durationType: document.getElementById('offerDuration').value,
+            isDefault: document.getElementById('offerDefault').checked,
+            active: document.getElementById('offerActive').checked
+        };
+        var url = id ? '/admin/services/api/offers/' + id : '/admin/services/api/offers';
+        var method = id ? 'PUT' : 'POST';
+
+        adminFetch(url, { method: method, body: JSON.stringify(data) })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                showToast(d.message, d.success ? 'success' : 'error');
+                if (d.success) { closeModal('offerModal'); setTimeout(function() { location.reload(); }, 600); }
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function deleteOffer(id) {
+        if (!confirmAction('Supprimer cette offre ?')) return;
+        adminFetch('/admin/services/api/offers/' + id, { method: 'DELETE' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                showToast(d.message, d.success ? 'success' : 'error');
+                if (d.success) setTimeout(function() { location.reload(); }, 600);
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+</script>
+
+</body>
+</html>

@@ -3,942 +3,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Commandes - Administration</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- DataTables CSS -->
-    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <!-- Chart.js CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Commandes - LMP Admin</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
     <style>
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-        }
-        .priority-high { border-left: 4px solid #dc3545; }
-        .priority-medium { border-left: 4px solid #ffc107; }
-        .priority-low { border-left: 4px solid #198754; }
-        .order-card {
-            transition: all 0.3s ease;
-            border: 1px solid #dee2e6;
-        }
-        .order-card:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-        .search-filters {
-            background: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-        }
-        .action-buttons .btn {
-            margin-right: 0.25rem;
-            margin-bottom: 0.25rem;
-        }
-        .table-actions {
-            white-space: nowrap;
-        }
-        .filter-tag {
-            background: #e9ecef;
-            border-radius: 1rem;
-            padding: 0.25rem 0.75rem;
-            margin: 0.125rem;
-            display: inline-block;
-            font-size: 0.875rem;
-        }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
     </style>
 </head>
 <body>
-    <div th:replace="~{fragments/navigation :: navigation}"></div>
 
-    <div class="container-fluid mt-4">
-        <!-- Page Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1 class="h3 mb-0">
-                            <i class="fas fa-shopping-cart me-2"></i>
-                            Gestion des Commandes
-                        </h1>
-                        <p class="text-muted mb-0">Administration complète des commandes clients</p>
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root db-admin-root" id="db-root">
+
+    <!-- SIDEBAR -->
+    <div th:replace="~{admin/fragments/admin-sidebar :: sidebar(activeNav='orders')}"></div>
+
+    <!-- MAIN -->
+    <div class="db-main">
+
+        <div th:replace="~{admin/fragments/admin-header :: header(title='Commandes', subtitle='Gestion des commandes clients')}"></div>
+
+        <div class="db-content">
+
+            <!-- Stat Cards -->
+            <div class="db-stat-grid-4">
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-shopping-cart"></i> Total</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-accent-light);color:var(--db-accent);">
+                            <i class="fas fa-shopping-cart"></i>
+                        </span>
                     </div>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary" id="refreshBtn">
-                            <i class="fas fa-sync me-1"></i> Actualiser
+                    <div class="db-stat-value" id="totalOrdersCount" th:text="${totalOrders ?: 0}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-exclamation-triangle"></i> Attention requise</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" id="needsAttentionCount" th:text="${#lists.size(needsAttention) ?: 0}">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-calendar-day"></i> Aujourd'hui</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-success-light);color:var(--db-success);">
+                            <i class="fas fa-calendar-day"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" id="todayOrdersCount">0</div>
+                </div>
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-dollar-sign"></i> CA du mois</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
+                            <i class="fas fa-dollar-sign"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" id="monthlyRevenue">0 $</div>
+                </div>
+            </div>
+
+            <!-- Attention Alert -->
+            <div class="db-alert db-alert-warning" th:if="${needsAttention != null and #lists.size(needsAttention) > 0}">
+                <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px;"></i>
+                <div style="flex:1;">
+                    <strong th:text="${#lists.size(needsAttention)}">0</strong> commande(s) nécessitent votre attention.
+                    <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+                        <a th:each="order : ${needsAttention}"
+                           th:href="@{/admin/orders/{id}(id=${order.id})}"
+                           class="db-btn db-btn-sm" style="font-size:11px;">
+                            #<span th:text="${order.id}">0</span> — <span th:text="${order.customerEmail}">email</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Filters -->
+            <div class="db-card">
+                <div class="db-card-header" style="margin-bottom:12px;">
+                    <span class="db-card-title"><i class="fas fa-filter"></i> Filtres de recherche</span>
+                    <div class="db-card-actions">
+                        <button class="db-btn db-btn-sm" id="refreshBtn" onclick="loadOrdersData()">
+                            <i class="fas fa-sync"></i> Actualiser
                         </button>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
-                            <i class="fas fa-download me-1"></i> Exporter
-                        </button>
-                        <button type="button" class="btn btn-success" onclick="window.location.href='/admin/orders/reports'">
-                            <i class="fas fa-chart-bar me-1"></i> Rapports
+                        <button class="db-btn db-btn-sm db-btn-accent" onclick="openModal('exportModal')">
+                            <i class="fas fa-download"></i> Exporter
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Quick Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card stats-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-subtitle mb-2">Total Commandes</h6>
-                                <h4 class="card-title mb-0" id="totalOrdersCount" th:text="${totalOrders ?: 0}">0</h4>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-shopping-cart fa-2x opacity-75"></i>
-                            </div>
+                <form id="searchForm">
+                    <div class="db-filter-bar">
+                        <div class="db-filter-group" style="flex:1;min-width:180px;">
+                            <label>Recherche</label>
+                            <input type="text" class="db-filter-input" id="searchTerm" name="searchTerm" placeholder="ID, email, service…">
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-subtitle mb-2">Attention Requise</h6>
-                                <h4 class="card-title mb-0" id="needsAttentionCount" th:text="${#lists.size(needsAttention) ?: 0}">0</h4>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-subtitle mb-2">Aujourd'hui</h6>
-                                <h4 class="card-title mb-0" id="todayOrdersCount">0</h4>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-calendar-day fa-2x opacity-75"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-subtitle mb-2">CA du Mois</h6>
-                                <h4 class="card-title mb-0" id="monthlyRevenue">0 €</h4>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-euro-sign fa-2x opacity-75"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Commandes nécessitant une attention -->
-        <div class="row mb-4" th:if="${needsAttention != null and #lists.size(needsAttention) > 0}">
-            <div class="col-12">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Commandes nécessitant une attention
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row" th:each="order : ${needsAttention}">
-                            <div class="col-12 mb-2">
-                                <div class="alert alert-warning d-flex justify-content-between align-items-center mb-1">
-                                    <div>
-                                        <strong>Commande #<span th:text="${order.id}">123</span></strong>
-                                        - <span th:text="${order.customerEmail}">client@example.com</span>
-                                        - <span th:text="${order.serviceName}">Service</span>
-                                        <span class="badge bg-secondary ms-2" th:text="${order.status}">PENDING</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted me-3" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</span>
-                                        <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> Voir
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filtres de recherche -->
-        <div class="search-filters">
-            <form id="searchForm">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="searchTerm" class="form-label">Recherche globale</label>
-                        <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
-                               placeholder="ID, email, service...">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="statusFilter" class="form-label">Statut</label>
-                        <select class="form-select" id="statusFilter" name="status">
-                            <option value="">Tous les statuts</option>
-                            <option th:each="status : ${statuses}" 
-                                    th:value="${status}" 
-                                    th:text="${status}">PENDING</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="dateStart" class="form-label">Date début</label>
-                        <input type="date" class="form-control" id="dateStart" name="startDate">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="dateEnd" class="form-label">Date fin</label>
-                        <input type="date" class="form-control" id="dateEnd" name="endDate">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="customerEmail" class="form-label">Email client</label>
-                        <input type="email" class="form-control" id="customerEmail" name="customerEmail" 
-                               placeholder="client@example.com">
-                    </div>
-                </div>
-                <div class="row g-3 mt-1">
-                    <div class="col-md-2">
-                        <label for="minAmount" class="form-label">Montant min</label>
-                        <input type="number" class="form-control" id="minAmount" name="minAmount" 
-                               placeholder="0.00" step="0.01">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="maxAmount" class="form-label">Montant max</label>
-                        <input type="number" class="form-control" id="maxAmount" name="maxAmount" 
-                               placeholder="1000.00" step="0.01">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="serviceName" class="form-label">Service</label>
-                        <input type="text" class="form-control" id="serviceName" name="serviceName" 
-                               placeholder="Nom du service">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="paymentStatus" class="form-label">Paiement</label>
-                        <select class="form-select" id="paymentStatus" name="paymentStatus">
-                            <option value="">Tous</option>
-                            <option value="succeeded">Réussi</option>
-                            <option value="pending">En attente</option>
-                            <option value="failed">Échoué</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="hasRefunds" class="form-label">Remboursements</label>
-                        <select class="form-select" id="hasRefunds" name="hasRefunds">
-                            <option value="">Tous</option>
-                            <option value="true">Avec remboursement</option>
-                            <option value="false">Sans remboursement</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="btn-group w-100">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search"></i> Rechercher
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="clearFilters">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Filtres actifs -->
-            <div id="activeFilters" class="mt-3" style="display: none;">
-                <small class="text-muted">Filtres actifs:</small>
-                <div id="filterTags" class="mt-1"></div>
-            </div>
-        </div>
-
-        <!-- Actions en lot -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Actions en lot</h6>
-                                <small class="text-muted">Sélectionnez des commandes pour effectuer des actions groupées</small>
-                            </div>
-                            <div class="btn-group" id="bulkActions" style="display: none;">
-                                <button class="btn btn-sm btn-outline-primary" data-action="change-status">
-                                    <i class="fas fa-edit"></i> Changer statut
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning" data-action="update-priority">
-                                    <i class="fas fa-flag"></i> Priorité
-                                </button>
-                                <button class="btn btn-sm btn-outline-info" data-action="sync-stripe">
-                                    <i class="fab fa-stripe"></i> Sync Stripe
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" data-action="cancel">
-                                    <i class="fas fa-times"></i> Annuler
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tableau des commandes -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-list me-2"></i>
-                                Liste des Commandes
-                            </h5>
-                            <div class="d-flex align-items-center">
-                                <span class="badge bg-secondary me-2" id="selectedCount">0 sélectionnée(s)</span>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-secondary" id="selectAll">
-                                        <i class="fas fa-check-square"></i> Tout sélectionner
-                                    </button>
-                                    <button class="btn btn-outline-secondary" id="selectNone">
-                                        <i class="far fa-square"></i> Désélectionner
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="ordersTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th width="40">
-                                            <input type="checkbox" id="selectAllCheckbox" class="form-check-input">
-                                        </th>
-                                        <th>ID</th>
-                                        <th>Date</th>
-                                        <th>Client</th>
-                                        <th>Service</th>
-                                        <th>Montant</th>
-                                        <th>Statut</th>
-                                        <th>Paiement</th>
-                                        <th>Priorité</th>
-                                        <th width="120">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ordersTableBody">
-                                    <!-- Contenu chargé dynamiquement via AJAX -->
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination -->
-                        <nav aria-label="Navigation commandes" class="mt-3">
-                            <ul class="pagination justify-content-center" id="pagination">
-                                <!-- Pagination générée dynamiquement -->
-                            </ul>
-                        </nav>
-
-                        <!-- Loading spinner -->
-                        <div class="text-center py-5" id="loadingSpinner" style="display: none;">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Chargement...</span>
-                            </div>
-                            <p class="text-muted mt-2">Chargement des commandes...</p>
-                        </div>
-
-                        <!-- Aucun résultat -->
-                        <div class="text-center py-5" id="noResults" style="display: none;">
-                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                            <h5>Aucune commande trouvée</h5>
-                            <p class="text-muted">Essayez de modifier vos critères de recherche</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Export -->
-    <div class="modal fade" id="exportModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Exporter les données</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="exportForm">
-                        <div class="mb-3">
-                            <label for="exportStartDate" class="form-label">Date de début</label>
-                            <input type="date" class="form-control" id="exportStartDate" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="exportEndDate" class="form-label">Date de fin</label>
-                            <input type="date" class="form-control" id="exportEndDate" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="exportFormat" class="form-label">Format</label>
-                            <select class="form-select" id="exportFormat">
-                                <option value="csv">CSV</option>
-                                <option value="excel">Excel</option>
+                        <div class="db-filter-group">
+                            <label>Statut</label>
+                            <select class="db-filter-select" id="statusFilter" name="status">
+                                <option value="">Tous</option>
+                                <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}">PENDING</option>
                             </select>
                         </div>
-                    </form>
+                        <div class="db-filter-group">
+                            <label>Date début</label>
+                            <input type="date" class="db-filter-input" id="dateStart" name="startDate">
+                        </div>
+                        <div class="db-filter-group">
+                            <label>Date fin</label>
+                            <input type="date" class="db-filter-input" id="dateEnd" name="endDate">
+                        </div>
+                        <div class="db-filter-group">
+                            <label>Email client</label>
+                            <input type="email" class="db-filter-input" id="customerEmail" name="customerEmail" placeholder="client@example.com">
+                        </div>
+                    </div>
+                    <div class="db-filter-bar" style="margin-top:10px;">
+                        <div class="db-filter-group">
+                            <label>Montant min</label>
+                            <input type="number" class="db-filter-input" id="minAmount" name="minAmount" placeholder="0" step="0.01" style="width:100px;">
+                        </div>
+                        <div class="db-filter-group">
+                            <label>Montant max</label>
+                            <input type="number" class="db-filter-input" id="maxAmount" name="maxAmount" placeholder="1000" step="0.01" style="width:100px;">
+                        </div>
+                        <div class="db-filter-group">
+                            <label>Paiement</label>
+                            <select class="db-filter-select" id="paymentStatus" name="paymentStatus">
+                                <option value="">Tous</option>
+                                <option value="succeeded">Réussi</option>
+                                <option value="pending">En attente</option>
+                                <option value="failed">Échoué</option>
+                            </select>
+                        </div>
+                        <div class="db-filter-group">
+                            <label>Remboursement</label>
+                            <select class="db-filter-select" id="hasRefunds" name="hasRefunds">
+                                <option value="">Tous</option>
+                                <option value="true">Avec</option>
+                                <option value="false">Sans</option>
+                            </select>
+                        </div>
+                        <div class="db-filter-group" style="justify-content:flex-end;">
+                            <label>&nbsp;</label>
+                            <div style="display:flex;gap:6px;">
+                                <button type="submit" class="db-btn db-btn-accent"><i class="fas fa-search"></i> Rechercher</button>
+                                <button type="button" class="db-btn" id="clearFilters" onclick="clearFilters()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Bulk Actions + Table -->
+            <div class="db-card" style="padding:0;overflow:hidden;">
+                <div style="padding:14px 20px;border-bottom:1px solid var(--db-border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                    <span class="db-card-title"><i class="fas fa-list"></i> Liste des commandes</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:12px;color:var(--db-text-muted);" id="selectedCount">0 sélectionnée(s)</span>
+                        <div id="bulkActions" style="display:none;gap:4px;" class="db-table-actions">
+                            <button class="db-action-btn db-action-btn-warning" data-action="change-status" title="Changer statut"><i class="fas fa-edit"></i></button>
+                            <button class="db-action-btn" data-action="sync-stripe" title="Sync Stripe"><i class="fab fa-stripe-s"></i></button>
+                            <button class="db-action-btn db-action-btn-danger" data-action="cancel" title="Annuler"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="startExport">
-                        <i class="fas fa-download me-1"></i> Exporter
-                    </button>
+
+                <!-- Loading -->
+                <div class="db-empty" id="loadingSpinner" style="display:none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Chargement des commandes…</p>
+                </div>
+
+                <!-- No Results -->
+                <div class="db-empty" id="noResults" style="display:none;">
+                    <i class="fas fa-search"></i>
+                    <p>Aucune commande trouvée</p>
+                </div>
+
+                <!-- Table -->
+                <div id="ordersTableWrapper" style="overflow-x:auto;">
+                    <table class="db-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;">
+                                    <input type="checkbox" class="db-table-check" id="selectAllCheckbox">
+                                </th>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th class="db-hide-tablet">Service</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th class="db-hide-tablet">Paiement</th>
+                                <th style="text-align:center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="db-pagination" id="pagination" style="padding:12px;"></div>
+            </div>
+
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
+
+<!-- Export Modal -->
+<div class="db-modal-overlay" id="exportModal">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-download"></i> Exporter les données</span>
+            <button class="db-modal-close" onclick="closeModal('exportModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-row">
+                <div class="db-form-group">
+                    <label class="db-form-label">Date de début</label>
+                    <input type="date" class="db-input" id="exportStartDate" required>
+                </div>
+                <div class="db-form-group">
+                    <label class="db-form-label">Date de fin</label>
+                    <input type="date" class="db-input" id="exportEndDate" required>
                 </div>
             </div>
+            <div class="db-form-group" style="margin-top:12px;">
+                <label class="db-form-label">Format</label>
+                <select class="db-select" id="exportFormat">
+                    <option value="csv">CSV</option>
+                    <option value="excel">Excel</option>
+                </select>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('exportModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" id="startExport" onclick="performExport()">
+                <i class="fas fa-download"></i> Exporter
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Toast notifications -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert">
-            <div class="d-flex">
-                <div class="toast-body" id="successMessage"></div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-        <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert">
-            <div class="d-flex">
-                <div class="toast-body" id="errorMessage"></div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-    </div>
+<!-- Toast -->
+<div class="db-toast" id="db-toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="db-toast-message"></span>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
 
-    <!-- Script personnalisé -->
-    <script th:inline="javascript">
-        // Configuration globale
-        const config = {
-            apiBaseUrl: '/admin/orders/api',
-            currentPage: 0,
-            pageSize: 20,
-            sortBy: 'createdAt',
-            sortDir: 'desc',
-            selectedOrders: new Set(),
-            searchParams: {}
-        };
+<script th:inline="javascript">
+    // ── Configuration ──
+    var config = {
+        apiBaseUrl: '/admin/orders/api',
+        currentPage: 0,
+        pageSize: 20,
+        sortBy: 'createdAt',
+        sortDir: 'desc',
+        selectedOrders: new Set(),
+        searchParams: {}
+    };
 
-        // Initialisation
-        $(document).ready(function() {
-            initializeEventHandlers();
-            loadOrdersData();
-            updateStatistics();
-            
-            // Auto-refresh toutes les 30 secondes
-            setInterval(function() {
-                if ($('#ordersTable').is(':visible')) {
-                    loadOrdersData();
-                }
-            }, 30000);
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('searchForm').addEventListener('submit', function (e) { e.preventDefault(); performSearch(); });
+        document.getElementById('selectAllCheckbox').addEventListener('change', toggleSelectAll);
+        document.querySelectorAll('[data-action]').forEach(function (btn) {
+            btn.addEventListener('click', function () { performBulkAction(this.getAttribute('data-action')); });
+        });
+        loadOrdersData();
+    });
+
+    // ── Load Data ──
+    function loadOrdersData() {
+        document.getElementById('loadingSpinner').style.display = '';
+        document.getElementById('ordersTableWrapper').style.display = 'none';
+        document.getElementById('noResults').style.display = 'none';
+
+        var params = new URLSearchParams({
+            page: config.currentPage,
+            size: config.pageSize,
+            sortBy: config.sortBy,
+            sortDir: config.sortDir
+        });
+        Object.keys(config.searchParams).forEach(function (k) {
+            if (config.searchParams[k]) params.append(k, config.searchParams[k]);
         });
 
-        // Gestionnaires d'événements
-        function initializeEventHandlers() {
-            // Recherche
-            $('#searchForm').on('submit', function(e) {
-                e.preventDefault();
-                performSearch();
-            });
-
-            // Clear filters
-            $('#clearFilters').on('click', clearFilters);
-
-            // Refresh
-            $('#refreshBtn').on('click', function() {
-                loadOrdersData();
-                showToast('success', 'Données actualisées');
-            });
-
-            // Selection
-            $('#selectAllCheckbox').on('change', toggleSelectAll);
-            $('#selectAll').on('click', selectAll);
-            $('#selectNone').on('click', selectNone);
-
-            // Bulk actions
-            $('[data-action]').on('click', function() {
-                const action = $(this).data('action');
-                performBulkAction(action);
-            });
-
-            // Export
-            $('#startExport').on('click', performExport);
-        }
-
-        // Chargement des données
-        function loadOrdersData() {
-            showLoading(true);
-
-            const params = {
-                page: config.currentPage,
-                size: config.pageSize,
-                sortBy: config.sortBy,
-                sortDir: config.sortDir,
-                ...config.searchParams
-            };
-
-            $.get(config.apiBaseUrl + '/search', params)
-                .done(function(data) {
-                    populateOrdersTable(data.content);
-                    updatePagination(data);
-                    showLoading(false);
-                })
-                .fail(function() {
-                    showError('Erreur lors du chargement des données');
-                    showLoading(false);
-                });
-        }
-
-        // Population du tableau
-        function populateOrdersTable(orders) {
-            const tbody = $('#ordersTableBody');
-            tbody.empty();
-
-            if (orders.length === 0) {
-                $('#noResults').show();
-                return;
-            }
-
-            $('#noResults').hide();
-
-            orders.forEach(function(order) {
-                const row = createOrderRow(order);
-                tbody.append(row);
-            });
-
-            // Réattacher les événements
-            attachRowEventHandlers();
-        }
-
-        // Création d'une ligne de commande
-        function createOrderRow(order) {
-            const statusBadge = getStatusBadge(order.status);
-            const paymentBadge = getPaymentBadge(order.paymentStatus);
-            const priorityClass = getPriorityClass(order.priority);
-
-            return `
-                <tr class="order-row ${priorityClass}" data-order-id="${order.id}">
-                    <td>
-                        <input type="checkbox" class="form-check-input order-checkbox" value="${order.id}">
-                    </td>
-                    <td>
-                        <a href="/admin/orders/${order.id}" class="fw-bold text-decoration-none">
-                            #${order.id}
-                        </a>
-                    </td>
-                    <td>
-                        <small>${formatDate(order.createdAt)}</small>
-                    </td>
-                    <td>
-                        <div>
-                            <small class="fw-semibold">${order.customerEmail || ''}</small>
-                            ${order.customerName ? `<br><small class="text-muted">${order.customerName}</small>` : ''}
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge bg-light text-dark">${order.serviceName || ''}</span>
-                    </td>
-                    <td>
-                        <span class="fw-bold">${order.amount || '0'} ${order.currency || 'EUR'}</span>
-                    </td>
-                    <td>${statusBadge}</td>
-                    <td>${paymentBadge}</td>
-                    <td>
-                        <span class="badge bg-${getPriorityColor(order.priority)}">
-                            ${getPriorityLabel(order.priority)}
-                        </span>
-                    </td>
-                    <td class="table-actions">
-                        <div class="btn-group btn-group-sm">
-                            <a href="/admin/orders/${order.id}" class="btn btn-outline-primary" title="Voir détails">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <button class="btn btn-outline-warning edit-status-btn" data-order-id="${order.id}" title="Changer statut">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-outline-info sync-stripe-btn" data-order-id="${order.id}" title="Sync Stripe">
-                                <i class="fab fa-stripe-s"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }
-
-        // Gestion des actions individuelles
-        function attachRowEventHandlers() {
-            // Checkbox selection
-            $('.order-checkbox').on('change', function() {
-                const orderId = parseInt($(this).val());
-                if ($(this).is(':checked')) {
-                    config.selectedOrders.add(orderId);
+        fetch(config.apiBaseUrl + '/search?' + params.toString())
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                populateTable(data.content || []);
+                updatePagination(data);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                if (!data.content || data.content.length === 0) {
+                    document.getElementById('noResults').style.display = '';
                 } else {
-                    config.selectedOrders.delete(orderId);
+                    document.getElementById('ordersTableWrapper').style.display = '';
                 }
+            })
+            .catch(function () {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                showToast('Erreur lors du chargement', 'error');
+            });
+    }
+
+    // ── Table population ──
+    function populateTable(orders) {
+        var tbody = document.getElementById('ordersTableBody');
+        tbody.innerHTML = '';
+        orders.forEach(function (order) {
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-order-id', order.id);
+            tr.innerHTML =
+                '<td><input type="checkbox" class="db-table-check order-checkbox" value="' + order.id + '"></td>' +
+                '<td><a href="/admin/orders/' + order.id + '" style="color:var(--db-accent);font-weight:600;text-decoration:none;">#' + order.id + '</a></td>' +
+                '<td style="font-size:12px;color:var(--db-text-muted);">' + formatDate(order.createdAt) + '</td>' +
+                '<td><div style="font-weight:500;color:var(--db-text-primary);">' + (order.customerEmail || '') + '</div>' +
+                    (order.customerName ? '<div style="font-size:11px;color:var(--db-text-muted);">' + order.customerName + '</div>' : '') + '</td>' +
+                '<td class="db-hide-tablet"><span class="db-status-badge db-status-progress" style="font-size:11px;">' + (order.serviceName || '') + '</span></td>' +
+                '<td style="font-weight:600;">' + (order.amount || '0') + ' ' + (order.currency || 'CAD') + '</td>' +
+                '<td>' + getStatusBadge(order.status) + '</td>' +
+                '<td class="db-hide-tablet">' + getPaymentBadge(order.paymentStatus) + '</td>' +
+                '<td><div class="db-table-actions" style="justify-content:center;">' +
+                    '<a href="/admin/orders/' + order.id + '" class="db-action-btn" title="Voir"><i class="fas fa-eye"></i></a>' +
+                    '<button class="db-action-btn db-action-btn-warning" onclick="syncWithStripe(' + order.id + ')" title="Sync Stripe"><i class="fab fa-stripe-s"></i></button>' +
+                '</div></td>';
+            tbody.appendChild(tr);
+        });
+        // Re-attach checkbox events
+        document.querySelectorAll('.order-checkbox').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var id = parseInt(this.value);
+                if (this.checked) config.selectedOrders.add(id);
+                else config.selectedOrders.delete(id);
                 updateSelectionUI();
             });
+        });
+    }
 
-            // Edit status
-            $('.edit-status-btn').on('click', function() {
-                const orderId = $(this).data('order-id');
-                showStatusEditModal(orderId);
-            });
+    // ── Status badges ──
+    function getStatusBadge(status) {
+        var map = { PENDING: 'db-status-pending', CONFIRMED: 'db-status-progress', PROCESSING: 'db-status-progress', SHIPPED: 'db-status-done', DELIVERED: 'db-status-done', CANCELLED: 'db-status-cancel', REFUNDED: 'db-status-cancel' };
+        var labels = { PENDING: 'En attente', CONFIRMED: 'Confirmée', PROCESSING: 'En préparation', SHIPPED: 'Expédiée', DELIVERED: 'Livrée', CANCELLED: 'Annulée', REFUNDED: 'Remboursée' };
+        return '<span class="db-status-badge ' + (map[status] || '') + '">' + (labels[status] || status || 'N/A') + '</span>';
+    }
+    function getPaymentBadge(ps) {
+        var map = { succeeded: 'db-status-done', pending: 'db-status-pending', failed: 'db-status-cancel' };
+        return '<span class="db-status-badge ' + (map[ps] || '') + '">' + (ps || 'N/A') + '</span>';
+    }
+    function formatDate(d) {
+        if (!d) return '';
+        var dt = new Date(d);
+        return dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
 
-            // Sync Stripe
-            $('.sync-stripe-btn').on('click', function() {
-                const orderId = $(this).data('order-id');
-                syncWithStripe(orderId);
-            });
-        }
-
-        // Utilitaires d'affichage
-        function getStatusBadge(status) {
-            const statusMap = {
-                'PENDING': 'warning',
-                'CONFIRMED': 'info',
-                'PROCESSING': 'primary',
-                'SHIPPED': 'success',
-                'DELIVERED': 'success',
-                'CANCELLED': 'danger',
-                'REFUNDED': 'secondary'
-            };
-            const color = statusMap[status] || 'secondary';
-            const label = getStatusLabel(status);
-            return `<span class="badge bg-${color} status-badge">${label}</span>`;
-        }
-
-        function getPaymentBadge(paymentStatus) {
-            const statusMap = {
-                'succeeded': 'success',
-                'pending': 'warning',
-                'failed': 'danger'
-            };
-            const color = statusMap[paymentStatus] || 'secondary';
-            return `<span class="badge bg-${color}">${paymentStatus || 'N/A'}</span>`;
-        }
-
-        function getStatusLabel(status) {
-            const labels = {
-                'PENDING': 'En attente',
-                'CONFIRMED': 'Confirmée',
-                'PROCESSING': 'En préparation',
-                'SHIPPED': 'Expédiée',
-                'DELIVERED': 'Livrée',
-                'CANCELLED': 'Annulée',
-                'REFUNDED': 'Remboursée'
-            };
-            return labels[status] || status;
-        }
-
-        function getPriorityClass(priority) {
-            if (priority >= 8) return 'priority-high';
-            if (priority >= 5) return 'priority-medium';
-            return 'priority-low';
-        }
-
-        function getPriorityColor(priority) {
-            if (priority >= 8) return 'danger';
-            if (priority >= 5) return 'warning';
-            return 'success';
-        }
-
-        function getPriorityLabel(priority) {
-            if (priority >= 8) return 'Haute';
-            if (priority >= 5) return 'Moyenne';
-            return 'Basse';
-        }
-
-        function formatDate(dateStr) {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
-        }
-
-        // Gestion de la recherche
-        function performSearch() {
-            config.searchParams = {
-                searchTerm: $('#searchTerm').val(),
-                status: $('#statusFilter').val(),
-                startDate: $('#dateStart').val() ? $('#dateStart').val() + 'T00:00:00' : '',
-                endDate: $('#dateEnd').val() ? $('#dateEnd').val() + 'T23:59:59' : '',
-                customerEmail: $('#customerEmail').val(),
-                minAmount: $('#minAmount').val(),
-                maxAmount: $('#maxAmount').val(),
-                serviceName: $('#serviceName').val(),
-                paymentStatus: $('#paymentStatus').val(),
-                hasRefunds: $('#hasRefunds').val()
-            };
-
-            // Nettoyer les paramètres vides
-            Object.keys(config.searchParams).forEach(key => {
-                if (!config.searchParams[key]) {
-                    delete config.searchParams[key];
-                }
-            });
-
-            config.currentPage = 0;
-            loadOrdersData();
-            updateActiveFilters();
-        }
-
-        function clearFilters() {
-            $('#searchForm')[0].reset();
-            config.searchParams = {};
-            config.currentPage = 0;
-            loadOrdersData();
-            $('#activeFilters').hide();
-        }
-
-        function updateActiveFilters() {
-            const filtersDiv = $('#activeFilters');
-            const tagsDiv = $('#filterTags');
-            
-            tagsDiv.empty();
-            
-            if (Object.keys(config.searchParams).length === 0) {
-                filtersDiv.hide();
-                return;
+    // ── Search ──
+    function performSearch() {
+        config.searchParams = {};
+        ['searchTerm', 'statusFilter', 'dateStart', 'dateEnd', 'customerEmail', 'minAmount', 'maxAmount', 'paymentStatus', 'hasRefunds'].forEach(function (id) {
+            var el = document.getElementById(id);
+            var key = el.getAttribute('name') || id;
+            if (el.value) {
+                if (id === 'dateStart') config.searchParams.startDate = el.value + 'T00:00:00';
+                else if (id === 'dateEnd') config.searchParams.endDate = el.value + 'T23:59:59';
+                else config.searchParams[key] = el.value;
             }
+        });
+        config.currentPage = 0;
+        loadOrdersData();
+    }
+    function clearFilters() {
+        document.getElementById('searchForm').reset();
+        config.searchParams = {};
+        config.currentPage = 0;
+        loadOrdersData();
+    }
 
-            Object.entries(config.searchParams).forEach(([key, value]) => {
-                if (value) {
-                    const label = getFilterLabel(key, value);
-                    const tag = $(`<span class="filter-tag">${label} <i class="fas fa-times ms-1" data-filter="${key}"></i></span>`);
-                    tagsDiv.append(tag);
-                }
-            });
+    // ── Selection ──
+    function toggleSelectAll() {
+        var checked = document.getElementById('selectAllCheckbox').checked;
+        config.selectedOrders.clear();
+        document.querySelectorAll('.order-checkbox').forEach(function (cb) {
+            cb.checked = checked;
+            if (checked) config.selectedOrders.add(parseInt(cb.value));
+        });
+        updateSelectionUI();
+    }
+    function updateSelectionUI() {
+        var c = config.selectedOrders.size;
+        document.getElementById('selectedCount').textContent = c + ' sélectionnée(s)';
+        document.getElementById('bulkActions').style.display = c > 0 ? 'flex' : 'none';
+    }
 
-            filtersDiv.show();
+    // ── Bulk actions ──
+    function performBulkAction(action) {
+        if (config.selectedOrders.size === 0) { showToast('Aucune commande sélectionnée', 'warning'); return; }
+        showToast('Action en lot: ' + action, 'info');
+    }
 
-            // Gestionnaire pour supprimer des filtres individuels
-            $('.filter-tag i').on('click', function() {
-                const filterKey = $(this).data('filter');
-                $(`[name="${filterKey}"]`).val('');
-                performSearch();
-            });
+    // ── Individual actions ──
+    function syncWithStripe(orderId) {
+        if (!confirmAction('Synchroniser cette commande avec Stripe ?')) return;
+        adminFetch(config.apiBaseUrl + '/' + orderId + '/sync-stripe', { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) { showToast('Synchronisation réussie', 'success'); loadOrdersData(); }
+                else showToast(d.message, 'error');
+            })
+            .catch(function () { showToast('Erreur lors de la synchronisation', 'error'); });
+    }
+
+    // ── Pagination ──
+    function updatePagination(data) {
+        var el = document.getElementById('pagination');
+        el.innerHTML = '';
+        if (!data || data.totalPages <= 1) return;
+        // Prev
+        el.innerHTML += '<a class="db-page-btn ' + (data.first ? 'disabled' : '') + '" onclick="goToPage(' + (data.number - 1) + ')"><i class="fas fa-chevron-left"></i></a>';
+        var start = Math.max(0, data.number - 2), end = Math.min(data.totalPages, data.number + 3);
+        for (var i = start; i < end; i++) {
+            el.innerHTML += '<a class="db-page-btn ' + (i === data.number ? 'active' : '') + '" onclick="goToPage(' + i + ')">' + (i + 1) + '</a>';
         }
+        el.innerHTML += '<a class="db-page-btn ' + (data.last ? 'disabled' : '') + '" onclick="goToPage(' + (data.number + 1) + ')"><i class="fas fa-chevron-right"></i></a>';
+    }
+    function goToPage(p) { config.currentPage = p; loadOrdersData(); }
 
-        function getFilterLabel(key, value) {
-            const labels = {
-                searchTerm: `Recherche: ${value}`,
-                status: `Statut: ${getStatusLabel(value)}`,
-                customerEmail: `Client: ${value}`,
-                serviceName: `Service: ${value}`,
-                startDate: `Depuis: ${new Date(value).toLocaleDateString('fr-FR')}`,
-                endDate: `Jusqu'à: ${new Date(value).toLocaleDateString('fr-FR')}`,
-                minAmount: `Min: ${value}€`,
-                maxAmount: `Max: ${value}€`,
-                paymentStatus: `Paiement: ${value}`,
-                hasRefunds: `Remboursements: ${value === 'true' ? 'Oui' : 'Non'}`
-            };
-            return labels[key] || `${key}: ${value}`;
-        }
+    // ── Export ──
+    function performExport() {
+        var s = document.getElementById('exportStartDate').value;
+        var e = document.getElementById('exportEndDate').value;
+        var f = document.getElementById('exportFormat').value;
+        if (!s || !e) { showToast('Sélectionnez les dates', 'error'); return; }
+        window.location.href = config.apiBaseUrl + '/export/' + f + '?startDate=' + s + 'T00:00:00&endDate=' + e + 'T23:59:59';
+        closeModal('exportModal');
+        showToast('Export en cours…', 'info');
+    }
 
-        // Gestion de la sélection
-        function toggleSelectAll() {
-            const isChecked = $('#selectAllCheckbox').is(':checked');
-            $('.order-checkbox').prop('checked', isChecked);
-            
-            config.selectedOrders.clear();
-            if (isChecked) {
-                $('.order-checkbox').each(function() {
-                    config.selectedOrders.add(parseInt($(this).val()));
-                });
-            }
-            updateSelectionUI();
-        }
+    // ── Modal helpers ──
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+</script>
 
-        function selectAll() {
-            $('#selectAllCheckbox').prop('checked', true);
-            toggleSelectAll();
-        }
-
-        function selectNone() {
-            $('#selectAllCheckbox').prop('checked', false);
-            toggleSelectAll();
-        }
-
-        function updateSelectionUI() {
-            const count = config.selectedOrders.size;
-            $('#selectedCount').text(`${count} sélectionnée(s)`);
-            
-            if (count > 0) {
-                $('#bulkActions').show();
-            } else {
-                $('#bulkActions').hide();
-            }
-        }
-
-        // Actions en lot
-        function performBulkAction(action) {
-            if (config.selectedOrders.size === 0) {
-                showToast('warning', 'Aucune commande sélectionnée');
-                return;
-            }
-
-            const orderIds = Array.from(config.selectedOrders);
-            
-            switch(action) {
-                case 'change-status':
-                    showBulkStatusModal(orderIds);
-                    break;
-                case 'sync-stripe':
-                    bulkSyncStripe(orderIds);
-                    break;
-                case 'cancel':
-                    bulkCancelOrders(orderIds);
-                    break;
-                case 'update-priority':
-                    showBulkPriorityModal(orderIds);
-                    break;
-            }
-        }
-
-        // Actions individuelles
-        function syncWithStripe(orderId) {
-            if (!confirm('Synchroniser cette commande avec Stripe ?')) return;
-
-            $.post(`${config.apiBaseUrl}/${orderId}/sync-stripe`)
-                .done(function(response) {
-                    if (response.success) {
-                        showToast('success', 'Synchronisation réussie');
-                        loadOrdersData();
-                    } else {
-                        showToast('error', response.message);
-                    }
-                })
-                .fail(function() {
-                    showToast('error', 'Erreur lors de la synchronisation');
-                });
-        }
-
-        // Pagination
-        function updatePagination(data) {
-            const pagination = $('#pagination');
-            pagination.empty();
-
-            if (data.totalPages <= 1) return;
-
-            // Bouton précédent
-            const prevDisabled = data.first ? 'disabled' : '';
-            pagination.append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" data-page="${data.number - 1}">Précédent</a>
-                </li>
-            `);
-
-            // Pages
-            const startPage = Math.max(0, data.number - 2);
-            const endPage = Math.min(data.totalPages, data.number + 3);
-
-            for (let i = startPage; i < endPage; i++) {
-                const active = i === data.number ? 'active' : '';
-                pagination.append(`
-                    <li class="page-item ${active}">
-                        <a class="page-link" href="#" data-page="${i}">${i + 1}</a>
-                    </li>
-                `);
-            }
-
-            // Bouton suivant
-            const nextDisabled = data.last ? 'disabled' : '';
-            pagination.append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" data-page="${data.number + 1}">Suivant</a>
-                </li>
-            `);
-
-            // Gestionnaire de pagination
-            $('.page-link').on('click', function(e) {
-                e.preventDefault();
-                const page = parseInt($(this).data('page'));
-                if (!isNaN(page) && page >= 0 && page < data.totalPages) {
-                    config.currentPage = page;
-                    loadOrdersData();
-                }
-            });
-        }
-
-        // Export
-        function performExport() {
-            const startDate = $('#exportStartDate').val();
-            const endDate = $('#exportEndDate').val();
-            const format = $('#exportFormat').val();
-
-            if (!startDate || !endDate) {
-                showToast('error', 'Veuillez sélectionner les dates');
-                return;
-            }
-
-            const params = {
-                startDate: startDate + 'T00:00:00',
-                endDate: endDate + 'T23:59:59'
-            };
-
-            window.location.href = `${config.apiBaseUrl}/export/${format}?` + $.param(params);
-            $('#exportModal').modal('hide');
-            showToast('success', 'Export en cours...');
-        }
-
-        // Statistiques
-        function updateStatistics() {
-            // Ici vous pouvez ajouter des appels AJAX pour mettre à jour les statistiques
-            // Pour l'instant, nous utilisons les données du serveur
-        }
-
-        // Utilitaires
-        function showLoading(show) {
-            if (show) {
-                $('#loadingSpinner').show();
-                $('#ordersTable').hide();
-            } else {
-                $('#loadingSpinner').hide();
-                $('#ordersTable').show();
-            }
-        }
-
-        function showToast(type, message) {
-            const toast = type === 'success' ? $('#successToast') : $('#errorToast');
-            const messageElement = type === 'success' ? $('#successMessage') : $('#errorMessage');
-            
-            messageElement.text(message);
-            const bsToast = new bootstrap.Toast(toast[0]);
-            bsToast.show();
-        }
-
-        function showError(message) {
-            showToast('error', message);
-        }
-    </script>
 </body>
 </html>

@@ -73,6 +73,9 @@ public class RegisterWithOrderDto {
     @Size(max = 3, message = "La devise ne peut pas dépasser 3 caractères")
     private String currency = "CAD";
 
+    // ID de l'offre pour validation côté serveur (sécurisation prix)
+    private Long offerId;
+
     // Conditions d'utilisation
     @NotNull(message = "Vous devez accepter les conditions d'utilisation")
     private Boolean acceptTerms = false;
@@ -202,6 +205,14 @@ public class RegisterWithOrderDto {
         this.acceptTerms = acceptTerms;
     }
 
+    public Long getOfferId() {
+        return offerId;
+    }
+
+    public void setOfferId(Long offerId) {
+        this.offerId = offerId;
+    }
+
     /**
      * Vérifie si les mots de passe correspondent.
      * 
@@ -246,6 +257,7 @@ public class RegisterWithOrderDto {
                 ", serviceName='" + serviceName + '\'' +
                 ", amount=" + amount +
                 ", currency='" + currency + '\'' +
+                ", offerId=" + offerId +
                 ", acceptTerms=" + acceptTerms +
                 '}';
     }

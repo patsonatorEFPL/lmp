@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--
+  Admin Sidebar Fragment
+  Usage: <div th:replace="~{admin/fragments/admin-sidebar :: sidebar(activeNav='dashboard')}"></div>
+  activeNav values: dashboard, users, orders, appointments, statistics, settings, services
+-->
+<aside th:fragment="sidebar(activeNav)" class="db-sidebar" id="db-sidebar">
+
+    <a th:href="@{/}" class="db-logo">
+        <img th:src="@{/images/Logo LMP.webp}" alt="LMP Logo" class="db-logo-icon-img">
+        <span class="db-logo-name">LMP Admin</span>
+    </a>
+
+    <div class="db-nav-section">
+        <div class="db-nav-label">Administration</div>
+        <a th:href="@{/admin/dashboard}" class="db-nav-item" th:classappend="${activeNav == 'dashboard'} ? ' active'">
+            <i class="fas fa-th-large"></i>
+            Tableau de bord
+        </a>
+        <a th:href="@{/admin/users}" class="db-nav-item" th:classappend="${activeNav == 'users'} ? ' active'">
+            <i class="fas fa-users"></i>
+            Utilisateurs
+        </a>
+        <a th:href="@{/admin/orders}" class="db-nav-item" th:classappend="${activeNav == 'orders'} ? ' active'">
+            <i class="fas fa-shopping-cart"></i>
+            Commandes
+        </a>
+        <a th:href="@{/admin/appointments}" class="db-nav-item" th:classappend="${activeNav == 'appointments'} ? ' active'">
+            <i class="fas fa-calendar-alt"></i>
+            Rendez-vous
+        </a>
+        <a th:href="@{/admin/services}" class="db-nav-item" th:classappend="${activeNav == 'services'} ? ' active'">
+            <i class="fas fa-concierge-bell"></i>
+            Services
+        </a>
+    </div>
+
+    <div class="db-nav-section">
+        <div class="db-nav-label">Analyses</div>
+        <a th:href="@{/admin/statistics}" class="db-nav-item" th:classappend="${activeNav == 'statistics'} ? ' active'">
+            <i class="fas fa-chart-bar"></i>
+            Statistiques
+        </a>
+    </div>
+
+    <div class="db-nav-section">
+        <div class="db-nav-label">Système</div>
+        <a th:href="@{/admin/settings}" class="db-nav-item" th:classappend="${activeNav == 'settings'} ? ' active'">
+            <i class="fas fa-cog"></i>
+            Paramètres
+        </a>
+    </div>
+
+    <div class="db-sidebar-bottom">
+        <a th:href="@{/profile}" class="db-sidebar-user">
+            <div class="db-sidebar-avatar"
+                 th:text="${#authentication?.name != null ? #authentication.name.substring(0,1).toUpperCase() : 'A'}">A</div>
+            <div class="db-sidebar-user-info">
+                <div class="db-sidebar-user-name">Administrateur</div>
+                <div class="db-sidebar-user-email" th:text="${#authentication?.name}">admin@lmp.ca</div>
+            </div>
+        </a>
+        <form th:action="@{/logout}" method="post">
+            <input type="hidden" name="_csrf" th:value="${_csrf?.token}"/>
+            <button type="submit" class="db-logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                Déconnexion
+            </button>
+        </form>
+    </div>
+</aside>
+
+</html>
