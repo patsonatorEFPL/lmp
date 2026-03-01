@@ -72,7 +72,6 @@ public class OrderAdminController {
     @GetMapping
     public String ordersPage(Model model) {
         logger.info("Accès à la page de gestion des commandes");
-logger.info("DEBUG - Début du chargement des données pour orders.html");
 
         // Statistiques rapides pour le dashboard
         Page<OrderDto> latestOrders = orderAdminService.getLatestOrders(0, 10);
@@ -80,8 +79,6 @@ logger.info("DEBUG - Début du chargement des données pour orders.html");
 
         model.addAttribute("latestOrders", latestOrders.getContent());
         model.addAttribute("needsAttention", needsAttention);
-logger.info("DEBUG - needsAttention.size(): {}", needsAttention != null ? needsAttention.size() : "null");
-        logger.info("DEBUG - totalOrders: {}", latestOrders.getTotalElements());
         model.addAttribute("totalOrders", latestOrders.getTotalElements());
         model.addAttribute("statuses", OrderStatus.values());
 
@@ -147,7 +144,6 @@ logger.info("DEBUG - needsAttention.size(): {}", needsAttention != null ? needsA
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
-logger.info("DEBUG - API /search appelée avec: searchTerm={}, status={}, page={}", searchTerm, status, page);
         try {
             OrderSearchDto searchDto = new OrderSearchDto();
             searchDto.setSearchTerm(searchTerm);

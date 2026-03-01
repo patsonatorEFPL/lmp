@@ -363,8 +363,10 @@
 <th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
 
 <script th:inline="javascript">
-    // ── Configuration ──
+    // ── Configuration (Thymeleaf-inlined) ──
     var defaultCurrency = /*[[${defaultCurrency}]]*/ 'EUR';
+</script>
+<script th:inline="none">
     var config = {
         apiBaseUrl: '/admin/orders/api',
         currentPage: 0,
