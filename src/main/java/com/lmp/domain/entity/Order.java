@@ -59,7 +59,7 @@ public class Order {
     // private BigDecimal amount;
     
     @Column(name = "currency", length = 3)
-    private String currency = "CAD";
+    private String currency = "EUR";
     
     // Informations Stripe étendues
     @Column(name = "stripe_payment_intent_id")

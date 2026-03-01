@@ -3,8 +3,8 @@
     // Variables globales d'authentification disponibles pour tous les scripts
     window.AUTH_INFO = {
         isAuthenticated: [[${#authentication != null}]],
-        currentUser: "[[${#authentication != null and #authentication.principal != 'anonymousUser' ? #authentication.principal.username.split('@')[0] : ''}]]",
-        userEmail: "[[${#authentication != null and #authentication.principal != 'anonymousUser' ? #authentication.principal.username : ''}]]"
+        currentUser: "[[${currentUserDisplayName != null ? currentUserDisplayName : (#authentication != null and #authentication.name != 'anonymousUser' ? #authentication.name.split('@')[0] : '')}]]",
+        userEmail: "[[${#authentication != null and #authentication.name != 'anonymousUser' ? #authentication.name : ''}]]"
     };
     
     // DEBUG: Ajouter des informations d'authentification pour diagnostiquer

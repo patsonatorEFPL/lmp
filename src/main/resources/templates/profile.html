@@ -1,1015 +1,662 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Profil - LMP</title>
-    
-    <!-- Global Styles -->
-    <div th:replace="fragments/styles :: global-styles"></div>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <meta name="description" content="Gérez vos informations personnelles et paramètres de compte LMP Services.">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+
+    <script>
+        (function () {
+            var t = localStorage.getItem('lmp-dashboard-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <style>
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+        .db-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 90; }
+        .db-overlay.open { display: block; }
+
+        .db-mobile-toggle {
+            display: none; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border: 1px solid var(--db-border);
+            border-radius: 8px; background: var(--db-card-bg); color: var(--db-text-secondary);
+            cursor: pointer; font-size: 14px; margin-right: 12px; flex-shrink: 0;
         }
-        
-        .profile-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .profile-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-            position: relative;
-        }
-        
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .profile-avatar i {
-            font-size: 3rem;
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        .avatar-upload {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: #28a745;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid white;
-        }
-        
-        .avatar-upload:hover {
-            background: #218838;
-            transform: scale(1.1);
-        }
-        
-        .avatar-upload input {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        
-        .profile-info {
-            padding: 2rem;
-        }
-        
-        .info-section {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border-left: 4px solid #667eea;
-        }
-        
-        .info-section h6 {
-            color: #667eea;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        .info-row:last-child {
-            border-bottom: none;
-        }
-        
-        .info-label {
-            font-weight: 500;
-            color: #6c757d;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .info-value {
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .info-value.empty {
-            color: #adb5bd;
-            font-style: italic;
-        }
-        
-        .edit-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border: none;
-            color: white;
-            border-radius: 25px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .edit-btn:hover {
-            background: linear-gradient(45deg, #5a6fd8, #6a3f87);
-            transform: translateY(-1px);
-            color: white;
-        }
-        
-        .edit-form {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 2rem;
-            margin: 2rem 0;
-            border: 2px solid #e9ecef;
-            display: none;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .form-control-custom {
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
-            background: white;
-        }
-        
-        .form-control-custom:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            background: white;
-        }
-        
-        .btn-save {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            border: none;
-            color: white;
-            border-radius: 25px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-save:hover {
-            background: linear-gradient(45deg, #218838, #1a9976);
-            transform: translateY(-1px);
-            color: white;
-        }
-        
-        .btn-cancel {
-            background: #6c757d;
-            border: none;
-            color: white;
-            border-radius: 25px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-cancel:hover {
-            background: #5a6268;
-            transform: translateY(-1px);
-            color: white;
-        }
-        
-        .sidebar {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .sidebar-menu li {
-            margin-bottom: 0.5rem;
-        }
-        
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            color: #495057;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            background-color: #667eea;
-            color: white;
-        }
-        
-        .sidebar-menu i {
-            margin-right: 0.75rem;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .status-badge {
-            padding: 0.375rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-verified {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status-unverified {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-active {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-        
-        .activity-timeline {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .timeline-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        .timeline-item:last-child {
-            border-bottom: none;
-        }
-        
-        .timeline-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            flex-shrink: 0;
-        }
-        
-        .timeline-icon.login {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .timeline-icon.order {
-            background: #e8f5e8;
-            color: #2e7d32;
-        }
-        
-        .timeline-icon.profile {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        
-        .timeline-content {
-            flex: 1;
-        }
-        
-        .timeline-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        
-        .timeline-time {
-            color: #6c757d;
-            font-size: 0.85rem;
-        }
-        
-        .security-section {
-            background: linear-gradient(45deg, #fff5f5, #ffe5e5);
-            border: 1px solid #fecaca;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .security-section h6 {
-            color: #dc2626;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .password-strength {
-            margin-top: 0.5rem;
-        }
-        
-        .strength-bar {
-            height: 4px;
-            border-radius: 2px;
-            overflow: hidden;
-            background: #e9ecef;
-        }
-        
-        .strength-fill {
-            height: 100%;
-            transition: all 0.3s ease;
-        }
-        
-        .strength-weak {
-            background: #dc3545;
-            width: 25%;
-        }
-        
-        .strength-medium {
-            background: #ffc107;
-            width: 50%;
-        }
-        
-        .strength-strong {
-            background: #28a745;
-            width: 100%;
-        }
-        
         @media (max-width: 768px) {
-            .profile-header {
-                padding: 1.5rem;
-            }
-            
-            .profile-avatar {
-                width: 100px;
-                height: 100px;
-            }
-            
-            .profile-avatar i {
-                font-size: 2.5rem;
-            }
-            
-            .profile-info {
-                padding: 1rem;
-            }
-            
-            .info-section {
-                padding: 1rem;
-            }
-            
-            .edit-form {
-                padding: 1rem;
-            }
-            
-            .info-row {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
+            .db-mobile-toggle { display: flex; }
+            .db-sidebar { position: fixed; left: -260px; top: 0; bottom: 0; transition: left 0.25s ease; z-index: 100; }
+            .db-sidebar.open { left: 0; }
+            .profile-grid { grid-template-columns: 1fr !important; }
+        }
+
+        /* ── Profile-specific ── */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+        }
+
+        .profile-avatar-card {
+            text-align: center;
+            padding: 32px 24px;
+        }
+        .profile-avatar {
+            width: 96px; height: 96px; border-radius: 50%;
+            background: var(--db-accent-light);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px; font-size: 36px; color: var(--db-accent);
+            border: 3px solid var(--db-accent);
+        }
+        .profile-name { font-size: 18px; font-weight: 700; color: var(--db-text-primary); margin-bottom: 4px; }
+        .profile-email { font-size: 13px; color: var(--db-text-muted); margin-bottom: 16px; }
+
+        .profile-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        }
+        .profile-badge-verified { background: var(--db-success-light); color: var(--db-success); }
+        .profile-badge-unverified { background: var(--db-warning-light); color: var(--db-warning); }
+        .profile-badge-active { background: var(--db-accent-light); color: var(--db-accent); }
+
+        .profile-quick-links { margin-top: 20px; display: flex; flex-direction: column; gap: 4px; }
+        .profile-quick-link {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 8px; font-size: 13px;
+            color: var(--db-text-secondary); text-decoration: none; transition: all 0.15s;
+        }
+        .profile-quick-link:hover { background: var(--db-accent-light); color: var(--db-accent); }
+        .profile-quick-link i { width: 18px; text-align: center; font-size: 12px; }
+
+        .info-section { margin-bottom: 20px; }
+        .info-section-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 14px; font-weight: 600; color: var(--db-accent);
+            margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--db-border);
+        }
+        .info-section-title i { font-size: 13px; }
+
+        .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid var(--db-border);
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: var(--db-text-muted); font-weight: 500;
+        }
+        .info-label i { width: 16px; text-align: center; font-size: 12px; }
+        .info-value { font-size: 13px; font-weight: 600; color: var(--db-text-primary); }
+        .info-value.empty { color: var(--db-text-muted); font-style: italic; font-weight: 400; }
+
+        /* ── Edit form ── */
+        .edit-form-panel {
+            display: none; padding: 20px;
+            background: var(--db-input-bg); border-radius: 12px;
+            border: 1px solid var(--db-border); margin-bottom: 20px;
+        }
+        .edit-form-panel.open { display: block; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        .form-label {
+            font-size: 12px; font-weight: 600; color: var(--db-text-secondary);
+            display: flex; align-items: center; gap: 4px;
+        }
+        .form-label i { font-size: 11px; }
+        .form-input {
+            padding: 8px 12px; border-radius: 8px; border: 1px solid var(--db-border);
+            background: var(--db-card-bg); color: var(--db-text-primary);
+            font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s;
+        }
+        .form-input:focus { border-color: var(--db-accent); }
+        .form-input:read-only { opacity: 0.6; cursor: not-allowed; }
+
+        .form-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+        /* ── Password modal ── */
+        .pwd-modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 200; justify-content: center; align-items: center;
+        }
+        .pwd-modal-overlay.open { display: flex; }
+        .pwd-modal {
+            background: var(--db-card-bg); border-radius: 16px; padding: 28px;
+            width: 100%; max-width: 420px; box-shadow: var(--db-shadow-md);
+        }
+        .pwd-modal h3 {
+            font-size: 16px; font-weight: 700; color: var(--db-text-primary);
+            margin: 0 0 20px; display: flex; align-items: center; gap: 8px;
+        }
+        .pwd-strength-bar { height: 4px; border-radius: 2px; background: var(--db-border); margin-top: 6px; }
+        .pwd-strength-fill { height: 100%; border-radius: 2px; transition: all 0.3s; }
+        .pwd-strength-weak { width: 25%; background: var(--db-danger); }
+        .pwd-strength-medium { width: 50%; background: var(--db-warning); }
+        .pwd-strength-strong { width: 100%; background: var(--db-success); }
+
+        .db-date-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 8px; font-size: 12px;
+            color: var(--db-text-secondary); border: 1px solid var(--db-border);
+            background: var(--db-card-bg);
         }
     </style>
 </head>
-<body class="bg-light">
-    <!-- Advanced Components -->
-    <div th:replace="fragments/dashboard-components :: interactive-modals"></div>
-    <div th:replace="fragments/dashboard-components :: toast-notifications"></div>
-    <div th:replace="fragments/dashboard-components :: loading-overlays"></div>
-    <div th:replace="fragments/dashboard-components :: component-styles"></div>
-    <div th:replace="fragments/advanced-forms :: form-components"></div>
-    <div th:replace="fragments/advanced-forms :: form-styles"></div>
-    
-    <!-- Navigation -->
-    <div th:replace="fragments/navigation :: navigation"></div>
+<body>
 
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-user me-3"></i>
-                        Mon Profil
-                    </h1>
-                    <p class="mb-0 mt-2 opacity-75">Gérez vos informations personnelles et paramètres</p>
+<div class="db-overlay" id="db-overlay" onclick="closeSidebar()"></div>
+
+<div class="db-root" id="db-root">
+
+    <!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+    <aside class="db-sidebar" id="db-sidebar">
+        <a th:href="@{/}" class="db-logo">
+            <img th:src="@{/images/Logo LMP.webp}" alt="LMP Logo" class="db-logo-icon-img">
+            <span class="db-logo-name">LMP</span>
+        </a>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Général</div>
+            <a th:href="@{/dashboard}" class="db-nav-item">
+                <i class="fas fa-th-large"></i> Tableau de bord
+            </a>
+            <a th:href="@{/dashboard/orders}" class="db-nav-item">
+                <i class="fas fa-shopping-cart"></i> Mes commandes
+            </a>
+            <a th:href="@{/services}" class="db-nav-item">
+                <i class="fas fa-concierge-bell"></i> Services
+            </a>
+            <a th:href="@{/dashboard/reviews}" class="db-nav-item">
+                <i class="fas fa-star"></i> Mes avis
+            </a>
+        </div>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Outils</div>
+            <a th:href="@{/profile}" class="db-nav-item active">
+                <i class="fas fa-user"></i> Mon profil
+            </a>
+            <a th:href="@{/dashboard/invoices}" class="db-nav-item">
+                <i class="fas fa-file-invoice"></i> Factures
+            </a>
+        </div>
+
+        <div class="db-nav-section">
+            <div class="db-nav-label">Compte</div>
+            <a th:href="@{/dashboard/settings}" class="db-nav-item">
+                <i class="fas fa-cog"></i> Paramètres
+            </a>
+        </div>
+
+        <div class="db-sidebar-bottom">
+            <a th:href="@{/profile}" class="db-sidebar-user">
+                <div class="db-sidebar-avatar"
+                     th:text="${user.displayName != null and !user.displayName.isEmpty() ? user.displayName.substring(0,1).toUpperCase() : 'U'}">U</div>
+                <div class="db-sidebar-user-info">
+                    <div class="db-sidebar-user-name" th:text="${user.displayName}">Utilisateur</div>
+                    <div class="db-sidebar-user-email" th:text="${user.email}">email@example.com</div>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <span class="badge bg-light text-dark fs-6 px-3 py-2">
-                        <i class="fas fa-calendar me-2"></i>
-                        Membre depuis <span th:text="${#temporals.format(user.registrationDate, 'MM/yyyy')}">01/2024</span>
-                    </span>
+            </a>
+            <form th:action="@{/logout}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf?.token}"/>
+                <button type="submit" class="db-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════ MAIN ═══════════════════════ -->
+    <div class="db-main">
+
+        <!-- Header -->
+        <div class="db-header">
+            <div style="display:flex;align-items:center;">
+                <button class="db-mobile-toggle" onclick="openSidebar()" aria-label="Ouvrir le menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h1 class="db-header-title" style="margin:0;">Mon profil</h1>
+                    <div style="font-size:12px;color:var(--db-text-muted);margin-top:2px;">
+                        Gérez vos informations personnelles
+                    </div>
                 </div>
+            </div>
+            <div class="db-header-controls">
+                <span class="db-date-badge">
+                    <i class="fas fa-calendar-alt"></i>
+                    Membre depuis <span th:text="${#temporals.format(user.registrationDate, 'MM/yyyy')}">01/2024</span>
+                </span>
+                <a th:href="@{/dashboard}" class="db-btn">
+                    <i class="fas fa-arrow-left"></i> Tableau de bord
+                </a>
+                <button class="db-btn db-theme-toggle" onclick="toggleTheme()" title="Changer le thème">
+                    <i id="theme-icon" class="fas fa-moon"></i>
+                </button>
             </div>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="container">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-lg-3">
-                <div class="sidebar">
-                    <div class="text-center mb-3">
-                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                            <i class="fas fa-user fs-2 text-white"></i>
-                        </div>
-                        <h5 class="mt-2 mb-1" th:text="${user.getDisplayName()}">Nom Utilisateur</h5>
-                        <small class="text-muted" th:text="${user.email}">email@example.com</small>
-                    </div>
-                    
-                    <ul class="sidebar-menu">
-                        <li><a th:href="@{/dashboard}">
-                            <i class="fas fa-tachometer-alt"></i>
-                            Tableau de bord
-                        </a></li>
-                        <li><a th:href="@{/dashboard/orders}">
-                            <i class="fas fa-shopping-cart"></i>
-                            Mes commandes
-                        </a></li>
-                        <li><a th:href="@{/dashboard/reviews}">
-                            <i class="fas fa-star"></i>
-                            Mes avis
-                        </a></li>
-                        <li><a href="#" class="active">
-                            <i class="fas fa-user"></i>
-                            Mon profil
-                        </a></li>
-                        <li><a th:href="@{/dashboard/settings}">
-                            <i class="fas fa-cog"></i>
-                            Paramètres
-                        </a></li>
-                    </ul>
-                </div>
+        <!-- Content -->
+        <div class="db-content">
+
+            <!-- Flash messages -->
+            <div th:if="${successMessage}" class="db-card" style="padding:12px 16px;border-left:4px solid var(--db-success);margin-bottom:14px;">
+                <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--db-success);">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${successMessage}">Succès</span>
+                </span>
+            </div>
+            <div th:if="${errorMessage}" class="db-card" style="padding:12px 16px;border-left:4px solid var(--db-danger);margin-bottom:14px;">
+                <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--db-danger);">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span th:text="${errorMessage}">Erreur</span>
+                </span>
             </div>
 
-            <!-- Profile Content -->
-            <div class="col-lg-9">
-                <div class="profile-container">
-                    <!-- Profile Header -->
-                    <div class="profile-header">
+            <div class="profile-grid">
+
+                <!-- ═══ Left column: Avatar card ═══ -->
+                <div>
+                    <div class="db-card profile-avatar-card">
                         <div class="profile-avatar">
-                            <i class="fas fa-user"></i>
-                            <div class="avatar-upload" title="Changer la photo de profil">
-                                <i class="fas fa-camera"></i>
-                                <input type="file" accept="image/*" onchange="handleAvatarUpload(this)">
-                            </div>
+                            <i class="fas" th:classappend="${user.getGenderIcon()}"></i>
                         </div>
-                        <h3 th:text="${user.getDisplayName()}">Jean Dupont</h3>
-                        <p class="mb-2 opacity-75" th:text="${user.email}">jean.dupont@example.com</p>
-                        <div class="d-flex justify-content-center gap-2">
-                            <span class="status-badge" 
-                                  th:classappend="${user.emailVerified} ? 'status-verified' : 'status-unverified'"
-                                  th:text="${user.emailVerified} ? 'Email vérifié' : 'Email non vérifié'">Email vérifié</span>
-                            <span class="status-badge status-active" 
-                                  th:text="${user.status.name() == 'ACTIVE'} ? 'Compte actif' : 'Compte inactif'">Compte actif</span>
+                        <div class="profile-name" th:text="${user.displayName}">Jean Dupont</div>
+                        <div class="profile-email" th:text="${user.email}">jean@example.com</div>
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                            <span class="profile-badge"
+                                  th:classappend="${user.emailVerified} ? 'profile-badge-verified' : 'profile-badge-unverified'"
+                                  th:text="${user.emailVerified} ? '✓ Email vérifié' : '⚠ Email non vérifié'">✓ Email vérifié</span>
+                            <span class="profile-badge profile-badge-active"
+                                  th:text="${user.status.name() == 'ACTIVE'} ? '● Actif' : '○ Inactif'">● Actif</span>
                         </div>
-                        <button class="btn btn-light mt-3" onclick="showProfileEdit()">
-                            <i class="fas fa-edit me-2"></i>
-                            Modifier le profil
+                        <button class="db-btn db-btn-accent" style="margin-top:16px;width:100%;" onclick="toggleEditForm()">
+                            <i class="fas fa-edit"></i> Modifier le profil
                         </button>
                     </div>
 
-                    <!-- Edit Form (Hidden by default) -->
-                    <div class="edit-form" id="editForm">
-                        <h5 class="mb-3">
-                            <i class="fas fa-edit me-2"></i>
-                            Modifier mes informations
-                        </h5>
-                        
-                        <form id="profileForm">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-user me-1"></i>
-                                            Prénom
-                                        </label>
-                                        <input type="text" class="form-control form-control-custom" 
-                                               id="firstName" th:value="${user.firstName}" placeholder="Votre prénom">
-                                    </div>
+                    <!-- Quick links -->
+                    <div class="db-card" style="padding:12px;">
+                        <div class="profile-quick-links">
+                            <a th:href="@{/dashboard/orders}" class="profile-quick-link">
+                                <i class="fas fa-shopping-cart"></i> Mes commandes
+                            </a>
+                            <a th:href="@{/dashboard/invoices}" class="profile-quick-link">
+                                <i class="fas fa-file-invoice"></i> Mes factures
+                            </a>
+                            <a th:href="@{/dashboard/reviews}" class="profile-quick-link">
+                                <i class="fas fa-star"></i> Mes avis
+                            </a>
+                            <a href="javascript:void(0)" onclick="openPasswordModal()" class="profile-quick-link">
+                                <i class="fas fa-key"></i> Changer le mot de passe
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ Right column: Info sections ═══ -->
+                <div>
+
+                    <!-- Edit Form -->
+                    <div class="db-card edit-form-panel" id="editForm">
+                        <div style="font-size:14px;font-weight:700;color:var(--db-text-primary);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-edit" style="color:var(--db-accent);"></i> Modifier mes informations
+                        </div>
+                        <form id="profileForm" method="post" th:action="@{/profile}">
+                            <input type="hidden" name="_csrf" th:value="${_csrf?.token}"/>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-user"></i> Prénom</label>
+                                    <input type="text" name="firstName" class="form-input" th:value="${user.firstName}" placeholder="Votre prénom">
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-user me-1"></i>
-                                            Nom
-                                        </label>
-                                        <input type="text" class="form-control form-control-custom" 
-                                               id="lastName" th:value="${user.lastName}" placeholder="Votre nom">
-                                    </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-user"></i> Nom</label>
+                                    <input type="text" name="lastName" class="form-input" th:value="${user.lastName}" placeholder="Votre nom">
                                 </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-envelope me-1"></i>
-                                            Email
-                                        </label>
-                                        <input type="email" class="form-control form-control-custom" 
-                                               id="email" th:value="${user.email}" readonly>
-                                        <small class="text-muted">L'email ne peut pas être modifié</small>
-                                    </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-envelope"></i> Email</label>
+                                    <input type="email" class="form-input" th:value="${user.email}" readonly>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-phone me-1"></i>
-                                            Téléphone
-                                        </label>
-                                        <input type="tel" class="form-control form-control-custom" 
-                                               id="phone" th:value="${user.phone}" placeholder="Votre numéro de téléphone">
-                                    </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-phone"></i> Téléphone</label>
+                                    <input type="tel" name="phone" class="form-input" th:value="${user.phone}" placeholder="Votre téléphone">
                                 </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-building me-1"></i>
-                                    Nom de l'entreprise
-                                </label>
-                                <input type="text" class="form-control form-control-custom" 
-                                       id="companyName" th:value="${user.companyName}" placeholder="Nom de votre entreprise (optionnel)">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-map-marker-alt me-1"></i>
-                                    Adresse
-                                </label>
-                                <input type="text" class="form-control form-control-custom" 
-                                       id="address" th:value="${user.address}" placeholder="Votre adresse">
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-city me-1"></i>
-                                            Ville
-                                        </label>
-                                        <input type="text" class="form-control form-control-custom" 
-                                               id="city" th:value="${user.city}" placeholder="Votre ville">
-                                    </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-building"></i> Entreprise</label>
+                                    <input type="text" name="companyName" class="form-input" th:value="${user.companyName}" placeholder="Optionnel">
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-mail-bulk me-1"></i>
-                                            Code postal
-                                        </label>
-                                        <input type="text" class="form-control form-control-custom" 
-                                               id="postalCode" th:value="${user.postalCode}" placeholder="Code postal">
-                                    </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-venus-mars"></i> Genre</label>
+                                    <select name="gender" class="form-input">
+                                        <option value="" th:selected="${user.gender == null}">Non spécifié</option>
+                                        <option value="MALE" th:selected="${user.gender == 'MALE'}">Homme</option>
+                                        <option value="FEMALE" th:selected="${user.gender == 'FEMALE'}">Femme</option>
+                                        <option value="OTHER" th:selected="${user.gender == 'OTHER'}">Autre</option>
+                                    </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label class="form-label">
-                                            <i class="fas fa-flag me-1"></i>
-                                            Pays
-                                        </label>
-                                        <select class="form-select form-control-custom" id="country">
-                                            <option value="BE" th:selected="${user.country == 'BE'}">Belgique</option>
-                                            <option value="FR" th:selected="${user.country == 'FR'}">France</option>
-                                            <option value="LU" th:selected="${user.country == 'LU'}">Luxembourg</option>
-                                            <option value="CH" th:selected="${user.country == 'CH'}">Suisse</option>
-                                            <option value="NL" th:selected="${user.country == 'NL'}">Pays-Bas</option>
-                                        </select>
-                                    </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label"><i class="fas fa-map-marker-alt"></i> Adresse</label>
+                                    <input type="text" name="address" class="form-input" th:value="${user.address}" placeholder="Votre adresse">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-city"></i> Ville</label>
+                                    <input type="text" name="city" class="form-input" th:value="${user.city}" placeholder="Ville">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-mail-bulk"></i> Code postal</label>
+                                    <input type="text" name="postalCode" class="form-input" th:value="${user.postalCode}" placeholder="Code postal">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-flag"></i> Pays</label>
+                                    <select name="country" class="form-input">
+                                        <option value="" th:selected="${user.country == null}">Sélectionner</option>
+                                        <option value="BE" th:selected="${user.country == 'BE'}">Belgique</option>
+                                        <option value="FR" th:selected="${user.country == 'FR'}">France</option>
+                                        <option value="LU" th:selected="${user.country == 'LU'}">Luxembourg</option>
+                                        <option value="CH" th:selected="${user.country == 'CH'}">Suisse</option>
+                                        <option value="NL" th:selected="${user.country == 'NL'}">Pays-Bas</option>
+                                        <option value="DE" th:selected="${user.country == 'DE'}">Allemagne</option>
+                                        <option value="CA" th:selected="${user.country == 'CA'}">Canada</option>
+                                    </select>
                                 </div>
                             </div>
-                            
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-save">
-                                    <i class="fas fa-save me-2"></i>
-                                    Sauvegarder
+                            <div class="form-actions">
+                                <button type="submit" class="db-btn db-btn-accent">
+                                    <i class="fas fa-save"></i> Sauvegarder
                                 </button>
-                                <button type="button" class="btn btn-cancel" onclick="toggleEditForm()">
-                                    <i class="fas fa-times me-2"></i>
-                                    Annuler
+                                <button type="button" class="db-btn" onclick="toggleEditForm()">
+                                    <i class="fas fa-times"></i> Annuler
                                 </button>
                             </div>
                         </form>
                     </div>
 
-                    <!-- Profile Info -->
-                    <div class="profile-info">
-                        <!-- Personal Information -->
+                    <!-- Personal Info -->
+                    <div class="db-card" style="padding:20px;">
                         <div class="info-section">
-                            <h6>
-                                <i class="fas fa-user"></i>
-                                Informations personnelles
-                            </h6>
+                            <div class="info-section-title"><i class="fas fa-user"></i> Informations personnelles</div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-user"></i>
-                                    Nom complet
-                                </span>
-                                <span class="info-value" th:text="${user.getDisplayName()}">Jean Dupont</span>
+                                <span class="info-label"><i class="fas fa-id-card"></i> Nom complet</span>
+                                <span class="info-value" th:text="${user.displayName}">Jean Dupont</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-envelope"></i>
-                                    Email
-                                </span>
-                                <span class="info-value" th:text="${user.email}">jean.dupont@example.com</span>
+                                <span class="info-label"><i class="fas fa-envelope"></i> Email</span>
+                                <span class="info-value" th:text="${user.email}">jean@example.com</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-phone"></i>
-                                    Téléphone
-                                </span>
-                                <span class="info-value" th:class="${user.phone == null or user.phone.isEmpty()} ? 'empty' : ''" 
-                                      th:text="${user.phone ?: 'Non renseigné'}">+1 (555) 123-4567</span>
+                                <span class="info-label"><i class="fas fa-phone"></i> Téléphone</span>
+                                <span class="info-value" th:class="${user.phone == null or user.phone.isEmpty()} ? 'empty' : ''"
+                                      th:text="${user.phone ?: 'Non renseigné'}">+1 555-123</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-building"></i>
-                                    Entreprise
-                                </span>
-                                <span class="info-value" th:class="${user.companyName == null or user.companyName.isEmpty()} ? 'empty' : ''" 
-                                      th:text="${user.companyName ?: 'Non renseigné'}">Entreprise XYZ</span>
+                                <span class="info-label"><i class="fas fa-building"></i> Entreprise</span>
+                                <span class="info-value" th:class="${user.companyName == null or user.companyName.isEmpty()} ? 'empty' : ''"
+                                      th:text="${user.companyName ?: 'Non renseigné'}">XYZ Corp</span>
                             </div>
                         </div>
 
-                        <!-- Address Information -->
                         <div class="info-section">
-                            <h6>
-                                <i class="fas fa-map-marker-alt"></i>
-                                Adresse
-                            </h6>
+                            <div class="info-section-title"><i class="fas fa-map-marker-alt"></i> Adresse</div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-home"></i>
-                                    Adresse
-                                </span>
-                                <span class="info-value" th:class="${user.address == null or user.address.isEmpty()} ? 'empty' : ''" 
+                                <span class="info-label"><i class="fas fa-home"></i> Adresse</span>
+                                <span class="info-value" th:class="${user.address == null or user.address.isEmpty()} ? 'empty' : ''"
                                       th:text="${user.address ?: 'Non renseigné'}">123 Rue Example</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-city"></i>
-                                    Ville
-                                </span>
-                                <span class="info-value" th:class="${user.city == null or user.city.isEmpty()} ? 'empty' : ''" 
+                                <span class="info-label"><i class="fas fa-city"></i> Ville</span>
+                                <span class="info-value" th:class="${user.city == null or user.city.isEmpty()} ? 'empty' : ''"
                                       th:text="${user.city ?: 'Non renseigné'}">Montréal</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-mail-bulk"></i>
-                                    Code postal
-                                </span>
-                                <span class="info-value" th:class="${user.postalCode == null or user.postalCode.isEmpty()} ? 'empty' : ''" 
+                                <span class="info-label"><i class="fas fa-mail-bulk"></i> Code postal</span>
+                                <span class="info-value" th:class="${user.postalCode == null or user.postalCode.isEmpty()} ? 'empty' : ''"
                                       th:text="${user.postalCode ?: 'Non renseigné'}">H1A 1A1</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-flag"></i>
-                                    Pays
-                                </span>
+                                <span class="info-label"><i class="fas fa-flag"></i> Pays</span>
                                 <span class="info-value" th:text="${user.country ?: 'Non renseigné'}">Belgique</span>
                             </div>
                         </div>
 
-                        <!-- Account Information -->
                         <div class="info-section">
-                            <h6>
-                                <i class="fas fa-cog"></i>
-                                Informations du compte
-                            </h6>
+                            <div class="info-section-title"><i class="fas fa-shield-alt"></i> Compte</div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-calendar"></i>
-                                    Membre depuis
-                                </span>
+                                <span class="info-label"><i class="fas fa-calendar"></i> Inscription</span>
                                 <span class="info-value" th:text="${#temporals.format(user.registrationDate, 'dd/MM/yyyy')}">01/01/2024</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                    Dernière connexion
-                                </span>
-                                <span class="info-value" th:text="${user.lastLoginDate != null ? #temporals.format(user.lastLoginDate, 'dd/MM/yyyy HH:mm') : 'Jamais'}">Aujourd'hui à 14:30</span>
+                                <span class="info-label"><i class="fas fa-sign-in-alt"></i> Dernière connexion</span>
+                                <span class="info-value" th:text="${user.lastLoginDate != null ? #temporals.format(user.lastLoginDate, 'dd/MM/yyyy HH:mm') : 'Jamais'}">Aujourd'hui</span>
                             </div>
                             <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-shield-alt"></i>
-                                    Statut du compte
-                                </span>
+                                <span class="info-label"><i class="fas fa-check-circle"></i> Email vérifié</span>
                                 <span class="info-value">
-                                    <span class="status-badge status-active" th:text="${user.status.name()}">ACTIVE</span>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">
-                                    <i class="fas fa-envelope-check"></i>
-                                    Email vérifié
-                                </span>
-                                <span class="info-value">
-                                    <span class="status-badge" 
-                                          th:classappend="${user.emailVerified} ? 'status-verified' : 'status-unverified'"
+                                    <span class="profile-badge"
+                                          th:classappend="${user.emailVerified} ? 'profile-badge-verified' : 'profile-badge-unverified'"
                                           th:text="${user.emailVerified} ? 'Oui' : 'Non'">Oui</span>
                                 </span>
                             </div>
-                        </div>
-
-                        <!-- Activity Timeline -->
-                        <div class="info-section">
-                            <h6>
-                                <i class="fas fa-history"></i>
-                                Activité récente
-                            </h6>
-                            <div class="activity-timeline">
-                                <div class="timeline-item">
-                                    <div class="timeline-icon login">
-                                        <i class="fas fa-sign-in-alt"></i>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-title">Connexion au compte</div>
-                                        <div class="timeline-time">Aujourd'hui à 14:30</div>
-                                    </div>
-                                </div>
-                                <div class="timeline-item">
-                                    <div class="timeline-icon order">
-                                        <i class="fas fa-shopping-cart"></i>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-title">Nouvelle commande #003</div>
-                                        <div class="timeline-time">Hier à 16:45</div>
-                                    </div>
-                                </div>
-                                <div class="timeline-item">
-                                    <div class="timeline-icon profile">
-                                        <i class="fas fa-user-edit"></i>
-                                    </div>
-                                    <div class="timeline-content">
-                                        <div class="timeline-title">Profil mis à jour</div>
-                                        <div class="timeline-time">Il y a 3 jours</div>
-                                    </div>
-                                </div>
+                            <div class="info-row">
+                                <span class="info-label"><i class="fas fa-user-shield"></i> Statut</span>
+                                <span class="info-value">
+                                    <span class="profile-badge profile-badge-active" th:text="${user.status.name()}">ACTIVE</span>
+                                </span>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Security Section -->
-                        <div class="security-section">
-                            <h6>
-                                <i class="fas fa-shield-alt"></i>
-                                Sécurité du compte
-                            </h6>
-                            <p class="mb-3">Protégez votre compte en utilisant un mot de passe fort et en activant la vérification en deux étapes.</p>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button class="btn btn-outline-danger btn-sm" onclick="showPasswordChange()">
-                                    <i class="fas fa-key me-1"></i>
-                                    Changer le mot de passe
-                                </button>
-                                <button class="btn btn-outline-warning btn-sm">
-                                    <i class="fas fa-mobile-alt me-1"></i>
-                                    Activer 2FA
-                                </button>
-                                <button class="btn btn-outline-info btn-sm">
-                                    <i class="fas fa-download me-1"></i>
-                                    Télécharger mes données
-                                </button>
-                            </div>
+                    <!-- Security Section -->
+                    <div class="db-card" style="padding:20px;border-left:4px solid var(--db-warning);">
+                        <div class="info-section-title" style="border-bottom:none;margin-bottom:8px;">
+                            <i class="fas fa-lock" style="color:var(--db-warning);"></i>
+                            <span style="color:var(--db-warning);">Sécurité du compte</span>
+                        </div>
+                        <p style="font-size:13px;color:var(--db-text-muted);margin:0 0 14px;">
+                            Protégez votre compte avec un mot de passe fort.
+                        </p>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="db-btn" onclick="openPasswordModal()">
+                                <i class="fas fa-key"></i> Changer le mot de passe
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+        </div><!-- /db-content -->
+    </div><!-- /db-main -->
+</div><!-- /db-root -->
+
+<!-- Password change modal -->
+<div class="pwd-modal-overlay" id="pwdModal">
+    <div class="pwd-modal">
+        <h3><i class="fas fa-key" style="color:var(--db-accent);"></i> Changer le mot de passe</h3>
+        <form id="passwordForm" onsubmit="submitPasswordChange(event)">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="form-group">
+                    <label class="form-label">Mot de passe actuel</label>
+                    <input type="password" id="currentPassword" class="form-input" required placeholder="Mot de passe actuel">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nouveau mot de passe</label>
+                    <input type="password" id="newPassword" class="form-input" required placeholder="Min. 8 caractères" oninput="checkPasswordStrength(this.value)">
+                    <div class="pwd-strength-bar">
+                        <div class="pwd-strength-fill" id="strengthBar"></div>
+                    </div>
+                    <span id="strengthText" style="font-size:11px;color:var(--db-text-muted);"></span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirmer le mot de passe</label>
+                    <input type="password" id="confirmPassword" class="form-input" required placeholder="Confirmez le mot de passe">
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top:20px;">
+                <button type="submit" class="db-btn db-btn-accent" id="pwdSubmitBtn">
+                    <i class="fas fa-save"></i> Modifier
+                </button>
+                <button type="button" class="db-btn" onclick="closePasswordModal()">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Espace personnel Components Scripts -->
-    <div th:replace="fragments/dashboard-components :: component-scripts"></div>
-    <div th:replace="fragments/advanced-forms :: form-scripts"></div>
-    
-    <script>
-        // Toggle edit form
-        function toggleEditForm() {
-            const editForm = document.getElementById('editForm');
-            const isVisible = editForm.style.display === 'block';
-            editForm.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                editForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+<!-- Toast container -->
+<div id="toast-container" style="position:fixed;top:20px;right:20px;z-index:300;display:flex;flex-direction:column;gap:10px;"></div>
+
+<script>
+/* ── Theme ── */
+function getTheme() { return document.documentElement.getAttribute('data-theme') || 'light'; }
+function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('lmp-dashboard-theme', t);
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.className = t === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+}
+function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+
+/* ── Mobile sidebar ── */
+function openSidebar() {
+    document.getElementById('db-sidebar').classList.add('open');
+    document.getElementById('db-overlay').classList.add('open');
+}
+function closeSidebar() {
+    document.getElementById('db-sidebar').classList.remove('open');
+    document.getElementById('db-overlay').classList.remove('open');
+}
+
+/* ── Toast ── */
+function showToast(type, message) {
+    var colors = { success: 'var(--db-success)', error: 'var(--db-danger)', info: 'var(--db-accent)' };
+    var icons  = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    var toast = document.createElement('div');
+    toast.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid var(--db-border);background:var(--db-card-bg);box-shadow:var(--db-shadow-md);font-size:13px;color:var(--db-text-primary);min-width:260px;max-width:360px;';
+    toast.innerHTML = '<i class="fas ' + (icons[type] || icons.info) + '" style="color:' + (colors[type] || colors.info) + ';flex-shrink:0;"></i>' + message;
+    document.getElementById('toast-container').appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+    }, 4000);
+}
+
+/* ── Edit form toggle ── */
+function toggleEditForm() {
+    var form = document.getElementById('editForm');
+    form.classList.toggle('open');
+    if (form.classList.contains('open')) {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+/* ── Password Modal ── */
+function openPasswordModal() {
+    document.getElementById('pwdModal').classList.add('open');
+}
+function closePasswordModal() {
+    document.getElementById('pwdModal').classList.remove('open');
+    document.getElementById('passwordForm').reset();
+    document.getElementById('strengthBar').className = 'pwd-strength-fill';
+    document.getElementById('strengthText').textContent = '';
+}
+
+function checkPasswordStrength(pwd) {
+    var strength = 0;
+    if (pwd.length >= 8) strength++;
+    if (/[a-z]/.test(pwd)) strength++;
+    if (/[A-Z]/.test(pwd)) strength++;
+    if (/[0-9]/.test(pwd)) strength++;
+    if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+
+    var bar = document.getElementById('strengthBar');
+    var text = document.getElementById('strengthText');
+    if (strength <= 2) {
+        bar.className = 'pwd-strength-fill pwd-strength-weak';
+        text.textContent = 'Faible';
+    } else if (strength <= 3) {
+        bar.className = 'pwd-strength-fill pwd-strength-medium';
+        text.textContent = 'Moyen';
+    } else {
+        bar.className = 'pwd-strength-fill pwd-strength-strong';
+        text.textContent = 'Fort';
+    }
+}
+
+function submitPasswordChange(e) {
+    e.preventDefault();
+
+    var currentPassword = document.getElementById('currentPassword').value;
+    var newPassword = document.getElementById('newPassword').value;
+    var confirmPassword = document.getElementById('confirmPassword').value;
+
+    if (newPassword !== confirmPassword) {
+        showToast('error', 'Les mots de passe ne correspondent pas.');
+        return;
+    }
+    if (newPassword.length < 8) {
+        showToast('error', 'Le mot de passe doit contenir au moins 8 caractères.');
+        return;
+    }
+
+    var btn = document.getElementById('pwdSubmitBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours…';
+    btn.disabled = true;
+
+    var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+    var headers = { 'Content-Type': 'application/json' };
+    headers[csrfHeader] = csrfToken;
+
+    fetch('/user/password/change', {
+        method: 'POST',
+        headers: headers,
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+            confirmPassword: confirmPassword
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        btn.innerHTML = '<i class="fas fa-save"></i> Modifier';
+        btn.disabled = false;
+
+        if (data.success) {
+            showToast('success', data.message || 'Mot de passe changé avec succès !');
+            closePasswordModal();
+            if (data.redirectToLogin) {
+                setTimeout(function() { window.location.href = '/login'; }, 2000);
             }
+        } else {
+            showToast('error', data.message || 'Erreur lors du changement de mot de passe.');
         }
+    })
+    .catch(function() {
+        btn.innerHTML = '<i class="fas fa-save"></i> Modifier';
+        btn.disabled = false;
+        showToast('error', 'Erreur de connexion au serveur.');
+    });
+}
 
-        // Handle profile form submission
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                phone: document.getElementById('phone').value,
-                companyName: document.getElementById('companyName').value,
-                address: document.getElementById('address').value,
-                city: document.getElementById('city').value,
-                postalCode: document.getElementById('postalCode').value,
-                country: document.getElementById('country').value
-            };
-            
-            // Simulate form submission
-            console.log('Updating profile:', formData);
-            
-            // Show success message
-            const successAlert = document.createElement('div');
-            successAlert.className = 'alert alert-success alert-dismissible fade show';
-            successAlert.innerHTML = `
-                <i class="fas fa-check-circle me-2"></i>
-                Profil mis à jour avec succès !
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const container = document.querySelector('.container .row .col-lg-9');
-            container.insertBefore(successAlert, container.firstChild);
-            
-            toggleEditForm();
-            
-            // Auto-remove alert after 5 seconds
-            setTimeout(() => {
-                if (successAlert.parentNode) {
-                    successAlert.remove();
-                }
-            }, 5000);
-        });
-
-        // Handle avatar upload
-        function handleAvatarUpload(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    // In a real implementation, you would upload the file to the server
-                    console.log('Avatar uploaded:', e.target.result);
-                    
-                    // Show success message
-                    const successAlert = document.createElement('div');
-                    successAlert.className = 'alert alert-success alert-dismissible fade show';
-                    successAlert.innerHTML = `
-                        <i class="fas fa-check-circle me-2"></i>
-                        Photo de profil mise à jour avec succès !
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    
-                    const container = document.querySelector('.container .row .col-lg-9');
-                    container.insertBefore(successAlert, container.firstChild);
-                    
-                    // Auto-remove alert after 3 seconds
-                    setTimeout(() => {
-                        if (successAlert.parentNode) {
-                            successAlert.remove();
-                        }
-                    }, 3000);
-                };
-                
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // Change password function
-        function changePassword() {
-            const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
-            modal.show();
-        }
-
-        // Password strength checker
-        document.getElementById('newPassword').addEventListener('input', function() {
-            const password = this.value;
-            const strengthBar = document.getElementById('strengthBar');
-            const strengthText = document.getElementById('strengthText');
-            
-            let strength = 0;
-            let text = '';
-            let className = '';
-            
-            if (password.length >= 8) strength++;
-            if (/[a-z]/.test(password)) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-            
-            if (strength <= 2) {
-                text = 'Mot de passe faible';
-                className = 'strength-weak';
-            } else if (strength <= 3) {
-                text = 'Mot de passe moyen';
-                className = 'strength-medium';
-            } else {
-                text = 'Mot de passe fort';
-                className = 'strength-strong';
-            }
-            
-            strengthBar.className = 'strength-fill ' + className;
-            strengthText.textContent = text;
-        });
-
-        // Update password
-        function updatePassword() {
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                alert('Veuillez remplir tous les champs.');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                alert('Les mots de passe ne correspondent pas.');
-                return;
-            }
-            
-            if (newPassword.length < 8) {
-                alert('Le mot de passe doit contenir au moins 8 caractères.');
-                return;
-            }
-            
-            // Simulate password change
-            console.log('Changing password...');
-            
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
-            modal.hide();
-            
-            // Show success message
-            const successAlert = document.createElement('div');
-            successAlert.className = 'alert alert-success alert-dismissible fade show';
-            successAlert.innerHTML = `
-                <i class="fas fa-check-circle me-2"></i>
-                Mot de passe changé avec succès !
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            const container = document.querySelector('.container .row .col-lg-9');
-            container.insertBefore(successAlert, container.firstChild);
-            
-            // Reset form
-            document.getElementById('passwordForm').reset();
-            
-            // Auto-remove alert after 5 seconds
-            setTimeout(() => {
-                if (successAlert.parentNode) {
-                    successAlert.remove();
-                }
-            }, 5000);
-        }
-    </script>
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', function() {
+    var icon = document.getElementById('theme-icon');
+    if (icon) icon.className = getTheme() === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+});
+</script>
 </body>
 </html>

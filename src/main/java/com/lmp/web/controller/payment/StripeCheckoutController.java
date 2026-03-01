@@ -164,7 +164,7 @@ public class StripeCheckoutController {
             }
 
             if (currency == null || currency.trim().isEmpty()) {
-                currency = "CAD"; // Devise par défaut
+                currency = "EUR"; // Devise par défaut
             }
 
             Long userId;
@@ -633,7 +633,7 @@ public class StripeCheckoutController {
                 logger.warn("🔍   - Longueur: {}", sourcePage.length());
             }
 
-            auditLogger.info("Payment cancel callback - Order: {}, Amount: {} CAD, Source: {}",
+            auditLogger.info("Payment cancel callback - Order: {}, Amount: {} EUR, Source: {}",
                     orderId, order.getTotalAmount(), sourcePage);
 
             redirectAttributes.addFlashAttribute("info",

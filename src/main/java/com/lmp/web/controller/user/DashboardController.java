@@ -249,6 +249,49 @@ public class DashboardController {
     }
 
     /**
+     * Affiche la liste des factures de l'utilisateur.
+     * Seules les commandes éligibles (CONFIRMED, COMPLETED, DELIVERED, PROCESSING, IN_PROGRESS)
+     * sont affichées dans cette vue.
+     *
+     * @param model Le modèle pour la vue
+     * @param authentication L'authentification actuelle
+     * @return Le nom de la vue
+     */
+    @GetMapping("/invoices")
+    public String showInvoices(Model model, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+
+        try {
+            User user = userService.findByEmailWithAllCollections(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+            // Filtrer les commandes éligibles pour une facture
+            List<Order> invoiceEligibleOrders = user.getOrders() != null ?
+                    user.getOrders().stream()
+                            .filter(order -> {
+                                String status = order.getStatus().name();
+                                return "CONFIRMED".equals(status) || "COMPLETED".equals(status) ||
+                                       "DELIVERED".equals(status) || "PROCESSING".equals(status) ||
+                                       "IN_PROGRESS".equals(status);
+                            })
+                            .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()))
+                            .toList() : List.of();
+
+            model.addAttribute("user", user);
+            model.addAttribute("orders", invoiceEligibleOrders);
+
+            return "user/invoices";
+
+        } catch (Exception e) {
+            logger.error("Error loading invoices for user {}: {}", authentication.getName(), e.getMessage(), e);
+            model.addAttribute("errorMessage", "Erreur lors du chargement des factures : " + e.getMessage());
+            return "error/500";
+        }
+    }
+
+    /**
      * Affiche la liste complète des commandes de l'utilisateur.
      * 
      * @param model Le modèle pour la vue

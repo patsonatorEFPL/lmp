@@ -78,6 +78,10 @@ public class User {
     @Column(name = "reset_token_expiry")
     private LocalDateTime resetTokenExpiry;
 
+    // Gender field for avatar display
+    @Column(name = "gender")
+    private String gender; // "MALE", "FEMALE", "OTHER", null
+
     // OAuth2 fields
     @Column(name = "oauth_provider")
     private String oauthProvider; // "google", "microsoft", null for local
@@ -343,6 +347,26 @@ public class User {
         
         // Fallback si l'email est invalide
         return "Utilisateur";
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    /**
+     * Returns a Font Awesome icon class based on gender.
+     */
+    public String getGenderIcon() {
+        if (gender == null) return "fa-user";
+        return switch (gender.toUpperCase()) {
+            case "MALE" -> "fa-male";
+            case "FEMALE" -> "fa-female";
+            default -> "fa-user";
+        };
     }
 
     public String getOauthProvider() {

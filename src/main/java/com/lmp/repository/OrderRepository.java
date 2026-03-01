@@ -32,7 +32,21 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByStripeSessionId(String stripeSessionId);
     List<Order> findByUserAndStatusNotOrderByCreatedAtDesc(User user, OrderStatus status);
     List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime cutoff);
-    
+
+    /**
+     * Commandes PAYMENT_PENDING avec un stripeSessionId, créées avant un seuil donné.
+     * Utilisé par le service de réconciliation pour vérifier le statut auprès de Stripe.
+     */
+    @Query("SELECT o FROM Order o WHERE o.status = :status AND o.stripeSessionId IS NOT NULL AND o.createdAt < :cutoff ORDER BY o.createdAt ASC")
+    List<Order> findStaleOrdersWithStripeSession(@Param("status") OrderStatus status, @Param("cutoff") LocalDateTime cutoff);
+
+    /**
+     * Commandes CANCELLED qui ont un stripeSessionId et ont été annulées récemment.
+     * Utilisé par le service de réconciliation pour récupérer les commandes annulées mais payées.
+     */
+    @Query("SELECT o FROM Order o WHERE o.status = 'CANCELLED' AND o.stripeSessionId IS NOT NULL AND o.cancelledAt > :since ORDER BY o.cancelledAt DESC")
+    List<Order> findRecentlyCancelledWithStripeSession(@Param("since") LocalDateTime since);
+
     // ========== Méthodes d'administration avancées ==========
     
     /**

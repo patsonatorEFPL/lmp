@@ -25,7 +25,10 @@
         .db-detail-row:last-child { border-bottom: none; }
         .db-detail-label { width: 160px; flex-shrink: 0; font-weight: 600; color: var(--db-text-secondary); }
         .db-detail-value { flex: 1; color: var(--db-text-primary); word-break: break-all; }
-        .db-detail-value.mono { font-family: 'Courier New', monospace; font-size: 12px; }
+        .db-detail-value.mono { font-family: 'Courier New', monospace; font-size: 12px; cursor: pointer; }
+        .db-detail-value.mono:hover { color: var(--db-accent); }
+        .db-detail-value.mono::after { content: ' 📋'; font-size: 10px; opacity: 0.4; }
+        .db-detail-value.mono:hover::after { opacity: 1; }
     </style>
 </head>
 <body>
@@ -57,6 +60,9 @@
                 <button class="db-btn db-btn-accent" onclick="openModal('editStatusModal')">
                     <i class="fas fa-edit"></i> Modifier statut
                 </button>
+                <a th:if="${order?.id}" th:href="@{'/admin/orders/' + ${order.id} + '/invoice'}" class="db-btn" target="_blank" title="Télécharger la facture">
+                    <i class="fas fa-file-pdf"></i> Facture
+                </a>
                 <button th:if="${canBeRefunded}" class="db-btn db-btn-warning" onclick="openModal('refundModal')">
                     <i class="fas fa-undo"></i> Remboursement
                 </button>
@@ -376,6 +382,17 @@
             .catch(function () { showToast('Erreur', 'error'); });
         closeModal('editPriorityModal');
     }
+
+    // Copy Stripe ID to clipboard
+    document.addEventListener('click', function(e) {
+        var mono = e.target.closest('.mono');
+        if (mono) {
+            var text = mono.textContent.trim().replace(' 📋', '');
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Copié: ' + text.substring(0, 30) + '…', 'success');
+            });
+        }
+    });
 
     function syncWithStripe() {
         if (!confirmAction('Synchroniser avec Stripe ?')) return;

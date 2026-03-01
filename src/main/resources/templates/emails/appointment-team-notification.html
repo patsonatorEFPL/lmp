@@ -3,561 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Nouveau rendez-vous - LMP Admin</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-            padding: 25px 30px;
-            position: relative;
-        }
-        .header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, #fd7e14, #ffc107, #28a745);
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-        }
-        .header .subtitle {
-            margin: 8px 0 0 0;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        .priority-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .priority-high {
-            background-color: #dc3545;
-            color: white;
-        }
-        .priority-normal {
-            background-color: #ffc107;
-            color: #333;
-        }
-        .priority-low {
-            background-color: #28a745;
-            color: white;
-        }
-        .content {
-            padding: 30px;
-        }
-        .alert-box {
-            background: linear-gradient(135deg, #f8d7da, #f1aeb5);
-            border: 1px solid #f5c6cb;
-            border-left: 4px solid #dc3545;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #721c24;
-        }
-        .notification-type {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 0 0 10px 0;
-            display: flex;
-            align-items: center;
-        }
-        .client-section {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 25px;
-            margin: 25px 0;
-        }
-        .client-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .client-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .client-type {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .client-anonymous {
-            background-color: #6c757d;
-            color: white;
-        }
-        .client-registered {
-            background-color: #007bff;
-            color: white;
-        }
-        .client-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        .detail-item {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 15px;
-        }
-        .detail-label {
-            font-size: 11px;
-            color: #6c757d;
-            text-transform: uppercase;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        .detail-value {
-            font-size: 14px;
-            color: #2c3e50;
-            font-weight: 600;
-            word-break: break-all;
-        }
-        .appointment-section {
-            background: linear-gradient(135deg, #e7f3ff, #b3d9ff);
-            border: 1px solid #007bff;
-            border-radius: 8px;
-            padding: 25px;
-            margin: 25px 0;
-        }
-        .appointment-title {
-            color: #0056b3;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-        .appointment-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .service-highlight {
-            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-            text-align: center;
-        }
-        .service-title {
-            color: #856404;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        .service-name {
-            color: #2c3e50;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .description-box {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 15px;
-            margin: 15px 0;
-            font-style: italic;
-            color: #495057;
-        }
-        .action-required {
-            background: linear-gradient(135deg, #ffe6e6, #ffb3b3);
-            border: 2px solid #dc3545;
-            border-radius: 8px;
-            padding: 25px;
-            margin: 25px 0;
-        }
-        .action-required h4 {
-            margin: 0 0 15px 0;
-            color: #dc3545;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-        }
-        .action-list {
-            list-style: none;
-            padding: 0;
-            margin: 15px 0 0 0;
-        }
-        .action-list li {
-            background: rgba(255, 255, 255, 0.8);
-            margin-bottom: 8px;
-            padding: 10px 15px;
-            border-radius: 4px;
-            border-left: 3px solid #dc3545;
-            font-weight: 500;
-        }
-        .system-info {
-            background: #e2e3e5;
-            border: 1px solid #d3d3d4;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 25px 0;
-            font-size: 13px;
-        }
-        .system-info h5 {
-            margin: 0 0 15px 0;
-            color: #495057;
-            font-size: 16px;
-        }
-        .system-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-        }
-        .system-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #adb5bd;
-        }
-        .system-item:last-child {
-            border-bottom: none;
-        }
-        .system-label {
-            font-weight: 600;
-            color: #495057;
-        }
-        .system-value {
-            color: #6c757d;
-            text-align: right;
-        }
-        .footer {
-            background-color: #6c757d;
-            color: white;
-            padding: 25px 30px;
-            text-align: center;
-            font-size: 14px;
-        }
-        .footer-links {
-            margin: 15px 0;
-        }
-        .footer-links a {
-            color: #adb5bd;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-        .footer-links a:hover {
-            color: white;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: bold;
-            text-align: center;
-            margin: 5px;
-            transition: all 0.3s ease;
-        }
-        .btn-success {
-            background-color: #28a745;
-            color: white;
-        }
-        .btn-warning {
-            background-color: #ffc107;
-            color: #333;
-        }
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-        }
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            background-color: #ffc107;
-            color: #333;
-        }
-        
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            .content {
-                padding: 20px;
-            }
-            .client-details,
-            .appointment-grid,
-            .system-grid {
-                grid-template-columns: 1fr;
-            }
-            .priority-badge {
-                position: static;
-                margin-top: 10px;
-            }
-        }
-    </style>
+    <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
-<body>
-    <div class="container">
-        <!-- En-tête -->
-        <div class="header">
-            <h1>
-                🚨 Nouveau Rendez-vous 
-                <span th:text="'#' + ${appointment.id}" style="margin-left: 10px; opacity: 0.8;">#123</span>
-            </h1>
-            <p class="subtitle">Notification automatique - Action requise</p>
-            
-            <div class="priority-badge"
-                 th:class="'priority-badge ' + (${appointment.priority <= 3} ? 'priority-high' : 
-                          (${appointment.priority <= 5} ? 'priority-normal' : 'priority-low')"
-                 th:text="${appointment.priority <= 3} ? '🔥 Urgent' : 
-                          (${appointment.priority <= 5} ? '⚡ Normal' : '📌 Basse'">
-                🔥 Urgent
-            </div>
-        </div>
-
-        <!-- Contenu principal -->
-        <div class="content">
-            <!-- Alerte principale -->
-            <div class="alert-box">
-                <p class="notification-type">
-                    📅 Nouvelle demande de rendez-vous reçue
-                </p>
-                <p style="margin: 0; font-size: 14px;">
-                    Une nouvelle demande vient d'être enregistrée et nécessite votre attention.
-                    <br><strong>Créé le :</strong> 
-                    <span th:text="${#temporals.format(appointment.createdAt, 'EEEE dd MMMM yyyy à HH:mm')}">
-                        Lundi 06 septembre 2025 à 14:19
-                    </span>
-                </p>
-            </div>
-
-            <!-- Informations client -->
-            <div class="client-section">
-                <div class="client-header">
-                    <div>
-                        <div class="client-name" th:text="${appointment.effectiveClientName}">
-                            Nom du Client
-                        </div>
-                        <div style="color: #6c757d; font-size: 14px; margin-top: 4px;">
-                            ID: <span th:text="${appointment.anonymous ? 'N/A (anonyme)' : appointment.user.id}">123</span>
-                        </div>
-                    </div>
-                    <div class="client-type"
-                         th:class="'client-type ' + (${appointment.anonymous} ? 'client-anonymous' : 'client-registered')"
-                         th:text="${appointment.anonymous} ? '👤 Anonyme' : '🏠 Compte'">
-                        👤 Anonyme
-                    </div>
-                </div>
-
-                <div class="client-details">
-                    <div class="detail-item">
-                        <div class="detail-label">📧 Email</div>
-                        <div class="detail-value" th:text="${appointment.effectiveClientEmail}">
-                            client@example.com
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">📞 Téléphone</div>
-                        <div class="detail-value" 
-                             th:text="${appointment.effectiveClientPhone ?: 'Non fourni'}">
-                            +33 1 23 45 67 89
-                        </div>
-                    </div>
-                    
-                    <div th:unless="${appointment.anonymous}" class="detail-item">
-                        <div class="detail-label">👤 Statut Compte</div>
-                        <div class="detail-value" 
-                             th:text="${appointment.user?.enabled ? 'Actif' : 'Inactif'}">
-                            Actif
-                        </div>
-                    </div>
-                    
-                    <div th:unless="${appointment.anonymous}" class="detail-item">
-                        <div class="detail-label">📅 Membre depuis</div>
-                        <div class="detail-value" 
-                             th:text="${appointment.user?.registeredAt != null ? 
-                                     #temporals.format(appointment.user.registeredAt, 'dd/MM/yyyy') : 'Non défini'}">
-                            01/01/2025
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Détails du rendez-vous -->
-            <div class="appointment-section">
-                <h3 class="appointment-title">
-                    🗓️ Détails du Rendez-vous
-                </h3>
-
-                <div class="appointment-grid">
-                    <div class="detail-item">
-                        <div class="detail-label">📅 Date & Heure</div>
-                        <div class="detail-value" 
-                             th:text="${#temporals.format(appointment.appointmentDate, 'EEEE dd MMMM yyyy à HH:mm')}">
-                            Lundi 29 septembre 2025 à 16:00
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">⏱️ Durée</div>
-                        <div class="detail-value" 
-                             th:text="${appointment.durationMinutes + ' minutes (' + (appointment.durationMinutes / 60.0) + 'h)'}">
-                            60 minutes (1.0h)
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">📊 Statut</div>
-                        <div class="detail-value">
-                            <span class="status-badge" th:text="${appointment.status.displayName}">
-                                En attente
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-item">
-                        <div class="detail-label">🏷️ Priorité</div>
-                        <div class="detail-value" 
-                             th:text="${appointment.priority <= 3} ? '🔥 Urgent (' + ${appointment.priority} + ')' : 
-                                      (${appointment.priority <= 5} ? '⚡ Normal (' + ${appointment.priority} + ')' : '📌 Basse (' + ${appointment.priority} + ')')">
-                            🔥 Urgent (1)
-                        </div>
-                    </div>
-                </div>
-
-                <div class="service-highlight">
-                    <div class="service-title">💼 Service demandé</div>
-                    <div class="service-name" th:text="${appointment.subject}">
-                        Consultation générale
-                    </div>
-                </div>
-
-                <div th:if="${appointment.description and !#strings.isEmpty(appointment.description)}" 
-                     class="description-box">
-                    <div class="detail-label" style="margin-bottom: 8px;">📝 Message du client</div>
-                    <div th:text="${appointment.description}">
-                        Description détaillée du besoin du client...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions requises -->
-            <div class="action-required">
-                <h4>⚡ Actions Requises</h4>
-                <p style="margin: 0 0 15px 0; color: #721c24;">
-                    Ce rendez-vous nécessite votre intervention immédiate :
-                </p>
-                
-                <ul class="action-list">
-                    <li>✅ <strong>Confirmer</strong> la disponibilité pour ce créneau</li>
-                    <li>📞 <strong>Contacter</strong> le client si des clarifications sont nécessaires</li>
-                    <li>📧 <strong>Envoyer</strong> l'email de confirmation au client</li>
-                    <li>📋 <strong>Préparer</strong> les ressources nécessaires pour le service</li>
-                    <li>⏰ <strong>Programmer</strong> un rappel 24h avant le rendez-vous</li>
-                </ul>
-
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="#" class="btn btn-success">✅ Confirmer RDV</a>
-                    <a href="#" class="btn btn-warning">📝 Modifier</a>
-                    <a href="#" class="btn btn-danger">❌ Rejeter</a>
-                </div>
-            </div>
-
-            <!-- Informations système -->
-            <div class="system-info">
-                <h5>🔧 Informations Techniques</h5>
-                <div class="system-grid">
-                    <div class="system-item">
-                        <span class="system-label">ID Rendez-vous</span>
-                        <span class="system-value" th:text="'#' + ${appointment.id}">#123</span>
-                    </div>
-                    <div class="system-item">
-                        <span class="system-label">Créé le</span>
-                        <span class="system-value" 
-                              th:text="${#temporals.format(appointment.createdAt, 'dd/MM HH:mm')}">
-                            06/09 14:19
-                        </span>
-                    </div>
-                    <div class="system-item">
-                        <span class="system-label">IP Client</span>
-                        <span class="system-value">192.168.1.1</span>
-                    </div>
-                    <div class="system-item">
-                        <span class="system-label">User Agent</span>
-                        <span class="system-value">Chrome/121</span>
-                    </div>
-                    <div class="system-item">
-                        <span class="system-label">Confirmation envoyée</span>
-                        <span class="system-value" 
-                              th:text="${appointment.confirmationSent ? '✅ Oui' : '❌ Non'}">
-                            ✅ Oui
-                        </span>
-                    </div>
-                    <div class="system-item">
-                        <span class="system-label">Rappel programmé</span>
-                        <span class="system-value" 
-                              th:text="${appointment.reminderSent ? '✅ Oui' : '❌ Non'}">
-                            ❌ Non
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pied de page -->
-        <div class="footer">
-            <p style="margin: 0; font-weight: bold;">LMP Services - Administration</p>
-            <p style="margin: 5px 0 15px 0; opacity: 0.8;">Système de gestion des rendez-vous</p>
-            
-            <div class="footer-links">
-                <a href="#">Dashboard Admin</a> |
-                <a href="#">Calendrier</a> |
-                <a href="#">Clients</a> |
-                <a href="#">Paramètres</a>
-            </div>
-            
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 15px;">
-                Email automatique généré à <span th:text="${#temporals.format(#temporals.createNow(), 'HH:mm')}">14:19</span>
-                • Ne pas répondre à ce message
-            </div>
-        </div>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Nouveau rendez-vous reçu — Action requise. Client : [[${appointment.effectiveClientName}]]
     </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f7;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:36px 32px;text-align:center;">
+                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;">LMP Services — Administration</div>
+                            <div style="font-size:24px;font-weight:700;color:#ffffff;">
+                                Nouveau Rendez-vous <span th:text="'#' + ${appointment.id}" style="opacity:0.7;">#123</span>
+                            </div>
+                            <div style="display:inline-block;background:#ef4444;color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;margin-top:12px;">Action requise</div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            <!-- Alert -->
+                            <div style="background-color:#fef2f2;border-left:4px solid #ef4444;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:24px;">
+                                <div style="font-size:15px;font-weight:700;color:#991b1b;margin-bottom:6px;">Nouvelle demande de rendez-vous</div>
+                                <p style="margin:0;font-size:13px;color:#b91c1c;line-height:1.5;">
+                                    Une nouvelle demande vient d'être enregistrée et nécessite votre attention.<br>
+                                    <strong>Créé le :</strong>
+                                    <span th:text="${#temporals.format(appointment.createdAt, 'EEEE dd MMMM yyyy à HH:mm')}">Lundi 06 septembre 2025 à 14:19</span>
+                                </p>
+                            </div>
+
+                            <!-- Client section -->
+                            <div style="background-color:#f8f9fb;border-radius:10px;padding:24px;margin-bottom:24px;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+                                    <tr>
+                                        <td>
+                                            <div style="font-size:18px;font-weight:700;color:#1a1f36;" th:text="${appointment.effectiveClientName}">Nom du Client</div>
+                                            <div style="font-size:12px;color:#6b7280;margin-top:4px;">
+                                                ID: <span th:text="${appointment.anonymous ? 'N/A (anonyme)' : appointment.user.id}">123</span>
+                                            </div>
+                                        </td>
+                                        <td align="right" valign="top">
+                                            <span th:if="${appointment.anonymous}" style="display:inline-block;background:#6b7280;color:#fff;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;">Anonyme</span>
+                                            <span th:unless="${appointment.anonymous}" style="display:inline-block;background:#3b82f6;color:#fff;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;">Compte</span>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
+                                    <tr>
+                                        <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Email</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${appointment.effectiveClientEmail}">client@example.com</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Téléphone</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${appointment.effectiveClientPhone ?: 'Non fourni'}">+33 1 23 45 67 89</td>
+                                    </tr>
+                                    <tr th:unless="${appointment.anonymous}">
+                                        <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Statut Compte</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${appointment.user?.enabled ? 'Actif' : 'Inactif'}">Actif</td>
+                                    </tr>
+                                    <tr th:unless="${appointment.anonymous}">
+                                        <td style="padding:8px 0;">Membre depuis</td>
+                                        <td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;" th:text="${appointment.user?.registeredAt != null ? #temporals.format(appointment.user.registeredAt, 'dd/MM/yyyy') : 'Non défini'}">01/01/2025</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Appointment details -->
+                            <div style="background-color:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 10px 10px 0;padding:24px;margin-bottom:24px;">
+                                <div style="font-size:15px;font-weight:700;color:#1e40af;margin-bottom:16px;">Détails du Rendez-vous</div>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
+                                    <tr>
+                                        <td style="padding:8px 0;border-bottom:1px solid #bfdbfe;">Date &amp; Heure</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #bfdbfe;font-weight:600;color:#1a1f36;"
+                                            th:text="${#temporals.format(appointment.appointmentDate, 'EEEE dd MMMM yyyy à HH:mm')}">
+                                            Lundi 29 septembre 2025 à 16:00
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 0;border-bottom:1px solid #bfdbfe;">Durée</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #bfdbfe;font-weight:500;color:#1a1f36;"
+                                            th:text="${appointment.durationMinutes + ' minutes (' + (appointment.durationMinutes / 60.0) + 'h)'}">
+                                            60 minutes (1.0h)
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 0;border-bottom:1px solid #bfdbfe;">Statut</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #bfdbfe;">
+                                            <span style="display:inline-block;background:#fffbeb;color:#92400e;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600;" th:text="${appointment.status.displayName}">En attente</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 0;">Priorité</td>
+                                        <td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;"
+                                            th:text="${appointment.priority <= 3} ? 'Urgent (' + ${appointment.priority} + ')' : (${appointment.priority <= 5} ? 'Normal (' + ${appointment.priority} + ')' : 'Basse (' + ${appointment.priority} + ')')">
+                                            Urgent (1)
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Service highlight -->
+                            <div style="text-align:center;padding:20px;margin-bottom:24px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border-radius:10px;border:1px solid #fde68a;">
+                                <div style="font-size:12px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Service demandé</div>
+                                <div style="font-size:17px;font-weight:700;color:#1a1f36;" th:text="${appointment.subject}">Consultation générale</div>
+                            </div>
+
+                            <!-- Client message -->
+                            <div th:if="${appointment.description != null and !#strings.isEmpty(appointment.description)}"
+                                 style="background-color:#f8f9fb;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+                                <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Message du client</div>
+                                <p style="margin:0;font-size:14px;color:#4b5563;font-style:italic;line-height:1.5;" th:text="${appointment.description}">
+                                    Description détaillée du besoin du client...
+                                </p>
+                            </div>
+
+                            <!-- Actions required -->
+                            <div style="background-color:#fef2f2;border-left:4px solid #ef4444;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:24px;">
+                                <div style="font-size:14px;font-weight:700;color:#991b1b;margin-bottom:10px;">Actions Requises</div>
+                                <ul style="margin:0;padding-left:16px;font-size:13px;color:#b91c1c;line-height:1.8;">
+                                    <li><strong>Confirmer</strong> la disponibilité pour ce créneau</li>
+                                    <li><strong>Contacter</strong> le client si des clarifications sont nécessaires</li>
+                                    <li><strong>Envoyer</strong> l'email de confirmation au client</li>
+                                    <li><strong>Préparer</strong> les ressources nécessaires pour le service</li>
+                                    <li><strong>Programmer</strong> un rappel 24h avant le rendez-vous</li>
+                                </ul>
+                            </div>
+
+                            <!-- CTA -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding:8px 0 24px;">
+                                        <a href="#" style="display:inline-block;background:linear-gradient(135deg,#22c55e,#16a34a);color:#ffffff;padding:14px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+                                            Confirmer RDV
+                                        </a>
+                                        &nbsp;&nbsp;
+                                        <a href="#" style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+                                            Voir Détails
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- System info -->
+                            <div style="background-color:#f1f5f9;border-radius:8px;padding:20px;margin-bottom:24px;">
+                                <div style="font-size:13px;font-weight:600;color:#475569;margin-bottom:12px;">Informations Techniques</div>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:12px;color:#64748b;">
+                                    <tr>
+                                        <td style="padding:5px 0;border-bottom:1px solid #e2e8f0;">ID Rendez-vous</td>
+                                        <td align="right" style="padding:5px 0;border-bottom:1px solid #e2e8f0;" th:text="'#' + ${appointment.id}">#123</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:5px 0;border-bottom:1px solid #e2e8f0;">Créé le</td>
+                                        <td align="right" style="padding:5px 0;border-bottom:1px solid #e2e8f0;" th:text="${#temporals.format(appointment.createdAt, 'dd/MM/yyyy HH:mm')}">06/09/2025 14:19</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:5px 0;border-bottom:1px solid #e2e8f0;">Confirmation envoyée</td>
+                                        <td align="right" style="padding:5px 0;border-bottom:1px solid #e2e8f0;" th:text="${appointment.confirmationSent ? 'Oui' : 'Non'}">Oui</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:5px 0;">Rappel programmé</td>
+                                        <td align="right" style="padding:5px 0;" th:text="${appointment.reminderSent ? 'Oui' : 'Non'}">Non</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.5;">
+                                Email automatique généré à <span th:text="${#temporals.format(#temporals.createNow(), 'HH:mm')}">14:19</span> — Ne pas répondre à ce message.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td><div th:replace="~{emails/common-footer :: email-footer}"></div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

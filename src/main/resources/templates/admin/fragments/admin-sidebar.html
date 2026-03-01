@@ -55,10 +55,10 @@
 
     <div class="db-sidebar-bottom">
         <a th:href="@{/profile}" class="db-sidebar-user">
-            <div class="db-sidebar-avatar"
-                 th:text="${#authentication?.name != null ? #authentication.name.substring(0,1).toUpperCase() : 'A'}">A</div>
+        <div class="db-sidebar-avatar"
+                 th:text="${currentUserInitials != null ? currentUserInitials : (#authentication?.name != null ? #authentication.name.substring(0,1).toUpperCase() : 'A')}">A</div>
             <div class="db-sidebar-user-info">
-                <div class="db-sidebar-user-name">Administrateur</div>
+                <div class="db-sidebar-user-name" th:text="${currentUserDisplayName != null ? currentUserDisplayName : 'Administrateur'}">Administrateur</div>
                 <div class="db-sidebar-user-email" th:text="${#authentication?.name}">admin@lmp.ca</div>
             </div>
         </a>

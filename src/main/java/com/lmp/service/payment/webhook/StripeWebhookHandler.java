@@ -23,9 +23,11 @@ import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.OrderStatus;
 import com.lmp.domain.enums.PaymentStatus;
 import com.lmp.domain.enums.StripeWebhookEventType;
+import com.lmp.domain.entity.WebhookEventLog;
 import com.lmp.repository.OrderRepository;
 import com.lmp.repository.PaymentTransactionRepository;
 import com.lmp.repository.UserRepository;
+import com.lmp.repository.WebhookEventLogRepository;
 import com.lmp.service.email.EmailService;
 import com.lmp.service.invoice.InvoicePdfService;
 import com.lmp.service.payment.dto.WebhookEventDto;
@@ -67,6 +69,9 @@ public class StripeWebhookHandler {
     @Autowired
     private InvoicePdfService invoicePdfService;
 
+    @Autowired
+    private WebhookEventLogRepository webhookEventLogRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -85,6 +90,25 @@ public class StripeWebhookHandler {
             securityLogger.info("Webhook signature verified - Event: {}, Type: {}",
                     event.getId(), event.getType());
 
+            // ── IDEMPOTENCE : vérifier si l'événement a déjà été traité ──
+            Optional<WebhookEventLog> existingLog = webhookEventLogRepository.findByEventId(event.getId());
+            if (existingLog.isPresent()) {
+                String existingStatus = existingLog.get().getStatus();
+                // Autoriser le retraitement des webhooks en échec (retry Stripe)
+                if ("processed".equals(existingStatus)) {
+                    logger.info("⏭️ IDEMPOTENCE - Événement déjà traité avec succès, ignoré: {} ({})",
+                            event.getId(), event.getType());
+                    WebhookEventDto duplicate = new WebhookEventDto(event.getId(), event.getType(), "stripe");
+                    duplicate.setProcessed(true);
+                    duplicate.setStatus("duplicate_skipped");
+                    return duplicate;
+                }
+                // Supprimer le log en échec pour permettre le retraitement
+                logger.info("🔄 RETRY - Événement précédemment en échec, retraitement autorisé: {} ({})",
+                        event.getId(), event.getType());
+                webhookEventLogRepository.delete(existingLog.get());
+            }
+
             // Créer le DTO d'événement
             WebhookEventDto webhookEvent = new WebhookEventDto(
                     event.getId(),
@@ -102,10 +126,25 @@ public class StripeWebhookHandler {
                 logger.info("Webhook event processed successfully - Event: {}, Type: {}",
                         event.getId(), event.getType());
 
+                // ── IDEMPOTENCE : enregistrer l'événement comme traité ──
+                WebhookEventLog eventLog = new WebhookEventLog(event.getId(), event.getType(), "stripe");
+                eventLog.setStatus("processed");
+                webhookEventLogRepository.save(eventLog);
+
             } catch (Exception e) {
                 logger.error("Error processing webhook event {}: {}", event.getId(), e.getMessage(), e);
                 webhookEvent.setProcessed(false);
                 webhookEvent.setProcessingError(e.getMessage());
+
+                // ── IDEMPOTENCE : enregistrer aussi les échecs pour éviter retries infinis ──
+                try {
+                    WebhookEventLog eventLog = new WebhookEventLog(event.getId(), event.getType(), "stripe");
+                    eventLog.setStatus("failed");
+                    eventLog.setProcessingError(e.getMessage());
+                    webhookEventLogRepository.save(eventLog);
+                } catch (Exception logEx) {
+                    logger.error("Failed to log webhook event error: {}", logEx.getMessage());
+                }
 
                 securityLogger.warn("Webhook processing failed - Event: {}, Error: {}",
                         event.getId(), e.getMessage());
@@ -805,6 +844,12 @@ public class StripeWebhookHandler {
             return allowed;
         }
 
+        // Permettre la récupération d'une commande annulée si le paiement est confirmé par Stripe
+        if (currentStatus == OrderStatus.CANCELLED && newStatus == OrderStatus.CONFIRMED) {
+            logger.info("🔄 RÉCUPÉRATION - Commande annulée récupérée car paiement confirmé par Stripe");
+            return true;
+        }
+
         // Transitions depuis PENDING
         if (currentStatus == OrderStatus.PENDING) {
             boolean allowed = newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.CANCELLED ||
@@ -1136,7 +1181,9 @@ public class StripeWebhookHandler {
         if (session.getCustomer() != null) {
             order.setStripeCustomerId(session.getCustomer());
         }
-        order.setPaymentStatus(session.getPaymentStatus());
+        // Mapper le statut Stripe vers le statut interne : "paid" → "succeeded"
+        String internalPaymentStatus = "paid".equals(session.getPaymentStatus()) ? "succeeded" : session.getPaymentStatus();
+        order.setPaymentStatus(internalPaymentStatus);
         order.setPaymentMethod("stripe_checkout");
 
         // Mise à jour des informations de facturation si disponibles
@@ -1180,6 +1227,7 @@ public class StripeWebhookHandler {
 
             if (newStatus == OrderStatus.CONFIRMED) {
                 order.setPaidAt(LocalDateTime.now());
+                order.setPaymentStatus("succeeded");
             }
 
             orderRepository.save(order);

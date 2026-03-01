@@ -11,6 +11,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.stripe.Stripe;
+import com.stripe.model.checkout.Session;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +29,9 @@ public class OrderCleanupService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Value("${stripe.secret.key}")
+    private String stripeSecretKey;
 
     /**
      * Durée maximale en minutes pour laisser une commande PAYMENT_PENDING avant nettoyage
@@ -68,7 +74,22 @@ public class OrderCleanupService {
 
             for (Order order : staleOrders) {
                 try {
-                    // Annuler la commande car le délai de paiement est expiré
+                    // Vérifier auprès de Stripe avant d'annuler
+                    if (isActuallyPaidOnStripe(order)) {
+                        // Le paiement a été effectué — ne pas annuler, confirmer la commande
+                        order.setStatus(OrderStatus.CONFIRMED);
+                        order.setPaymentStatus("succeeded");
+                        order.setPaidAt(LocalDateTime.now());
+                        order.setUpdatedAt(LocalDateTime.now());
+                        order.setPaymentMethod("stripe_checkout");
+                        orderRepository.save(order);
+
+                        logger.info("✅ Commande {} confirmée par vérification Stripe lors du nettoyage (créée le: {})",
+                                   order.getId(), order.getCreatedAt());
+                        continue; // Ne pas compter comme annulée
+                    }
+
+                    // Annuler la commande car le délai de paiement est expiré et non payée
                     order.setStatus(OrderStatus.CANCELLED);
                     order.setCancellationReason("Paiement non finalisé dans le délai imparti (" + paymentPendingTimeoutMinutes + " minutes)");
                     order.setCancelledAt(LocalDateTime.now());
@@ -238,6 +259,36 @@ public class OrderCleanupService {
         stats.setCleanupThresholdMinutes(paymentPendingTimeoutMinutes);
         
         return stats;
+    }
+
+    /**
+     * Vérifie auprès de Stripe si une commande a réellement été payée.
+     * Retourne true si le paiement est confirmé, false sinon.
+     */
+    private boolean isActuallyPaidOnStripe(Order order) {
+        String sessionId = order.getStripeSessionId();
+        if (sessionId == null || sessionId.isEmpty()) {
+            return false;
+        }
+
+        try {
+            Stripe.apiKey = stripeSecretKey;
+            Session session = Session.retrieve(sessionId);
+            boolean paid = "paid".equals(session.getPaymentStatus());
+
+            if (paid) {
+                logger.info("🔍 VÉRIFICATION STRIPE - Commande {} : paiement confirmé (session {})",
+                           order.getId(), sessionId);
+            }
+
+            return paid;
+        } catch (Exception e) {
+            logger.warn("⚠️ VÉRIFICATION STRIPE - Impossible de vérifier la commande {} (session {}) : {}",
+                       order.getId(), sessionId, e.getMessage());
+            // En cas d'erreur Stripe, ne pas annuler la commande pour éviter de perdre un paiement
+            // Retourner true par précaution — le service de réconciliation s'en chargera
+            return true;
+        }
     }
 
     /**

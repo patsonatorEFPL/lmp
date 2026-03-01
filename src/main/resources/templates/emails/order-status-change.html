@@ -3,311 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mise à jour de votre commande</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background-color: #17a2b8;
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px 20px;
-        }
-        .status-update {
-            background-color: #e7f3ff;
-            border-left: 4px solid #007bff;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 6px 6px 0;
-        }
-        .status-change {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .status-item {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .status-old {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .status-new {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .arrow {
-            font-size: 20px;
-            color: #007bff;
-        }
-        .order-info {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .order-number {
-            font-size: 18px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        .order-details {
-            margin: 15px 0;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-        .footer {
-            background-color: #6c757d;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 14px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #17a2b8;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .btn:hover {
-            background-color: #138496;
-        }
-        .progress-steps {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 30px 0;
-            padding: 0 10px;
-            flex-wrap: wrap;
-        }
-        .step {
-            text-align: center;
-            font-size: 12px;
-            flex: 1;
-            min-width: 80px;
-        }
-        .step-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            margin: 0 auto 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-        }
-        .step-completed {
-            background-color: #28a745;
-        }
-        .step-current {
-            background-color: #007bff;
-        }
-        .step-pending {
-            background-color: #6c757d;
-        }
-        .step-line {
-            height: 2px;
-            background-color: #dee2e6;
-            flex: 1;
-            margin: 0 5px;
-        }
-        .step-line.completed {
-            background-color: #28a745;
-        }
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                max-width: none;
-            }
-            .status-change {
-                flex-direction: column;
-            }
-            .progress-steps {
-                flex-direction: column;
-                gap: 10px;
-            }
-            .step-line {
-                display: none;
-            }
-        }
-    </style>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Mise à jour de commande - LMP Services</title>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📋 Mise à jour de commande</h1>
-            <p th:text="${companyName}">LMP Digital Services</p>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-            <p>Bonjour <span th:text="${customerName}">Client</span>,</p>
-            
-            <p>Nous vous informons que le statut de votre commande a été mis à jour :</p>
-
-            <!-- Status Change -->
-            <div class="status-update">
-                <h3 style="margin: 0 0 15px 0; color: #007bff;">Changement de statut</h3>
-                <div class="status-change">
-                    <div class="status-item status-old">
-                        <span th:text="${oldStatus}">En attente</span>
-                    </div>
-                    <div class="arrow">→</div>
-                    <div class="status-item status-new">
-                        <span th:text="${newStatus}">En préparation</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Order Information -->
-            <div class="order-info">
-                <div class="order-header">
-                    <div class="order-number">
-                        Commande #<span th:text="${order.id}">12345</span>
-                    </div>
-                </div>
-
-                <div class="order-details">
-                    <div class="detail-row">
-                        <span>Service :</span>
-                        <span th:text="${order.serviceName}">Service Web</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Description :</span>
-                        <span th:text="${order.description}">Développement site web</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Montant :</span>
-                        <span th:text="${order.totalAmount + ' EUR'}">1,500.00 EUR</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Dernière mise à jour :</span>
-                        <span th:text="${currentDate}">22/08/2025 à 14:30</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Progress Steps -->
-            <div class="progress-steps">
-                <div class="step">
-                    <div class="step-icon step-completed">✓</div>
-                    <div>Confirmée</div>
-                </div>
-                <div class="step-line completed"></div>
-                <div class="step">
-                    <div class="step-icon step-current">2</div>
-                    <div>En préparation</div>
-                </div>
-                <div class="step-line"></div>
-                <div class="step">
-                    <div class="step-icon step-pending">3</div>
-                    <div>En cours</div>
-                </div>
-                <div class="step-line"></div>
-                <div class="step">
-                    <div class="step-icon step-pending">4</div>
-                    <div>Terminée</div>
-                </div>
-            </div>
-
-            <!-- Next Steps Info -->
-            <div th:switch="${newStatus}">
-                <div th:case="'En préparation'">
-                    <p><strong>Prochaines étapes :</strong></p>
-                    <ul>
-                        <li>Notre équipe a commencé à travailler sur votre projet</li>
-                        <li>Vous recevrez des mises à jour régulières sur l'avancement</li>
-                        <li>Un responsable vous contactera sous peu pour les détails</li>
-                    </ul>
-                </div>
-                <div th:case="'En cours'">
-                    <p><strong>Votre projet est maintenant en développement actif :</strong></p>
-                    <ul>
-                        <li>Les travaux sont en cours selon le planning établi</li>
-                        <li>Vous recevrez des aperçus du travail effectué</li>
-                        <li>N'hésitez pas à nous faire part de vos commentaires</li>
-                    </ul>
-                </div>
-                <div th:case="'Expédiée'">
-                    <p><strong>Votre projet a été livré :</strong></p>
-                    <ul>
-                        <li>Les livrables ont été envoyés à votre adresse email</li>
-                        <li>Vérifiez que tout correspond à vos attentes</li>
-                        <li>Support technique disponible pendant 30 jours</li>
-                    </ul>
-                </div>
-                <div th:case="*">
-                    <p>Pour plus d'informations sur cette mise à jour, n'hésitez pas à nous contacter.</p>
-                </div>
-            </div>
-
-            <div style="text-align: center;">
-                <a href="#" class="btn">Voir ma commande</a>
-            </div>
-
-            <p>Si vous avez des questions concernant cette mise à jour, n'hésitez pas à nous contacter.</p>
-
-            <p>Cordialement,<br>
-            L'équipe <span th:text="${companyName}">LMP Digital Services</span></p>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <p><strong th:text="${companyName}">LMP Digital Services</strong></p>
-            <p>123 Rue Principale, Ville, Province, Code Postal</p>
-            <p>Téléphone : +1 (555) 123-4567 | Email : support@lmp-services.ca</p>
-            <p style="margin-top: 15px; font-size: 12px;">
-                Cet email a été envoyé automatiquement, merci de ne pas répondre directement.
-            </p>
-        </div>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Le statut de votre commande a été mis à jour. Consultez les détails de la progression.
     </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f7;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:36px 32px;text-align:center;">
+                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;" th:text="${companyName}">LMP Services</div>
+                            <div style="font-size:24px;font-weight:700;color:#ffffff;">Mise à jour de commande</div>
+                            <div style="display:inline-block;background:#0ea5e9;color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;margin-top:12px;">↻ Statut mis à jour</div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+                                Bonjour <strong th:text="${customerName}">Client</strong>, le statut de votre commande a été mis à jour.
+                            </p>
+
+                            <!-- Status change -->
+                            <div style="background-color:#f0f9ff;border-radius:10px;padding:24px;text-align:center;margin-bottom:24px;">
+                                <div style="font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Changement de statut</div>
+                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                                    <tr>
+                                        <td style="padding:6px 14px;background:#fef2f2;border-radius:8px;font-size:14px;font-weight:600;color:#dc2626;" th:text="${oldStatus}">En attente</td>
+                                        <td style="padding:0 12px;font-size:18px;color:#0ea5e9;">→</td>
+                                        <td style="padding:6px 14px;background:#f0fdf4;border-radius:8px;font-size:14px;font-weight:600;color:#16a34a;" th:text="${newStatus}">En cours</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Order card -->
+                            <div style="background-color:#f8f9fb;border-radius:10px;padding:24px;margin-bottom:24px;">
+                                <div style="font-size:16px;font-weight:700;color:#4f6df5;margin-bottom:16px;">Commande #<span th:text="${order.id}">12345</span></div>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Service</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.serviceName}">Service Web</td></tr>
+                                    <tr th:if="${order.description}"><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Description</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.description}">Développement</td></tr>
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Montant</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.totalAmount + ' EUR'}">1 500 EUR</td></tr>
+                                    <tr><td style="padding:8px 0;">Dernière mise à jour</td><td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;" th:text="${currentDate}">22/08/2025</td></tr>
+                                </table>
+                            </div>
+
+                            <!-- Dynamic next steps -->
+                            <div th:switch="${newStatus}" style="margin-bottom:24px;">
+                                <div th:case="'En préparation'" style="background-color:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;">
+                                    <div style="font-size:14px;font-weight:600;color:#1e40af;margin-bottom:8px;">Prochaines étapes</div>
+                                    <ul style="margin:0;padding-left:16px;font-size:13px;color:#2563eb;line-height:1.7;">
+                                        <li>Notre équipe travaille sur votre projet</li>
+                                        <li>Vous recevrez des mises à jour régulières</li>
+                                        <li>Un responsable vous contactera sous peu</li>
+                                    </ul>
+                                </div>
+                                <div th:case="'En cours'" style="background-color:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;">
+                                    <div style="font-size:14px;font-weight:600;color:#1e40af;margin-bottom:8px;">Votre projet avance</div>
+                                    <ul style="margin:0;padding-left:16px;font-size:13px;color:#2563eb;line-height:1.7;">
+                                        <li>Les travaux sont en cours selon le planning</li>
+                                        <li>Vous recevrez des aperçus du travail</li>
+                                        <li>N'hésitez pas à nous faire part de vos retours</li>
+                                    </ul>
+                                </div>
+                                <div th:case="'Expédiée'" style="background-color:#f5f3ff;border-left:4px solid #8b5cf6;border-radius:0 8px 8px 0;padding:16px 20px;">
+                                    <div style="font-size:14px;font-weight:600;color:#5b21b6;margin-bottom:8px;">Votre projet est livré</div>
+                                    <ul style="margin:0;padding-left:16px;font-size:13px;color:#6d28d9;line-height:1.7;">
+                                        <li>Les livrables ont été envoyés</li>
+                                        <li>Vérifiez qu'ils correspondent à vos attentes</li>
+                                        <li>Support technique disponible 30 jours</li>
+                                    </ul>
+                                </div>
+                                <div th:case="*" style="background-color:#f8f9fb;border-left:4px solid #6b7280;border-radius:0 8px 8px 0;padding:16px 20px;">
+                                    <p style="margin:0;font-size:13px;color:#4b5563;">Pour plus d'informations sur cette mise à jour, contactez-nous.</p>
+                                </div>
+                            </div>
+
+                            <!-- CTA -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding:8px 0 24px;">
+                                        <a href="https://lmp-services.ca/dashboard/orders"
+                                           style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+                                            Voir ma commande
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                Cordialement, l'équipe <span th:text="${companyName}">LMP Services</span>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td><div th:replace="~{emails/common-footer :: email-footer}"></div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

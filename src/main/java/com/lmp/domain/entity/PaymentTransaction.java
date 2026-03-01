@@ -32,7 +32,7 @@ public class PaymentTransaction {
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal amount;
     
-    private String currency = "CAD";
+    private String currency = "EUR";
     
     @Column(name = "payment_method", nullable = false)
     private String paymentMethod;

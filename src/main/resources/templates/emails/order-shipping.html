@@ -3,344 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commande expédiée</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background-color: #6f42c1;
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px 20px;
-        }
-        .shipping-notice {
-            background-color: #e7e3ff;
-            border: 1px solid #d1c4e9;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #4527a0;
-        }
-        .shipping-notice h3 {
-            margin: 0 0 10px 0;
-            color: #6f42c1;
-        }
-        .tracking-box {
-            background-color: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 25px 0;
-            text-align: center;
-        }
-        .tracking-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #856404;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-        }
-        .order-info {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .order-number {
-            font-size: 18px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        .order-status {
-            background-color: #6f42c1;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .order-details {
-            margin: 15px 0;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-        .delivery-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .delivery-info h4 {
-            margin: 0 0 15px 0;
-            color: #0c5460;
-        }
-        .footer {
-            background-color: #6c757d;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 14px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #6f42c1;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .btn:hover {
-            background-color: #5a32a3;
-        }
-        .btn-track {
-            background-color: #ffc107;
-            color: #212529;
-        }
-        .btn-track:hover {
-            background-color: #e0a800;
-        }
-        .timeline {
-            margin: 20px 0;
-        }
-        .timeline-step {
-            display: flex;
-            align-items: center;
-            margin: 15px 0;
-        }
-        .step-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
-        .step-completed {
-            background-color: #28a745;
-        }
-        .step-current {
-            background-color: #6f42c1;
-        }
-        .step-pending {
-            background-color: #6c757d;
-        }
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                max-width: none;
-            }
-            .order-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .order-status {
-                margin-top: 10px;
-            }
-            .tracking-number {
-                font-size: 18px;
-                word-break: break-all;
-            }
-        }
-    </style>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Commande expédiée - LMP Services</title>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🚚 Commande Expédiée</h1>
-            <p th:text="${companyName}">LMP Digital Services</p>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-            <p>Bonjour <span th:text="${customerName}">Client</span>,</p>
-            
-            <!-- Shipping Notice -->
-            <div class="shipping-notice">
-                <h3>📦 Excellente nouvelle ! Votre commande est en route</h3>
-                <p>Votre commande a été expédiée et est maintenant en transit vers sa destination. Vous pouvez suivre son acheminement grâce au numéro de suivi ci-dessous.</p>
-            </div>
-
-            <!-- Tracking Information -->
-            <div class="tracking-box">
-                <h4 style="margin: 0 0 15px 0; color: #856404;">📍 Numéro de suivi</h4>
-                <div class="tracking-number" th:text="${trackingNumber}">1Z999AA1234567890</div>
-                <div style="margin-top: 15px;">
-                    <a href="#" class="btn btn-track">Suivre ma commande</a>
-                </div>
-            </div>
-
-            <!-- Order Information -->
-            <div class="order-info">
-                <div class="order-header">
-                    <div class="order-number">
-                        Commande #<span th:text="${order.id}">12345</span>
-                    </div>
-                    <div class="order-status">
-                        Expédiée
-                    </div>
-                </div>
-
-                <div class="order-details">
-                    <div class="detail-row">
-                        <span>Date de commande :</span>
-                        <span th:text="${order.createdAt}">22/08/2025</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Service :</span>
-                        <span th:text="${order.serviceName}">Service Web</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Description :</span>
-                        <span th:text="${order.description}">Développement site web</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Montant :</span>
-                        <span th:text="${order.totalAmount + ' EUR'}">1,500.00 EUR</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Date d'expédition :</span>
-                        <span th:text="${currentDate}">22/08/2025 à 14:30</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Delivery Information -->
-            <div class="delivery-info">
-                <h4>🏠 Informations de livraison</h4>
-                <div class="detail-row">
-                    <span>Délai estimé :</span>
-                    <span>3-5 jours ouvrables</span>
-                </div>
-                <div class="detail-row">
-                    <span>Transporteur :</span>
-                    <span>Services de livraison LMP</span>
-                </div>
-                <div class="detail-row">
-                    <span>Mode de livraison :</span>
-                    <span>Livraison électronique sécurisée</span>
-                </div>
-                <div class="detail-row">
-                    <span>Adresse de livraison :</span>
-                    <span th:text="${order.user.email}">client@exemple.com</span>
-                </div>
-            </div>
-
-            <!-- Timeline -->
-            <div class="timeline">
-                <h4>📋 Statut de livraison</h4>
-                <div class="timeline-step">
-                    <div class="step-icon step-completed">✓</div>
-                    <div>
-                        <strong>Commande confirmée</strong><br>
-                        <small>Votre commande a été reçue et confirmée</small>
-                    </div>
-                </div>
-                <div class="timeline-step">
-                    <div class="step-icon step-completed">✓</div>
-                    <div>
-                        <strong>En préparation</strong><br>
-                        <small>Notre équipe a préparé votre commande</small>
-                    </div>
-                </div>
-                <div class="timeline-step">
-                    <div class="step-icon step-current">🚚</div>
-                    <div>
-                        <strong>Expédiée</strong><br>
-                        <small>Votre commande est maintenant en transit</small>
-                    </div>
-                </div>
-                <div class="timeline-step">
-                    <div class="step-icon step-pending">📍</div>
-                    <div>
-                        <strong>En cours de livraison</strong><br>
-                        <small>Votre commande sera bientôt livrée</small>
-                    </div>
-                </div>
-                <div class="timeline-step">
-                    <div class="step-icon step-pending">📦</div>
-                    <div>
-                        <strong>Livrée</strong><br>
-                        <small>Commande reçue par le destinataire</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Important Notes -->
-            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-                <h4 style="margin: 0 0 10px 0; color: #856404;">⚠️ Important</h4>
-                <ul style="margin: 0; color: #856404;">
-                    <li>Vérifiez régulièrement le statut de votre commande avec le numéro de suivi</li>
-                    <li>Assurez-vous d'être disponible à l'adresse de livraison</li>
-                    <li>En cas de problème, contactez-nous immédiatement</li>
-                    <li>Conservez ce numéro de suivi jusqu'à réception complète</li>
-                </ul>
-            </div>
-
-            <div style="text-align: center;">
-                <a href="#" class="btn">Voir ma commande</a>
-            </div>
-
-            <p>Si vous avez des questions concernant votre expédition, n'hésitez pas à nous contacter en mentionnant votre numéro de commande et de suivi.</p>
-
-            <p>Merci de votre confiance !</p>
-
-            <p>Cordialement,<br>
-            L'équipe <span th:text="${companyName}">LMP Digital Services</span></p>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <p><strong th:text="${companyName}">LMP Digital Services</strong></p>
-            <p>123 Rue Principale, Ville, Province, Code Postal</p>
-            <p>Téléphone : +1 (555) 123-4567 | Email : support@lmp-services.ca</p>
-            <p style="margin-top: 15px; font-size: 12px;">
-                Cet email a été envoyé automatiquement, merci de ne pas répondre directement.
-            </p>
-        </div>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Votre commande est en route ! Suivez son acheminement avec votre numéro de suivi.
     </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f7;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:36px 32px;text-align:center;">
+                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;" th:text="${companyName}">LMP Services</div>
+                            <div style="font-size:24px;font-weight:700;color:#ffffff;">Commande expédiée</div>
+                            <div style="display:inline-block;background:#8b5cf6;color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;margin-top:12px;">📦 En transit</div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+                                Bonjour <strong th:text="${customerName}">Client</strong>, excellente nouvelle — votre commande est en route !
+                            </p>
+
+                            <!-- Tracking card -->
+                            <div style="background:linear-gradient(135deg,#fefce8,#fef9c3);border:2px solid #facc15;border-radius:10px;padding:24px;text-align:center;margin-bottom:24px;">
+                                <div style="font-size:12px;font-weight:600;color:#a16207;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Numéro de suivi</div>
+                                <div style="font-size:20px;font-weight:700;color:#78350f;font-family:'Courier New',monospace;letter-spacing:2px;" th:text="${trackingNumber}">1Z999AA1234567890</div>
+                            </div>
+
+                            <!-- Order card -->
+                            <div style="background-color:#f8f9fb;border-radius:10px;padding:24px;margin-bottom:24px;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+                                    <tr>
+                                        <td style="font-size:16px;font-weight:700;color:#4f6df5;">Commande #<span th:text="${order.id}">12345</span></td>
+                                        <td align="right"><span style="background:#ede9fe;color:#7c3aed;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">Expédiée</span></td>
+                                    </tr>
+                                </table>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Service</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.serviceName}">Service Web</td></tr>
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Montant</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.totalAmount + ' EUR'}">1 500 EUR</td></tr>
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Date d'expédition</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${currentDate}">22/08/2025</td></tr>
+                                    <tr><td style="padding:8px 0;">Délai estimé</td><td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;">3-5 jours ouvrables</td></tr>
+                                </table>
+                            </div>
+
+                            <!-- Timeline -->
+                            <div style="margin-bottom:24px;">
+                                <div style="font-size:14px;font-weight:600;color:#1a1f36;margin-bottom:14px;">Suivi de livraison</div>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td width="32" valign="top" style="padding-right:12px;">
+                                            <div style="width:24px;height:24px;background:#22c55e;border-radius:50%;text-align:center;line-height:24px;color:#fff;font-size:11px;font-weight:700;">✓</div>
+                                        </td>
+                                        <td style="padding-bottom:14px;border-bottom:1px solid #f3f4f6;">
+                                            <div style="font-size:13px;font-weight:600;color:#1a1f36;">Commande confirmée</div>
+                                            <div style="font-size:12px;color:#9ca3af;">Votre commande a été reçue</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="32" valign="top" style="padding-right:12px;padding-top:14px;">
+                                            <div style="width:24px;height:24px;background:#22c55e;border-radius:50%;text-align:center;line-height:24px;color:#fff;font-size:11px;font-weight:700;">✓</div>
+                                        </td>
+                                        <td style="padding:14px 0;border-bottom:1px solid #f3f4f6;">
+                                            <div style="font-size:13px;font-weight:600;color:#1a1f36;">En préparation</div>
+                                            <div style="font-size:12px;color:#9ca3af;">Commande préparée par notre équipe</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="32" valign="top" style="padding-right:12px;padding-top:14px;">
+                                            <div style="width:24px;height:24px;background:#8b5cf6;border-radius:50%;text-align:center;line-height:24px;color:#fff;font-size:11px;font-weight:700;">→</div>
+                                        </td>
+                                        <td style="padding:14px 0;border-bottom:1px solid #f3f4f6;">
+                                            <div style="font-size:13px;font-weight:600;color:#7c3aed;">Expédiée</div>
+                                            <div style="font-size:12px;color:#9ca3af;">Votre commande est en transit</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width="32" valign="top" style="padding-right:12px;padding-top:14px;">
+                                            <div style="width:24px;height:24px;background:#d1d5db;border-radius:50%;text-align:center;line-height:24px;color:#fff;font-size:11px;font-weight:700;">4</div>
+                                        </td>
+                                        <td style="padding-top:14px;">
+                                            <div style="font-size:13px;font-weight:600;color:#9ca3af;">Livrée</div>
+                                            <div style="font-size:12px;color:#d1d5db;">En attente de livraison</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Important note -->
+                            <div style="background-color:#fffbeb;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:24px;">
+                                <div style="font-size:13px;font-weight:600;color:#92400e;margin-bottom:4px;">Important</div>
+                                <p style="margin:0;font-size:13px;color:#a16207;line-height:1.5;">Conservez votre numéro de suivi jusqu'à réception complète. En cas de problème, contactez-nous immédiatement.</p>
+                            </div>
+
+                            <!-- CTA -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding:8px 0 24px;">
+                                        <a href="https://lmp-services.ca/dashboard/orders"
+                                           style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+                                            Voir ma commande
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                Merci de votre confiance !<br>
+                                Cordialement, l'équipe <span th:text="${companyName}">LMP Services</span>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td><div th:replace="~{emails/common-footer :: email-footer}"></div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

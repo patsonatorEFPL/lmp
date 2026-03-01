@@ -3,161 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmation de réception - LMP</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #f8f9fa;
-            padding: 20px;
-        }
-        .email-container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e9ecef;
-        }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        .confirmation-badge {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 50px;
-            display: inline-block;
-            margin: 20px 0;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .message-content {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #28a745;
-        }
-        .contact-info {
-            background-color: #e3f2fd;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #6c757d;
-            font-size: 14px;
-        }
-        .social-links {
-            margin: 15px 0;
-        }
-        .social-links a {
-            display: inline-block;
-            margin: 0 10px;
-            padding: 8px 12px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 12px;
-        }
-        .highlight {
-            color: #007bff;
-            font-weight: bold;
-        }
-        .info-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-    </style>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Confirmation de réception - LMP Services</title>
 </head>
-<body>
-    <div class="email-container">
-        <!-- En-tête -->
-        <div class="header">
-            <div class="logo">LMP Services</div>
-            <div class="confirmation-badge">
-                ✓ Message reçu avec succès
-            </div>
-        </div>
-
-        <!-- Contenu principal -->
-        <div>
-            <h2 style="color: #2c3e50; margin-bottom: 20px;">
-                Bonjour <span th:text="${contact.firstName}" class="highlight">Prénom</span>,
-            </h2>
-
-            <p style="font-size: 16px; margin-bottom: 20px;">
-                Nous avons bien reçu votre message et nous vous en remercions pour votre intérêt pour nos services.
-            </p>
-
-            <div class="message-content">
-                <h3 style="color: #28a745; margin-top: 0;">📧 Récapitulatif de votre demande</h3>
-                <div class="contact-info">
-                    <p><strong>Sujet :</strong> <span th:text="${contact.subject}">Sujet du message</span></p>
-                    <p><strong>Date d'envoi :</strong> <span th:text="${#temporals.format(contact.submittedAt, 'dd/MM/yyyy à HH:mm')}">Date</span></p>
-                </div>
-            </div>
-
-            <div class="info-box">
-                <h4 style="margin-top: 0; color: #856404;">⏱️ Prochaines étapes</h4>
-                <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>Notre équipe va examiner votre demande dans les plus brefs délais</li>
-                    <li>Vous recevrez une réponse personnalisée sous <strong>24-48 heures ouvrables</strong></li>
-                    <li>Pour toute urgence, n'hésitez pas à nous contacter directement</li>
-                </ul>
-            </div>
-
-            <div class="contact-info">
-                <h4 style="color: #007bff; margin-top: 0;">📞 Nos coordonnées</h4>
-                <p style="margin: 5px 0;"><strong>Email :</strong> support@lmp-services.ca</p>
-                <p style="margin: 5px 0;"><strong>Téléphone :</strong> +33 (0)1 23 45 67 89</p>
-                <p style="margin: 5px 0;"><strong>Horaires :</strong> Lundi - Vendredi, 9h00 - 18h00</p>
-            </div>
-
-            <p style="margin-top: 25px;">
-                En attendant notre réponse, nous vous invitons à découvrir nos services sur notre site web 
-                ou à nous suivre sur nos réseaux sociaux pour rester informé de nos actualités.
-            </p>
-        </div>
-
-        <!-- Pied de page -->
-        <div class="footer">
-            <div class="social-links">
-                <a href="#" style="background-color: #1877f2;">Facebook</a>
-                <a href="#" style="background-color: #1da1f2;">Twitter</a>
-                <a href="#" style="background-color: #0077b5;">LinkedIn</a>
-                <a href="#" style="background-color: #e4405f;">Instagram</a>
-            </div>
-            
-            <p style="margin: 10px 0;">
-                <strong>LMP Services</strong><br>
-                Votre partenaire de confiance pour tous vos projets
-            </p>
-            
-            <p style="font-size: 12px; color: #adb5bd; margin-top: 15px;">
-                Cet email a été envoyé automatiquement. Merci de ne pas répondre directement à ce message.<br>
-                Pour toute question, utilisez notre formulaire de contact ou nos coordonnées ci-dessus.
-            </p>
-        </div>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Nous avons bien reçu votre message. Notre équipe vous répondra sous 24-48h ouvrables.
     </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f7;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:36px 32px;text-align:center;">
+                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;">LMP Services</div>
+                            <div style="font-size:24px;font-weight:700;color:#ffffff;">Message reçu</div>
+                            <div style="display:inline-block;background:#22c55e;color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;margin-top:12px;">✓ Reçu avec succès</div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            <h2 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#1a1f36;">
+                                Bonjour <span th:text="${contact.firstName}">Prénom</span>,
+                            </h2>
+                            <p style="margin:0 0 24px;font-size:15px;color:#4b5563;line-height:1.6;">
+                                Nous avons bien reçu votre message et nous vous en remercions. Notre équipe va l'examiner dans les plus brefs délais.
+                            </p>
+
+                            <!-- Recap card -->
+                            <div style="background-color:#f8f9fb;border-left:4px solid #22c55e;border-radius:0 10px 10px 0;padding:20px;margin-bottom:24px;">
+                                <div style="font-size:14px;font-weight:600;color:#1a1f36;margin-bottom:12px;">Récapitulatif de votre demande</div>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
+                                    <tr>
+                                        <td style="padding:6px 0;border-bottom:1px solid #e5e7eb;font-weight:500;">Sujet</td>
+                                        <td align="right" style="padding:6px 0;border-bottom:1px solid #e5e7eb;color:#1a1f36;" th:text="${contact.subject}">Sujet</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:6px 0;font-weight:500;">Date d'envoi</td>
+                                        <td align="right" style="padding:6px 0;color:#1a1f36;" th:text="${#temporals.format(contact.submittedAt, 'dd/MM/yyyy à HH:mm')}">Date</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Next steps -->
+                            <div style="background-color:#fffbeb;border-radius:8px;padding:20px;margin-bottom:24px;">
+                                <div style="font-size:14px;font-weight:600;color:#92400e;margin-bottom:10px;">Prochaines étapes</div>
+                                <ul style="margin:0;padding-left:16px;font-size:13px;color:#a16207;line-height:1.8;">
+                                    <li>Notre équipe examine votre demande</li>
+                                    <li>Réponse personnalisée sous <strong>24-48h ouvrables</strong></li>
+                                    <li>Pour toute urgence, contactez-nous directement</li>
+                                </ul>
+                            </div>
+
+                            <!-- Contact info -->
+                            <div style="background-color:#f0f4ff;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px;">
+                                <div style="font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:6px;">Nos coordonnées</div>
+                                <span style="font-size:13px;color:#4b5563;line-height:1.6;">
+                                    <a href="mailto:support@lmp-services.ca" style="color:#4f6df5;text-decoration:none;">support@lmp-services.ca</a><br>
+                                    Lundi - Vendredi, 9h00 - 18h00
+                                </span>
+                            </div>
+
+                            <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                En attendant, n'hésitez pas à découvrir nos services sur notre site web.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td><div th:replace="~{emails/common-footer :: email-footer}"></div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

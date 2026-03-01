@@ -17,6 +17,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 
 import com.lmp.service.auth.CustomOAuth2UserService;
+import com.lmp.service.auth.CustomOidcUserService;
 import com.lmp.service.auth.CustomUserDetailsService;
 
 /**
@@ -37,6 +38,9 @@ public class SecurityConfig {
 
     @Autowired(required = false)
     private CustomOAuth2UserService customOAuth2UserService;
+
+    @Autowired(required = false)
+    private CustomOidcUserService customOidcUserService;
 
     /**
      * Configuration du filtre de sécurité HTTP.
@@ -141,8 +145,11 @@ public class SecurityConfig {
                             if (customOAuth2UserService != null) {
                                 userInfo.userService(customOAuth2UserService);
                             }
+                            if (customOidcUserService != null) {
+                                userInfo.oidcUserService(customOidcUserService);
+                            }
                         })
-                        .defaultSuccessUrl("/", true)
+                        .successHandler(purchaseIntentAuthenticationSuccessHandler)
                         .failureUrl("/login?error=true"))
 
                 // Configuration de la déconnexion

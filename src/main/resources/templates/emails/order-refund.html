@@ -3,258 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remboursement traité</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background-color: #28a745;
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px 20px;
-        }
-        .refund-notice {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #155724;
-        }
-        .refund-notice h3 {
-            margin: 0 0 10px 0;
-            color: #28a745;
-        }
-        .refund-amount {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            color: #28a745;
-            margin: 20px 0;
-        }
-        .order-info {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .order-number {
-            font-size: 18px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        .order-status {
-            background-color: #28a745;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .order-details {
-            margin: 15px 0;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-        .refund-details {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .refund-details h4 {
-            margin: 0 0 15px 0;
-            color: #856404;
-        }
-        .footer {
-            background-color: #6c757d;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 14px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .btn:hover {
-            background-color: #218838;
-        }
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                max-width: none;
-            }
-            .order-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .order-status {
-                margin-top: 10px;
-            }
-        }
-    </style>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Remboursement traité - LMP Services</title>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>💰 Remboursement Traité</h1>
-            <p th:text="${companyName}">LMP Digital Services</p>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-            <p>Bonjour <span th:text="${customerName}">Client</span>,</p>
-            
-            <!-- Refund Notice -->
-            <div class="refund-notice">
-                <h3>✅ Votre remboursement a été traité avec succès</h3>
-                <p>Nous vous confirmons que le remboursement pour votre commande a été effectué. Les détails sont présentés ci-dessous.</p>
-            </div>
-
-            <!-- Refund Amount -->
-            <div class="refund-amount">
-                <span th:text="${refundAmount}">1,500.00 EUR</span>
-            </div>
-
-            <!-- Order Information -->
-            <div class="order-info">
-                <div class="order-header">
-                    <div class="order-number">
-                        Commande #<span th:text="${order.id}">12345</span>
-                    </div>
-                    <div class="order-status">
-                        Remboursée
-                    </div>
-                </div>
-
-                <div class="order-details">
-                    <div class="detail-row">
-                        <span>Date de commande :</span>
-                        <span th:text="${order.createdAt}">22/08/2025</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Service :</span>
-                        <span th:text="${order.serviceName}">Service Web</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Description :</span>
-                        <span th:text="${order.description}">Développement site web</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Montant original :</span>
-                        <span th:text="${order.totalAmount + ' EUR'}">1,500.00 EUR</span>
-                    </div>
-                    <div class="detail-row">
-                        <span>Date de remboursement :</span>
-                        <span th:text="${currentDate}">22/08/2025 à 14:30</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Refund Details -->
-            <div class="refund-details">
-                <h4>📋 Détails du remboursement</h4>
-                <div class="detail-row">
-                    <span>Numéro de référence :</span>
-                    <span th:text="${refundId}">REF123456789</span>
-                </div>
-                <div class="detail-row">
-                    <span>Montant remboursé :</span>
-                    <span th:text="${refundAmount}">1,500.00 EUR</span>
-                </div>
-                <div class="detail-row">
-                    <span>Méthode de remboursement :</span>
-                    <span>Carte de crédit originale</span>
-                </div>
-                <div class="detail-row">
-                    <span>Délai d'apparition :</span>
-                    <span>3-5 jours ouvrables</span>
-                </div>
-            </div>
-
-            <!-- Important Information -->
-            <div>
-                <h4>📌 Information importante</h4>
-                <ul>
-                    <li><strong>Délai de traitement :</strong> Le remboursement apparaîtra sur votre relevé dans 3-5 jours ouvrables</li>
-                    <li><strong>Référence :</strong> Conservez le numéro de référence <strong th:text="${refundId}">REF123456789</strong> pour vos dossiers</li>
-                    <li><strong>Montant :</strong> Le montant exact de <strong th:text="${refundAmount}">1,500.00 EUR</strong> sera crédité</li>
-                    <li><strong>Carte :</strong> Le remboursement sera effectué sur la carte utilisée pour le paiement original</li>
-                </ul>
-            </div>
-
-            <!-- What to expect -->
-            <div style="background-color: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;">
-                <h4 style="margin: 0 0 10px 0; color: #007bff;">🔍 À quoi s'attendre</h4>
-                <p style="margin: 0;">Le remboursement apparaîtra sur votre relevé bancaire sous le nom "<strong>LMP Digital Services</strong>" ou "<strong>Remboursement</strong>". Si vous ne voyez pas le crédit après 5 jours ouvrables, contactez votre banque ou notre service clientèle.</p>
-            </div>
-
-            <div style="text-align: center;">
-                <a href="#" class="btn">Repasser une commande</a>
-            </div>
-
-            <p>Si vous avez des questions concernant ce remboursement, n'hésitez pas à nous contacter en mentionnant le numéro de référence.</p>
-
-            <p>Nous vous remercions de votre compréhension et espérons avoir l'opportunité de mieux vous servir dans le futur.</p>
-
-            <p>Cordialement,<br>
-            L'équipe <span th:text="${companyName}">LMP Digital Services</span></p>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <p><strong th:text="${companyName}">LMP Digital Services</strong></p>
-            <p>123 Rue Principale, Ville, Province, Code Postal</p>
-            <p>Téléphone : +1 (555) 123-4567 | Email : support@lmp-services.ca</p>
-            <p style="margin-top: 15px; font-size: 12px;">
-                Cet email a été envoyé automatiquement, merci de ne pas répondre directement.
-            </p>
-        </div>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Votre remboursement a été traité avec succès. Les fonds apparaîtront sous 3-5 jours.
     </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f7;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:36px 32px;text-align:center;">
+                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;" th:text="${companyName}">LMP Services</div>
+                            <div style="font-size:24px;font-weight:700;color:#ffffff;">Remboursement traité</div>
+                            <div style="display:inline-block;background:#22c55e;color:#fff;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:600;margin-top:12px;">✓ Remboursé</div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+                                Bonjour <strong th:text="${customerName}">Client</strong>, votre remboursement a été traité avec succès.
+                            </p>
+
+                            <!-- Refund amount highlight -->
+                            <div style="text-align:center;padding:20px;margin-bottom:24px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-radius:10px;">
+                                <div style="font-size:12px;font-weight:600;color:#16a34a;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Montant remboursé</div>
+                                <div style="font-size:28px;font-weight:700;color:#15803d;" th:text="${refundAmount}">1 500,00 EUR</div>
+                            </div>
+
+                            <!-- Order card -->
+                            <div style="background-color:#f8f9fb;border-radius:10px;padding:24px;margin-bottom:24px;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+                                    <tr>
+                                        <td style="font-size:16px;font-weight:700;color:#4f6df5;">Commande #<span th:text="${order.id}">12345</span></td>
+                                        <td align="right"><span style="background:#dcfce7;color:#16a34a;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">Remboursée</span></td>
+                                    </tr>
+                                </table>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Date de commande</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.createdAt}">22/08/2025</td></tr>
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Service</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.serviceName}">Service Web</td></tr>
+                                    <tr><td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Montant original</td><td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${order.totalAmount + ' EUR'}">1 500 EUR</td></tr>
+                                    <tr><td style="padding:8px 0;">Date de remboursement</td><td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;" th:text="${currentDate}">22/08/2025</td></tr>
+                                </table>
+                            </div>
+
+                            <!-- Refund details -->
+                            <div style="background-color:#fffbeb;border-radius:10px;padding:20px;margin-bottom:24px;">
+                                <div style="font-size:14px;font-weight:600;color:#92400e;margin-bottom:12px;">Détails du remboursement</div>
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px;color:#78350f;">
+                                    <tr><td style="padding:6px 0;border-bottom:1px solid #fde68a;">Référence</td><td align="right" style="padding:6px 0;border-bottom:1px solid #fde68a;font-weight:600;" th:text="${refundId}">REF123</td></tr>
+                                    <tr><td style="padding:6px 0;border-bottom:1px solid #fde68a;">Montant</td><td align="right" style="padding:6px 0;border-bottom:1px solid #fde68a;font-weight:600;" th:text="${refundAmount}">1 500 EUR</td></tr>
+                                    <tr><td style="padding:6px 0;border-bottom:1px solid #fde68a;">Méthode</td><td align="right" style="padding:6px 0;border-bottom:1px solid #fde68a;">Carte de crédit originale</td></tr>
+                                    <tr><td style="padding:6px 0;">Délai</td><td align="right" style="padding:6px 0;font-weight:600;">3-5 jours ouvrables</td></tr>
+                                </table>
+                            </div>
+
+                            <!-- Info box -->
+                            <div style="background-color:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:24px;">
+                                <div style="font-size:13px;font-weight:600;color:#1e40af;margin-bottom:4px;">À savoir</div>
+                                <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.5;">Le remboursement apparaîtra sur votre relevé sous le nom "<strong>LMP Services</strong>". Si vous ne le voyez pas après 5 jours, contactez votre banque ou notre service client.</p>
+                            </div>
+
+                            <!-- CTA -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding:8px 0 24px;">
+                                        <a href="https://lmp-services.ca/services"
+                                           style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
+                                            Repasser une commande
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                Merci de votre compréhension.<br>
+                                Cordialement, l'équipe <span th:text="${companyName}">LMP Services</span>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td><div th:replace="~{emails/common-footer :: email-footer}"></div></td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

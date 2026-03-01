@@ -85,30 +85,11 @@ logger.info("DEBUG - needsAttention.size(): {}", needsAttention != null ? needsA
     }
 
     /**
-     * Page de détails d'une commande
+     * Redirige les anciens liens /admin/orders/{id} vers la page liste avec modal.
      */
     @GetMapping("/{orderId}")
-    public String orderDetails(@PathVariable Long orderId, Model model) {
-        logger.info("Accès aux détails de la commande {}", orderId);
-
-        try {
-            OrderDto order = orderAdminService.getOrderDetails(orderId);
-            List<OrderStatusHistoryDto> history = historyService.getOrderHistory(orderId);
-            List<RefundDto> refunds = refundService.getOrderRefunds(orderId);
-
-            model.addAttribute("order", order);
-            model.addAttribute("history", history);
-            model.addAttribute("refunds", refunds);
-            model.addAttribute("statuses", OrderStatus.values());
-            model.addAttribute("canBeRefunded", refundService.canBeRefunded(orderId));
-            model.addAttribute("maxRefundable", refundService.getMaxRefundableAmount(orderId));
-
-        } catch (Exception e) {
-            logger.error("Erreur récupération détails commande {}: {}", orderId, e.getMessage());
-            model.addAttribute("error", "Erreur lors de la récupération des détails de la commande");
-        }
-
-        return "admin/order-details";
+    public String orderDetailsRedirect(@PathVariable Long orderId) {
+        return "redirect:/admin/orders?detail=" + orderId;
     }
 
     /**

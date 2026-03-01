@@ -86,7 +86,8 @@
                     <strong th:text="${#lists.size(needsAttention)}">0</strong> commande(s) nécessitent votre attention.
                     <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
                         <a th:each="order : ${needsAttention}"
-                           th:href="@{/admin/orders/{id}(id=${order.id})}"
+                           href="javascript:void(0)"
+                           th:onclick="'showOrderDetail(' + ${order.id} + ')'"
                            class="db-btn db-btn-sm" style="font-size:11px;">
                             #<span th:text="${order.id}">0</span> — <span th:text="${order.customerEmail}">email</span>
                         </a>
@@ -227,6 +228,92 @@
     </div><!-- /db-main -->
 </div><!-- /db-root -->
 
+<!-- Order Detail Modal -->
+<div class="db-modal-overlay" id="orderDetailModal">
+    <div class="db-modal" style="max-width:900px;max-height:90vh;display:flex;flex-direction:column;">
+        <div class="db-modal-header">
+            <span class="db-modal-title" id="orderDetailTitle"><i class="fas fa-shopping-cart"></i> Commande #...</span>
+            <button class="db-modal-close" onclick="closeModal('orderDetailModal')">&times;</button>
+        </div>
+        <div class="db-modal-body" id="orderDetailBody" style="overflow-y:auto;flex:1;">
+            <div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Chargement…</div>
+        </div>
+        <div class="db-modal-footer" id="orderDetailFooter">
+            <button class="db-btn" onclick="closeModal('orderDetailModal')">Fermer</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Status Modal (from detail) -->
+<div class="db-modal-overlay" id="editStatusModal" style="z-index:1001;">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-edit"></i> Modifier le statut</span>
+            <button class="db-modal-close" onclick="closeModal('editStatusModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-group">
+                <label class="db-form-label">Nouveau statut</label>
+                <select class="db-select" id="newStatus">
+                    <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}">PENDING</option>
+                </select>
+            </div>
+            <div class="db-form-group" style="margin-top:12px;">
+                <label class="db-form-label">Note (optionnel)</label>
+                <textarea class="db-textarea" id="statusNote" rows="3" placeholder="Raison du changement"></textarea>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('editStatusModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="updateOrderStatus()">Modifier</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Notes Modal (from detail) -->
+<div class="db-modal-overlay" id="editNotesModal" style="z-index:1001;">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-sticky-note"></i> Notes administratives</span>
+            <button class="db-modal-close" onclick="closeModal('editNotesModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-group">
+                <label class="db-form-label">Notes</label>
+                <textarea class="db-textarea" id="adminNotes" rows="5" placeholder="Notes internes…"></textarea>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('editNotesModal')">Annuler</button>
+            <button class="db-btn db-btn-accent" onclick="updateOrderNotes()">Sauvegarder</button>
+        </div>
+    </div>
+</div>
+
+<!-- Refund Modal (from detail) -->
+<div class="db-modal-overlay" id="refundModal" style="z-index:1001;">
+    <div class="db-modal">
+        <div class="db-modal-header">
+            <span class="db-modal-title"><i class="fas fa-undo"></i> Remboursement</span>
+            <button class="db-modal-close" onclick="closeModal('refundModal')">&times;</button>
+        </div>
+        <div class="db-modal-body">
+            <div class="db-form-group">
+                <label class="db-form-label">Montant</label>
+                <input type="number" class="db-input" id="refundAmount" step="0.01" min="0">
+            </div>
+            <div class="db-form-group" style="margin-top:12px;">
+                <label class="db-form-label">Raison</label>
+                <textarea class="db-textarea" id="refundReason" rows="3" placeholder="Raison du remboursement"></textarea>
+            </div>
+        </div>
+        <div class="db-modal-footer">
+            <button class="db-btn" onclick="closeModal('refundModal')">Annuler</button>
+            <button class="db-btn db-btn-warning" onclick="createRefund()"><i class="fas fa-undo"></i> Rembourser</button>
+        </div>
+    </div>
+</div>
+
 <!-- Export Modal -->
 <div class="db-modal-overlay" id="exportModal">
     <div class="db-modal">
@@ -335,16 +422,16 @@
             tr.setAttribute('data-order-id', order.id);
             tr.innerHTML =
                 '<td><input type="checkbox" class="db-table-check order-checkbox" value="' + order.id + '"></td>' +
-                '<td><a href="/admin/orders/' + order.id + '" style="color:var(--db-accent);font-weight:600;text-decoration:none;">#' + order.id + '</a></td>' +
+                '<td><a href="javascript:void(0)" onclick="showOrderDetail(' + order.id + ')" style="color:var(--db-accent);font-weight:600;text-decoration:none;cursor:pointer;">#' + order.id + '</a></td>' +
                 '<td style="font-size:12px;color:var(--db-text-muted);">' + formatDate(order.createdAt) + '</td>' +
                 '<td><div style="font-weight:500;color:var(--db-text-primary);">' + (order.customerEmail || '') + '</div>' +
                     (order.customerName ? '<div style="font-size:11px;color:var(--db-text-muted);">' + order.customerName + '</div>' : '') + '</td>' +
                 '<td class="db-hide-tablet"><span class="db-status-badge db-status-progress" style="font-size:11px;">' + (order.serviceName || '') + '</span></td>' +
-                '<td style="font-weight:600;">' + (order.amount || '0') + ' ' + (order.currency || 'CAD') + '</td>' +
+                '<td style="font-weight:600;">' + (order.amount || '0') + ' ' + (order.currency || 'EUR') + '</td>' +
                 '<td>' + getStatusBadge(order.status) + '</td>' +
                 '<td class="db-hide-tablet">' + getPaymentBadge(order.paymentStatus) + '</td>' +
                 '<td><div class="db-table-actions" style="justify-content:center;">' +
-                    '<a href="/admin/orders/' + order.id + '" class="db-action-btn" title="Voir"><i class="fas fa-eye"></i></a>' +
+                    '<button class="db-action-btn" onclick="showOrderDetail(' + order.id + ')" title="Voir"><i class="fas fa-eye"></i></button>' +
                     '<button class="db-action-btn db-action-btn-warning" onclick="syncWithStripe(' + order.id + ')" title="Sync Stripe"><i class="fab fa-stripe-s"></i></button>' +
                 '</div></td>';
             tbody.appendChild(tr);
@@ -461,6 +548,221 @@
     // ── Modal helpers ──
     function openModal(id) { document.getElementById(id).classList.add('open'); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // ── Order Detail Modal ──
+    var currentDetailOrderId = null;
+
+    function showOrderDetail(orderId) {
+        currentDetailOrderId = orderId;
+        document.getElementById('orderDetailTitle').innerHTML = '<i class="fas fa-shopping-cart"></i> Commande #' + orderId;
+        document.getElementById('orderDetailBody').innerHTML = '<div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin"></i> Chargement…</div>';
+        openModal('orderDetailModal');
+
+        // Fetch order details
+        Promise.all([
+            fetch(config.apiBaseUrl + '/' + orderId).then(function(r) { return r.json(); }),
+            fetch(config.apiBaseUrl + '/' + orderId + '/history').then(function(r) { return r.json(); }).catch(function() { return []; }),
+            fetch(config.apiBaseUrl + '/' + orderId + '/refunds').then(function(r) { return r.json(); }).catch(function() { return []; })
+        ]).then(function(results) {
+            var order = results[0];
+            var history = results[1] || [];
+            var refunds = results[2] || [];
+            renderOrderDetail(order, history, refunds);
+        }).catch(function() {
+            document.getElementById('orderDetailBody').innerHTML = '<div class="db-alert db-alert-danger"><i class="fas fa-exclamation-triangle"></i> Erreur lors du chargement des détails.</div>';
+        });
+    }
+
+    function renderOrderDetail(order, history, refunds) {
+        var priorityLabel = (order.priority || 5) <= 3 ? 'Haute' : (order.priority || 5) <= 7 ? 'Moyenne' : 'Basse';
+        var priorityClass = (order.priority || 5) <= 3 ? 'db-status-cancel' : (order.priority || 5) <= 7 ? 'db-status-pending' : 'db-status-done';
+
+        var html = '<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;">';
+
+        // Left column
+        html += '<div style="display:flex;flex-direction:column;gap:16px;">';
+
+        // Order info card
+        html += '<div class="db-card" style="margin:0;">';
+        html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-shopping-cart"></i> Informations commande</span></div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">';
+        html += '<div>';
+        html += detailRow('ID Commande', order.id);
+        html += detailRow('Date création', formatDate(order.createdAt));
+        html += detailRow('Statut', getStatusBadge(order.status));
+        html += detailRow('Service', order.serviceName || 'N/A');
+        html += '</div><div>';
+        html += detailRow('Montant total', '<span style="font-size:18px;font-weight:700;color:var(--db-accent);">' + (order.amount || '0') + ' ' + (order.currency || 'EUR') + '</span>');
+        html += detailRow('Paiement', getPaymentBadge(order.paymentStatus));
+        if (order.paidAt) html += detailRow('Date paiement', formatDate(order.paidAt));
+        html += detailRow('Priorité', '<span class="db-status-badge ' + priorityClass + '">' + priorityLabel + '</span>');
+        html += '</div></div></div>';
+
+        // Client info card
+        html += '<div class="db-card" style="margin:0;">';
+        html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-user"></i> Informations client</span></div>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">';
+        html += '<div>';
+        html += detailRow('Email', order.customerEmail || 'N/A');
+        html += detailRow('Nom', order.customerName || (order.customerFirstName || '') + ' ' + (order.customerLastName || '') || 'N/A');
+        html += '</div><div>';
+        if (order.billingCity) html += detailRow('Ville', order.billingCity);
+        if (order.billingCountry) html += detailRow('Pays', order.billingCountry);
+        html += '</div></div></div>';
+
+        // Stripe info card
+        if (order.stripeSessionId || order.stripePaymentIntentId) {
+            html += '<div class="db-card" style="margin:0;">';
+            html += '<div class="db-card-header"><span class="db-card-title"><i class="fab fa-stripe"></i> Informations Stripe</span></div>';
+            html += '<div style="margin-top:12px;">';
+            if (order.stripeSessionId) html += detailRow('Session ID', '<span style="font-family:monospace;font-size:12px;cursor:pointer;" onclick="copyToClipboard(\'' + order.stripeSessionId + '\')">' + order.stripeSessionId + ' 📋</span>');
+            if (order.stripePaymentIntentId) html += detailRow('Payment Intent', '<span style="font-family:monospace;font-size:12px;cursor:pointer;" onclick="copyToClipboard(\'' + order.stripePaymentIntentId + '\')">' + order.stripePaymentIntentId + ' 📋</span>');
+            if (order.stripeCustomerId) html += detailRow('Customer ID', '<span style="font-family:monospace;font-size:12px;cursor:pointer;" onclick="copyToClipboard(\'' + order.stripeCustomerId + '\')">' + order.stripeCustomerId + ' 📋</span>');
+            if (order.paymentMethod) html += detailRow('Méthode', order.paymentMethod);
+            html += '</div></div>';
+        }
+
+        html += '</div>'; // end left column
+
+        // Right column
+        html += '<div style="display:flex;flex-direction:column;gap:16px;">';
+
+        // Quick actions
+        html += '<div class="db-card" style="margin:0;">';
+        html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-bolt"></i> Actions rapides</span></div>';
+        html += '<div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">';
+        html += '<button class="db-btn db-btn-sm db-btn-accent" onclick="openStatusModal()" style="width:100%;justify-content:center;"><i class="fas fa-edit"></i> Modifier statut</button>';
+        html += '<button class="db-btn db-btn-sm" onclick="openDetailSyncStripe()" style="width:100%;justify-content:center;"><i class="fab fa-stripe-s"></i> Synchroniser Stripe</button>';
+        html += '<button class="db-btn db-btn-sm" onclick="openNotesModal()" style="width:100%;justify-content:center;"><i class="fas fa-sticky-note"></i> Modifier Notes</button>';
+        html += '<button class="db-btn db-btn-sm db-btn-warning" onclick="openRefundModal()" style="width:100%;justify-content:center;"><i class="fas fa-undo"></i> Remboursement</button>';
+        html += '</div></div>';
+
+        // History
+        if (history && history.length > 0) {
+            html += '<div class="db-card" style="margin:0;">';
+            html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-history"></i> Historique</span></div>';
+            html += '<div style="margin-top:12px;">';
+            history.forEach(function(entry) {
+                html += '<div style="padding:6px 0;border-bottom:1px solid var(--db-border);">';
+                html += '<div style="font-weight:600;color:var(--db-text-primary);font-size:13px;">' + (entry.newStatus || '') + '</div>';
+                html += '<div style="font-size:11px;color:var(--db-text-muted);">' + (entry.note || 'Changement automatique') + '</div>';
+                html += '<div style="font-size:11px;color:var(--db-text-muted);">' + formatDate(entry.createdAt) + '</div>';
+                html += '</div>';
+            });
+            html += '</div></div>';
+        }
+
+        // Refunds
+        if (refunds && refunds.length > 0) {
+            html += '<div class="db-card" style="margin:0;">';
+            html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-undo"></i> Remboursements</span></div>';
+            refunds.forEach(function(refund) {
+                html += '<div style="padding:8px 0;border-bottom:1px solid var(--db-border);display:flex;justify-content:space-between;align-items:center;">';
+                html += '<div><div style="font-weight:600;color:var(--db-text-primary);">' + refund.amount + ' ' + (refund.currency || 'EUR') + '</div>';
+                html += '<div style="font-size:11px;color:var(--db-text-muted);">' + (refund.reason || '') + '</div></div>';
+                html += '<span class="db-status-badge db-status-progress">' + (refund.status || '') + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+
+        html += '</div>'; // end right column
+        html += '</div>'; // end grid
+
+        // Responsive
+        html += '<style>@media (max-width: 900px) { #orderDetailBody > div { grid-template-columns: 1fr !important; } }</style>';
+
+        document.getElementById('orderDetailBody').innerHTML = html;
+    }
+
+    function detailRow(label, value) {
+        return '<div style="display:flex;padding:6px 0;border-bottom:1px solid var(--db-border);font-size:13px;">' +
+            '<div style="width:140px;flex-shrink:0;font-weight:600;color:var(--db-text-secondary);">' + label + '</div>' +
+            '<div style="flex:1;color:var(--db-text-primary);word-break:break-all;">' + (value || 'N/A') + '</div></div>';
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('Copié: ' + text.substring(0, 30) + '…', 'success');
+        });
+    }
+
+    function openStatusModal() {
+        openModal('editStatusModal');
+    }
+
+    function openNotesModal() {
+        document.getElementById('adminNotes').value = '';
+        openModal('editNotesModal');
+    }
+
+    function openRefundModal() {
+        document.getElementById('refundAmount').value = '';
+        document.getElementById('refundReason').value = '';
+        openModal('refundModal');
+    }
+
+    function openDetailSyncStripe() {
+        if (!currentDetailOrderId) return;
+        if (!confirmAction('Synchroniser cette commande avec Stripe ?')) return;
+        adminFetch(config.apiBaseUrl + '/' + currentDetailOrderId + '/sync-stripe', { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success) { showToast('Synchronisation réussie', 'success'); showOrderDetail(currentDetailOrderId); loadOrdersData(); }
+                else showToast(d.message, 'error');
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function updateOrderStatus() {
+        if (!currentDetailOrderId) return;
+        var status = document.getElementById('newStatus').value;
+        var note = document.getElementById('statusNote').value;
+        adminFetch(config.apiBaseUrl + '/' + currentDetailOrderId + '/status?newStatus=' + status + '&note=' + encodeURIComponent(note), { method: 'PUT' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success) { showToast('Statut mis à jour', 'success'); closeModal('editStatusModal'); showOrderDetail(currentDetailOrderId); loadOrdersData(); }
+                else showToast(d.message, 'error');
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function updateOrderNotes() {
+        if (!currentDetailOrderId) return;
+        adminFetch(config.apiBaseUrl + '/' + currentDetailOrderId + '/notes', {
+            method: 'PUT',
+            body: JSON.stringify({ notes: document.getElementById('adminNotes').value })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) { showToast('Notes mises à jour', 'success'); closeModal('editNotesModal'); }
+            else showToast(d.message, 'error');
+        })
+        .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function createRefund() {
+        if (!currentDetailOrderId) return;
+        var amount = document.getElementById('refundAmount').value;
+        var reason = document.getElementById('refundReason').value;
+        if (!amount || !reason) { showToast('Montant et raison requis', 'error'); return; }
+        adminFetch(config.apiBaseUrl + '/' + currentDetailOrderId + '/refund?amount=' + amount + '&reason=' + encodeURIComponent(reason), { method: 'POST' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success) { showToast('Remboursement créé', 'success'); closeModal('refundModal'); showOrderDetail(currentDetailOrderId); loadOrdersData(); }
+                else showToast(d.message, 'error');
+            })
+            .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    // Auto-open detail if ?detail=xxx in URL
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var detailId = params.get('detail');
+        if (detailId) {
+            setTimeout(function() { showOrderDetail(parseInt(detailId)); }, 500);
+        }
+    })();
 </script>
 
 </body>

@@ -36,6 +36,28 @@
         .db-cat-item:hover { background: var(--db-hover); color: var(--db-text-primary); }
         .db-cat-item.active { background: var(--db-accent-light); color: var(--db-accent); font-weight: 600; }
         @media (max-width: 900px) { .db-services-grid { grid-template-columns: 1fr !important; } }
+
+        /* Benefit row styles */
+        .benefit-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 10px; border: 1px solid var(--db-border); border-radius: 8px;
+            background: var(--db-hover); font-size: 13px; transition: all 0.15s;
+        }
+        .benefit-row:hover { border-color: var(--db-accent); }
+        .benefit-row .benefit-bullet {
+            color: var(--db-success); font-size: 12px; flex-shrink: 0;
+        }
+        .benefit-row input {
+            flex: 1; border: none; background: transparent; color: var(--db-text-primary);
+            font-size: 13px; font-family: inherit; outline: none; padding: 2px 0;
+        }
+        .benefit-row .benefit-remove {
+            width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer;
+            background: transparent; color: var(--db-text-muted); font-size: 11px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .benefit-row .benefit-remove:hover { background: var(--db-danger, #ef4444); color: #fff; }
     </style>
 </head>
 <body>
@@ -154,37 +176,46 @@
                             <!-- Inline Offers -->
                             <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">
                                 <th:block th:each="offer : ${offers}" th:if="${offer.service.id == service.id}">
-                                    <div class="db-offer-card" style="flex:1;min-width:200px;">
-                                        <div>
-                                            <div style="font-size:12px;font-weight:500;color:var(--db-text-secondary);" th:text="${offer.name}">Offre</div>
+                                    <div class="db-offer-card" style="flex:1;min-width:220px;flex-direction:column;align-items:stretch;">
+                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                                             <div>
-                                                <span class="db-offer-price" th:text="${offer.price + ' €'}">0 €</span>
-                                                <span th:if="${offer.originalPrice != null}" class="db-offer-original" th:text="${offer.originalPrice + ' €'}">0 €</span>
+                                                <div style="font-size:12px;font-weight:500;color:var(--db-text-secondary);" th:text="${offer.name}">Offre</div>
+                                                <div>
+                                                    <span class="db-offer-price" th:text="${offer.price + ' €'}">0 €</span>
+                                                    <span th:if="${offer.originalPrice != null}" class="db-offer-original" th:text="${offer.originalPrice + ' €'}">0 €</span>
+                                                </div>
+                                                <div style="display:flex;gap:4px;margin-top:4px;">
+                                                    <span class="db-status-badge" th:classappend="${offer.active ? 'db-status-done' : 'db-status-cancel'}"
+                                                          style="font-size:9px;" th:text="${offer.active ? 'Actif' : 'Inactif'}">Actif</span>
+                                                    <span th:if="${offer.isDefault}" class="db-status-badge db-status-progress" style="font-size:9px;">Défaut</span>
+                                                    <span class="db-status-badge" style="font-size:9px;" th:text="${offer.durationType}">ONE_TIME</span>
+                                                </div>
                                             </div>
-                                            <div style="display:flex;gap:4px;margin-top:4px;">
-                                                <span class="db-status-badge" th:classappend="${offer.active ? 'db-status-done' : 'db-status-cancel'}"
-                                                      style="font-size:9px;" th:text="${offer.active ? 'Actif' : 'Inactif'}">Actif</span>
-                                                <span th:if="${offer.isDefault}" class="db-status-badge db-status-progress" style="font-size:9px;">Défaut</span>
-                                                <span class="db-status-badge" style="font-size:9px;" th:text="${offer.durationType}">ONE_TIME</span>
+                                            <div class="db-table-actions" style="flex-direction:column;">
+                                                <button class="db-action-btn" style="width:24px;height:24px;font-size:10px;"
+                                                        th:data-offer-id="${offer.id}"
+                                                        th:data-offer-name="${offer.name}"
+                                                        th:data-offer-price="${offer.price}"
+                                                        th:data-offer-original-price="${offer.originalPrice}"
+                                                        th:data-offer-duration="${offer.durationType}"
+                                                        th:data-offer-default="${offer.isDefault}"
+                                                        th:data-offer-active="${offer.active}"
+                                                        th:data-service-id="${offer.service.id}"
+                                                        onclick="editOffer(parseInt(this.dataset.offerId), this.dataset.offerName, parseFloat(this.dataset.offerPrice), this.dataset.offerOriginalPrice !== '' ? parseFloat(this.dataset.offerOriginalPrice) : null, this.dataset.offerDuration, this.dataset.offerDefault === 'true', this.dataset.offerActive === 'true', parseInt(this.dataset.serviceId))">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="db-action-btn db-action-btn-danger" style="width:24px;height:24px;font-size:10px;"
+                                                        th:onclick="'deleteOffer(' + ${offer.id} + ')'">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </div>
                                         </div>
-                                        <div class="db-table-actions" style="flex-direction:column;">
-                                            <button class="db-action-btn" style="width:24px;height:24px;font-size:10px;"
-                                                    th:data-offer-id="${offer.id}"
-                                                    th:data-offer-name="${offer.name}"
-                                                    th:data-offer-price="${offer.price}"
-                                                    th:data-offer-original-price="${offer.originalPrice}"
-                                                    th:data-offer-duration="${offer.durationType}"
-                                                    th:data-offer-default="${offer.isDefault}"
-                                                    th:data-offer-active="${offer.active}"
-                                                    th:data-service-id="${offer.service.id}"
-                                                    onclick="editOffer(parseInt(this.dataset.offerId), this.dataset.offerName, parseFloat(this.dataset.offerPrice), this.dataset.offerOriginalPrice !== '' ? parseFloat(this.dataset.offerOriginalPrice) : null, this.dataset.offerDuration, this.dataset.offerDefault === 'true', this.dataset.offerActive === 'true', parseInt(this.dataset.serviceId))">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="db-action-btn db-action-btn-danger" style="width:24px;height:24px;font-size:10px;"
-                                                    th:onclick="'deleteOffer(' + ${offer.id} + ')'">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                        <!-- Per-offer benefits shown inline -->
+                                        <div th:if="${offer.benefits != null and !offer.benefits.isEmpty()}" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--db-border);">
+                                            <div th:each="b : ${offer.benefits}" class="db-benefit-item" style="padding:3px 0;">
+                                                <i class="fas fa-check"></i>
+                                                <span th:text="${b.benefit}" style="font-size:12px;">Avantage</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </th:block>
@@ -286,9 +317,9 @@
     </div>
 </div>
 
-<!-- Offer Modal -->
+<!-- Offer Modal (Enhanced with Benefits) -->
 <div class="db-modal-overlay" id="offerModal">
-    <div class="db-modal">
+    <div class="db-modal" style="max-width:560px;">
         <div class="db-modal-header">
             <span class="db-modal-title" id="offerModalTitle"><i class="fas fa-tags"></i> Nouvelle offre</span>
             <button class="db-modal-close" onclick="closeModal('offerModal')">&times;</button>
@@ -332,10 +363,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Benefits Section -->
+            <div style="margin-top:16px;border-top:1px solid var(--db-border);padding-top:14px;">
+                <label class="db-form-label" style="display:flex;align-items:center;justify-content:space-between;">
+                    <span><i class="fas fa-check-circle" style="color:var(--db-success);margin-right:4px;"></i> Avantages de cette offre</span>
+                    <div style="display:flex;gap:4px;">
+                        <button type="button" class="db-btn db-btn-sm" onclick="openCopyBenefitsPanel()" style="font-size:11px;padding:4px 10px;" title="Copier depuis une autre offre">
+                            <i class="fas fa-copy"></i> Copier
+                        </button>
+                        <button type="button" class="db-btn db-btn-sm db-btn-accent" onclick="addBenefitRow()" style="font-size:11px;padding:4px 10px;">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                </label>
+                <!-- Copy from other offer panel -->
+                <div id="copyBenefitsPanel" style="display:none;margin-top:8px;padding:10px;border:1px dashed var(--db-accent);border-radius:8px;background:var(--db-accent-light);">
+                    <div style="font-size:12px;font-weight:600;color:var(--db-accent);margin-bottom:6px;">
+                        <i class="fas fa-copy"></i> Copier les avantages d'une autre offre
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <select class="db-select" id="copyFromOfferId" style="flex:1;font-size:12px;">
+                            <option value="">-- Sélectionner une offre --</option>
+                        </select>
+                        <button type="button" class="db-btn db-btn-sm db-btn-accent" onclick="copyBenefitsFromSelected()" style="font-size:11px;white-space:nowrap;">
+                            <i class="fas fa-check"></i> Copier
+                        </button>
+                        <button type="button" class="db-btn db-btn-sm" onclick="closeCopyBenefitsPanel()" style="font-size:11px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="benefitsList" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+                    <!-- Benefits will be added dynamically -->
+                </div>
+                <div id="benefitsEmpty" style="font-size:12px;color:var(--db-text-muted);padding:10px 0;text-align:center;">
+                    Aucun avantage. Cliquez sur <b>+ Ajouter</b> pour en créer.
+                </div>
+            </div>
         </div>
         <div class="db-modal-footer">
             <button class="db-btn" onclick="closeModal('offerModal')">Annuler</button>
-            <button class="db-btn db-btn-accent" onclick="saveOffer()"><i class="fas fa-save"></i> Sauvegarder</button>
+            <button class="db-btn db-btn-accent" onclick="saveOfferWithBenefits()"><i class="fas fa-save"></i> Sauvegarder</button>
         </div>
     </div>
 </div>
@@ -478,18 +547,94 @@
             .catch(function() { showToast('Erreur', 'error'); });
     }
 
+    // ── Benefits UI helpers ──
+    var currentBenefits = []; // [{id: null|number, text: '...'}]
+
+    function renderBenefits() {
+        var list = document.getElementById('benefitsList');
+        var empty = document.getElementById('benefitsEmpty');
+        list.innerHTML = '';
+        if (currentBenefits.length === 0) {
+            empty.style.display = '';
+            return;
+        }
+        empty.style.display = 'none';
+        currentBenefits.forEach(function(b, idx) {
+            var row = document.createElement('div');
+            row.className = 'benefit-row';
+            row.innerHTML =
+                '<span class="benefit-bullet"><i class="fas fa-check"></i></span>' +
+                '<input type="text" value="' + escapeHtml(b.text) + '" placeholder="Avantage…" data-idx="' + idx + '" onchange="updateBenefitText(' + idx + ', this.value)" />' +
+                '<button type="button" class="benefit-remove" onclick="removeBenefit(' + idx + ')" title="Supprimer"><i class="fas fa-times"></i></button>';
+            list.appendChild(row);
+        });
+    }
+
+    function addBenefitRow(text) {
+        currentBenefits.push({ id: null, text: text || '' });
+        renderBenefits();
+        // Focus the new input
+        var inputs = document.querySelectorAll('#benefitsList input');
+        if (inputs.length > 0) inputs[inputs.length - 1].focus();
+    }
+
+    function removeBenefit(idx) {
+        currentBenefits.splice(idx, 1);
+        renderBenefits();
+    }
+
+    function updateBenefitText(idx, val) {
+        if (currentBenefits[idx]) currentBenefits[idx].text = val;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     // ── Offers ──
+    var allOffers = []; // Store all offers for copy dropdown
+
     function manageOffers(serviceId) {
         document.getElementById('offerEditId').value = '';
         document.getElementById('offerServiceId').value = serviceId;
-        document.getElementById('offerName').value = 'Tarif Standard';
-        document.getElementById('offerPrice').value = '';
-        document.getElementById('offerOriginalPrice').value = '';
-        document.getElementById('offerDuration').value = 'ONE_TIME';
-        document.getElementById('offerDefault').checked = false;
-        document.getElementById('offerActive').checked = true;
         document.getElementById('offerModalTitle').innerHTML = '<i class="fas fa-tags"></i> Nouvelle offre';
-        openModal('offerModal');
+
+        fetch('/admin/services/api/services/' + serviceId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var s = data.service;
+                document.getElementById('offerName').value = s.title + ' - Standard';
+                document.getElementById('offerPrice').value = '';
+                document.getElementById('offerOriginalPrice').value = '';
+                document.getElementById('offerDuration').value = 'ONE_TIME';
+                document.getElementById('offerDefault').checked = false;
+                document.getElementById('offerActive').checked = true;
+
+                // New offer: start with empty benefits
+                currentBenefits = [];
+                renderBenefits();
+
+                // Populate copy dropdown with all other offers
+                allOffers = data.offers || [];
+                populateCopyDropdown(null);
+                closeCopyBenefitsPanel();
+
+                openModal('offerModal');
+            })
+            .catch(function() {
+                document.getElementById('offerName').value = 'Tarif Standard';
+                document.getElementById('offerPrice').value = '';
+                document.getElementById('offerOriginalPrice').value = '';
+                document.getElementById('offerDuration').value = 'ONE_TIME';
+                document.getElementById('offerDefault').checked = false;
+                document.getElementById('offerActive').checked = true;
+                currentBenefits = [];
+                allOffers = [];
+                renderBenefits();
+                closeCopyBenefitsPanel();
+                openModal('offerModal');
+            });
     }
 
     function editOffer(id, name, price, originalPrice, durationType, isDefault, active, serviceId) {
@@ -502,13 +647,81 @@
         document.getElementById('offerDefault').checked = isDefault;
         document.getElementById('offerActive').checked = active;
         document.getElementById('offerModalTitle').innerHTML = '<i class="fas fa-edit"></i> Modifier l\'offre';
+
+        // Load benefits for THIS offer (not the service)
+        fetch('/admin/services/api/services/' + serviceId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                // Find this offer in the response and get its benefits
+                var thisOffer = (data.offers || []).find(function(o) { return o.id == id; });
+                if (thisOffer && thisOffer.benefits) {
+                    currentBenefits = thisOffer.benefits.map(function(b) {
+                        return { id: b.id, text: b.benefit };
+                    });
+                } else {
+                    currentBenefits = [];
+                }
+                renderBenefits();
+
+                // Populate copy dropdown with all other offers (excluding current)
+                allOffers = data.offers || [];
+                populateCopyDropdown(id);
+                closeCopyBenefitsPanel();
+            })
+            .catch(function() {
+                currentBenefits = [];
+                allOffers = [];
+                renderBenefits();
+                closeCopyBenefitsPanel();
+            });
+
         openModal('offerModal');
     }
 
-    function saveOffer() {
+    function populateCopyDropdown(excludeOfferId) {
+        var select = document.getElementById('copyFromOfferId');
+        select.innerHTML = '<option value="">-- Sélectionner une offre --</option>';
+        allOffers.forEach(function(o) {
+            if (excludeOfferId && o.id === excludeOfferId) return;
+            var hasBenefits = o.benefits && o.benefits.length > 0;
+            var option = document.createElement('option');
+            option.value = o.id;
+            option.textContent = o.name + ' (' + o.price + ' €)' + (hasBenefits ? ' — ' + o.benefits.length + ' avantage(s)' : ' — aucun');
+            select.appendChild(option);
+        });
+    }
+
+    function openCopyBenefitsPanel() {
+        document.getElementById('copyBenefitsPanel').style.display = '';
+    }
+
+    function closeCopyBenefitsPanel() {
+        document.getElementById('copyBenefitsPanel').style.display = 'none';
+    }
+
+    function copyBenefitsFromSelected() {
+        var sourceOfferId = document.getElementById('copyFromOfferId').value;
+        if (!sourceOfferId) { showToast('Sélectionnez une offre', 'warning'); return; }
+
+        // Find the source offer and copy its benefits locally
+        var sourceOffer = allOffers.find(function(o) { return o.id == sourceOfferId; });
+        if (sourceOffer && sourceOffer.benefits) {
+            sourceOffer.benefits.forEach(function(b) {
+                currentBenefits.push({ id: null, text: b.benefit });
+            });
+            renderBenefits();
+            showToast(sourceOffer.benefits.length + ' avantage(s) copiés', 'success');
+        } else {
+            showToast('Aucun avantage à copier', 'info');
+        }
+        closeCopyBenefitsPanel();
+    }
+
+    function saveOfferWithBenefits() {
         var id = document.getElementById('offerEditId').value;
+        var serviceId = parseInt(document.getElementById('offerServiceId').value);
         var data = {
-            serviceId: parseInt(document.getElementById('offerServiceId').value),
+            serviceId: serviceId,
             name: document.getElementById('offerName').value,
             price: parseFloat(document.getElementById('offerPrice').value),
             originalPrice: document.getElementById('offerOriginalPrice').value || null,
@@ -522,10 +735,34 @@
         adminFetch(url, { method: method, body: JSON.stringify(data) })
             .then(function(r) { return r.json(); })
             .then(function(d) {
-                showToast(d.message, d.success ? 'success' : 'error');
-                if (d.success) { closeModal('offerModal'); setTimeout(function() { location.reload(); }, 600); }
+                if (!d.success) { showToast(d.message, 'error'); return; }
+                showToast(d.message, 'success');
+                var offerId = id || d.id;
+                // Sync offer benefits
+                syncOfferBenefits(offerId);
             })
             .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function syncOfferBenefits(offerId) {
+        // Collect all benefit texts from the UI
+        var benefitTexts = currentBenefits
+            .map(function(b) { return b.text.trim(); })
+            .filter(function(t) { return t.length > 0; });
+
+        adminFetch('/admin/services/api/offers/' + offerId + '/benefits/sync', {
+            method: 'POST',
+            body: JSON.stringify({ benefits: benefitTexts })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            closeModal('offerModal');
+            setTimeout(function() { location.reload(); }, 600);
+        })
+        .catch(function() {
+            closeModal('offerModal');
+            setTimeout(function() { location.reload(); }, 600);
+        });
     }
 
     function deleteOffer(id) {

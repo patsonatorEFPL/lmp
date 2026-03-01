@@ -209,7 +209,7 @@ public class AuthController {
             User user = userService.findByEmail(authentication.getName()).orElse(null);
             if (user != null) {
                 model.addAttribute("user", user);
-                return "user/profile";
+                return "profile";
             }
         }
         return "redirect:/login";
@@ -241,6 +241,7 @@ public class AuthController {
                     currentUser.setPostalCode(user.getPostalCode());
                     currentUser.setCountry(user.getCountry());
                     currentUser.setCompanyName(user.getCompanyName());
+                    currentUser.setGender(user.getGender());
 
                     userService.save(currentUser);
 

@@ -1,5 +1,7 @@
 package com.lmp.config;
 
+import com.lmp.domain.entity.User;
+import com.lmp.repository.UserRepository;
 import com.lmp.web.dto.PurchaseIntent;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,11 +9,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Gestionnaire personnalisé de succès d'authentification qui vérifie
@@ -28,7 +33,10 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
     
     private static final Logger logger = LoggerFactory.getLogger(PurchaseIntentAuthenticationSuccessHandler.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + PurchaseIntentAuthenticationSuccessHandler.class.getName());
-    
+
+    @Autowired
+    private UserRepository userRepository;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, 
                                       HttpServletResponse response,
@@ -40,6 +48,19 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
         logger.info("Authentication success for user: {}", userEmail);
         auditLogger.info("User authenticated successfully - Email: {}, IP: {}", 
                         userEmail, getClientIpAddress(request));
+
+        // Mettre à jour la date de dernière connexion
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setLastLoginDate(LocalDateTime.now());
+                userRepository.save(user);
+                logger.info("Last login date updated for user: {}", userEmail);
+            }
+        } catch (Exception e) {
+            logger.error("Error updating last login date for {}: {}", userEmail, e.getMessage());
+        }
         
         try {
             // Vérifier s'il y a une intention de paiement en session
