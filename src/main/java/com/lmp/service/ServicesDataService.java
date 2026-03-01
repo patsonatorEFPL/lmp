@@ -6,8 +6,9 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.lmp.domain.entity.ServiceBenefit;
+import com.lmp.domain.entity.OfferBenefit;
 import com.lmp.domain.entity.ServiceOffer;
+import com.lmp.repository.OfferBenefitRepository;
 import com.lmp.repository.ServiceRepository;
 
 /**
@@ -21,6 +22,9 @@ public class ServicesDataService {
 
     @Autowired
     private ServiceRepository serviceRepository;
+
+    @Autowired
+    private OfferBenefitRepository offerBenefitRepository;
 
     /**
      * Représente un service offert par LMP
@@ -110,9 +114,17 @@ public class ServicesDataService {
         String durationStr = currentOffer != null ? currentOffer.getDurationType().name() : "N/A";
         Long offerId = currentOffer != null ? currentOffer.getId() : null;
 
-        List<String> benefitStrings = service.getBenefits().stream()
-                .map(ServiceBenefit::getBenefit)
-                .collect(Collectors.toList());
+        // Read benefits from the current offer (OfferBenefit) instead of service-level (ServiceBenefit)
+        List<String> benefitStrings;
+        if (currentOffer != null) {
+            List<OfferBenefit> offerBenefits = offerBenefitRepository
+                    .findByOfferIdOrderByDisplayOrderAsc(currentOffer.getId());
+            benefitStrings = offerBenefits.stream()
+                    .map(OfferBenefit::getBenefit)
+                    .collect(Collectors.toList());
+        } else {
+            benefitStrings = List.of();
+        }
 
         String categoryName = service.getCategory() != null ? service.getCategory().getName() : "Non catégorisé";
 
