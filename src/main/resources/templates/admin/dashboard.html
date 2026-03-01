@@ -109,12 +109,17 @@
 
                 <div class="db-stat-card">
                     <div class="db-stat-header">
-                        <span class="db-stat-label"><i class="fas fa-dollar-sign"></i> Chiffre d'affaires</span>
+                        <span class="db-stat-label">
+                            <i th:class="${defaultCurrency == 'USD' ? 'fas fa-dollar-sign' : (defaultCurrency == 'GBP' ? 'fas fa-pound-sign' : 'fas fa-euro-sign')}"></i>
+                            Chiffre d'affaires
+                        </span>
                         <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
-                            <i class="fas fa-dollar-sign"></i>
+                            <i th:class="${defaultCurrency == 'USD' ? 'fas fa-dollar-sign' : (defaultCurrency == 'GBP' ? 'fas fa-pound-sign' : 'fas fa-euro-sign')}"></i>
                         </span>
                     </div>
-                    <div class="db-stat-value" th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 2) + ' $' : '0 $'}">0 $</div>
+                    <div class="db-stat-value"
+                         th:with="symbol=${defaultCurrency == 'USD' ? '$' : (defaultCurrency == 'GBP' ? '£' : (defaultCurrency == 'CAD' ? 'CA$' : (defaultCurrency == 'CHF' ? 'CHF' : '€')))}"
+                         th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 2) + ' ' + symbol : '0 ' + symbol}">0 €</div>
                     <span class="db-stat-badge db-badge-up"><i class="fas fa-chart-line"></i> Revenu</span>
                 </div>
             </div>

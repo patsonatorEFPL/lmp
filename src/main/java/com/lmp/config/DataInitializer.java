@@ -18,9 +18,11 @@ import com.lmp.domain.entity.Service;
 import com.lmp.domain.entity.ServiceBenefit;
 import com.lmp.domain.entity.ServiceCategory;
 import com.lmp.domain.entity.ServiceOffer;
+import com.lmp.domain.entity.OfferBenefit;
 import com.lmp.domain.entity.User;
 import com.lmp.domain.entity.enums.DurationType;
 import com.lmp.domain.enums.UserStatus;
+import com.lmp.repository.OfferBenefitRepository;
 import com.lmp.repository.RoleRepository;
 import com.lmp.repository.ServiceCategoryRepository;
 import com.lmp.repository.ServiceOfferRepository;
@@ -55,6 +57,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private ServiceOfferRepository serviceOfferRepository;
+
+    @Autowired
+    private OfferBenefitRepository offerBenefitRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -264,6 +269,15 @@ public class DataInitializer implements CommandLineRunner {
         service = serviceRepository.save(service);
 
         ServiceOffer offer = new ServiceOffer(service, "Tarif Standard", price, null, DurationType.ONE_TIME, true);
-        serviceOfferRepository.save(offer);
+        offer = serviceOfferRepository.save(offer);
+
+        // Créer aussi les OfferBenefit pour que le modal d'édition les affiche
+        for (int i = 0; i < benefits.size(); i++) {
+            OfferBenefit ob = new OfferBenefit();
+            ob.setOffer(offer);
+            ob.setBenefit(benefits.get(i));
+            ob.setDisplayOrder(i);
+            offerBenefitRepository.save(ob);
+        }
     }
 }

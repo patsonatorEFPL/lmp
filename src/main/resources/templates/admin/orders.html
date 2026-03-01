@@ -70,12 +70,17 @@
                 </div>
                 <div class="db-stat-card">
                     <div class="db-stat-header">
-                        <span class="db-stat-label"><i class="fas fa-euro-sign"></i> CA du mois</span>
+                        <span class="db-stat-label">
+                            <i th:class="${defaultCurrency == 'USD' ? 'fas fa-dollar-sign' : (defaultCurrency == 'GBP' ? 'fas fa-pound-sign' : 'fas fa-euro-sign')}"></i>
+                            CA du mois
+                        </span>
                         <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
-                            <i class="fas fa-euro-sign"></i>
+                            <i th:class="${defaultCurrency == 'USD' ? 'fas fa-dollar-sign' : (defaultCurrency == 'GBP' ? 'fas fa-pound-sign' : 'fas fa-euro-sign')}"></i>
                         </span>
                     </div>
-                    <div class="db-stat-value" id="monthlyRevenue">0 €</div>
+                    <div class="db-stat-value" id="monthlyRevenue"
+                         th:with="symbol=${defaultCurrency == 'USD' ? '$' : (defaultCurrency == 'GBP' ? '£' : (defaultCurrency == 'CAD' ? 'CA$' : (defaultCurrency == 'CHF' ? 'CHF' : '€')))}"
+                         th:text="'0 ' + ${symbol}">0 €</div>
                 </div>
             </div>
 
@@ -359,6 +364,7 @@
 
 <script th:inline="javascript">
     // ── Configuration ──
+    var defaultCurrency = /*[[${defaultCurrency}]]*/ 'EUR';
     var config = {
         apiBaseUrl: '/admin/orders/api',
         currentPage: 0,
@@ -426,7 +432,7 @@
         var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         var todayCount = 0;
         var monthlyTotal = 0;
-        var mainCurrency = 'EUR';
+        var mainCurrency = defaultCurrency;
 
         orders.forEach(function(o) {
             if (o.createdAt && o.createdAt.slice(0, 10) === todayStr) todayCount++;

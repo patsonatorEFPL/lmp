@@ -30,6 +30,7 @@ import com.lmp.service.admin.OrderAdminService;
 import com.lmp.service.admin.OrderStatusHistoryService;
 import com.lmp.service.admin.RefundService;
 import com.lmp.service.admin.ReportsService;
+import com.lmp.service.system.SystemConfigService;
 import com.lmp.web.dto.admin.OrderDto;
 import com.lmp.web.dto.admin.OrderSearchDto;
 import com.lmp.web.dto.admin.OrderActionDto;
@@ -60,6 +61,9 @@ public class OrderAdminController {
     @Autowired
     private ReportsService reportsService;
 
+    @Autowired
+    private SystemConfigService systemConfigService;
+
     // ========== Pages principales ==========
 
     /**
@@ -80,6 +84,10 @@ logger.info("DEBUG - needsAttention.size(): {}", needsAttention != null ? needsA
         logger.info("DEBUG - totalOrders: {}", latestOrders.getTotalElements());
         model.addAttribute("totalOrders", latestOrders.getTotalElements());
         model.addAttribute("statuses", OrderStatus.values());
+
+        // Devise par défaut pour l'affichage dynamique
+        String defaultCurrency = systemConfigService.getProperty("payment.default.currency", "EUR");
+        model.addAttribute("defaultCurrency", defaultCurrency);
 
         return "admin/orders";
     }

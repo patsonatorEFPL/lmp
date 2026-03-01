@@ -19,6 +19,7 @@ import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.UserStatus;
 import com.lmp.service.user.UserService;
 import com.lmp.service.admin.OrderAdminService;
+import com.lmp.service.system.SystemConfigService;
 
 /**
  * Contrôleur pour le tableau de bord administrateur.
@@ -37,6 +38,9 @@ public class AdminDashboardController {
     
     @Autowired
     private OrderAdminService orderAdminService;
+
+    @Autowired
+    private SystemConfigService systemConfigService;
 
     /**
      * Affiche le tableau de bord administrateur avec les statistiques globales.
@@ -123,6 +127,10 @@ public class AdminDashboardController {
             model.addAttribute("recentUsers", recentUsers);
             model.addAttribute("totalOrders", totalOrders);
             model.addAttribute("totalRevenue", totalRevenue);
+
+            // Devise par défaut pour l'affichage
+            String defaultCurrency = systemConfigService.getProperty("payment.default.currency", "EUR");
+            model.addAttribute("defaultCurrency", defaultCurrency);
 
             logger.info("Admin dashboard loaded successfully for: {} - Stats: Total={}, Active={}, Inactive={}, Locked={}", 
                        adminEmail, totalUsers, activeUsers, inactiveUsers, lockedUsers.size());
