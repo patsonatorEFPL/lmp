@@ -70,12 +70,12 @@
                 </div>
                 <div class="db-stat-card">
                     <div class="db-stat-header">
-                        <span class="db-stat-label"><i class="fas fa-dollar-sign"></i> CA du mois</span>
+                        <span class="db-stat-label"><i class="fas fa-euro-sign"></i> CA du mois</span>
                         <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
-                            <i class="fas fa-dollar-sign"></i>
+                            <i class="fas fa-euro-sign"></i>
                         </span>
                     </div>
-                    <div class="db-stat-value" id="monthlyRevenue">0 $</div>
+                    <div class="db-stat-value" id="monthlyRevenue">0 €</div>
                 </div>
             </div>
 
@@ -400,6 +400,7 @@
             .then(function (data) {
                 populateTable(data.content || []);
                 updatePagination(data);
+                updateStats(data.content || []);
                 document.getElementById('loadingSpinner').style.display = 'none';
                 if (!data.content || data.content.length === 0) {
                     document.getElementById('noResults').style.display = '';
@@ -411,6 +412,33 @@
                 document.getElementById('loadingSpinner').style.display = 'none';
                 showToast('Erreur lors du chargement', 'error');
             });
+    }
+
+    // ── Stats computation ──
+    function getCurrencySymbol(code) {
+        var map = { EUR: '€', USD: '$', CAD: 'CA$', GBP: '£', CHF: 'CHF' };
+        return map[(code || '').toUpperCase()] || code || '€';
+    }
+
+    function updateStats(orders) {
+        var now = new Date();
+        var todayStr = now.toISOString().slice(0, 10);
+        var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        var todayCount = 0;
+        var monthlyTotal = 0;
+        var mainCurrency = 'EUR';
+
+        orders.forEach(function(o) {
+            if (o.createdAt && o.createdAt.slice(0, 10) === todayStr) todayCount++;
+            var createdDate = o.createdAt ? new Date(o.createdAt) : null;
+            if (createdDate && createdDate >= monthStart && o.paymentStatus === 'succeeded') {
+                monthlyTotal += parseFloat(o.amount) || 0;
+                if (o.currency) mainCurrency = o.currency;
+            }
+        });
+
+        document.getElementById('todayOrdersCount').textContent = todayCount;
+        document.getElementById('monthlyRevenue').textContent = monthlyTotal.toFixed(2) + ' ' + getCurrencySymbol(mainCurrency);
     }
 
     // ── Table population ──
@@ -427,7 +455,7 @@
                 '<td><div style="font-weight:500;color:var(--db-text-primary);">' + (order.customerEmail || '') + '</div>' +
                     (order.customerName ? '<div style="font-size:11px;color:var(--db-text-muted);">' + order.customerName + '</div>' : '') + '</td>' +
                 '<td class="db-hide-tablet"><span class="db-status-badge db-status-progress" style="font-size:11px;">' + (order.serviceName || '') + '</span></td>' +
-                '<td style="font-weight:600;">' + (order.amount || '0') + ' ' + (order.currency || 'EUR') + '</td>' +
+                '<td style="font-weight:600;">' + (order.amount || '0') + ' ' + getCurrencySymbol(order.currency) + '</td>' +
                 '<td>' + getStatusBadge(order.status) + '</td>' +
                 '<td class="db-hide-tablet">' + getPaymentBadge(order.paymentStatus) + '</td>' +
                 '<td><div class="db-table-actions" style="justify-content:center;">' +
@@ -592,7 +620,7 @@
         html += detailRow('Statut', getStatusBadge(order.status));
         html += detailRow('Service', order.serviceName || 'N/A');
         html += '</div><div>';
-        html += detailRow('Montant total', '<span style="font-size:18px;font-weight:700;color:var(--db-accent);">' + (order.amount || '0') + ' ' + (order.currency || 'EUR') + '</span>');
+        html += detailRow('Montant total', '<span style="font-size:18px;font-weight:700;color:var(--db-accent);">' + (order.amount || '0') + ' ' + getCurrencySymbol(order.currency) + '</span>');
         html += detailRow('Paiement', getPaymentBadge(order.paymentStatus));
         if (order.paidAt) html += detailRow('Date paiement', formatDate(order.paidAt));
         html += detailRow('Priorité', '<span class="db-status-badge ' + priorityClass + '">' + priorityLabel + '</span>');
@@ -658,7 +686,7 @@
             html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-undo"></i> Remboursements</span></div>';
             refunds.forEach(function(refund) {
                 html += '<div style="padding:8px 0;border-bottom:1px solid var(--db-border);display:flex;justify-content:space-between;align-items:center;">';
-                html += '<div><div style="font-weight:600;color:var(--db-text-primary);">' + refund.amount + ' ' + (refund.currency || 'EUR') + '</div>';
+                html += '<div><div style="font-weight:600;color:var(--db-text-primary);">' + refund.amount + ' ' + getCurrencySymbol(refund.currency) + '</div>';
                 html += '<div style="font-size:11px;color:var(--db-text-muted);">' + (refund.reason || '') + '</div></div>';
                 html += '<span class="db-status-badge db-status-progress">' + (refund.status || '') + '</span>';
                 html += '</div>';

@@ -71,7 +71,7 @@ public class RegisterWithOrderDto {
 
     @NotBlank(message = "La devise est obligatoire")
     @Size(max = 3, message = "La devise ne peut pas dépasser 3 caractères")
-    private String currency = "CAD";
+    private String currency = "EUR";
 
     // ID de l'offre pour validation côté serveur (sécurisation prix)
     private Long offerId;

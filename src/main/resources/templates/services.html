@@ -93,7 +93,7 @@
                                 <button th:data-service-title="${service.title}"
                                         th:data-price-value="${service.priceValue}"
                                         th:data-offer-id="${service.offerId}"
-                                        onclick="openBookingModal(this.getAttribute('data-service-title'), parseFloat(this.getAttribute('data-price-value')), 'CAD', this.getAttribute('data-offer-id') !== '' ? parseInt(this.getAttribute('data-offer-id')) : null)"
+                                        onclick="openBookingModal(this.getAttribute('data-service-title'), parseFloat(this.getAttribute('data-price-value')), 'EUR', this.getAttribute('data-offer-id') !== '' ? parseInt(this.getAttribute('data-offer-id')) : null)"
                                         class="w-12 h-12 rounded-full bg-dark text-white flex items-center justify-center hover:bg-primary transition-colors hover:scale-105 shadow-lg">
                                     <i class="fas fa-plus"></i>
                                 </button>

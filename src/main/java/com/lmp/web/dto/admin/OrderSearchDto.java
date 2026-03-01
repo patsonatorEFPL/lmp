@@ -31,7 +31,7 @@ public class OrderSearchDto {
     @PositiveOrZero(message = "Le montant maximum doit être positif ou zéro")
     private BigDecimal maxAmount;
 
-    private String currency = "CAD";
+    private String currency = "EUR";
 
     // Critères de filtrage par date
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

@@ -47,7 +47,7 @@ public class RefundDto {
         this.orderId = orderId;
         this.amount = amount;
         this.reason = reason;
-        this.currency = "CAD";
+        this.currency = "EUR";
         this.status = "pending";
         this.createdAt = LocalDateTime.now();
     }

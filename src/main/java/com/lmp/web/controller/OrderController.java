@@ -141,7 +141,7 @@ public class OrderController {
             }
 
             if (currency == null || currency.trim().isEmpty()) {
-                currency = "CAD";
+                currency = "EUR";
             }
 
             // Récupérer l'utilisateur authentifié

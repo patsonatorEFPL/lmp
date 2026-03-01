@@ -30,6 +30,8 @@ import com.lmp.repository.UserRepository;
 import com.lmp.repository.WebhookEventLogRepository;
 import com.lmp.service.email.EmailService;
 import com.lmp.service.invoice.InvoicePdfService;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 import com.lmp.service.payment.dto.WebhookEventDto;
 import com.lmp.service.payment.exception.PaymentProcessingException;
 import com.stripe.exception.SignatureVerificationException;
@@ -71,6 +73,9 @@ public class StripeWebhookHandler {
 
     @Autowired
     private WebhookEventLogRepository webhookEventLogRepository;
+
+    @Autowired
+    private TemplateEngine templateEngine;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -967,7 +972,7 @@ public class StripeWebhookHandler {
             newOrder.setUser(user);
             newOrder.setServiceName(serviceName.trim());
             newOrder.setTotalAmount(amount);
-            newOrder.setCurrency(currency != null ? currency : "CAD");
+            newOrder.setCurrency(currency != null ? currency : "EUR");
             newOrder.setStatus(OrderStatus.CONFIRMED); // Statut CONFIRMÉ directement
             newOrder.setPaymentStatus("succeeded");
 
@@ -1293,11 +1298,9 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Construit le corps de l'email de facture
+     * 🆕 AMÉLIORÉ : Construit le corps HTML de l'email de facture via template Thymeleaf
      */
     private String buildInvoiceEmailBody(Order order, User user, String invoiceNumber) {
-        StringBuilder body = new StringBuilder();
-
         java.time.format.DateTimeFormatter emailDateFormatter = java.time.format.DateTimeFormatter
                 .ofPattern("dd/MM/yyyy à HH:mm");
 
@@ -1312,18 +1315,26 @@ public class StripeWebhookHandler {
                 ? order.getPaidAt().format(emailDateFormatter)
                 : "N/A";
 
-        body.append("Bonjour ").append(fullName).append(",\n\n");
-        body.append("Merci pour votre achat chez LMP !\n\n");
-        body.append("Veuillez trouver ci-joint votre facture n° ").append(invoiceNumber).append(".\n\n");
-        body.append("Détails de votre commande :\n");
-        body.append("- Service : ").append(order.getServiceName()).append("\n");
-        body.append("- Montant : ").append(order.getTotalAmount()).append(" ").append(order.getCurrency()).append("\n");
-        body.append("- Date de paiement : ").append(formattedDate).append("\n\n");
-        body.append("Si vous avez des questions concernant votre facture, n'hésitez pas à nous contacter.\n\n");
-        body.append("Cordialement,\n");
-        body.append("L'équipe LMP\n");
-        body.append("support@lmp-services.ca\n");
+        try {
+            Context context = new Context();
+            context.setVariable("customerName", fullName);
+            context.setVariable("invoiceNumber", invoiceNumber);
+            context.setVariable("serviceName", order.getServiceName());
+            context.setVariable("amount", order.getTotalAmount());
+            context.setVariable("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
+            context.setVariable("paymentDate", formattedDate);
 
-        return body.toString();
+            return templateEngine.process("emails/invoice-receipt", context);
+        } catch (Exception e) {
+            logger.warn("Échec du rendu template HTML facture, fallback texte brut: {}", e.getMessage());
+            // Fallback texte brut
+            return "Bonjour " + fullName + ",\n\n"
+                    + "Merci pour votre achat chez LMP !\n\n"
+                    + "Veuillez trouver ci-joint votre facture n° " + invoiceNumber + ".\n\n"
+                    + "- Service : " + order.getServiceName() + "\n"
+                    + "- Montant : " + order.getTotalAmount() + " " + order.getCurrency() + "\n"
+                    + "- Date de paiement : " + formattedDate + "\n\n"
+                    + "Cordialement,\nL'équipe LMP\nlmp.assistance@gmail.com\n";
+        }
     }
 }

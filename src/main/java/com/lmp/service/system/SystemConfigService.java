@@ -65,7 +65,7 @@ public class SystemConfigService {
                 environment.getProperty("security.account.lockout.duration", "300000")));
             
             // Configuration Paiements
-            settings.setDefaultCurrency(environment.getProperty("payment.default.currency", "CAD"));
+            settings.setDefaultCurrency(environment.getProperty("payment.default.currency", "EUR"));
             settings.setMaxAmount(Double.parseDouble(
                 environment.getProperty("payment.max.amount", "10000.00")));
             settings.setMinAmount(Double.parseDouble(
@@ -197,7 +197,7 @@ public class SystemConfigService {
             defaults.setPasswordMinLength(8);
             defaults.setMaxLoginAttempts(5);
             defaults.setAccountLockoutDuration(300000L);
-            defaults.setDefaultCurrency("CAD");
+            defaults.setDefaultCurrency("EUR");
             defaults.setMaxAmount(10000.00);
             defaults.setMinAmount(1.00);
             

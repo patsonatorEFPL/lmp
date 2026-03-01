@@ -18,7 +18,7 @@ public class PurchaseIntent implements Serializable {
     
     public PurchaseIntent() {
         this.timestamp = System.currentTimeMillis();
-        this.currency = "CAD"; // Valeur par défaut
+        this.currency = "EUR"; // Valeur par défaut
     }
     
     public PurchaseIntent(String serviceName, BigDecimal amount, String currency) {
@@ -75,7 +75,7 @@ public class PurchaseIntent implements Serializable {
     public boolean isValid() {
         return serviceName != null && !serviceName.trim().isEmpty() &&
                amount != null && amount.compareTo(BigDecimal.ZERO) > 0 &&
-               currency != null && "CAD".equals(currency) &&
+               currency != null && !currency.isEmpty() &&
                !isExpired();
     }
     

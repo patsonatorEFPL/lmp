@@ -113,9 +113,13 @@ public class EmailService {
             // Créer le multipart message
             Multipart multipart = new MimeMultipart();
             
-            // Corps du message
+            // Corps du message (HTML ou texte)
             MimeBodyPart messageBodyPart = new MimeBodyPart();
-            messageBodyPart.setText(body);
+            if (body.trim().startsWith("<!DOCTYPE") || body.trim().startsWith("<html")) {
+                messageBodyPart.setContent(body, "text/html; charset=UTF-8");
+            } else {
+                messageBodyPart.setText(body, "UTF-8");
+            }
             multipart.addBodyPart(messageBodyPart);
             
             // Pièce jointe
