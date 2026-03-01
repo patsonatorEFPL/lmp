@@ -237,8 +237,10 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
 
-        // Invalider toutes les sessions existantes pour forcer le rechargement
-        invalidateUserSessions(user.getEmail());
+        // NOTE: Ne PAS invalider les sessions ici.
+        // invalidateUserSessions() expirait la session courante, ce qui faisait que
+        // Spring Security redirige vers /login?expired=true au lieu de /login?verified=true,
+        // perdant ainsi le flash attribute de succès.
 
         logger.info("Email vérifié avec succès pour : {}", user.getEmail());
         return true;

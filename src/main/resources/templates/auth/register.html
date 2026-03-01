@@ -86,10 +86,20 @@
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            /* CSS-only fallback: if JS fails to add .revealed, elements become visible after 2s */
+            animation: hero-reveal-fallback 0.8s ease forwards;
+            animation-delay: 2s;
+        }
+        @keyframes hero-reveal-fallback {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .hero-reveal.revealed {
             opacity: 1;
             transform: translateY(0);
+            animation: none;
         }
     </style>
 </head>
