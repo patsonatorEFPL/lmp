@@ -89,7 +89,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .collect(Collectors.toSet());
 
-        boolean isEnabled = user.getStatus() == UserStatus.ACTIVE;
+        // Autoriser le login même si INACTIVE (pour afficher la page suspendue / bannière)
+        boolean isEnabled = user.getStatus() == UserStatus.ACTIVE || user.getStatus() == UserStatus.INACTIVE;
         boolean isAccountNonLocked = !user.getAccountLocked();
         
         logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}, Mot de passe haché: {}",

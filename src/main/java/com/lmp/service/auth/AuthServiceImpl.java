@@ -1,6 +1,7 @@
 package com.lmp.service.auth;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -8,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,12 +58,11 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private MailAddressConfig mailAddressConfig;
 
-    // OBSOLÈTE - remplacé par mailAddressConfig.getNoreply() et mailAddressConfig.getName()
-    // @Value("${mail.from.address:lmp.assistance@gmail.com}")
-    // private String fromEmail;
+    @Autowired
+    private DisposableEmailBlocklist disposableEmailBlocklist;
 
-    // @Value("${mail.from.name:LMP Services}")
-    // private String fromName;
+    @Autowired
+    private SessionRegistry sessionRegistry;
 
     @Value("${company.name:LMP Services}")
     private String companyName;
@@ -76,10 +78,6 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Inscrit un nouvel utilisateur avec le rôle USER par défaut.
-     * 
-     * @param registerDto Les données d'inscription
-     * @return L'utilisateur créé
-     * @throws RuntimeException si l'email existe déjà ou si les données sont invalides
      */
     @Override
     @Transactional
@@ -92,12 +90,15 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Un utilisateur avec cet email existe déjà");
         }
 
+        // Vérifier si l'email est jetable
+        if (isDisposableEmail(registerDto.getEmail())) {
+            throw new RuntimeException("Les adresses email temporaires/jetables ne sont pas acceptées. Veuillez utiliser une adresse email permanente.");
+        }
+
         // Créer le nouvel utilisateur
         User user = new User();
         user.setEmail(registerDto.getEmail());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
-        // firstName et lastName sont maintenant optionnels (peuvent être null)
-        // Si vides, getDisplayName() générera automatiquement un pseudo depuis l'email
         user.setFirstName(registerDto.getFirstName());
         user.setLastName(registerDto.getLastName());
         user.setPhone(registerDto.getPhone());
@@ -119,37 +120,31 @@ public class AuthServiceImpl implements AuthService {
 
         // Sauvegarder l'utilisateur
         User savedUser = userRepository.save(user);
-        logger.info("INSCRIPTION_DEBUG - Utilisateur sauvegardé: {}", savedUser.getEmail());
+        logger.info("Utilisateur inscrit : {}", savedUser.getEmail());
+
+        // Envoyer l'email de vérification
+        try {
+            sendVerificationEmail(savedUser);
+            logger.info("Email de vérification envoyé à {}", savedUser.getEmail());
+        } catch (Exception e) {
+            logger.error("Erreur envoi email de vérification : {}", e.getMessage(), e);
+        }
 
         // Envoyer l'email de bienvenue
-        logger.info("INSCRIPTION_DEBUG - Tentative d'envoi email de bienvenue...");
         try {
             sendWelcomeEmail(savedUser);
-            logger.info("INSCRIPTION_DEBUG - Email de bienvenue traité sans exception");
         } catch (Exception e) {
-            logger.error("INSCRIPTION_DEBUG - Erreur email de bienvenue: {}", e.getMessage(), e);
+            logger.error("Erreur envoi email de bienvenue : {}", e.getMessage(), e);
         }
 
         return savedUser;
     }
 
-    /**
-     * Vérifie si un email existe déjà dans la base de données.
-     * 
-     * @param email L'email à vérifier
-     * @return true si l'email existe, false sinon
-     */
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
 
-    /**
-     * Valide les données d'inscription.
-     * 
-     * @param registerDto Les données à valider
-     * @throws RuntimeException si les données sont invalides
-     */
     @Override
     public void validateRegistrationData(RegisterDto registerDto) {
         if (registerDto == null) {
@@ -164,78 +159,50 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Vous devez accepter les conditions d'utilisation");
         }
 
-        // Validation supplémentaire du format email
         if (registerDto.getEmail() == null || !registerDto.getEmail().contains("@")) {
             throw new RuntimeException("Format d'email invalide");
         }
 
-        // Validation de la force du mot de passe
         if (registerDto.getPassword() == null || registerDto.getPassword().length() < 6) {
             throw new RuntimeException("Le mot de passe doit contenir au moins 6 caractères");
         }
     }
 
-    /**
-     * Envoie un email de bienvenue à l'utilisateur avec le template HTML.
-     * 
-     * @param user L'utilisateur nouvellement inscrit
-     */
     @Override
     public void sendWelcomeEmail(User user) {
         try {
-            logger.info("WELCOME_EMAIL_DEBUG - Début envoi email de bienvenue pour : {}", user.getEmail());
-            
-            // Création du contexte Thymeleaf
+            logger.info("Envoi email de bienvenue pour : {}", user.getEmail());
+
             Context context = new Context();
             context.setVariable("user", user);
             context.setVariable("companyName", companyName);
             context.setVariable("baseUrl", baseUrl);
             context.setVariable("companyEmail", companyEmail);
             context.setVariable("companyWebsite", companyWebsite);
-            
-            // Rendu du template HTML
-            logger.info("WELCOME_EMAIL_DEBUG - Rendu template 'emails/welcome-minimal-clean'...");
+
             String htmlContent = templateEngine.process("emails/welcome-minimal-clean", context);
-            logger.info("WELCOME_EMAIL_DEBUG - Template rendu avec succès, taille: {} caractères", htmlContent.length());
-            
-            // Création du message email
+
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            // Configuration du message avec routing Cloudflare
+
             helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To cohérent avec From
+            helper.setReplyTo(mailAddressConfig.getNoreply());
             helper.setTo(user.getEmail());
             helper.setSubject("\uD83C\uDF89 Bienvenue chez " + companyName + " !");
             helper.setText(htmlContent, true);
-            
-            logger.debug("WELCOME_EMAIL - Configuration: from={}, replyTo={}, to={}", 
-                       mailAddressConfig.getNoreply(), mailAddressConfig.getNoreply(), user.getEmail());
-            
-            // Envoi de l'email
-            logger.info("WELCOME_EMAIL_DEBUG - Tentative d'envoi via JavaMailSender...");
+
             javaMailSender.send(message);
-            
             logger.info("Email de bienvenue envoyé avec succès à : {}", user.getEmail());
-            
+
         } catch (MessagingException e) {
-            logger.error("WELCOME_EMAIL_ERROR - MessagingException lors de l'envoi pour '{}': {}",
-                        user.getEmail(), e.getMessage(), e);
-            // Ne pas faire échouer l'inscription pour un problème d'email
+            logger.error("Erreur MessagingException envoi bienvenue pour '{}': {}", user.getEmail(), e.getMessage(), e);
             logger.warn("L'inscription a réussi mais l'email de bienvenue n'a pas pu être envoyé");
         } catch (Exception e) {
-            logger.error("WELCOME_EMAIL_ERROR - Exception inattendue lors de l'envoi pour '{}': Type={}, Message='{}'",
-                        user.getEmail(), e.getClass().getSimpleName(), e.getMessage(), e);
-            // Ne pas faire échouer l'inscription pour un problème d'email
+            logger.error("Erreur inattendue envoi bienvenue pour '{}': {}", user.getEmail(), e.getMessage(), e);
             logger.warn("L'inscription a réussi mais l'email de bienvenue n'a pas pu être envoyé");
         }
     }
 
-    /**
-     * Génère un token de vérification d'email unique.
-     * 
-     * @return Le token généré
-     */
     @Override
     public String generateVerificationToken() {
         return UUID.randomUUID().toString();
@@ -243,9 +210,8 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Vérifie l'email d'un utilisateur avec un token.
-     * 
-     * @param token Le token de vérification
-     * @return true si la vérification réussit, false sinon
+     * Si le compte est INACTIVE, le réactive en ACTIVE.
+     * Invalide toutes les sessions existantes via SessionRegistry.
      */
     @Override
     @Transactional
@@ -261,9 +227,96 @@ public class AuthServiceImpl implements AuthService {
 
         // Marquer l'email comme vérifié
         user.setEmailVerified(true);
-        user.setVerificationToken(null); // Supprimer le token après utilisation
+        user.setVerificationToken(null);
+
+        // Si le compte a été suspendu (INACTIVE), le réactiver
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            user.setStatus(UserStatus.ACTIVE);
+            logger.info("Compte réactivé suite à la vérification email : {}", user.getEmail());
+        }
+
         userRepository.save(user);
 
+        // Invalider toutes les sessions existantes pour forcer le rechargement
+        invalidateUserSessions(user.getEmail());
+
+        logger.info("Email vérifié avec succès pour : {}", user.getEmail());
         return true;
+    }
+
+    @Override
+    public void sendVerificationEmail(User user) {
+        try {
+            String verificationUrl = baseUrl + "/verify-email?token=" + user.getVerificationToken();
+
+            Context context = new Context();
+            context.setVariable("userName", user.getDisplayName());
+            context.setVariable("companyName", companyName);
+            context.setVariable("verificationUrl", verificationUrl);
+            context.setVariable("companyWebsite", companyWebsite);
+
+            String htmlContent = templateEngine.process("emails/email-verification", context);
+
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
+            helper.setReplyTo(mailAddressConfig.getNoreply());
+            helper.setTo(user.getEmail());
+            helper.setSubject("✉ Vérifiez votre email - " + companyName);
+            helper.setText(htmlContent, true);
+
+            javaMailSender.send(message);
+            logger.info("Email de vérification envoyé à : {}", user.getEmail());
+
+        } catch (Exception e) {
+            logger.error("Erreur envoi email de vérification à '{}': {}", user.getEmail(), e.getMessage(), e);
+            throw new RuntimeException("Échec de l'envoi de l'email de vérification", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (user.getEmailVerified()) {
+            throw new RuntimeException("Votre email est déjà vérifié");
+        }
+
+        // Générer un nouveau token
+        user.setVerificationToken(generateVerificationToken());
+        userRepository.save(user);
+
+        // Envoyer l'email
+        sendVerificationEmail(user);
+    }
+
+    @Override
+    public boolean isDisposableEmail(String email) {
+        return disposableEmailBlocklist.isDisposable(email);
+    }
+
+    /**
+     * Invalide toutes les sessions d'un utilisateur via le SessionRegistry.
+     */
+    private void invalidateUserSessions(String username) {
+        try {
+            List<Object> principals = sessionRegistry.getAllPrincipals();
+            for (Object principal : principals) {
+                if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+                    if (userDetails.getUsername().equals(username)) {
+                        List<SessionInformation> sessions = sessionRegistry.getAllSessions(principal, false);
+                        for (SessionInformation session : sessions) {
+                            session.expireNow();
+                            logger.debug("Session invalidée pour {} : {}", username, session.getSessionId());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Erreur lors de l'invalidation des sessions pour {} : {}", username, e.getMessage());
+        }
     }
 }

@@ -171,6 +171,7 @@ public class AuthController {
             if (verified) {
                 redirectAttributes.addFlashAttribute("successMessage",
                         "Votre email a été vérifié avec succès ! Vous pouvez maintenant vous connecter.");
+                return "redirect:/login?verified=true";
             } else {
                 redirectAttributes.addFlashAttribute("errorMessage",
                         "Token de vérification invalide ou expiré.");
@@ -182,6 +183,46 @@ public class AuthController {
         }
 
         return "redirect:/login";
+    }
+
+    /**
+     * Renvoie l'email de vérification.
+     * Rate limité à 1 renvoi par 2 minutes (via session).
+     */
+    @PostMapping("/resend-verification")
+    public String resendVerification(Authentication authentication,
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/login";
+        }
+
+        // Rate limit basé sur la session (1 renvoi / 2 minutes)
+        String sessionKey = "lastResendVerification";
+        Long lastResend = (Long) request.getSession().getAttribute(sessionKey);
+        long now = System.currentTimeMillis();
+
+        if (lastResend != null && (now - lastResend) < 120_000) { // 2 minutes
+            long remainingSeconds = (120_000 - (now - lastResend)) / 1000;
+            redirectAttributes.addFlashAttribute("warningMessage",
+                    "Veuillez patienter " + remainingSeconds + " secondes avant de renvoyer un email.");
+            return "redirect:/dashboard";
+        }
+
+        try {
+            authService.resendVerificationEmail(authentication.getName());
+            request.getSession().setAttribute(sessionKey, now);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Un nouveau lien de vérification a été envoyé à votre adresse email.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Erreur lors du renvoi de l'email de vérification.");
+        }
+
+        return "redirect:/dashboard";
     }
 
     /**

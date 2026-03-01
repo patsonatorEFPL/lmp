@@ -1,6 +1,7 @@
 package com.lmp.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -59,4 +60,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "LEFT JOIN FETCH u.reviews " +
            "WHERE u.email = :email")
     Optional<User> findByEmailWithAllCollections(@Param("email") String email);
+
+    /**
+     * Trouve les utilisateurs ACTIVE dont l'email n'a pas été vérifié
+     * et dont la date d'inscription est antérieure à la deadline (24h).
+     */
+    @Query("SELECT u FROM User u WHERE u.emailVerified = false " +
+           "AND u.status = com.lmp.domain.enums.UserStatus.ACTIVE " +
+           "AND u.registrationDate < :deadline")
+    List<User> findUnverifiedExpiredUsers(@Param("deadline") LocalDateTime deadline);
 }

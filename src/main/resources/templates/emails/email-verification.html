@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Vérifiez votre email - LMP Services</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <!-- Preheader -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+        Vérifiez votre adresse email pour activer votre compte LMP Services.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f7;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:40px 32px;text-align:center;">
+                            <div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:0.5px;margin-bottom:8px;" th:text="${companyName}">LMP Services</div>
+                            <div style="font-size:14px;color:#8b92a5;">Vérification de votre email</div>
+                        </td>
+                    </tr>
+
+                    <!-- Icon badge -->
+                    <tr>
+                        <td style="padding:32px 32px 0;text-align:center;">
+                            <div style="display:inline-block;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#ffffff;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:600;">
+                                ✉ Vérification requise
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            <h2 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#1a1f36;">
+                                Bonjour <span th:text="${userName}">Utilisateur</span>,
+                            </h2>
+                            <p style="margin:0 0 16px;font-size:15px;color:#4b5563;line-height:1.6;">
+                                Merci de vous être inscrit chez <strong th:text="${companyName}">LMP Services</strong>. 
+                                Pour activer complètement votre compte, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous.
+                            </p>
+                            <p style="margin:0 0 24px;font-size:14px;color:#ef4444;line-height:1.6;font-weight:500;">
+                                ⏰ Vous avez 24 heures pour vérifier votre email, après quoi votre compte sera temporairement suspendu.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center" style="padding:8px 0 24px;">
+                                        <a th:href="${verificationUrl}" 
+                                           style="display:inline-block;background:linear-gradient(135deg,#22c55e,#16a34a);color:#ffffff;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">
+                                            Vérifier mon email
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;line-height:1.5;">
+                                Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :
+                            </p>
+                            <p style="margin:0 0 24px;font-size:12px;color:#6b7280;word-break:break-all;background:#f9fafb;padding:12px;border-radius:6px;">
+                                <span th:text="${verificationUrl}">https://lmp-services.ca/verify-email?token=xxx</span>
+                            </p>
+
+                            <!-- Separator -->
+                            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+                            
+                            <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.5;">
+                                Si vous n'avez pas créé de compte chez <span th:text="${companyName}">LMP Services</span>, vous pouvez ignorer cet email.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background:#f9fafb;padding:24px 32px;text-align:center;border-top:1px solid #e5e7eb;">
+                            <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">
+                                &copy; 2024 <span th:text="${companyName}">LMP Services</span>. Tous droits réservés.
+                            </p>
+                            <p style="margin:0;font-size:12px;color:#9ca3af;">
+                                <a th:href="${companyWebsite}" style="color:#3b82f6;text-decoration:none;" th:text="${companyWebsite}">https://lmp-services.ca</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

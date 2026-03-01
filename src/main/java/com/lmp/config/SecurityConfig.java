@@ -68,6 +68,7 @@ public class SecurityConfig {
                                 "/auth/register-and-checkout",
                                 "/login",
                                 "/verify-email",
+                                "/resend-verification",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
