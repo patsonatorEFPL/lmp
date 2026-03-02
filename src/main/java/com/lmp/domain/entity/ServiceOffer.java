@@ -31,6 +31,13 @@ public class ServiceOffer {
     @Column(name = "duration_type", nullable = false)
     private DurationType durationType; // ONE_TIME, MONTHLY, YEARLY
 
+    /**
+     * Colonne legacy conservée en base de données de production.
+     * Synchronisée automatiquement avec durationType via @PrePersist/@PreUpdate.
+     */
+    @Column(name = "duration")
+    private String duration;
+
     @Column(name = "valid_from")
     private LocalDateTime validFrom;
 
@@ -58,7 +65,14 @@ public class ServiceOffer {
         this.price = price;
         this.originalPrice = originalPrice;
         this.durationType = durationType;
+        this.duration = (durationType != null) ? durationType.name() : "ONE_TIME";
         this.isDefault = isDefault;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void syncDurationField() {
+        this.duration = (durationType != null) ? durationType.name() : "ONE_TIME";
     }
 
     // Transient method to evaluate validity strictly
