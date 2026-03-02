@@ -31,6 +31,7 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         logger.info("🔧 SchemaMaintenanceRunner — vérification du schéma...");
         fixLegacyDurationColumn();
+        fixLegacyDurationColumnOnServices();
         logger.info("✅ SchemaMaintenanceRunner — terminé.");
     }
 
@@ -47,10 +48,26 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
             jdbcTemplate.execute(
                 "ALTER TABLE service_offers MODIFY COLUMN duration VARCHAR(100) NULL DEFAULT NULL"
             );
-            logger.info("✅ Schema fix: colonne legacy 'duration' rendue nullable.");
+            logger.info("✅ Schema fix: colonne legacy 'duration' sur service_offers rendue nullable.");
         } catch (Exception e) {
             // Cas normaux : colonne inexistante (H2/fresh DB) ou déjà nullable → ignoré
-            logger.debug("Schema fix 'duration' ignoré : {}", e.getMessage());
+            logger.debug("Schema fix 'service_offers.duration' ignoré : {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Même problème sur la table 'services' : une ancienne colonne 'duration'
+     * NOT NULL sans default empêche les INSERT Hibernate (l'entité Service
+     * ne mappe pas ce champ).
+     */
+    private void fixLegacyDurationColumnOnServices() {
+        try {
+            jdbcTemplate.execute(
+                "ALTER TABLE services MODIFY COLUMN duration VARCHAR(100) NULL DEFAULT NULL"
+            );
+            logger.info("✅ Schema fix: colonne legacy 'duration' sur services rendue nullable.");
+        } catch (Exception e) {
+            logger.debug("Schema fix 'services.duration' ignoré : {}", e.getMessage());
         }
     }
 }
