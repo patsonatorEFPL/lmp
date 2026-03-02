@@ -153,27 +153,8 @@
                                 <div class="orb-satellite orb-satellite--cyan"></div>
                             </div>
 
-                            <!-- The 3D Orb -->
-                            <div class="w-full h-full rounded-full relative transform-style-3d orb-3d">
-                                <!-- Mesh gradient surface -->
-                                <div class="absolute inset-0 rounded-full overflow-hidden shadow-[inset_0_0_60px_rgba(255,255,255,0.15),0_30px_80px_rgba(0,0,0,0.4)]">
-                                    <div class="w-[200%] h-[200%] absolute top-[-50%] left-[-50%] orb-surface"></div>
-                                </div>
-
-                                <!-- Outer glass reflection -->
-                                <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/8 to-white/30 shadow-[inset_0_4px_30px_rgba(255,255,255,0.4)]"></div>
-
-                                <!-- Specular highlight (top-left) -->
-                                <div class="absolute top-[10%] left-[15%] w-[30%] h-[20%] rounded-full bg-white/20 blur-[8px] rotate-[-30deg]"></div>
-
-                                <!-- Inner floating rings -->
-                                <div class="absolute inset-[10%] rounded-full border border-white/15 orb-ring-1"></div>
-                                <div class="absolute inset-[22%] rounded-full border border-primary/25 orb-ring-2"></div>
-                                <div class="absolute inset-[34%] rounded-full border border-accent/20 orb-ring-3"></div>
-
-                                <!-- Core glow -->
-                                <div class="absolute inset-[38%] rounded-full bg-primary/30 blur-[10px] animate-pulse-slow"></div>
-                            </div>
+                            <!-- Earth Globe (Three.js) -->
+                            <canvas id="hero-globe" style="width:100%;height:100%;border-radius:50%;display:block;"></canvas>
                         </div>
                     </div>
 
@@ -291,17 +272,14 @@
                             gap: 6px;
                             padding: 6px 14px;
                             border-radius: 999px;
-                            background: rgba(255,255,255,0.06);
-                            border: 1px solid rgba(255,255,255,0.12);
-                            backdrop-filter: blur(10px);
+                            background: transparent;
+                            border: none;
                             font-size: 0.78rem;
                             color: oklch(var(--bc) / 0.8);
                             white-space: nowrap;
-                            transition: background 0.2s, border-color 0.2s, transform 0.2s;
+                            transition: transform 0.2s;
                         }
                         .hero-trust-badge:hover {
-                            background: rgba(255,255,255,0.1);
-                            border-color: rgba(255,255,255,0.22);
                             transform: translateY(-2px);
                         }
 
@@ -334,18 +312,7 @@
                         .perspective-1000 { perspective: 1000px; }
                         .transform-style-3d { transform-style: preserve-3d; }
 
-                        /* ── Orb surface ── */
-                        .orb-surface {
-                            background:
-                                radial-gradient(circle at 50% 50%, rgba(37,60,255,0.7) 0%, transparent 45%),
-                                radial-gradient(circle at 80% 20%, rgba(138,56,255,0.6) 0%, transparent 45%),
-                                radial-gradient(circle at 20% 80%, rgba(6,182,212,0.5) 0%, transparent 45%),
-                                radial-gradient(circle at 80% 80%, rgba(99,102,241,0.5) 0%, transparent 45%),
-                                radial-gradient(circle at 20% 20%, rgba(139,92,246,0.7) 0%, transparent 45%);
-                            filter: blur(18px);
-                            animation: spin-surface 24s linear infinite;
-                        }
-                        .orb-3d { animation: float-orb 8s ease-in-out infinite; }
+
 
                         /* ── Orbiting rings & satellites ── */
                         .orb-orbit {
@@ -388,35 +355,8 @@
 
                         @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-                        /* Ring animations */
-                        .orb-ring-1 { animation: spin-ring-x 15s linear infinite; }
-                        .orb-ring-2 { animation: spin-ring-y 20s linear infinite reverse; }
-                        .orb-ring-3 { animation: spin-ring-z 25s linear infinite; }
-
                         .animate-pulse-slow   { animation: pulse-glow 6s ease-in-out infinite; }
                         .animate-pulse-slower { animation: pulse-glow 8s ease-in-out infinite; }
-
-                        @keyframes spin-surface {
-                            0%   { transform: rotate(0deg) scale(1.2); }
-                            50%  { transform: rotate(180deg) scale(1.5); }
-                            100% { transform: rotate(360deg) scale(1.2); }
-                        }
-                        @keyframes float-orb {
-                            0%,100% { transform: translateY(0) rotateX(10deg) rotateY(10deg); }
-                            50%     { transform: translateY(-20px) rotateX(-5deg) rotateY(-15deg); }
-                        }
-                        @keyframes spin-ring-x {
-                            0%   { transform: rotateX(0deg) rotateY(30deg); }
-                            100% { transform: rotateX(360deg) rotateY(30deg); }
-                        }
-                        @keyframes spin-ring-y {
-                            0%   { transform: rotateX(45deg) rotateY(0deg); }
-                            100% { transform: rotateX(45deg) rotateY(360deg); }
-                        }
-                        @keyframes spin-ring-z {
-                            0%   { transform: rotateX(60deg) rotateY(60deg) rotateZ(0deg); }
-                            100% { transform: rotateX(60deg) rotateY(60deg) rotateZ(360deg); }
-                        }
                         @keyframes pulse-glow {
                             0%,100% { opacity: 0.4; transform: scale(1); }
                             50%     { opacity: 0.8; transform: scale(1.05); }
@@ -438,15 +378,9 @@
                             color: #4338ca;
                         }
 
-                        /* Trust badges: opaque light variant instead of invisible glass */
+                        /* Trust badges: light mode */
                         html:not(.dark) .hero-trust-badge {
-                            background: rgba(99,102,241,0.07);
-                            border-color: rgba(99,102,241,0.25);
                             color: #374151;
-                        }
-                        html:not(.dark) .hero-trust-badge:hover {
-                            background: rgba(99,102,241,0.13);
-                            border-color: rgba(99,102,241,0.4);
                         }
 
                         /* Form glow: keep it visible in light mode */
@@ -1130,5 +1064,106 @@
     </script>
     <!-- GTranslate Config -->
     <th:block th:replace="~{fragments/theme-language-controls :: gtranslate-config}"></th:block>
+
+    <!-- Three.js Earth Globe -->
+    <script th:src="@{/js/three.min.js}"></script>
+    <script>
+    (function () {
+        function initGlobe() {
+            var canvas = document.getElementById('hero-globe');
+            if (!canvas || typeof THREE === 'undefined') return;
+
+            var container = canvas.parentElement;
+            var w = container.offsetWidth || 384;
+            var h = container.offsetHeight || 384;
+
+            // Renderer
+            var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(w, h);
+            renderer.setClearColor(0x000000, 0);
+
+            // Scene & Camera
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
+            camera.position.z = 2.5;
+
+            // Texture loader
+            var loader = new THREE.TextureLoader();
+            var CDN = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/';
+
+            // Earth mesh
+            var earthGeo = new THREE.SphereGeometry(1, 64, 64);
+            var earthMat = new THREE.MeshPhongMaterial({
+                map:         loader.load(CDN + 'earth_atmos_2048.jpg'),
+                specularMap: loader.load(CDN + 'earth_specular_2048.jpg'),
+                specular:    new THREE.Color(0x1a2233),
+                shininess:   8
+            });
+            var earth = new THREE.Mesh(earthGeo, earthMat);
+            earth.rotation.x = 0.41; // ~23.5° axial tilt
+            scene.add(earth);
+
+            // Thin atmosphere shell
+            var atmMat = new THREE.MeshPhongMaterial({
+                color: 0x4488ff,
+                transparent: true,
+                opacity: 0.10,
+                side: THREE.FrontSide
+            });
+            var atmosphere = new THREE.Mesh(new THREE.SphereGeometry(1.03, 64, 64), atmMat);
+            scene.add(atmosphere);
+
+            // Outer halo glow
+            var haloMat = new THREE.MeshPhongMaterial({
+                color: 0x2255cc,
+                transparent: true,
+                opacity: 0.05,
+                side: THREE.FrontSide
+            });
+            var halo = new THREE.Mesh(new THREE.SphereGeometry(1.09, 64, 64), haloMat);
+            scene.add(halo);
+
+            // Lights
+            scene.add(new THREE.AmbientLight(0x334466, 1.2));
+            var sun = new THREE.DirectionalLight(0xddeeff, 0.9);
+            sun.position.set(5, 3, 5);
+            scene.add(sun);
+
+            // Animation loop
+            var t = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                t += 0.005;
+                earth.rotation.y += 0.003;
+                var floatY = Math.sin(t) * 0.04;
+                earth.position.y   = floatY;
+                atmosphere.rotation.y = earth.rotation.y;
+                atmosphere.position.y = floatY;
+                halo.rotation.y       = earth.rotation.y;
+                halo.position.y       = floatY;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize handling
+            if (window.ResizeObserver) {
+                new ResizeObserver(function () {
+                    var nw = container.offsetWidth;
+                    var nh = container.offsetHeight;
+                    renderer.setSize(nw, nh);
+                    camera.aspect = nw / nh;
+                    camera.updateProjectionMatrix();
+                }).observe(container);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGlobe);
+        } else {
+            initGlobe();
+        }
+    })();
+    </script>
 </body>
 </html>
