@@ -64,7 +64,7 @@ ENV SERVER_PORT=8080
 EXPOSE 8080
 
 # Health check pour Coolify
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=10s --start-period=300s --retries=5 \
     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # Point d'entrée avec profil production pour Coolify
