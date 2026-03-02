@@ -8,15 +8,23 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+
 /**
  * Correctif de schéma pour la base de données de production.
  *
  * S'exécute avant DataInitializer (@Order(0)) pour corriger les colonnes
- * legacy laissées par d'anciennes versions de l'entité.
+ * legacy laissées par d'anciennes versions des entités.
  *
- * Toutes les opérations sont encapsulées dans un try-catch :
- * elles sont silencieusement ignorées si la colonne est déjà corrigée
- * ou si elle n'existe pas (environnement H2 dev, fresh DB, etc.).
+ * Stratégie dynamique : lit INFORMATION_SCHEMA pour trouver TOUTES les
+ * colonnes NOT NULL sans default sur les tables cibles, et les rend
+ * nullable si elles ne font pas partie des colonnes connues de Hibernate.
+ *
+ * Entièrement idempotent et silencieux sur H2 / fresh DB.
  */
 @Component
 @Order(0)
@@ -27,47 +35,80 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    // Colonnes mappées par Hibernate pour chaque table — ne jamais les toucher.
+    private static final Set<String> KNOWN_SERVICES_COLUMNS = new HashSet<>(Arrays.asList(
+        "id", "category_id", "title", "slug", "description",
+        "icon", "display_order", "featured", "active", "created_at", "updated_at"
+    ));
+
+    private static final Set<String> KNOWN_SERVICE_OFFERS_COLUMNS = new HashSet<>(Arrays.asList(
+        "id", "service_id", "name", "price", "original_price",
+        "duration_type", "valid_from", "valid_to", "is_default", "active"
+    ));
+
     @Override
     public void run(String... args) throws Exception {
         logger.info("🔧 SchemaMaintenanceRunner — vérification du schéma...");
-        fixLegacyDurationColumn();
-        fixLegacyDurationColumnOnServices();
+
+        try {
+            String dbName = jdbcTemplate.queryForObject("SELECT DATABASE()", String.class);
+            if (dbName == null) {
+                logger.warn("⚠️  Impossible de déterminer le nom de la base (H2 / non-MySQL) — correctifs ignorés.");
+                return;
+            }
+            fixLegacyColumnsOnTable(dbName, "services",       KNOWN_SERVICES_COLUMNS);
+            fixLegacyColumnsOnTable(dbName, "service_offers", KNOWN_SERVICE_OFFERS_COLUMNS);
+        } catch (Exception e) {
+            // Sur H2 ou toute autre base non-MySQL, SELECT DATABASE() échoue → on ignore.
+            logger.debug("SchemaMaintenanceRunner ignoré (non-MySQL ?) : {}", e.getMessage());
+        }
+
         logger.info("✅ SchemaMaintenanceRunner — terminé.");
     }
 
     /**
-     * La colonne 'duration' existait avant la renomination en 'duration_type'.
-     * L'entité ServiceOffer ne la mappe plus, donc Hibernate n'envoie pas de valeur
-     * à l'INSERT → MySQL rejette avec "Field 'duration' doesn't have a default value".
+     * Pour la table donnée, trouve toutes les colonnes NOT NULL sans valeur
+     * par défaut qui NE SONT PAS dans les colonnes connues de Hibernate,
+     * et les rend nullable (ALTER TABLE … MODIFY COLUMN … NULL DEFAULT NULL).
      *
-     * Fix : rendre la colonne nullable (MySQL ignore alors l'absence de valeur).
-     * La commande est idempotente : une seconde exécution ne cause pas d'erreur.
+     * Utilise COLUMN_TYPE tel que retourné par INFORMATION_SCHEMA pour
+     * conserver le type exact de la colonne (VARCHAR, DECIMAL, etc.).
      */
-    private void fixLegacyDurationColumn() {
+    private void fixLegacyColumnsOnTable(String dbName, String tableName, Set<String> knownColumns) {
         try {
-            jdbcTemplate.execute(
-                "ALTER TABLE service_offers MODIFY COLUMN duration VARCHAR(100) NULL DEFAULT NULL"
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT COLUMN_NAME, COLUMN_TYPE " +
+                "FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = ? " +
+                "  AND TABLE_NAME   = ? " +
+                "  AND IS_NULLABLE  = 'NO' " +
+                "  AND COLUMN_DEFAULT IS NULL " +
+                "  AND COLUMN_KEY   != 'PRI'",
+                dbName, tableName
             );
-            logger.info("✅ Schema fix: colonne legacy 'duration' sur service_offers rendue nullable.");
-        } catch (Exception e) {
-            // Cas normaux : colonne inexistante (H2/fresh DB) ou déjà nullable → ignoré
-            logger.debug("Schema fix 'service_offers.duration' ignoré : {}", e.getMessage());
-        }
-    }
 
-    /**
-     * Même problème sur la table 'services' : une ancienne colonne 'duration'
-     * NOT NULL sans default empêche les INSERT Hibernate (l'entité Service
-     * ne mappe pas ce champ).
-     */
-    private void fixLegacyDurationColumnOnServices() {
-        try {
-            jdbcTemplate.execute(
-                "ALTER TABLE services MODIFY COLUMN duration VARCHAR(100) NULL DEFAULT NULL"
-            );
-            logger.info("✅ Schema fix: colonne legacy 'duration' sur services rendue nullable.");
+            for (Map<String, Object> row : rows) {
+                String columnName = (String) row.get("COLUMN_NAME");
+                String columnType = (String) row.get("COLUMN_TYPE");
+
+                if (knownColumns.contains(columnName)) {
+                    // Colonne mappée par Hibernate — pas de modification.
+                    continue;
+                }
+
+                try {
+                    jdbcTemplate.execute(
+                        "ALTER TABLE `" + tableName + "` " +
+                        "MODIFY COLUMN `" + columnName + "` " + columnType + " NULL DEFAULT NULL"
+                    );
+                    logger.info("✅ Schema fix: {}.{} ({}) rendue nullable.", tableName, columnName, columnType);
+                } catch (Exception alterEx) {
+                    logger.warn("⚠️  Impossible de modifier {}.{} : {}", tableName, columnName, alterEx.getMessage());
+                }
+            }
+
         } catch (Exception e) {
-            logger.debug("Schema fix 'services.duration' ignoré : {}", e.getMessage());
+            logger.debug("fixLegacyColumnsOnTable({}) ignoré : {}", tableName, e.getMessage());
         }
     }
 }
