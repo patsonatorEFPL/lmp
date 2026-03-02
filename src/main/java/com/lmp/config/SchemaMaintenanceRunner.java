@@ -18,11 +18,14 @@ import java.util.HashSet;
  * Correctif de schéma pour la base de données de production.
  *
  * S'exécute avant DataInitializer (@Order(0)) pour corriger les colonnes
- * legacy laissées par d'anciennes versions des entités.
+ * et contraintes legacy laissées par d'anciennes versions des entités.
  *
- * Stratégie dynamique : lit INFORMATION_SCHEMA pour trouver TOUTES les
- * colonnes NOT NULL sans default sur les tables cibles, et les rend
- * nullable si elles ne font pas partie des colonnes connues de Hibernate.
+ * Stratégie dynamique :
+ *   1. Lit INFORMATION_SCHEMA pour trouver TOUTES les colonnes NOT NULL
+ *      sans default sur les tables cibles, et les rend nullable si elles
+ *      ne font pas partie des colonnes connues de Hibernate.
+ *   2. Détecte et supprime les contraintes FK orphelines qui référencent
+ *      d'anciennes tables renommées (ex. service_category → service_categories).
  *
  * Entièrement idempotent et silencieux sur H2 / fresh DB.
  */
@@ -35,7 +38,10 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // Colonnes mappées par Hibernate pour chaque table — ne jamais les toucher.
+    // -------------------------------------------------------------------------
+    // Colonnes mappées par Hibernate — ne jamais les toucher.
+    // -------------------------------------------------------------------------
+
     private static final Set<String> KNOWN_SERVICES_COLUMNS = new HashSet<>(Arrays.asList(
         "id", "category_id", "title", "slug", "description",
         "icon", "display_order", "featured", "active", "created_at", "updated_at"
@@ -43,7 +49,19 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
 
     private static final Set<String> KNOWN_SERVICE_OFFERS_COLUMNS = new HashSet<>(Arrays.asList(
         "id", "service_id", "name", "price", "original_price",
-        "duration_type", "valid_from", "valid_to", "is_default", "active"
+        "duration_type", "duration", "valid_from", "valid_to", "is_default", "active"
+    ));
+
+    // -------------------------------------------------------------------------
+    // Tables courantes de Hibernate — toute FK qui référence un nom ABSENT
+    // de cette liste est considérée orpheline et sera supprimée.
+    // -------------------------------------------------------------------------
+
+    private static final Set<String> CURRENT_HIBERNATE_TABLES = new HashSet<>(Arrays.asList(
+        "cart", "cart_item", "invoices", "offer_benefits", "orders", "order_items",
+        "order_status_history", "payment_transactions", "refunds", "reviews", "roles",
+        "services", "service_benefits", "service_categories", "service_offers",
+        "users", "appointments", "webhook_event_logs"
     ));
 
     @Override
@@ -56,8 +74,14 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
                 logger.warn("⚠️  Impossible de déterminer le nom de la base (H2 / non-MySQL) — correctifs ignorés.");
                 return;
             }
+
+            // Phase 1 : corriger les colonnes legacy NOT NULL sans default
             fixLegacyColumnsOnTable(dbName, "services",       KNOWN_SERVICES_COLUMNS);
             fixLegacyColumnsOnTable(dbName, "service_offers", KNOWN_SERVICE_OFFERS_COLUMNS);
+
+            // Phase 2 : supprimer les FK orphelines (pointant vers d'anciennes tables)
+            dropOrphanForeignKeys(dbName);
+
         } catch (Exception e) {
             // Sur H2 ou toute autre base non-MySQL, SELECT DATABASE() échoue → on ignore.
             logger.debug("SchemaMaintenanceRunner ignoré (non-MySQL ?) : {}", e.getMessage());
@@ -66,13 +90,14 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
         logger.info("✅ SchemaMaintenanceRunner — terminé.");
     }
 
+    // =========================================================================
+    // Phase 1 : colonnes legacy NOT NULL
+    // =========================================================================
+
     /**
      * Pour la table donnée, trouve toutes les colonnes NOT NULL sans valeur
      * par défaut qui NE SONT PAS dans les colonnes connues de Hibernate,
      * et les rend nullable (ALTER TABLE … MODIFY COLUMN … NULL DEFAULT NULL).
-     *
-     * Utilise COLUMN_TYPE tel que retourné par INFORMATION_SCHEMA pour
-     * conserver le type exact de la colonne (VARCHAR, DECIMAL, etc.).
      */
     private void fixLegacyColumnsOnTable(String dbName, String tableName, Set<String> knownColumns) {
         try {
@@ -92,7 +117,6 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
                 String columnType = (String) row.get("COLUMN_TYPE");
 
                 if (knownColumns.contains(columnName)) {
-                    // Colonne mappée par Hibernate — pas de modification.
                     continue;
                 }
 
@@ -109,6 +133,56 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
 
         } catch (Exception e) {
             logger.debug("fixLegacyColumnsOnTable({}) ignoré : {}", tableName, e.getMessage());
+        }
+    }
+
+    // =========================================================================
+    // Phase 2 : FK orphelines
+    // =========================================================================
+
+    /**
+     * Recherche toutes les FK de la base dont la table référencée (REFERENCED_TABLE_NAME)
+     * n'existe PAS dans la liste des tables Hibernate courantes. Ces FK pointent vers
+     * d'anciennes tables renommées (ex. service_category → service_categories) et
+     * empêchent les INSERT Hibernate de fonctionner.
+     *
+     * Supprime chaque contrainte orpheline trouvée.
+     */
+    private void dropOrphanForeignKeys(String dbName) {
+        try {
+            List<Map<String, Object>> fks = jdbcTemplate.queryForList(
+                "SELECT CONSTRAINT_NAME, TABLE_NAME, REFERENCED_TABLE_NAME " +
+                "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
+                "WHERE TABLE_SCHEMA = ? " +
+                "  AND REFERENCED_TABLE_NAME IS NOT NULL",
+                dbName
+            );
+
+            for (Map<String, Object> fk : fks) {
+                String referencedTable = (String) fk.get("REFERENCED_TABLE_NAME");
+
+                if (CURRENT_HIBERNATE_TABLES.contains(referencedTable)) {
+                    // FK pointe vers une table connue → légitime, on n'y touche pas.
+                    continue;
+                }
+
+                String constraintName = (String) fk.get("CONSTRAINT_NAME");
+                String tableName      = (String) fk.get("TABLE_NAME");
+
+                try {
+                    jdbcTemplate.execute(
+                        "ALTER TABLE `" + tableName + "` DROP FOREIGN KEY `" + constraintName + "`"
+                    );
+                    logger.info("✅ Schema fix: FK orpheline '{}' sur '{}' (→ '{}') supprimée.",
+                            constraintName, tableName, referencedTable);
+                } catch (Exception dropEx) {
+                    logger.warn("⚠️  Impossible de supprimer FK '{}' sur '{}' : {}",
+                            constraintName, tableName, dropEx.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            logger.debug("dropOrphanForeignKeys ignoré : {}", e.getMessage());
         }
     }
 }
