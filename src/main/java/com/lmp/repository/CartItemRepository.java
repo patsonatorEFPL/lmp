@@ -1,10 +1,12 @@
 package com.lmp.repository;
 
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.lmp.domain.entity.CartItem;
 
 @Repository
-public interface CartItemRepository extends JpaRepository<CartItem, Long> {
+public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
 }

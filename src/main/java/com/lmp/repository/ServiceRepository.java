@@ -9,8 +9,10 @@ import org.springframework.stereotype.Repository;
 import com.lmp.domain.entity.Service;
 import com.lmp.domain.entity.ServiceCategory;
 
+import java.util.UUID;
+
 @Repository
-public interface ServiceRepository extends JpaRepository<Service, Long> {
+public interface ServiceRepository extends JpaRepository<Service, UUID> {
     List<Service> findByCategory(ServiceCategory category);
 
     List<Service> findByActiveTrue();
@@ -21,5 +23,5 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
 
     Optional<Service> findBySlug(String slug);
 
-    List<Service> findByCategoryIdAndActiveTrue(Long categoryId);
+    List<Service> findByCategoryIdAndActiveTrue(UUID categoryId);
 }

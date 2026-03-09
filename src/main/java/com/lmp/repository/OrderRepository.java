@@ -16,12 +16,14 @@ import com.lmp.domain.entity.Order;
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.OrderStatus;
 
+import java.util.UUID;
+
 /**
  * Repository étendu pour la gestion complète des commandes.
  * Inclut les fonctionnalités avancées pour l'administration.
  */
 @Repository
-public interface OrderRepository extends JpaRepository<Order, Long> {
+public interface OrderRepository extends JpaRepository<Order, UUID> {
     
     // ========== Méthodes existantes ==========
     List<Order> findByUserOrderByCreatedAtDesc(User user);

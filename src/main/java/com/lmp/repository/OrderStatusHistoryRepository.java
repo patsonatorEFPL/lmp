@@ -16,23 +16,25 @@ import com.lmp.domain.enums.OrderStatus;
 /**
  * Repository pour l'historique des changements de statut des commandes.
  */
+import java.util.UUID;
+
 @Repository
-public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, Long> {
+public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, UUID> {
 
     /**
      * Trouve l'historique d'une commande par ordre chronologique décroissant
      */
-    List<OrderStatusHistory> findByOrderIdOrderByChangedAtDesc(Long orderId);
+    List<OrderStatusHistory> findByOrderIdOrderByChangedAtDesc(UUID orderId);
 
     /**
      * Trouve l'historique d'une commande avec pagination
      */
-    Page<OrderStatusHistory> findByOrderId(Long orderId, Pageable pageable);
+    Page<OrderStatusHistory> findByOrderId(UUID orderId, Pageable pageable);
 
     /**
      * Trouve l'historique par commande et statut de destination
      */
-    List<OrderStatusHistory> findByOrderIdAndToStatus(Long orderId, OrderStatus toStatus);
+    List<OrderStatusHistory> findByOrderIdAndToStatus(UUID orderId, OrderStatus toStatus);
 
     /**
      * Trouve l'historique par plage de dates
@@ -119,7 +121,7 @@ public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusH
     @Query("SELECT h FROM OrderStatusHistory h WHERE h.changedAt = (" +
            "SELECT MAX(h2.changedAt) FROM OrderStatusHistory h2 WHERE h2.order.id = h.order.id" +
            ") AND h.order.id = :orderId")
-    OrderStatusHistory findLatestByOrderId(@Param("orderId") Long orderId);
+    OrderStatusHistory findLatestByOrderId(@Param("orderId") UUID orderId);
 
     /**
      * Commandes avec des changements multiples

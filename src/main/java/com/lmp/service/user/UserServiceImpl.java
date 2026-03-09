@@ -3,6 +3,7 @@ package com.lmp.service.user;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ public class UserServiceImpl implements UserService {
      * @return L'utilisateur s'il existe
      */
     @Override
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(UUID id) {
         return userRepository.findById(id);
     }
 
@@ -113,7 +114,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         logger.error("🚨 [HARD-DELETE] DÉBUT SUPPRESSION DÉFINITIVE - Utilisateur ID: {}", id);
         
         // Réutiliser la logique complète de hardDeleteUser
@@ -130,7 +131,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void setUserActive(Long id, boolean active) {
+    public void setUserActive(UUID id, boolean active) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
         
@@ -146,7 +147,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void setUserLocked(Long id, boolean locked) {
+    public void setUserLocked(UUID id, boolean locked) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + id));
         
@@ -162,7 +163,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void changePassword(Long userId, String newPassword) {
+    public void changePassword(UUID userId, String newPassword) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + userId));
         
@@ -183,7 +184,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void changePasswordWithValidation(Long userId, String currentPassword, String newPassword) {
+    public void changePasswordWithValidation(UUID userId, String currentPassword, String newPassword) {
         logger.info("🔐 DEBUG SERVICE - changePasswordWithValidation appelé pour userId: {}", userId);
         
         User user = userRepository.findById(userId)
@@ -239,7 +240,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void changePasswordByAdmin(Long userId, String newPassword, Long adminId) {
+    public void changePasswordByAdmin(UUID userId, String newPassword, UUID adminId) {
         logger.info("🔐 DEBUG SERVICE - changePasswordByAdmin appelé: userId={}, adminId={}", userId, adminId);
         
         User user = userRepository.findById(userId)
@@ -310,7 +311,7 @@ public class UserServiceImpl implements UserService {
      * @return true si le mot de passe correspond
      */
     @Override
-    public boolean checkCurrentPassword(Long userId, String password) {
+    public boolean checkCurrentPassword(UUID userId, String password) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + userId));
         
@@ -341,7 +342,7 @@ public class UserServiceImpl implements UserService {
      * @return true si l'utilisateur a le rôle, false sinon
      */
     @Override
-    public boolean hasRole(Long userId, String roleName) {
+    public boolean hasRole(UUID userId, String roleName) {
         User user = userRepository.findByIdWithRoles(userId)
                 .orElse(null);
         
@@ -451,7 +452,7 @@ public class UserServiceImpl implements UserService {
      * Trouve un utilisateur par ID avec ses rôles chargés.
      */
     @Override
-    public Optional<User> findByIdWithRoles(Long id) {
+    public Optional<User> findByIdWithRoles(UUID id) {
         return userRepository.findByIdWithRoles(id);
     }
     
@@ -477,7 +478,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void hardDeleteUser(Long id) {
+    public void hardDeleteUser(UUID id) {
         logger.error("🚨 [HARD-DELETE] DÉBUT SUPPRESSION DÉFINITIVE - Utilisateur ID: {}", id);
         
         User user = userRepository.findById(id)

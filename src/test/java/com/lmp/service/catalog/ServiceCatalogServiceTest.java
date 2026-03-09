@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,12 +42,19 @@ class ServiceCatalogServiceTest {
     @InjectMocks
     private ServiceCatalogService catalogService;
 
+    private static final UUID OFFER_ID_1 = UUID.randomUUID();
+    private static final UUID OFFER_ID_2 = UUID.randomUUID();
+    private static final UUID OFFER_ID_INVALID = UUID.randomUUID();
+    private static final UUID SERVICE_ID_1 = UUID.randomUUID();
+    private static final UUID SERVICE_ID_INVALID = UUID.randomUUID();
+    private static final UUID OFFER_ID_DEFAULT = UUID.randomUUID();
+
     @Test
     void getValidOffer_activeOffer_returnsOffer() {
-        ServiceOffer offer = createValidOffer(1L);
-        when(offerRepository.findByIdAndActiveTrue(1L)).thenReturn(Optional.of(offer));
+        ServiceOffer offer = createValidOffer(OFFER_ID_1);
+        when(offerRepository.findByIdAndActiveTrue(OFFER_ID_1)).thenReturn(Optional.of(offer));
 
-        Optional<ServiceOffer> result = catalogService.getValidOffer(1L);
+        Optional<ServiceOffer> result = catalogService.getValidOffer(OFFER_ID_1);
 
         assertTrue(result.isPresent());
         assertEquals(new BigDecimal("353.89"), result.get().getPrice());
@@ -54,20 +62,20 @@ class ServiceCatalogServiceTest {
 
     @Test
     void getValidOffer_inactiveOffer_returnsEmpty() {
-        when(offerRepository.findByIdAndActiveTrue(99L)).thenReturn(Optional.empty());
+        when(offerRepository.findByIdAndActiveTrue(OFFER_ID_INVALID)).thenReturn(Optional.empty());
 
-        Optional<ServiceOffer> result = catalogService.getValidOffer(99L);
+        Optional<ServiceOffer> result = catalogService.getValidOffer(OFFER_ID_INVALID);
 
         assertTrue(result.isEmpty());
     }
 
     @Test
     void getValidOffer_expiredOffer_returnsEmpty() {
-        ServiceOffer offer = createValidOffer(2L);
+        ServiceOffer offer = createValidOffer(OFFER_ID_2);
         offer.setValidTo(LocalDateTime.now().minusDays(1)); // Expired
-        when(offerRepository.findByIdAndActiveTrue(2L)).thenReturn(Optional.of(offer));
+        when(offerRepository.findByIdAndActiveTrue(OFFER_ID_2)).thenReturn(Optional.of(offer));
 
-        Optional<ServiceOffer> result = catalogService.getValidOffer(2L);
+        Optional<ServiceOffer> result = catalogService.getValidOffer(OFFER_ID_2);
 
         assertTrue(result.isEmpty());
     }
@@ -88,31 +96,31 @@ class ServiceCatalogServiceTest {
     @Test
     void getCurrentOfferForService_defaultOffer_returnsDefault() {
         Service service = new Service();
-        service.setId(1L);
+        service.setId(SERVICE_ID_1);
 
-        ServiceOffer defaultOffer = createValidOffer(10L);
+        ServiceOffer defaultOffer = createValidOffer(OFFER_ID_DEFAULT);
         defaultOffer.setIsDefault(true);
         service.setOffers(Set.of(defaultOffer));
 
-        when(serviceRepository.findById(1L)).thenReturn(Optional.of(service));
+        when(serviceRepository.findById(SERVICE_ID_1)).thenReturn(Optional.of(service));
 
-        Optional<ServiceOffer> result = catalogService.getCurrentOfferForService(1L);
+        Optional<ServiceOffer> result = catalogService.getCurrentOfferForService(SERVICE_ID_1);
 
         assertTrue(result.isPresent());
     }
 
     @Test
     void getCurrentOfferForService_nonExistentService_returnsEmpty() {
-        when(serviceRepository.findById(999L)).thenReturn(Optional.empty());
+        when(serviceRepository.findById(SERVICE_ID_INVALID)).thenReturn(Optional.empty());
 
-        Optional<ServiceOffer> result = catalogService.getCurrentOfferForService(999L);
+        Optional<ServiceOffer> result = catalogService.getCurrentOfferForService(SERVICE_ID_INVALID);
 
         assertTrue(result.isEmpty());
     }
 
-    private ServiceOffer createValidOffer(Long id) {
+    private ServiceOffer createValidOffer(UUID id) {
         Service service = new Service();
-        service.setId(1L);
+        service.setId(SERVICE_ID_1);
         service.setTitle("Test Service");
 
         ServiceOffer offer = new ServiceOffer();

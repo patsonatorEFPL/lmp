@@ -14,11 +14,11 @@ import java.util.List;
  */
 public class OrderDto {
 
-    private Long id;
+    private java.util.UUID id;
     private String orderNumber; // Numéro de commande généré (ex: LMP-2024-001)
     
     // Informations client
-    private Long customerId;
+    private java.util.UUID customerId;
     private String customerEmail;
     private String customerFirstName;
     private String customerLastName;
@@ -141,11 +141,11 @@ public class OrderDto {
     
     // Getters et Setters
     
-    public Long getId() {
+    public java.util.UUID getId() {
         return id;
     }
     
-    public void setId(Long id) {
+    public void setId(java.util.UUID id) {
         this.id = id;
     }
     
@@ -157,11 +157,11 @@ public class OrderDto {
         this.orderNumber = orderNumber;
     }
     
-    public Long getCustomerId() {
+    public java.util.UUID getCustomerId() {
         return customerId;
     }
     
-    public void setCustomerId(Long customerId) {
+    public void setCustomerId(java.util.UUID customerId) {
         this.customerId = customerId;
     }
     
@@ -539,10 +539,10 @@ public class OrderDto {
     private String generateOrderNumber(Order order) {
         if (order.getCreatedAt() != null) {
             int year = order.getCreatedAt().getYear();
-            String paddedId = String.format("%06d", order.getId());
-            return String.format("LMP-%d-%s", year, paddedId);
+            String shortId = order.getId().toString().substring(0, 8);
+            return String.format("LMP-%d-%s", year, shortId);
         }
-        return "LMP-" + String.format("%06d", order.getId());
+        return "LMP-" + order.getId().toString().substring(0, 8);
     }
     
     /**

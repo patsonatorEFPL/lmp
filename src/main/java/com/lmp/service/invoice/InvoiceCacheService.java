@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -50,7 +51,7 @@ public class InvoiceCacheService {
      * @param orderId L'ID de la commande
      * @return Les données PDF ou null si non trouvé/expiré
      */
-    public byte[] get(Long orderId) {
+    public byte[] get(UUID orderId) {
         String key = generateKey(orderId);
         CachedInvoice cached = cache.get(key);
         
@@ -75,7 +76,7 @@ public class InvoiceCacheService {
      * @param orderId L'ID de la commande
      * @return Le numéro de facture ou null si non trouvé
      */
-    public String getInvoiceNumber(Long orderId) {
+    public String getInvoiceNumber(UUID orderId) {
         String key = generateKey(orderId);
         CachedInvoice cached = cache.get(key);
         
@@ -93,7 +94,7 @@ public class InvoiceCacheService {
      * @param pdfData Les données PDF
      * @param invoiceNumber Le numéro de facture
      */
-    public void put(Long orderId, byte[] pdfData, String invoiceNumber) {
+    public void put(UUID orderId, byte[] pdfData, String invoiceNumber) {
         String key = generateKey(orderId);
         cache.put(key, new CachedInvoice(pdfData, invoiceNumber));
         log.debug("Facture mise en cache pour la commande #{}, expire dans {} minutes", 
@@ -106,7 +107,7 @@ public class InvoiceCacheService {
      * 
      * @param orderId L'ID de la commande
      */
-    public void invalidate(Long orderId) {
+    public void invalidate(UUID orderId) {
         String key = generateKey(orderId);
         cache.remove(key);
         log.debug("Cache invalidé pour la commande #{}", orderId);
@@ -138,7 +139,7 @@ public class InvoiceCacheService {
     /**
      * Génère la clé de cache pour une commande.
      */
-    private String generateKey(Long orderId) {
+    private String generateKey(UUID orderId) {
         return "invoice_" + orderId;
     }
 }

@@ -138,14 +138,14 @@ public class AppointmentService {
     /**
      * Confirme un rendez-vous
      */
-    public Appointment confirmAppointment(Long appointmentId) {
+    public Appointment confirmAppointment(java.util.UUID appointmentId) {
         return confirmAppointment(appointmentId, null);
     }
     
     /**
      * Confirme un rendez-vous (version avec admin)
      */
-    public Appointment confirmAppointment(Long appointmentId, String adminEmail) {
+    public Appointment confirmAppointment(java.util.UUID appointmentId, String adminEmail) {
         logger.info("Confirmation du rendez-vous ID: {}", appointmentId);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -180,14 +180,14 @@ public class AppointmentService {
     /**
      * Annule un rendez-vous
      */
-    public Appointment cancelAppointment(Long appointmentId, String reason) {
+    public Appointment cancelAppointment(java.util.UUID appointmentId, String reason) {
         return cancelAppointment(appointmentId, reason, (String) null);
     }
     
     /**
      * Annule un rendez-vous (version avec admin)
      */
-    public Appointment cancelAppointment(Long appointmentId, String reason, String adminEmail) {
+    public Appointment cancelAppointment(java.util.UUID appointmentId, String reason, String adminEmail) {
         logger.info("Annulation du rendez-vous ID: {} - Raison: {}", appointmentId, reason);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -222,14 +222,14 @@ public class AppointmentService {
     /**
      * Supprime définitivement un rendez-vous (hard delete)
      */
-    public void deleteAppointment(Long appointmentId) {
+    public void deleteAppointment(java.util.UUID appointmentId) {
         deleteAppointment(appointmentId, null);
     }
     
     /**
      * Supprime définitivement un rendez-vous (version avec admin)
      */
-    public void deleteAppointment(Long appointmentId, String adminEmail) {
+    public void deleteAppointment(java.util.UUID appointmentId, String adminEmail) {
         logger.info("Suppression définitive du rendez-vous ID: {} par: {}", appointmentId, 
             adminEmail != null ? adminEmail : "Système");
 
@@ -273,7 +273,7 @@ public class AppointmentService {
     /**
      * Met à jour un rendez-vous existant
      */
-    public Appointment updateAppointment(Long appointmentId, AppointmentForm form) {
+    public Appointment updateAppointment(java.util.UUID appointmentId, AppointmentForm form) {
         logger.info("Mise à jour du rendez-vous ID: {}", appointmentId);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -310,7 +310,7 @@ public class AppointmentService {
     /**
      * Démarre un rendez-vous
      */
-    public Appointment startAppointment(Long appointmentId) {
+    public Appointment startAppointment(java.util.UUID appointmentId) {
         logger.info("Démarrage du rendez-vous ID: {}", appointmentId);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -329,7 +329,7 @@ public class AppointmentService {
     /**
      * Termine un rendez-vous
      */
-    public Appointment completeAppointment(Long appointmentId, String notes) {
+    public Appointment completeAppointment(java.util.UUID appointmentId, String notes) {
         logger.info("Finalisation du rendez-vous ID: {}", appointmentId);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -355,7 +355,7 @@ public class AppointmentService {
     /**
      * Marque un rendez-vous comme "no-show"
      */
-    public Appointment markAsNoShow(Long appointmentId) {
+    public Appointment markAsNoShow(java.util.UUID appointmentId) {
         logger.info("Marquage en no-show du rendez-vous ID: {}", appointmentId);
 
         Appointment appointment = findAppointmentById(appointmentId);
@@ -377,7 +377,7 @@ public class AppointmentService {
      * Trouve un rendez-vous par son ID
      */
     @Transactional(readOnly = true)
-    public Appointment findAppointmentById(Long id) {
+    public Appointment findAppointmentById(java.util.UUID id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Rendez-vous non trouvé avec l'ID: " + id));
     }
@@ -520,7 +520,7 @@ public class AppointmentService {
     /**
      * Vérifie les conflits d'horaires (en excluant un rendez-vous spécifique)
      */
-    private void checkTimeConflicts(LocalDateTime appointmentDate, Integer durationMinutes, Long excludeAppointmentId) {
+    private void checkTimeConflicts(LocalDateTime appointmentDate, Integer durationMinutes, java.util.UUID excludeAppointmentId) {
         LocalDateTime newStartTime = appointmentDate;
         LocalDateTime newEndTime = appointmentDate.plusMinutes(durationMinutes);
         
@@ -1239,7 +1239,7 @@ public class AppointmentService {
      * Trouve un rendez-vous par ID (pour le contrôleur)
      */
     @Transactional(readOnly = true)
-    public Appointment findById(Long id) {
+    public Appointment findById(java.util.UUID id) {
         return findAppointmentById(id);
     }
 
@@ -1342,7 +1342,7 @@ public class AppointmentService {
     /**
      * Met à jour un rendez-vous avec validation de l'utilisateur
      */
-    public Appointment updateAppointment(Long appointmentId, AppointmentForm form, User user) {
+    public Appointment updateAppointment(java.util.UUID appointmentId, AppointmentForm form, User user) {
         Appointment appointment = findAppointmentById(appointmentId);
         
         // Vérifier que l'utilisateur est propriétaire du rendez-vous
@@ -1356,7 +1356,7 @@ public class AppointmentService {
     /**
      * Annule un rendez-vous avec validation de l'utilisateur
      */
-    public Appointment cancelAppointment(Long appointmentId, String reason, User user) {
+    public Appointment cancelAppointment(java.util.UUID appointmentId, String reason, User user) {
         Appointment appointment = findAppointmentById(appointmentId);
         
         // Vérifier que l'utilisateur est propriétaire du rendez-vous
@@ -1390,7 +1390,7 @@ public class AppointmentService {
     /**
      * Met à jour les notes administratives
      */
-    public Appointment updateAdminNotes(Long appointmentId, String notes) {
+    public Appointment updateAdminNotes(java.util.UUID appointmentId, String notes) {
         Appointment appointment = findAppointmentById(appointmentId);
         appointment.setAdminNotes(notes);
         return appointmentRepository.save(appointment);

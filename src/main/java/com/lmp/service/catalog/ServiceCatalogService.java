@@ -59,7 +59,7 @@ public class ServiceCatalogService {
     /**
      * Retourne un service par son ID.
      */
-    public Optional<com.lmp.domain.entity.Service> getServiceById(Long id) {
+    public Optional<com.lmp.domain.entity.Service> getServiceById(java.util.UUID id) {
         return serviceRepository.findById(id);
     }
 
@@ -77,7 +77,7 @@ public class ServiceCatalogService {
      * @param offerId L'ID de l'offre
      * @return L'offre si elle est active et valide, Optional.empty() sinon
      */
-    public Optional<ServiceOffer> getValidOffer(Long offerId) {
+    public Optional<ServiceOffer> getValidOffer(java.util.UUID offerId) {
         Optional<ServiceOffer> offerOpt = offerRepository.findByIdAndActiveTrue(offerId);
         if (offerOpt.isEmpty()) {
             logger.warn("Offre {} non trouvée ou inactive", offerId);
@@ -96,7 +96,7 @@ public class ServiceCatalogService {
     /**
      * Retourne l'offre courante d'un service (promo valide > défaut).
      */
-    public Optional<ServiceOffer> getCurrentOfferForService(Long serviceId) {
+    public Optional<ServiceOffer> getCurrentOfferForService(java.util.UUID serviceId) {
         Optional<com.lmp.domain.entity.Service> serviceOpt = serviceRepository.findById(serviceId);
         if (serviceOpt.isEmpty()) {
             return Optional.empty();
@@ -114,7 +114,7 @@ public class ServiceCatalogService {
     }
 
     @Transactional
-    public void deleteCategory(Long categoryId) {
+    public void deleteCategory(java.util.UUID categoryId) {
         categoryRepository.deleteById(categoryId);
     }
 
@@ -128,7 +128,7 @@ public class ServiceCatalogService {
     }
 
     @Transactional
-    public void deleteService(Long serviceId) {
+    public void deleteService(java.util.UUID serviceId) {
         serviceRepository.deleteById(serviceId);
     }
 
@@ -138,7 +138,7 @@ public class ServiceCatalogService {
     }
 
     @Transactional
-    public void deleteOffer(Long offerId) {
+    public void deleteOffer(java.util.UUID offerId) {
         offerRepository.deleteById(offerId);
     }
 }

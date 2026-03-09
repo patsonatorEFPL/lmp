@@ -49,7 +49,7 @@ public class RefundService {
     /**
      * Crée un remboursement complet
      */
-    public RefundDto createRefund(Long orderId, BigDecimal amount, String reason) throws StripeException {
+    public RefundDto createRefund(java.util.UUID orderId, BigDecimal amount, String reason) throws StripeException {
         logger.info("Création remboursement pour commande {} - montant: {}", orderId, amount);
 
         Order order = orderRepository.findById(orderId)
@@ -97,7 +97,7 @@ public class RefundService {
     /**
      * Crée un remboursement partiel
      */
-    public RefundDto createPartialRefund(Long orderId, BigDecimal amount, String reason) throws StripeException {
+    public RefundDto createPartialRefund(java.util.UUID orderId, BigDecimal amount, String reason) throws StripeException {
         logger.info("Création remboursement partiel pour commande {} - montant: {}", orderId, amount);
 
         Order order = orderRepository.findById(orderId)
@@ -113,7 +113,7 @@ public class RefundService {
      * Récupère tous les remboursements d'une commande
      */
     @Transactional(readOnly = true)
-    public List<RefundDto> getOrderRefunds(Long orderId) {
+    public List<RefundDto> getOrderRefunds(java.util.UUID orderId) {
         List<Refund> refunds = refundRepository.findByOrderIdOrderByCreatedAtDesc(orderId);
         return refunds.stream()
             .map(this::convertToDto)
@@ -124,7 +124,7 @@ public class RefundService {
      * Récupère un remboursement par ID
      */
     @Transactional(readOnly = true)
-    public RefundDto getRefund(Long refundId) {
+    public RefundDto getRefund(java.util.UUID refundId) {
         Refund refund = refundRepository.findById(refundId)
             .orElseThrow(() -> new RuntimeException("Remboursement non trouvé: " + refundId));
         return convertToDto(refund);
@@ -151,7 +151,7 @@ public class RefundService {
     /**
      * Synchronise un remboursement avec Stripe
      */
-    public RefundDto syncWithStripe(Long refundId) throws StripeException {
+    public RefundDto syncWithStripe(java.util.UUID refundId) throws StripeException {
         logger.info("Synchronisation Stripe pour remboursement {}", refundId);
 
         Refund refund = refundRepository.findById(refundId)
@@ -183,7 +183,7 @@ public class RefundService {
     /**
      * Annule un remboursement en attente
      */
-    public RefundDto cancelRefund(Long refundId, String reason) {
+    public RefundDto cancelRefund(java.util.UUID refundId, String reason) {
         logger.info("Annulation remboursement {}", refundId);
 
         Refund refund = refundRepository.findById(refundId)
@@ -237,7 +237,7 @@ public class RefundService {
      * Calcule le montant total remboursé pour une commande
      */
     @Transactional(readOnly = true)
-    public BigDecimal getTotalRefundedAmount(Long orderId) {
+    public BigDecimal getTotalRefundedAmount(java.util.UUID orderId) {
         return refundRepository.getTotalRefundedByOrder(orderId);
     }
 
@@ -245,7 +245,7 @@ public class RefundService {
      * Vérifie si une commande peut être remboursée
      */
     @Transactional(readOnly = true)
-    public boolean canBeRefunded(Long orderId) {
+    public boolean canBeRefunded(java.util.UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
         
@@ -268,7 +268,7 @@ public class RefundService {
      * Calcule le montant maximum remboursable
      */
     @Transactional(readOnly = true)
-    public BigDecimal getMaxRefundableAmount(Long orderId) {
+    public BigDecimal getMaxRefundableAmount(java.util.UUID orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
         

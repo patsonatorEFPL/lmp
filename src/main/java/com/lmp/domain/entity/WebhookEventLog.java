@@ -1,25 +1,17 @@
 package com.lmp.domain.entity;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
-/**
- * Entité pour l'idempotence des webhooks.
- * Stocke les IDs d'événements déjà traités pour éviter les doublons.
- */
 @Entity
 @Table(name = "webhook_event_logs")
 public class WebhookEventLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "event_id", nullable = false, unique = true, length = 255)
     private String eventId;
@@ -39,7 +31,6 @@ public class WebhookEventLog {
     @Column(name = "processing_error", columnDefinition = "TEXT")
     private String processingError;
 
-    // Constructors
     public WebhookEventLog() {}
 
     public WebhookEventLog(String eventId, String eventType, String provider) {
@@ -49,25 +40,18 @@ public class WebhookEventLog {
         this.processedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
     public String getEventId() { return eventId; }
     public void setEventId(String eventId) { this.eventId = eventId; }
-
     public String getEventType() { return eventType; }
     public void setEventType(String eventType) { this.eventType = eventType; }
-
     public String getProvider() { return provider; }
     public void setProvider(String provider) { this.provider = provider; }
-
     public LocalDateTime getProcessedAt() { return processedAt; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
-
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
     public String getProcessingError() { return processingError; }
     public void setProcessingError(String processingError) { this.processingError = processingError; }
 }

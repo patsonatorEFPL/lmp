@@ -3,6 +3,7 @@ package com.lmp.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,45 +16,24 @@ import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.UserStatus;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
     Boolean existsByEmail(String email);
     User findByVerificationToken(String verificationToken);
     Optional<User> findByResetToken(String resetToken);
     
-    // Méthodes pour pagination et filtrage admin
     Page<User> findByStatus(UserStatus status, Pageable pageable);
     Page<User> findByEmailContainingIgnoreCase(String email, Pageable pageable);
     long countByStatus(UserStatus status);
     long countByAccountLocked(Boolean locked);
-    
-    // Méthode pour les statistiques admin
     long countByRegistrationDateBetween(LocalDateTime startDate, LocalDateTime endDate);
     
-    // Méthodes avec JOIN FETCH pour éviter LazyInitializationException
-    
-    /**
-     * Trouve un utilisateur par ID avec ses rôles chargés (évite LazyInitializationException)
-     * @param id L'ID de l'utilisateur
-     * @return Optional contenant l'utilisateur avec ses rôles
-     */
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id = :id")
-    Optional<User> findByIdWithRoles(@Param("id") Long id);
+    Optional<User> findByIdWithRoles(@Param("id") UUID id);
     
-    /**
-     * Trouve un utilisateur par email avec ses rôles chargés (évite LazyInitializationException)
-     * @param email L'email de l'utilisateur
-     * @return Optional contenant l'utilisateur avec ses rôles
-     */
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email")
     Optional<User> findByEmailWithRoles(@Param("email") String email);
     
-    /**
-     * Trouve un utilisateur par email avec toutes ses collections chargées
-     * (évite LazyInitializationException pour les dashboards)
-     * @param email L'email de l'utilisateur
-     * @return Optional contenant l'utilisateur avec toutes ses collections
-     */
     @Query("SELECT DISTINCT u FROM User u " +
            "LEFT JOIN FETCH u.roles " +
            "LEFT JOIN FETCH u.orders " +
@@ -61,10 +41,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "WHERE u.email = :email")
     Optional<User> findByEmailWithAllCollections(@Param("email") String email);
 
-    /**
-     * Trouve les utilisateurs ACTIVE dont l'email n'a pas été vérifié
-     * et dont la date d'inscription est antérieure à la deadline (24h).
-     */
     @Query("SELECT u FROM User u WHERE u.emailVerified = false " +
            "AND u.status = com.lmp.domain.enums.UserStatus.ACTIVE " +
            "AND u.registrationDate < :deadline")

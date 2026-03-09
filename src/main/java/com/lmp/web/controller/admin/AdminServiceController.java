@@ -106,7 +106,7 @@ public class AdminServiceController {
 
     @PutMapping("/api/categories/{id}")
     @ResponseBody
-    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> updateCategory(@PathVariable java.util.UUID id, @RequestBody Map<String, Object> data) {
         try {
             ServiceCategory category = categoryRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Catégorie non trouvée"));
@@ -128,7 +128,7 @@ public class AdminServiceController {
 
     @DeleteMapping("/api/categories/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<?> deleteCategory(@PathVariable java.util.UUID id) {
         try {
             categoryRepository.deleteById(id);
             auditLogger.info("Category deleted: id={}", id);
@@ -143,7 +143,7 @@ public class AdminServiceController {
 
     @GetMapping("/api/services/{id}")
     @ResponseBody
-    public ResponseEntity<?> getService(@PathVariable Long id) {
+    public ResponseEntity<?> getService(@PathVariable java.util.UUID id) {
         try {
             Service service = serviceRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Service non trouvé"));
@@ -195,7 +195,7 @@ public class AdminServiceController {
     @ResponseBody
     public ResponseEntity<?> createService(@RequestBody Map<String, Object> data) {
         try {
-            ServiceCategory category = categoryRepository.findById(((Number) data.get("categoryId")).longValue())
+            ServiceCategory category = categoryRepository.findById(java.util.UUID.fromString(String.valueOf(data.get("categoryId"))))
                     .orElseThrow(() -> new RuntimeException("Catégorie non trouvée"));
 
             Service service = new Service();
@@ -222,7 +222,7 @@ public class AdminServiceController {
 
     @PutMapping("/api/services/{id}")
     @ResponseBody
-    public ResponseEntity<?> updateService(@PathVariable Long id, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> updateService(@PathVariable java.util.UUID id, @RequestBody Map<String, Object> data) {
         try {
             Service service = serviceRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Service non trouvé"));
@@ -234,7 +234,7 @@ public class AdminServiceController {
             if (data.containsKey("featured")) service.setFeatured(Boolean.TRUE.equals(data.get("featured")));
             if (data.containsKey("active")) service.setActive(Boolean.TRUE.equals(data.get("active")));
             if (data.containsKey("categoryId")) {
-                ServiceCategory category = categoryRepository.findById(((Number) data.get("categoryId")).longValue())
+                ServiceCategory category = categoryRepository.findById(java.util.UUID.fromString(String.valueOf(data.get("categoryId"))))
                         .orElseThrow(() -> new RuntimeException("Catégorie non trouvée"));
                 service.setCategory(category);
             }
@@ -252,7 +252,7 @@ public class AdminServiceController {
 
     @DeleteMapping("/api/services/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteService(@PathVariable Long id) {
+    public ResponseEntity<?> deleteService(@PathVariable java.util.UUID id) {
         try {
             serviceRepository.deleteById(id);
             auditLogger.info("Service deleted: id={}", id);
@@ -269,7 +269,7 @@ public class AdminServiceController {
     @ResponseBody
     public ResponseEntity<?> createOffer(@RequestBody Map<String, Object> data) {
         try {
-            Service service = serviceRepository.findById(((Number) data.get("serviceId")).longValue())
+            Service service = serviceRepository.findById(java.util.UUID.fromString(String.valueOf(data.get("serviceId"))))
                     .orElseThrow(() -> new RuntimeException("Service non trouvé"));
 
             ServiceOffer offer = new ServiceOffer();
@@ -296,7 +296,7 @@ public class AdminServiceController {
 
     @PutMapping("/api/offers/{id}")
     @ResponseBody
-    public ResponseEntity<?> updateOffer(@PathVariable Long id, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> updateOffer(@PathVariable java.util.UUID id, @RequestBody Map<String, Object> data) {
         try {
             ServiceOffer offer = offerRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Offre non trouvée"));
@@ -323,7 +323,7 @@ public class AdminServiceController {
 
     @DeleteMapping("/api/offers/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteOffer(@PathVariable Long id) {
+    public ResponseEntity<?> deleteOffer(@PathVariable java.util.UUID id) {
         try {
             offerRepository.deleteById(id);
             auditLogger.info("Offer deleted: id={}", id);
@@ -340,7 +340,7 @@ public class AdminServiceController {
     @ResponseBody
     public ResponseEntity<?> createBenefit(@RequestBody Map<String, Object> data) {
         try {
-            Service service = serviceRepository.findById(((Number) data.get("serviceId")).longValue())
+            Service service = serviceRepository.findById(java.util.UUID.fromString(String.valueOf(data.get("serviceId"))))
                     .orElseThrow(() -> new RuntimeException("Service non trouvé"));
 
             ServiceBenefit benefit = new ServiceBenefit();
@@ -356,7 +356,7 @@ public class AdminServiceController {
 
     @DeleteMapping("/api/benefits/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteBenefit(@PathVariable Long id) {
+    public ResponseEntity<?> deleteBenefit(@PathVariable java.util.UUID id) {
         try {
             benefitRepository.deleteById(id);
             return ResponseEntity.ok(Map.of("success", true, "message", "Avantage supprimé"));
@@ -369,7 +369,7 @@ public class AdminServiceController {
 
     @GetMapping("/api/offers/{offerId}/benefits")
     @ResponseBody
-    public ResponseEntity<?> getOfferBenefits(@PathVariable Long offerId) {
+    public ResponseEntity<?> getOfferBenefits(@PathVariable java.util.UUID offerId) {
         try {
             List<OfferBenefit> benefits = offerBenefitRepository.findByOfferIdOrderByDisplayOrderAsc(offerId);
             return ResponseEntity.ok(benefits.stream().map(b -> Map.of(
@@ -384,7 +384,7 @@ public class AdminServiceController {
 
     @PostMapping("/api/offers/{offerId}/benefits")
     @ResponseBody
-    public ResponseEntity<?> addOfferBenefit(@PathVariable Long offerId, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> addOfferBenefit(@PathVariable java.util.UUID offerId, @RequestBody Map<String, Object> data) {
         try {
             ServiceOffer offer = offerRepository.findById(offerId)
                     .orElseThrow(() -> new RuntimeException("Offre non trouvée"));
@@ -403,7 +403,7 @@ public class AdminServiceController {
 
     @DeleteMapping("/api/offer-benefits/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteOfferBenefit(@PathVariable Long id) {
+    public ResponseEntity<?> deleteOfferBenefit(@PathVariable java.util.UUID id) {
         try {
             offerBenefitRepository.deleteById(id);
             return ResponseEntity.ok(Map.of("success", true, "message", "Avantage supprimé"));
@@ -415,7 +415,7 @@ public class AdminServiceController {
     @PostMapping("/api/offers/{offerId}/benefits/sync")
     @ResponseBody
     @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<?> syncOfferBenefits(@PathVariable Long offerId, @RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> syncOfferBenefits(@PathVariable java.util.UUID offerId, @RequestBody Map<String, Object> data) {
         try {
             ServiceOffer offer = offerRepository.findById(offerId)
                     .orElseThrow(() -> new RuntimeException("Offre non trouvée"));
@@ -449,7 +449,7 @@ public class AdminServiceController {
 
     @PostMapping("/api/offers/{offerId}/benefits/copy-from/{sourceOfferId}")
     @ResponseBody
-    public ResponseEntity<?> copyBenefitsFromOffer(@PathVariable Long offerId, @PathVariable Long sourceOfferId) {
+    public ResponseEntity<?> copyBenefitsFromOffer(@PathVariable java.util.UUID offerId, @PathVariable java.util.UUID sourceOfferId) {
         try {
             ServiceOffer targetOffer = offerRepository.findById(offerId)
                     .orElseThrow(() -> new RuntimeException("Offre cible non trouvée"));

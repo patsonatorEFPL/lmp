@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 import com.lmp.domain.entity.enums.DurationType;
 
 @Entity
@@ -11,8 +12,8 @@ import com.lmp.domain.entity.enums.DurationType;
 public class ServiceOffer {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id", nullable = false)
@@ -29,12 +30,8 @@ public class ServiceOffer {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "duration_type", nullable = false)
-    private DurationType durationType; // ONE_TIME, MONTHLY, YEARLY
+    private DurationType durationType;
 
-    /**
-     * Colonne legacy conservée en base de données de production.
-     * Synchronisée automatiquement avec durationType via @PrePersist/@PreUpdate.
-     */
     @Column(name = "duration")
     private String duration;
 
@@ -53,13 +50,10 @@ public class ServiceOffer {
     @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<OfferBenefit> benefits;
 
-    // Constructors
-    public ServiceOffer() {
-    }
+    public ServiceOffer() {}
 
     public ServiceOffer(Service service, String name, BigDecimal price, BigDecimal originalPrice,
-            DurationType durationType,
-            Boolean isDefault) {
+            DurationType durationType, Boolean isDefault) {
         this.service = service;
         this.name = name;
         this.price = price;
@@ -75,105 +69,35 @@ public class ServiceOffer {
         this.duration = (durationType != null) ? durationType.name() : "ONE_TIME";
     }
 
-    // Transient method to evaluate validity strictly
     @Transient
     public boolean isCurrentlyValid() {
-        if (!active)
-            return false;
+        if (!active) return false;
         LocalDateTime now = LocalDateTime.now();
-        if (validFrom != null && now.isBefore(validFrom))
-            return false;
-        if (validTo != null && now.isAfter(validTo))
-            return false;
+        if (validFrom != null && now.isBefore(validFrom)) return false;
+        if (validTo != null && now.isAfter(validTo)) return false;
         return true;
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Service getService() {
-        return service;
-    }
-
-    public void setService(Service service) {
-        this.service = service;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public BigDecimal getOriginalPrice() {
-        return originalPrice;
-    }
-
-    public void setOriginalPrice(BigDecimal originalPrice) {
-        this.originalPrice = originalPrice;
-    }
-
-    public DurationType getDurationType() {
-        return durationType;
-    }
-
-    public void setDurationType(DurationType durationType) {
-        this.durationType = durationType;
-    }
-
-    public LocalDateTime getValidFrom() {
-        return validFrom;
-    }
-
-    public void setValidFrom(LocalDateTime validFrom) {
-        this.validFrom = validFrom;
-    }
-
-    public LocalDateTime getValidTo() {
-        return validTo;
-    }
-
-    public void setValidTo(LocalDateTime validTo) {
-        this.validTo = validTo;
-    }
-
-    public Boolean getIsDefault() {
-        return isDefault;
-    }
-
-    public void setIsDefault(Boolean isDefault) {
-        this.isDefault = isDefault;
-    }
-
-    public Boolean getActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    public Set<OfferBenefit> getBenefits() {
-        return benefits;
-    }
-
-    public void setBenefits(Set<OfferBenefit> benefits) {
-        this.benefits = benefits;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public Service getService() { return service; }
+    public void setService(Service service) { this.service = service; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    public DurationType getDurationType() { return durationType; }
+    public void setDurationType(DurationType durationType) { this.durationType = durationType; }
+    public LocalDateTime getValidFrom() { return validFrom; }
+    public void setValidFrom(LocalDateTime validFrom) { this.validFrom = validFrom; }
+    public LocalDateTime getValidTo() { return validTo; }
+    public void setValidTo(LocalDateTime validTo) { this.validTo = validTo; }
+    public Boolean getIsDefault() { return isDefault; }
+    public void setIsDefault(Boolean isDefault) { this.isDefault = isDefault; }
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
+    public Set<OfferBenefit> getBenefits() { return benefits; }
+    public void setBenefits(Set<OfferBenefit> benefits) { this.benefits = benefits; }
 }

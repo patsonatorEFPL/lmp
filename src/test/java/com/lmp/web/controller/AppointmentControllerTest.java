@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -58,9 +59,8 @@ class AppointmentControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Configuration des objets de test
         testUser = new User();
-        testUser.setId(1L);
+        testUser.setId(UUID.randomUUID());
         testUser.setEmail("test@example.com");
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
@@ -68,7 +68,7 @@ class AppointmentControllerTest {
         tomorrow9AM = LocalDateTime.now().plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0);
 
         testAppointment = new Appointment();
-        testAppointment.setId(1L);
+        testAppointment.setId(UUID.randomUUID());
         testAppointment.setUser(testUser);
         testAppointment.setSubject("Test Appointment");
         testAppointment.setDescription("Test Description");
@@ -88,7 +88,6 @@ class AppointmentControllerTest {
 
     @Test
     void testCreateAppointment_AuthenticatedUser_Success() {
-        // Given
         when(bindingResult.hasErrors()).thenReturn(false);
         when(principal.getName()).thenReturn("test@example.com");
         when(userService.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
@@ -96,10 +95,8 @@ class AppointmentControllerTest {
         when(httpRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0 Test Browser");
         when(httpRequest.getHeader("Referer")).thenReturn("http://localhost:8080/appointments");
 
-        // When
         ResponseEntity<?> result = appointmentController.createAppointment(validRequest, bindingResult, principal, httpRequest);
 
-        // Then
         assertNotNull(result);
         assertEquals(200, result.getStatusCode().value());
         verify(appointmentService).createAppointment(any(), eq(testUser));
@@ -107,14 +104,11 @@ class AppointmentControllerTest {
 
     @Test
     void testCreateAppointment_ValidationErrors() {
-        // Given
         when(bindingResult.hasErrors()).thenReturn(true);
         when(httpRequest.getHeader("User-Agent")).thenReturn("Mozilla/5.0 Test Browser");
 
-        // When
         ResponseEntity<?> result = appointmentController.createAppointment(validRequest, bindingResult, principal, httpRequest);
 
-        // Then
         assertNotNull(result);
         assertEquals(400, result.getStatusCode().value());
         verify(appointmentService, never()).createAppointment(any(AppointmentForm.class), any(User.class));
@@ -122,13 +116,10 @@ class AppointmentControllerTest {
 
     @Test
     void testCreateAppointment_NoUserAgent() {
-        // Given
         when(httpRequest.getHeader("User-Agent")).thenReturn(null);
 
-        // When
         ResponseEntity<?> result = appointmentController.createAppointment(validRequest, bindingResult, principal, httpRequest);
 
-        // Then
         assertNotNull(result);
         assertEquals(400, result.getStatusCode().value());
         verify(appointmentService, never()).createAppointment(any(AppointmentForm.class), any(User.class));

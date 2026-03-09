@@ -119,7 +119,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/activate")
     @ResponseBody
-    public ResponseEntity<?> activateUser(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> activateUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
         logger.info("🔍 ADMIN DEBUG - Tentative activation utilisateur ID: {}", id);
         logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         logger.info("🔍 ADMIN DEBUG - Headers: {}",
@@ -151,7 +151,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/deactivate")
     @ResponseBody
-    public ResponseEntity<?> deactivateUser(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> deactivateUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
         logger.info("🔍 ADMIN DEBUG - Tentative désactivation utilisateur ID: {}", id);
         logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
@@ -179,7 +179,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/lock")
     @ResponseBody
-    public ResponseEntity<?> lockUser(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> lockUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
         logger.info("🔍 ADMIN DEBUG - Tentative verrouillage utilisateur ID: {}", id);
         logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
@@ -207,7 +207,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/unlock")
     @ResponseBody
-    public ResponseEntity<?> unlockUser(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> unlockUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
         logger.info("🔍 ADMIN DEBUG - Tentative déverrouillage utilisateur ID: {}", id);
         logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
@@ -235,7 +235,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/change-password")
     @ResponseBody
-    public ResponseEntity<?> changeUserPassword(@PathVariable Long id,
+    public ResponseEntity<?> changeUserPassword(@PathVariable java.util.UUID id,
                                                @RequestBody ChangePasswordRequest request,
                                                Authentication authentication) {
         logger.info("🔐 DEBUG ADMIN PASSWORD - Début changement mot de passe admin pour user ID: {}", id);
@@ -309,7 +309,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/delete")
     @ResponseBody
-    public ResponseEntity<?> deleteUser(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<?> deleteUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
         logger.error("🚨 ADMIN DEBUG - Tentative suppression DÉFINITIVE utilisateur ID: {}", id);
         logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
@@ -340,7 +340,7 @@ public class AdminUserViewController {
      */
     @GetMapping("/{id}/debug-hard-delete")
     @ResponseBody
-    public ResponseEntity<?> debugHardDelete(@PathVariable Long id) {
+    public ResponseEntity<?> debugHardDelete(@PathVariable java.util.UUID id) {
         try {
             User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
@@ -404,7 +404,7 @@ public class AdminUserViewController {
      * DTO pour les détails utilisateur
      */
     public static class UserDetailsDto {
-        private Long id;
+        private java.util.UUID id;
         private String email;
         private String displayName;
         private String phone;
@@ -439,7 +439,7 @@ public class AdminUserViewController {
         }
 
         // Getters
-        public Long getId() { return id; }
+        public java.util.UUID getId() { return id; }
         public String getEmail() { return email; }
         public String getDisplayName() { return displayName; }
         public String getPhone() { return phone; }
@@ -460,7 +460,7 @@ public class AdminUserViewController {
      */
     @GetMapping("/{id}/details")
     @ResponseBody
-    public ResponseEntity<?> getUserDetails(@PathVariable Long id) {
+    public ResponseEntity<?> getUserDetails(@PathVariable java.util.UUID id) {
         try {
             User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
@@ -482,7 +482,7 @@ public class AdminUserViewController {
      */
     @PostMapping("/{id}/update")
     @ResponseBody
-    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UserUpdateRequest request, Authentication authentication) {
+    public ResponseEntity<?> updateUser(@PathVariable java.util.UUID id, @RequestBody UserUpdateRequest request, Authentication authentication) {
         logger.info("🔄 ADMIN DEBUG - Mise à jour utilisateur ID: {}", id);
         
         try {
@@ -554,7 +554,7 @@ public class AdminUserViewController {
      */
     @GetMapping("/{id}/appointments")
     @ResponseBody
-    public ResponseEntity<?> getUserAppointments(@PathVariable Long id) {
+    public ResponseEntity<?> getUserAppointments(@PathVariable java.util.UUID id) {
         logger.info("📅 ADMIN DEBUG - Récupération rendez-vous utilisateur ID: {}", id);
         
         try {
@@ -611,7 +611,7 @@ public class AdminUserViewController {
      * DTO pour les rendez-vous
      */
     public static class AppointmentDto {
-        private Long id;
+        private java.util.UUID id;
         private String appointmentDate;
         private String status;
         private String adminNotes;
@@ -632,7 +632,7 @@ public class AdminUserViewController {
         }
         
         // Getters
-        public Long getId() { return id; }
+        public java.util.UUID getId() { return id; }
         public String getAppointmentDate() { return appointmentDate; }
         public String getStatus() { return status; }
         public String getAdminNotes() { return adminNotes; }

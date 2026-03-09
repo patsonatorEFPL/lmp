@@ -15,6 +15,8 @@ import com.lmp.domain.entity.Appointment;
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.AppointmentStatus;
 
+import java.util.UUID;
+
 /**
  * Repository pour la gestion des rendez-vous.
  * 
@@ -23,7 +25,7 @@ import com.lmp.domain.enums.AppointmentStatus;
  * statut, plage de dates, et les rendez-vous nécessitant des rappels.
  */
 @Repository
-public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
+public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
 
     /**
      * Trouve tous les rendez-vous d'un utilisateur donné

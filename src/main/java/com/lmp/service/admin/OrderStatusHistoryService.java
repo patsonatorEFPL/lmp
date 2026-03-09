@@ -56,7 +56,7 @@ public class OrderStatusHistoryService {
      * Récupère l'historique complet d'une commande
      */
     @Transactional(readOnly = true)
-    public List<OrderStatusHistoryDto> getOrderHistory(Long orderId) {
+    public List<OrderStatusHistoryDto> getOrderHistory(java.util.UUID orderId) {
         List<OrderStatusHistory> history = historyRepository.findByOrderIdOrderByChangedAtDesc(orderId);
         
         return history.stream()
@@ -68,7 +68,7 @@ public class OrderStatusHistoryService {
      * Récupère l'historique avec pagination
      */
     @Transactional(readOnly = true)
-    public Page<OrderStatusHistoryDto> getOrderHistoryPaged(Long orderId, int page, int size) {
+    public Page<OrderStatusHistoryDto> getOrderHistoryPaged(java.util.UUID orderId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "changedAt"));
         Page<OrderStatusHistory> history = historyRepository.findByOrderId(orderId, pageable);
         
