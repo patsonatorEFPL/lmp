@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class OrderActionDto {
 
     @NotNull(message = "L'ID de la commande est obligatoire")
-    private Long orderId;
+    private java.util.UUID orderId;
     
     @NotBlank(message = "Le type d'action est obligatoire")
     private String actionType; // CHANGE_STATUS, REFUND, CANCEL, ADD_NOTE, UPDATE_PRIORITY
@@ -52,7 +52,7 @@ public class OrderActionDto {
     // Constructeurs
     public OrderActionDto() {}
     
-    public OrderActionDto(Long orderId, String actionType) {
+    public OrderActionDto(java.util.UUID orderId, String actionType) {
         this.orderId = orderId;
         this.actionType = actionType;
     }
@@ -62,7 +62,7 @@ public class OrderActionDto {
     /**
      * Crée une action de changement de statut
      */
-    public static OrderActionDto changeStatus(Long orderId, String newStatus, String reason) {
+    public static OrderActionDto changeStatus(java.util.UUID orderId, String newStatus, String reason) {
         OrderActionDto action = new OrderActionDto(orderId, "CHANGE_STATUS");
         action.setNewStatus(newStatus);
         action.setStatusReason(reason);
@@ -72,7 +72,7 @@ public class OrderActionDto {
     /**
      * Crée une action de remboursement complet
      */
-    public static OrderActionDto fullRefund(Long orderId, String reason) {
+    public static OrderActionDto fullRefund(java.util.UUID orderId, String reason) {
         OrderActionDto action = new OrderActionDto(orderId, "REFUND");
         action.setRefundReason(reason);
         action.setPartialRefund(false);
@@ -82,7 +82,7 @@ public class OrderActionDto {
     /**
      * Crée une action de remboursement partiel
      */
-    public static OrderActionDto partialRefund(Long orderId, BigDecimal amount, String reason) {
+    public static OrderActionDto partialRefund(java.util.UUID orderId, BigDecimal amount, String reason) {
         OrderActionDto action = new OrderActionDto(orderId, "REFUND");
         action.setRefundAmount(amount);
         action.setRefundReason(reason);
@@ -93,7 +93,7 @@ public class OrderActionDto {
     /**
      * Crée une action d'annulation
      */
-    public static OrderActionDto cancel(Long orderId, String reason) {
+    public static OrderActionDto cancel(java.util.UUID orderId, String reason) {
         OrderActionDto action = new OrderActionDto(orderId, "CANCEL");
         action.setStatusReason(reason);
         action.setNewStatus("CANCELLED");
@@ -103,7 +103,7 @@ public class OrderActionDto {
     /**
      * Crée une action d'ajout de note
      */
-    public static OrderActionDto addNote(Long orderId, String note) {
+    public static OrderActionDto addNote(java.util.UUID orderId, String note) {
         OrderActionDto action = new OrderActionDto(orderId, "ADD_NOTE");
         action.setAdminNotes(note);
         return action;
@@ -111,11 +111,11 @@ public class OrderActionDto {
     
     // Getters et Setters
     
-    public Long getOrderId() {
+    public java.util.UUID getOrderId() {
         return orderId;
     }
     
-    public void setOrderId(Long orderId) {
+    public void setOrderId(java.util.UUID orderId) {
         this.orderId = orderId;
     }
     

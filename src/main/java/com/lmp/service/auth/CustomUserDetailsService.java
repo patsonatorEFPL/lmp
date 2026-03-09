@@ -119,7 +119,7 @@ public class CustomUserDetailsService implements UserDetailsService {
      * @throws UsernameNotFoundException si l'utilisateur n'est pas trouvé
      */
     @Transactional(readOnly = true)
-    public UserDetails loadUserById(Long userId) throws UsernameNotFoundException {
+    public UserDetails loadUserById(java.util.UUID userId) throws UsernameNotFoundException {
         User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'ID: " + userId));
 

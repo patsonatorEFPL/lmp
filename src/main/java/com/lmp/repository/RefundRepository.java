@@ -18,8 +18,10 @@ import java.util.Optional;
  * Repository pour la gestion des remboursements.
  * Fournit des méthodes de recherche et d'agrégation pour l'administration.
  */
+import java.util.UUID;
+
 @Repository
-public interface RefundRepository extends JpaRepository<Refund, Long> {
+public interface RefundRepository extends JpaRepository<Refund, UUID> {
 
     /**
      * Trouve tous les remboursements d'une commande
@@ -29,7 +31,7 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     /**
      * Trouve tous les remboursements d'une commande par ID
      */
-    List<Refund> findByOrderIdOrderByCreatedAtDesc(Long orderId);
+    List<Refund> findByOrderIdOrderByCreatedAtDesc(UUID orderId);
 
     /**
      * Trouve un remboursement par son ID Stripe
@@ -63,7 +65,7 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
      * Calcule le montant total remboursé pour une commande
      */
     @Query("SELECT COALESCE(SUM(r.amount), 0) FROM Refund r WHERE r.order.id = :orderId AND r.status = 'succeeded'")
-    BigDecimal getTotalRefundedAmountByOrderId(@Param("orderId") Long orderId);
+    BigDecimal getTotalRefundedAmountByOrderId(@Param("orderId") UUID orderId);
 
     /**
      * Calcule le montant total remboursé sur une période
@@ -112,7 +114,7 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
            "AND (:maxAmount IS NULL OR r.amount <= :maxAmount) " +
            "ORDER BY r.createdAt DESC")
     Page<Refund> searchRefunds(@Param("status") String status,
-                              @Param("orderId") Long orderId,
+                              @Param("orderId") UUID orderId,
                               @Param("processedBy") String processedBy,
                               @Param("startDate") LocalDateTime startDate,
                               @Param("endDate") LocalDateTime endDate,
@@ -123,12 +125,12 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     /**
      * Vérifie si une commande a des remboursements
      */
-    boolean existsByOrderId(Long orderId);
+    boolean existsByOrderId(UUID orderId);
 
     /**
      * Compte le nombre de remboursements pour une commande
      */
-    long countByOrderId(Long orderId);
+    long countByOrderId(UUID orderId);
 
     /**
      * Trouve les remboursements partiels (basé sur le montant vs montant total de la commande)
@@ -200,7 +202,7 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     /**
      * Total remboursé pour une commande (alias pour compatibilité)
      */
-    default BigDecimal getTotalRefundedByOrder(Long orderId) {
+    default BigDecimal getTotalRefundedByOrder(UUID orderId) {
         return getTotalRefundedAmountByOrderId(orderId);
     }
 }

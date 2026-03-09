@@ -49,7 +49,7 @@ public class PaymentController {
     @PostMapping("/process/{orderId}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<?> processPayment(
-            @PathVariable @NotNull @Positive Long orderId,
+            @PathVariable @NotNull java.util.UUID orderId,
             @Valid @RequestBody PaymentRequestDto paymentRequest) {
         
         logger.info("Processing payment request for order: {}", orderId);
@@ -111,7 +111,7 @@ public class PaymentController {
     @PostMapping("/refund/{transactionId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> refundPayment(
-            @PathVariable @NotNull @Positive Long transactionId,
+            @PathVariable @NotNull java.util.UUID transactionId,
             @Valid @RequestBody RefundRequestDto refundRequest) {
         
         logger.info("Processing refund request for transaction: {}", transactionId);
@@ -164,7 +164,7 @@ public class PaymentController {
      */
     @GetMapping("/transaction/{transactionId}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getTransaction(@PathVariable @NotNull @Positive Long transactionId) {
+    public ResponseEntity<?> getTransaction(@PathVariable @NotNull java.util.UUID transactionId) {
         
         logger.info("Retrieving transaction details: {}", transactionId);
         
@@ -201,7 +201,7 @@ public class PaymentController {
      */
     @GetMapping("/order/{orderId}/transactions")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getOrderTransactions(@PathVariable @NotNull @Positive Long orderId) {
+    public ResponseEntity<?> getOrderTransactions(@PathVariable @NotNull java.util.UUID orderId) {
         
         logger.info("Retrieving transactions for order: {}", orderId);
         
@@ -242,7 +242,7 @@ public class PaymentController {
      */
     @GetMapping("/transaction/{transactionId}/status")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<?> checkTransactionStatus(@PathVariable @NotNull @Positive Long transactionId) {
+    public ResponseEntity<?> checkTransactionStatus(@PathVariable @NotNull java.util.UUID transactionId) {
         
         logger.info("Checking status for transaction: {}", transactionId);
         
@@ -344,7 +344,7 @@ public class PaymentController {
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getPaymentStatistics(@RequestParam(required = false) Long orderId) {
+    public ResponseEntity<?> getPaymentStatistics(@RequestParam(required = false) java.util.UUID orderId) {
         
         logger.info("Retrieving payment statistics for order: {}", orderId);
         

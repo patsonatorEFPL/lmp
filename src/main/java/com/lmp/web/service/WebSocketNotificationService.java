@@ -77,7 +77,7 @@ public class WebSocketNotificationService {
             "customerName", order.getCustomerName(),
             "refundAmount", refundAmount,
             "timestamp", LocalDateTime.now(),
-            "message", String.format("Remboursement de %.2f€ effectué pour la commande #%d", refundAmount, order.getId())
+            "message", String.format("Remboursement de %.2f€ effectué pour la commande #%s", refundAmount, order.getId())
         );
         
         messagingTemplate.convertAndSend("/topic/admin/orders", notification);
@@ -86,14 +86,14 @@ public class WebSocketNotificationService {
     /**
      * Notifie les administrateurs d'une erreur de paiement
      */
-    public void notifyPaymentError(Long orderId, String customerName, String error) {
+    public void notifyPaymentError(java.util.UUID orderId, String customerName, String error) {
         Map<String, Object> notification = Map.of(
             "type", "PAYMENT_ERROR",
             "orderId", orderId,
             "customerName", customerName,
             "error", error,
             "timestamp", LocalDateTime.now(),
-            "message", String.format("Erreur de paiement pour la commande #%d: %s", orderId, error)
+            "message", String.format("Erreur de paiement pour la commande #%s: %s", orderId, error)
         );
         
         messagingTemplate.convertAndSend("/topic/admin/orders", notification);

@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
  */
 public class RefundDto {
 
-    private Long id;
-    private Long orderId;
+    private java.util.UUID id;
+    private java.util.UUID orderId;
     private String stripeRefundId;
     private BigDecimal amount;
     private String currency;
@@ -43,7 +43,7 @@ public class RefundDto {
     // Constructeurs
     public RefundDto() {}
     
-    public RefundDto(Long orderId, BigDecimal amount, String reason) {
+    public RefundDto(java.util.UUID orderId, BigDecimal amount, String reason) {
         this.orderId = orderId;
         this.amount = amount;
         this.reason = reason;
@@ -54,19 +54,19 @@ public class RefundDto {
     
     // Getters et Setters
     
-    public Long getId() {
+    public java.util.UUID getId() {
         return id;
     }
     
-    public void setId(Long id) {
+    public void setId(java.util.UUID id) {
         this.id = id;
     }
     
-    public Long getOrderId() {
+    public java.util.UUID getOrderId() {
         return orderId;
     }
     
-    public void setOrderId(Long orderId) {
+    public void setOrderId(java.util.UUID orderId) {
         this.orderId = orderId;
     }
     

@@ -83,15 +83,11 @@ public class OrderController {
 
             // ── Sécurisation par offerId ──
             BigDecimal amount;
-            Long offerId = null;
+            java.util.UUID offerId = null;
 
             if (offerIdObj != null) {
                 try {
-                    if (offerIdObj instanceof Number) {
-                        offerId = ((Number) offerIdObj).longValue();
-                    } else {
-                        offerId = Long.valueOf(String.valueOf(offerIdObj));
-                    }
+                    offerId = java.util.UUID.fromString(String.valueOf(offerIdObj));
                 } catch (Exception e) {
                     return ResponseEntity.badRequest().body(Map.of(
                             "error", "INVALID_OFFER_ID",
@@ -457,7 +453,7 @@ public class OrderController {
      */
     @GetMapping("/{orderId}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getOrder(@PathVariable Long orderId, Authentication authentication) {
+    public ResponseEntity<?> getOrder(@PathVariable java.util.UUID orderId, Authentication authentication) {
 
         logger.info("DEBUG - Retrieving order details for ID: {}", orderId);
         auditLogger.info("Order details requested - OrderID: {}, User: {}", orderId, authentication.getName());
@@ -546,7 +542,7 @@ public class OrderController {
      */
     @GetMapping("/{orderId}/details")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<?> getOrderDetails(@PathVariable Long orderId, Authentication authentication) {
+    public ResponseEntity<?> getOrderDetails(@PathVariable java.util.UUID orderId, Authentication authentication) {
 
         logger.info("DEBUG - Getting modal details for order: {}", orderId);
 

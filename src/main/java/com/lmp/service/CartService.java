@@ -30,7 +30,7 @@ public class CartService {
         });
     }
 
-    public Cart addToCart(User user, Long serviceId) {
+    public Cart addToCart(User user, java.util.UUID serviceId) {
         Cart cart = getOrCreateCartForUser(user);
 
         Optional<Service> serviceOpt = serviceRepository.findById(serviceId);
@@ -57,7 +57,7 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
-    public Cart removeFromCart(User user, Long cartItemId) {
+    public Cart removeFromCart(User user, java.util.UUID cartItemId) {
         Cart cart = getOrCreateCartForUser(user);
 
         cart.getItems().removeIf(item -> item.getId().equals(cartItemId));

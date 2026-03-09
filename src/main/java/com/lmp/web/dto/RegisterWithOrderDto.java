@@ -74,7 +74,7 @@ public class RegisterWithOrderDto {
     private String currency = "EUR";
 
     // ID de l'offre pour validation côté serveur (sécurisation prix)
-    private Long offerId;
+    private java.util.UUID offerId;
 
     // Conditions d'utilisation
     @NotNull(message = "Vous devez accepter les conditions d'utilisation")
@@ -205,11 +205,11 @@ public class RegisterWithOrderDto {
         this.acceptTerms = acceptTerms;
     }
 
-    public Long getOfferId() {
+    public java.util.UUID getOfferId() {
         return offerId;
     }
 
-    public void setOfferId(Long offerId) {
+    public void setOfferId(java.util.UUID offerId) {
         this.offerId = offerId;
     }
 

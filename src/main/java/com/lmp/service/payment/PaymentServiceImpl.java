@@ -52,7 +52,7 @@ public class PaymentServiceImpl implements PaymentService {
     private StripeWebhookHandler stripeWebhookHandler;
     
     @Override
-    public PaymentResponseDto processPayment(Long orderId, PaymentRequestDto paymentRequest)
+    public PaymentResponseDto processPayment(java.util.UUID orderId, PaymentRequestDto paymentRequest)
             throws PaymentProcessingException, PaymentValidationException {
         
         logger.info("Processing payment for order {} with provider {}", orderId, paymentRequest.getPaymentProvider());
@@ -132,7 +132,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
     
     @Override
-    public RefundResponseDto refundPayment(Long transactionId, RefundRequestDto refundRequest)
+    public RefundResponseDto refundPayment(java.util.UUID transactionId, RefundRequestDto refundRequest)
             throws PaymentProcessingException, PaymentValidationException {
         
         logger.info("Processing refund for transaction {} with amount {}", transactionId, refundRequest.getAmount());
@@ -176,7 +176,7 @@ public class PaymentServiceImpl implements PaymentService {
     
     @Override
     @Transactional(readOnly = true)
-    public String checkTransactionStatus(Long transactionId) throws PaymentProcessingException {
+    public String checkTransactionStatus(java.util.UUID transactionId) throws PaymentProcessingException {
         PaymentTransaction transaction = getTransaction(transactionId);
         PaymentProcessor processor = getPaymentProcessor(transaction.getPaymentProvider());
         
@@ -205,14 +205,14 @@ public class PaymentServiceImpl implements PaymentService {
     
     @Override
     @Transactional(readOnly = true)
-    public PaymentTransaction getTransaction(Long transactionId) {
+    public PaymentTransaction getTransaction(java.util.UUID transactionId) {
         return paymentTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction non trouvée avec ID: " + transactionId));
     }
     
     @Override
     @Transactional(readOnly = true)
-    public List<PaymentTransaction> getTransactionsByOrder(Long orderId) {
+    public List<PaymentTransaction> getTransactionsByOrder(java.util.UUID orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée avec ID: " + orderId));
         
@@ -284,7 +284,7 @@ public class PaymentServiceImpl implements PaymentService {
     
     @Override
     @Transactional(readOnly = true)
-    public PaymentStatistics getPaymentStatistics(Long orderId) {
+    public PaymentStatistics getPaymentStatistics(java.util.UUID orderId) {
         List<PaymentTransaction> transactions;
         
         if (orderId != null) {

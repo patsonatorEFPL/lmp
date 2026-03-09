@@ -93,7 +93,7 @@ public class OrderAdminController {
      * Redirige les anciens liens /admin/orders/{id} vers la page liste avec modal.
      */
     @GetMapping("/{orderId}")
-    public String orderDetailsRedirect(@PathVariable Long orderId) {
+    public String orderDetailsRedirect(@PathVariable java.util.UUID orderId) {
         return "redirect:/admin/orders?detail=" + orderId;
     }
 
@@ -171,7 +171,7 @@ public class OrderAdminController {
      */
     @GetMapping("/api/{orderId}")
     @ResponseBody
-    public ResponseEntity<OrderDto> getOrderApi(@PathVariable Long orderId) {
+    public ResponseEntity<OrderDto> getOrderApi(@PathVariable java.util.UUID orderId) {
         try {
             OrderDto order = orderAdminService.getOrderDetails(orderId);
             return ResponseEntity.ok(order);
@@ -188,7 +188,7 @@ public class OrderAdminController {
      */
     @PutMapping("/api/{orderId}/status")
     @ResponseBody
-    public ResponseEntity<?> changeOrderStatus(@PathVariable Long orderId,
+    public ResponseEntity<?> changeOrderStatus(@PathVariable java.util.UUID orderId,
                                               @RequestParam OrderStatus newStatus,
                                               @RequestParam(required = false) String note) {
         try {
@@ -212,7 +212,7 @@ public class OrderAdminController {
      */
     @PutMapping("/api/{orderId}/cancel")
     @ResponseBody
-    public ResponseEntity<?> cancelOrder(@PathVariable Long orderId,
+    public ResponseEntity<?> cancelOrder(@PathVariable java.util.UUID orderId,
                                         @RequestParam String reason,
                                         @RequestParam(defaultValue = "false") boolean processRefund) {
         try {
@@ -236,7 +236,7 @@ public class OrderAdminController {
      */
     @PutMapping("/api/{orderId}/notes")
     @ResponseBody
-    public ResponseEntity<?> updateOrderNotes(@PathVariable Long orderId,
+    public ResponseEntity<?> updateOrderNotes(@PathVariable java.util.UUID orderId,
                                              @RequestBody Map<String, String> request) {
         try {
             String notes = request.get("notes");
@@ -260,7 +260,7 @@ public class OrderAdminController {
      */
     @PutMapping("/api/{orderId}/priority")
     @ResponseBody
-    public ResponseEntity<?> updateOrderPriority(@PathVariable Long orderId,
+    public ResponseEntity<?> updateOrderPriority(@PathVariable java.util.UUID orderId,
                                                 @RequestParam Integer priority) {
         try {
             OrderDto updatedOrder = orderAdminService.updateOrderPriority(orderId, priority);
@@ -283,7 +283,7 @@ public class OrderAdminController {
      */
     @PostMapping("/api/{orderId}/sync-stripe")
     @ResponseBody
-    public ResponseEntity<?> syncWithStripe(@PathVariable Long orderId) {
+    public ResponseEntity<?> syncWithStripe(@PathVariable java.util.UUID orderId) {
         try {
             OrderDto syncedOrder = orderAdminService.syncWithStripe(orderId);
             return ResponseEntity.ok(Map.of(
@@ -307,7 +307,7 @@ public class OrderAdminController {
      */
     @PostMapping("/api/{orderId}/refund")
     @ResponseBody
-    public ResponseEntity<?> createRefund(@PathVariable Long orderId,
+    public ResponseEntity<?> createRefund(@PathVariable java.util.UUID orderId,
                                          @RequestParam BigDecimal amount,
                                          @RequestParam String reason) {
         try {
@@ -331,7 +331,7 @@ public class OrderAdminController {
      */
     @GetMapping("/api/{orderId}/refunds")
     @ResponseBody
-    public ResponseEntity<List<RefundDto>> getOrderRefunds(@PathVariable Long orderId) {
+    public ResponseEntity<List<RefundDto>> getOrderRefunds(@PathVariable java.util.UUID orderId) {
         try {
             List<RefundDto> refunds = refundService.getOrderRefunds(orderId);
             return ResponseEntity.ok(refunds);
@@ -351,7 +351,10 @@ public class OrderAdminController {
     public ResponseEntity<?> processBulkActions(@RequestBody Map<String, Object> request) {
         try {
             @SuppressWarnings("unchecked")
-            List<Long> orderIds = (List<Long>) request.get("orderIds");
+            List<String> orderIdStrings = (List<String>) request.get("orderIds");
+            List<java.util.UUID> orderIds = orderIdStrings.stream()
+                .map(java.util.UUID::fromString)
+                .collect(java.util.stream.Collectors.toList());
             String actionType = (String) request.get("actionType");
 
             OrderActionDto action = new OrderActionDto();
@@ -464,7 +467,7 @@ public class OrderAdminController {
      */
     @GetMapping("/api/{orderId}/history")
     @ResponseBody
-    public ResponseEntity<List<OrderStatusHistoryDto>> getOrderHistory(@PathVariable Long orderId) {
+    public ResponseEntity<List<OrderStatusHistoryDto>> getOrderHistory(@PathVariable java.util.UUID orderId) {
         try {
             List<OrderStatusHistoryDto> history = historyService.getOrderHistory(orderId);
             return ResponseEntity.ok(history);

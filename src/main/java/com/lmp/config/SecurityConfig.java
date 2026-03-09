@@ -1,29 +1,42 @@
 package com.lmp.config;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.lmp.service.auth.CustomOAuth2UserService;
 import com.lmp.service.auth.CustomOidcUserService;
 import com.lmp.service.auth.CustomUserDetailsService;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 /**
  * Configuration de sécurité Spring Security pour l'application LMP.
  * 
- * Définit les règles d'accès, l'authentification et l'autorisation.
+ * Deux chaînes de filtres :
+ * 1. API REST (/api/**) → JSON 401/403, CSRF cookie, stateless-like sessions
+ * 2. Thymeleaf (legacy) → formLogin redirects, CSRF standard
  */
 @Configuration
 @EnableWebSecurity
@@ -42,15 +55,88 @@ public class SecurityConfig {
     @Autowired(required = false)
     private CustomOidcUserService customOidcUserService;
 
-    /**
-     * Configuration du filtre de sécurité HTTP.
-     * 
-     * @param http Configuration HTTP Security
-     * @return SecurityFilterChain configuré
-     * @throws Exception si erreur de configuration
-     */
+    // =========================================================================
+    // Chaîne 1 : API REST — JSON 401/403, CSRF cookie
+    // =========================================================================
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/**")
+                .authorizeHttpRequests(auth -> auth
+                        // Endpoints publics API
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/verify-email",
+                                "/api/v1/auth/resend-verification",
+                                "/api/v1/services/**",
+                                "/api/v1/appointments/available-slots")
+                        .permitAll()
+
+                        // Webhooks Stripe (pas d'auth)
+                        .requestMatchers(
+                                "/api/webhooks/**",
+                                "/api/payments/**",
+                                "/api/payment-status/**")
+                        .permitAll()
+
+                        // Endpoints legacy publics
+                        .requestMatchers(
+                                "/api/orders/save-purchase-intent",
+                                "/api/orders/get-purchase-intent",
+                                "/api/orders/clear-purchase-intent")
+                        .permitAll()
+
+                        // Admin endpoints
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        // Tout le reste nécessite authentification
+                        .anyRequest().authenticated())
+
+                // CSRF avec CookieCsrfTokenRepository pour SPA Angular
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers(
+                                "/api/webhooks/**",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register"))
+
+                // CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // JSON 401 (pas de redirect)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write(
+                                    "{\"error\":\"UNAUTHORIZED\",\"message\":\"Authentication required\",\"status\":401}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write(
+                                    "{\"error\":\"FORBIDDEN\",\"message\":\"Access denied\",\"status\":403}");
+                        }))
+
+                // Sessions (partage avec Thymeleaf — même JSESSIONID)
+                .sessionManagement(session -> session
+                        .maximumSessions(2)
+                        .maxSessionsPreventsLogin(false)
+                        .sessionRegistry(sessionRegistry()));
+
+        return http.build();
+    }
+
+    // =========================================================================
+    // Chaîne 2 : Thymeleaf + pages classiques (legacy)
+    // =========================================================================
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain thymeleafFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         // Pages publiques accessibles à tous (visiteurs)
@@ -76,49 +162,42 @@ public class SecurityConfig {
                                 "/error")
                         .permitAll()
 
-                        // Endpoints SEO - accès public pour les moteurs de recherche
+                        // Swagger UI et OpenAPI docs
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**")
+                        .permitAll()
+
+                        // Endpoints SEO
                         .requestMatchers(
                                 "/sitemap.xml",
                                 "/robots.txt",
                                 "/googleb72d4c095922c4a8.html")
                         .permitAll()
 
-                        // Endpoints Stripe Checkout - accès public pour le processus de paiement
+                        // Endpoints Stripe Checkout (legacy)
                         .requestMatchers(
-                                "/api/payments/**",
-                                "/api/payment-status/**",
-                                "/api/webhooks/**",
                                 "/stripe/checkout/**",
                                 "/stripe/webhook/**")
                         .permitAll()
 
-                        // Endpoints d'API pour intentions de paiement - accès public
-                        .requestMatchers(
-                                "/api/orders/save-purchase-intent",
-                                "/api/orders/get-purchase-intent",
-                                "/api/orders/clear-purchase-intent")
-                        .permitAll()
+                        // Endpoints temporaires de test
+                        .requestMatchers("/temp/**").permitAll()
 
-                        // Endpoints temporaires de test - À SUPPRIMER en production
-                        .requestMatchers(
-                                "/temp/**")
-                        .permitAll()
-
-                        // Endpoints de rendez-vous publics (consultation créneaux et création)
+                        // Endpoints de rendez-vous publics
                         .requestMatchers(
                                 "/appointments/available-slots",
                                 "/appointments/create")
                         .permitAll()
 
-                        // Endpoints d'API sécurisés - authentification requise
-                        .requestMatchers(
-                                "/api/orders/**")
-                        .authenticated()
+                        // Actuator health
+                        .requestMatchers("/actuator/health").permitAll()
 
-                        // Pages d'administration - rôle ADMIN requis
+                        // Pages d'administration
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        // Pages utilisateur - rôle USER ou ADMIN requis
+                        // Pages utilisateur
                         .requestMatchers(
                                 "/dashboard/**",
                                 "/profile/**",
@@ -129,7 +208,7 @@ public class SecurityConfig {
                         // Toutes les autres requêtes nécessitent une authentification
                         .anyRequest().authenticated())
 
-                // Configuration du formulaire de connexion
+                // Configuration du formulaire de connexion (Thymeleaf)
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/perform-login")
@@ -162,65 +241,65 @@ public class SecurityConfig {
                         .clearAuthentication(true)
                         .permitAll())
 
-                // Configuration "Se souvenir de moi"
+                // Se souvenir de moi
                 .rememberMe(remember -> remember
                         .key("lmpSecretKey")
-                        .tokenValiditySeconds(86400) // 24 heures
+                        .tokenValiditySeconds(86400)
                         .userDetailsService(userDetailsService)
                         .rememberMeParameter("rememberMe"))
 
-                // Configuration de la gestion des sessions avec SessionRegistry
+                // Sessions
                 .sessionManagement(session -> session
-                        .maximumSessions(2) // Maximum 2 sessions par utilisateur
+                        .maximumSessions(2)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
-                        .sessionRegistry(sessionRegistry()) // Ajout du SessionRegistry
-                )
+                        .sessionRegistry(sessionRegistry()))
 
-                // Désactiver CSRF pour les webhooks et endpoints de paiement + appointments
-                // temporairement
+                // CSRF standard pour Thymeleaf + exceptions webhooks
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 "/webhook/**",
-                                "/api/**",
                                 "/stripe/**",
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
-                                "/appointments/create", // Temporaire pour debug
+                                "/appointments/create",
                                 "/appointments/available-slots",
-                                "/temp/**" // Endpoints temporaires de test - À SUPPRIMER en production
-                        ))
+                                "/temp/**"))
 
-                // Configuration CORS globale
-                .cors(cors -> cors.configurationSource(request -> {
-                    var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                    corsConfig.setAllowedOriginPatterns(java.util.List.of(
-                            "http://localhost:*",
-                            "https://lmp-services.ca"));
-                    corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    corsConfig.setAllowedHeaders(java.util.List.of("*"));
-                    corsConfig.setAllowCredentials(true);
-                    return corsConfig;
-                }));
+                // CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
     }
 
-    /**
-     * Encodeur de mots de passe BCrypt.
-     * 
-     * @return PasswordEncoder configuré
-     */
+    // =========================================================================
+    // Beans communs
+    // =========================================================================
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://lmp-services.be",
+                "https://*.lmp-services.be",
+                "https://lmp-services.ca"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("X-XSRF-TOKEN"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Fournisseur d'authentification DAO.
-     * 
-     * @return DaoAuthenticationProvider configuré
-     */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -229,23 +308,11 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    /**
-     * Registre des sessions pour la gestion et l'invalidation des sessions actives.
-     *
-     * @return SessionRegistry configuré
-     */
     @Bean
     public SessionRegistry sessionRegistry() {
         return new SessionRegistryImpl();
     }
 
-    /**
-     * Gestionnaire d'authentification.
-     *
-     * @param config Configuration d'authentification
-     * @return AuthenticationManager
-     * @throws Exception si erreur de configuration
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

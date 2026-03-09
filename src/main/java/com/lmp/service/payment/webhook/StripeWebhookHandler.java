@@ -943,7 +943,7 @@ public class StripeWebhookHandler {
             User user = null;
             if (userIdStr != null && !userIdStr.trim().isEmpty()) {
                 try {
-                    Long userId = Long.parseLong(userIdStr);
+                    java.util.UUID userId = java.util.UUID.fromString(userIdStr);
                     Optional<User> userOpt = userRepository.findById(userId);
                     if (userOpt.isPresent()) {
                         user = userOpt.get();
@@ -1153,7 +1153,7 @@ public class StripeWebhookHandler {
         if (session.getMetadata() != null && session.getMetadata().containsKey("order_id")) {
             String orderIdStr = session.getMetadata().get("order_id");
             try {
-                Long orderId = Long.parseLong(orderIdStr);
+                java.util.UUID orderId = java.util.UUID.fromString(orderIdStr);
                 Optional<Order> orderByMetadata = orderRepository.findById(orderId);
                 if (orderByMetadata.isPresent()) {
                     logger.info("✅ TROUVÉ PAR METADATA - Commande {} trouvée via metadata order_id: {}",

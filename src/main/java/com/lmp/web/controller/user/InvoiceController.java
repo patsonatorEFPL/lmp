@@ -57,7 +57,7 @@ public class InvoiceController {
      * @return Le PDF de la facture ou une erreur
      */
     @GetMapping("/{orderId}/invoice")
-    public ResponseEntity<byte[]> downloadInvoice(@PathVariable Long orderId, Authentication authentication) {
+    public ResponseEntity<byte[]> downloadInvoice(@PathVariable java.util.UUID orderId, Authentication authentication) {
         log.info("Demande de téléchargement de facture pour la commande #{}", orderId);
 
         // Récupérer l'utilisateur connecté

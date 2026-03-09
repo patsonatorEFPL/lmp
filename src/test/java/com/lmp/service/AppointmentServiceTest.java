@@ -19,13 +19,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -47,7 +47,7 @@ class AppointmentServiceTest {
 
     @Mock
     private JavaMailSender mailSender;
-    
+
     @Mock
     private MailAddressConfig mailAddressConfig;
 
@@ -60,12 +60,18 @@ class AppointmentServiceTest {
     private LocalDateTime tomorrow9AM;
     private LocalDateTime tomorrow10AM;
     private LocalDateTime tomorrow11AM;
+    private UUID appointmentId;
+    private UUID appointmentId2;
+    private UUID nonExistentId;
 
     @BeforeEach
     void setUp() {
-        // Configuration des objets de test
+        appointmentId = UUID.randomUUID();
+        appointmentId2 = UUID.randomUUID();
+        nonExistentId = UUID.randomUUID();
+
         testUser = new User();
-        testUser.setId(1L);
+        testUser.setId(UUID.randomUUID());
         testUser.setEmail("test@example.com");
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
@@ -81,17 +87,17 @@ class AppointmentServiceTest {
         validForm.setDescription("Description du rendez-vous");
         validForm.setAppointmentDate(tomorrow9AM);
         validForm.setDurationMinutes(60);
-        validForm.setPriority(5); // 5 = priorité normale
+        validForm.setPriority(5);
 
         // Rendez-vous existant pour les tests de conflit
         existingAppointment = new Appointment();
-        existingAppointment.setId(1L);
+        existingAppointment.setId(appointmentId);
         existingAppointment.setUser(testUser);
         existingAppointment.setSubject("RDV existant");
         existingAppointment.setAppointmentDate(tomorrow10AM);
         existingAppointment.setDurationMinutes(60);
         existingAppointment.setStatus(AppointmentStatus.PENDING);
-        
+
         // Configuration du mock MailAddressConfig
         when(mailAddressConfig.getNoreply()).thenReturn("noreply@lmp-services.ca");
         when(mailAddressConfig.getSupport()).thenReturn("support@lmp-services.ca");
@@ -101,74 +107,61 @@ class AppointmentServiceTest {
 
     @Test
     void testCreateAppointment_Success() {
-        // Given
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(appointmentRepository.findActiveAppointments()).thenReturn(Arrays.asList());
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
             Appointment appointment = invocation.getArgument(0);
-            appointment.setId(1L);
+            appointment.setId(appointmentId);
             return appointment;
         });
 
-        // Mock DateUtils pour la validation
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
             mockedDateUtils.when(() -> DateUtils.isBusinessDay(any(LocalDate.class)))
                           .thenReturn(true);
 
-            // When
             Appointment result = appointmentService.createAppointment(validForm, "test@example.com");
 
-            // Then
             assertNotNull(result);
             assertEquals("Consultation générale", result.getSubject());
             assertEquals(tomorrow9AM, result.getAppointmentDate());
             assertEquals(60, result.getDurationMinutes());
             assertEquals(AppointmentStatus.PENDING, result.getStatus());
             assertEquals(testUser, result.getUser());
-
             verify(appointmentRepository).save(any(Appointment.class));
         }
     }
 
     @Test
     void testCreateAppointment_UserNotFound() {
-        // Given
         when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             appointmentService.createAppointment(validForm, "nonexistent@example.com")
         );
-        
+
         assertEquals("Utilisateur non trouvé: nonexistent@example.com", exception.getMessage());
         verify(appointmentRepository, never()).save(any());
     }
 
     @Test
     void testCreateAppointment_TimeConflict() {
-        // Given
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
-        
-        // Simuler un conflit : rendez-vous existant de 10h à 11h, nouveau rendez-vous de 9h30 à 10h30
-        validForm.setAppointmentDate(tomorrow9AM.plusMinutes(30)); // 9h30
-        validForm.setDurationMinutes(60); // jusqu'à 10h30
-        
+        validForm.setAppointmentDate(tomorrow9AM.plusMinutes(30));
+        validForm.setDurationMinutes(60);
         when(appointmentRepository.findActiveAppointments()).thenReturn(Arrays.asList(existingAppointment));
 
-        // Mock DateUtils
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
             mockedDateUtils.when(() -> DateUtils.isBusinessDay(any(LocalDate.class)))
                           .thenReturn(true);
 
-            // When & Then
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 appointmentService.createAppointment(validForm, "test@example.com")
             );
-            
+
             assertTrue(exception.getMessage().contains("Un rendez-vous existe déjà à ce créneau horaire"));
             verify(appointmentRepository, never()).save(any());
         }
@@ -176,28 +169,24 @@ class AppointmentServiceTest {
 
     @Test
     void testCheckTimeConflicts_NoConflict() {
-        // Given
         when(appointmentRepository.findActiveAppointments()).thenReturn(Arrays.asList(existingAppointment));
 
-        // Mock DateUtils
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
             mockedDateUtils.when(() -> DateUtils.isBusinessDay(any(LocalDate.class)))
                           .thenReturn(true);
 
-            // When - Nouveau RDV de 11h à 12h (après l'existant qui est de 10h à 11h, pas de conflit)
-            validForm.setAppointmentDate(tomorrow11AM); // 11h
-            validForm.setDurationMinutes(60); // jusqu'à 12h
+            validForm.setAppointmentDate(tomorrow11AM);
+            validForm.setDurationMinutes(60);
 
             when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
             when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
                 Appointment appointment = invocation.getArgument(0);
-                appointment.setId(2L);
+                appointment.setId(appointmentId2);
                 return appointment;
             });
 
-            // Then - Ne doit pas lever d'exception
             Appointment result = appointmentService.createAppointment(validForm, "test@example.com");
             assertNotNull(result);
         }
@@ -205,10 +194,8 @@ class AppointmentServiceTest {
 
     @Test
     void testCheckTimeConflicts_OverlapStart() {
-        // Given
         when(appointmentRepository.findActiveAppointments()).thenReturn(Arrays.asList(existingAppointment));
 
-        // Mock DateUtils
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
@@ -217,25 +204,21 @@ class AppointmentServiceTest {
 
             when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
 
-            // When - Nouveau RDV de 9h30 à 10h30 (chevauche avec existant 10h-11h)
-            validForm.setAppointmentDate(tomorrow9AM.plusMinutes(30)); // 9h30
-            validForm.setDurationMinutes(60); // jusqu'à 10h30
+            validForm.setAppointmentDate(tomorrow9AM.plusMinutes(30));
+            validForm.setDurationMinutes(60);
 
-            // Then
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 appointmentService.createAppointment(validForm, "test@example.com")
             );
-            
+
             assertTrue(exception.getMessage().contains("Un rendez-vous existe déjà à ce créneau horaire"));
         }
     }
 
     @Test
     void testCheckTimeConflicts_CompleteOverlap() {
-        // Given
         when(appointmentRepository.findActiveAppointments()).thenReturn(Arrays.asList(existingAppointment));
 
-        // Mock DateUtils
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
@@ -244,38 +227,32 @@ class AppointmentServiceTest {
 
             when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
 
-            // When - Nouveau RDV de 9h à 12h (englobe complètement l'existant 10h-11h)
-            validForm.setAppointmentDate(tomorrow9AM); // 9h
-            validForm.setDurationMinutes(180); // jusqu'à 12h
+            validForm.setAppointmentDate(tomorrow9AM);
+            validForm.setDurationMinutes(180);
 
-            // Then
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 appointmentService.createAppointment(validForm, "test@example.com")
             );
-            
+
             assertTrue(exception.getMessage().contains("Un rendez-vous existe déjà à ce créneau horaire"));
         }
     }
 
     @Test
     void testUpdateAppointment_Success() {
-        // Given - Test de mise à jour d'un rendez-vous existant
-        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(existingAppointment));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(existingAppointment));
         when(appointmentRepository.save(any(Appointment.class))).thenReturn(existingAppointment);
 
-        // Mock DateUtils
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
             mockedDateUtils.when(() -> DateUtils.isBusinessDay(any(LocalDate.class)))
                           .thenReturn(true);
 
-            // When - Modifier le même rendez-vous (même horaire) ne doit pas créer de conflit
-            validForm.setAppointmentDate(tomorrow10AM); // Même heure que l'existant
+            validForm.setAppointmentDate(tomorrow10AM);
             validForm.setDurationMinutes(60);
 
-            // Then - Ne doit pas lever d'exception car c'est le même rendez-vous
-            Appointment result = appointmentService.updateAppointment(1L, validForm);
+            Appointment result = appointmentService.updateAppointment(appointmentId, validForm);
             assertNotNull(result);
             verify(appointmentRepository).save(any(Appointment.class));
         }
@@ -283,13 +260,10 @@ class AppointmentServiceTest {
 
     @Test
     void testFindActiveAppointments() {
-        // Given
         when(appointmentRepository.findActiveAppointments()).thenReturn(Arrays.asList(existingAppointment));
 
-        // When
         List<Appointment> activeAppointments = appointmentService.findActiveAppointments();
 
-        // Then
         assertNotNull(activeAppointments);
         assertFalse(activeAppointments.isEmpty());
         assertEquals(1, activeAppointments.size());
@@ -298,14 +272,11 @@ class AppointmentServiceTest {
 
     @Test
     void testSearchAppointments() {
-        // Given
         String keyword = "consultation";
         when(appointmentRepository.searchByKeyword(keyword)).thenReturn(Arrays.asList(existingAppointment));
 
-        // When
         List<Appointment> searchResults = appointmentService.searchAppointments(keyword);
 
-        // Then
         assertNotNull(searchResults);
         assertEquals(1, searchResults.size());
         assertEquals(existingAppointment.getId(), searchResults.get(0).getId());
@@ -314,56 +285,45 @@ class AppointmentServiceTest {
 
     @Test
     void testValidateAppointmentForm_InvalidTime() {
-        // Given - Heure invalide (18h)
         validForm.setAppointmentDate(tomorrow9AM.withHour(18));
 
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
 
-        // When & Then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
             appointmentService.createAppointment(validForm, "test@example.com")
         );
-        
+
         assertTrue(exception.getMessage().contains("L'heure du rendez-vous doit être entre 9h et 17h"));
     }
 
     @Test
     void testValidateAppointmentForm_PastDate() {
-        // Given - Date dans le passé (seulement 12h à l'avance) mais avec une heure valide
         LocalDateTime nearFuture = LocalDateTime.now().plusHours(12);
-        // S'assurer que c'est à une heure valide (9h00 ou 9h30, etc.)
         nearFuture = nearFuture.withHour(10).withMinute(0).withSecond(0).withNano(0);
         validForm.setAppointmentDate(nearFuture);
 
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
 
-        // Mock DateUtils pour que les autres validations passent
         try (MockedStatic<DateUtils> mockedDateUtils = mockStatic(DateUtils.class)) {
             mockedDateUtils.when(() -> DateUtils.calculateBusinessDaysBetween(any(LocalDate.class), any(LocalDate.class)))
                           .thenReturn(1);
             mockedDateUtils.when(() -> DateUtils.isBusinessDay(any(LocalDate.class)))
                           .thenReturn(true);
 
-            // When & Then
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 appointmentService.createAppointment(validForm, "test@example.com")
             );
-            
-            // Debug: afficher le message réel
-            System.out.println("Message d'exception réel: " + exception.getMessage());
+
             assertTrue(exception.getMessage().contains("Les rendez-vous doivent être pris au moins 24h à l'avance"));
         }
     }
 
     @Test
     void testFindAppointmentById_Success() {
-        // Given
-        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(existingAppointment));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(existingAppointment));
 
-        // When
-        Appointment result = appointmentService.findAppointmentById(1L);
+        Appointment result = appointmentService.findAppointmentById(appointmentId);
 
-        // Then
         assertNotNull(result);
         assertEquals(existingAppointment.getId(), result.getId());
         assertEquals(existingAppointment.getSubject(), result.getSubject());
@@ -371,55 +331,44 @@ class AppointmentServiceTest {
 
     @Test
     void testFindAppointmentById_NotFound() {
-        // Given
-        when(appointmentRepository.findById(999L)).thenReturn(Optional.empty());
+        when(appointmentRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            appointmentService.findAppointmentById(999L)
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            appointmentService.findAppointmentById(nonExistentId)
         );
-        
-        assertTrue(exception.getMessage().contains("Rendez-vous non trouvé avec l'ID: 999"));
+
+        assertTrue(exception.getMessage().contains("Rendez-vous non trouvé"));
     }
 
     @Test
     void testConfirmAppointment_Success() {
-        // Given
-        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(existingAppointment));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(existingAppointment));
         when(appointmentRepository.save(any(Appointment.class))).thenReturn(existingAppointment);
 
-        // When
-        Appointment result = appointmentService.confirmAppointment(1L);
+        Appointment result = appointmentService.confirmAppointment(appointmentId);
 
-        // Then
         assertNotNull(result);
         verify(appointmentRepository).save(any(Appointment.class));
     }
 
     @Test
     void testCancelAppointment_Success() {
-        // Given
-        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(existingAppointment));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(existingAppointment));
         when(appointmentRepository.save(any(Appointment.class))).thenReturn(existingAppointment);
 
-        // When
-        Appointment result = appointmentService.cancelAppointment(1L, "Test reason");
+        Appointment result = appointmentService.cancelAppointment(appointmentId, "Test reason");
 
-        // Then
         assertNotNull(result);
         verify(appointmentRepository).save(any(Appointment.class));
     }
 
     @Test
     void testDeleteAppointment_Success() {
-        // Given
-        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(existingAppointment));
+        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(existingAppointment));
         doNothing().when(appointmentRepository).delete(any(Appointment.class));
 
-        // When
-        appointmentService.deleteAppointment(1L);
+        appointmentService.deleteAppointment(appointmentId);
 
-        // Then
         verify(appointmentRepository).delete(existingAppointment);
     }
 }

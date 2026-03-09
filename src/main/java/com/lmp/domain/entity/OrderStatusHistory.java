@@ -1,32 +1,19 @@
 package com.lmp.domain.entity;
 
 import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import java.util.UUID;
 
 import com.lmp.domain.enums.OrderStatus;
 
-/**
- * Entité pour l'historique des changements de statut des commandes.
- * Permet l'audit complet des modifications.
- */
+import jakarta.persistence.*;
+
 @Entity
 @Table(name = "order_status_history")
 public class OrderStatusHistory {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
@@ -53,7 +40,6 @@ public class OrderStatusHistory {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-    // Constructeurs
     public OrderStatusHistory() {}
 
     public OrderStatusHistory(Order order, OrderStatus fromStatus, OrderStatus toStatus,
@@ -77,96 +63,23 @@ public class OrderStatusHistory {
         this.note = note;
     }
 
-    // Getters et Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-    }
-
-    public OrderStatus getFromStatus() {
-        return fromStatus;
-    }
-
-    public void setFromStatus(OrderStatus fromStatus) {
-        this.fromStatus = fromStatus;
-    }
-
-    public OrderStatus getToStatus() {
-        return toStatus;
-    }
-
-    public void setToStatus(OrderStatus toStatus) {
-        this.toStatus = toStatus;
-    }
-
-    public LocalDateTime getChangedAt() {
-        return changedAt;
-    }
-
-    public void setChangedAt(LocalDateTime changedAt) {
-        this.changedAt = changedAt;
-    }
-
-    public String getChangedBy() {
-        return changedBy;
-    }
-
-    public void setChangedBy(String changedBy) {
-        this.changedBy = changedBy;
-    }
-
-    public String getNote() {
-        return note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-    
-    public User getCreatedBy() {
-        return createdBy;
-    }
-    
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public Order getOrder() { return order; }
+    public void setOrder(Order order) { this.order = order; }
+    public OrderStatus getFromStatus() { return fromStatus; }
+    public void setFromStatus(OrderStatus fromStatus) { this.fromStatus = fromStatus; }
+    public OrderStatus getToStatus() { return toStatus; }
+    public void setToStatus(OrderStatus toStatus) { this.toStatus = toStatus; }
+    public LocalDateTime getChangedAt() { return changedAt; }
+    public void setChangedAt(LocalDateTime changedAt) { this.changedAt = changedAt; }
+    public String getChangedBy() { return changedBy; }
+    public void setChangedBy(String changedBy) { this.changedBy = changedBy; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
+    public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) {
         this.createdBy = createdBy;
-        // Synchroniser avec changedBy
         this.changedBy = createdBy != null ? createdBy.getEmail() : null;
-    }
-
-    // Méthodes utilitaires
-    @Override
-    public String toString() {
-        return "OrderStatusHistory{" +
-                "id=" + id +
-                ", orderId=" + (order != null ? order.getId() : null) +
-                ", fromStatus=" + fromStatus +
-                ", toStatus=" + toStatus +
-                ", changedAt=" + changedAt +
-                ", changedBy='" + changedBy + '\'' +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof OrderStatusHistory)) return false;
-        OrderStatusHistory that = (OrderStatusHistory) o;
-        return id != null && id.equals(that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
     }
 }

@@ -30,7 +30,7 @@ public class ServicesDataService {
      * Représente un service offert par LMP
      */
     public static class ServiceInfo {
-        private final Long id;
+        private final java.util.UUID id;
         private final String title;
         private final String description;
         private final String icon;
@@ -39,10 +39,10 @@ public class ServicesDataService {
         private final double priceValue;
         private final String duration;
         private final String category;
-        private final Long offerId;
+        private final java.util.UUID offerId;
 
-        public ServiceInfo(Long id, String title, String description, String icon, List<String> benefits,
-                String price, double priceValue, String duration, String category, Long offerId) {
+        public ServiceInfo(java.util.UUID id, String title, String description, String icon, List<String> benefits,
+                String price, double priceValue, String duration, String category, java.util.UUID offerId) {
             this.id = id;
             this.title = title;
             this.description = description;
@@ -56,7 +56,7 @@ public class ServicesDataService {
         }
 
         // Getters
-        public Long getId() {
+        public java.util.UUID getId() {
             return id;
         }
 
@@ -92,7 +92,7 @@ public class ServicesDataService {
             return category;
         }
 
-        public Long getOfferId() {
+        public java.util.UUID getOfferId() {
             return offerId;
         }
     }
@@ -112,7 +112,7 @@ public class ServicesDataService {
         double priceValue = currentOffer != null ? currentOffer.getPrice().doubleValue() : 0.0;
         String priceString = currentOffer != null ? String.format("%.2f €", priceValue).replace(".", ",") : "Sur devis";
         String durationStr = currentOffer != null ? currentOffer.getDurationType().name() : "N/A";
-        Long offerId = currentOffer != null ? currentOffer.getId() : null;
+        java.util.UUID offerId = currentOffer != null ? currentOffer.getId() : null;
 
         // Read benefits from the current offer (OfferBenefit) instead of service-level (ServiceBenefit)
         List<String> benefitStrings;

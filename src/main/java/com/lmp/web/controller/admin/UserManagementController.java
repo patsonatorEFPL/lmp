@@ -53,7 +53,7 @@ public class UserManagementController {
      * DTO pour les informations utilisateur
      */
     public static class UserInfo {
-        private Long id;
+        private java.util.UUID id;
         private String email;
         private String firstName;
         private String lastName;
@@ -62,7 +62,7 @@ public class UserManagementController {
         private Boolean emailVerified;
         private List<String> roles;
 
-        public UserInfo(Long id, String email, String firstName, String lastName, 
+        public UserInfo(java.util.UUID id, String email, String firstName, String lastName, 
                        String status, Boolean accountLocked, Boolean emailVerified, List<String> roles) {
             this.id = id;
             this.email = email;
@@ -75,7 +75,7 @@ public class UserManagementController {
         }
 
         // Getters
-        public Long getId() { return id; }
+        public java.util.UUID getId() { return id; }
         public String getEmail() { return email; }
         public String getFirstName() { return firstName; }
         public String getLastName() { return lastName; }

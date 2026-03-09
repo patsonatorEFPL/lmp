@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -54,12 +55,19 @@ class UserServiceTest {
 
     private User testUser;
     private User adminUser;
+    private UUID testUserId;
+    private UUID adminUserId;
+    private UUID nonExistentId;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
+        adminUserId = UUID.randomUUID();
+        nonExistentId = UUID.randomUUID();
+
         // Utilisateur de test normal
         testUser = new User();
-        testUser.setId(1L);
+        testUser.setId(testUserId);
         testUser.setEmail("test@example.com");
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
@@ -69,7 +77,7 @@ class UserServiceTest {
 
         // Utilisateur admin
         adminUser = new User();
-        adminUser.setId(2L);
+        adminUser.setId(adminUserId);
         adminUser.setEmail("admin@example.com");
         adminUser.setFirstName("Admin");
         adminUser.setLastName("User");
@@ -80,41 +88,32 @@ class UserServiceTest {
 
     @Test
     void testFindById_Success() {
-        // Given
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
 
-        // When
-        Optional<User> result = userService.findById(1L);
+        Optional<User> result = userService.findById(testUserId);
 
-        // Then
         assertTrue(result.isPresent());
         assertEquals(testUser.getId(), result.get().getId());
         assertEquals(testUser.getEmail(), result.get().getEmail());
-        verify(userRepository).findById(1L);
+        verify(userRepository).findById(testUserId);
     }
 
     @Test
     void testFindById_NotFound() {
-        // Given
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        // When
-        Optional<User> result = userService.findById(999L);
+        Optional<User> result = userService.findById(nonExistentId);
 
-        // Then
         assertFalse(result.isPresent());
-        verify(userRepository).findById(999L);
+        verify(userRepository).findById(nonExistentId);
     }
 
     @Test
     void testFindByEmail_Success() {
-        // Given
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
 
-        // When
         Optional<User> result = userService.findByEmail("test@example.com");
 
-        // Then
         assertTrue(result.isPresent());
         assertEquals(testUser.getEmail(), result.get().getEmail());
         verify(userRepository).findByEmail("test@example.com");
@@ -122,27 +121,21 @@ class UserServiceTest {
 
     @Test
     void testFindByEmail_NotFound() {
-        // Given
         when(userRepository.findByEmail("nonexistent@example.com")).thenReturn(Optional.empty());
 
-        // When
         Optional<User> result = userService.findByEmail("nonexistent@example.com");
 
-        // Then
         assertFalse(result.isPresent());
         verify(userRepository).findByEmail("nonexistent@example.com");
     }
 
     @Test
     void testFindAll() {
-        // Given
         List<User> users = Arrays.asList(testUser, adminUser);
         when(userRepository.findAll()).thenReturn(users);
 
-        // When
         List<User> result = userService.findAll();
 
-        // Then
         assertNotNull(result);
         assertEquals(2, result.size());
         verify(userRepository).findAll();
@@ -150,14 +143,11 @@ class UserServiceTest {
 
     @Test
     void testFindByStatus() {
-        // Given
         List<User> allUsers = Arrays.asList(testUser, adminUser);
         when(userRepository.findAll()).thenReturn(allUsers);
 
-        // When
         List<User> activeUsers = userService.findByStatus(UserStatus.ACTIVE);
 
-        // Then
         assertNotNull(activeUsers);
         assertEquals(2, activeUsers.size());
         activeUsers.forEach(user -> assertEquals(UserStatus.ACTIVE, user.getStatus()));
@@ -165,13 +155,10 @@ class UserServiceTest {
 
     @Test
     void testSave() {
-        // Given
         when(userRepository.save(testUser)).thenReturn(testUser);
 
-        // When
         User result = userService.save(testUser);
 
-        // Then
         assertNotNull(result);
         assertEquals(testUser.getId(), result.getId());
         verify(userRepository).save(testUser);
@@ -179,133 +166,113 @@ class UserServiceTest {
 
     @Test
     void testSetUserActive() {
-        // Given
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // When
-        userService.setUserActive(1L, false);
+        userService.setUserActive(testUserId, false);
 
-        // Then
-        verify(userRepository).findById(1L);
+        verify(userRepository).findById(testUserId);
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void testSetUserActive_UserNotFound() {
-        // Given
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            userService.setUserActive(999L, true)
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            userService.setUserActive(nonExistentId, true)
         );
-        
-        assertTrue(exception.getMessage().contains("Utilisateur non trouvé avec l'ID: 999"));
-        verify(userRepository).findById(999L);
+
+        assertTrue(exception.getMessage().contains("Utilisateur non trouvé"));
+        verify(userRepository).findById(nonExistentId);
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void testSetUserLocked() {
-        // Given
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // When
-        userService.setUserLocked(1L, true);
+        userService.setUserLocked(testUserId, true);
 
-        // Then
-        verify(userRepository).findById(1L);
+        verify(userRepository).findById(testUserId);
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void testChangePassword_Success() {
-        // Given
         String newPassword = "NewPassword123!";
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.encode(newPassword)).thenReturn("encoded_new_password");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // When
-        userService.changePassword(1L, newPassword);
+        userService.changePassword(testUserId, newPassword);
 
-        // Then
-        verify(userRepository).findById(1L);
+        verify(userRepository).findById(testUserId);
         verify(passwordEncoder).encode(newPassword);
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void testChangePassword_WeakPassword() {
-        // Given
         String weakPassword = "weak";
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            userService.changePassword(1L, weakPassword)
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            userService.changePassword(testUserId, weakPassword)
         );
-        
+
         assertTrue(exception.getMessage().contains("Le mot de passe doit contenir au moins 8 caractères"));
-        verify(userRepository).findById(1L);
+        verify(userRepository).findById(testUserId);
         verify(passwordEncoder, never()).encode(any());
         verify(userRepository, never()).save(any());
     }
 
     @Test
     void testChangePassword_UserNotFound() {
-        // Given
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            userService.changePassword(999L, "NewPassword123!")
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            userService.changePassword(nonExistentId, "NewPassword123!")
         );
-        
-        assertTrue(exception.getMessage().contains("Utilisateur non trouvé avec l'ID: 999"));
-        verify(userRepository).findById(999L);
+
+        assertTrue(exception.getMessage().contains("Utilisateur non trouvé"));
+        verify(userRepository).findById(nonExistentId);
         verify(passwordEncoder, never()).encode(any());
     }
 
     @Test
     void testChangePasswordWithValidation_Success() {
-        // Given
         String currentPassword = "currentPassword";
         String newPassword = "NewPassword123!";
-        
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
         when(passwordEncoder.matches(newPassword, testUser.getPassword())).thenReturn(false);
         when(passwordEncoder.encode(newPassword)).thenReturn("encoded_new_password");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // When
-        userService.changePasswordWithValidation(1L, currentPassword, newPassword);
+        userService.changePasswordWithValidation(testUserId, currentPassword, newPassword);
 
-        // Then
-        verify(userRepository).findById(1L);
-        verify(passwordEncoder).matches(currentPassword, "encoded_password"); // Vérification avec le mot de passe hashé stocké
-        verify(passwordEncoder).matches(newPassword, "encoded_password"); // Vérification que nouveau != ancien
-        verify(passwordEncoder).encode(newPassword); // Encodage du nouveau
+        verify(userRepository).findById(testUserId);
+        verify(passwordEncoder).matches(currentPassword, "encoded_password");
+        verify(passwordEncoder).matches(newPassword, "encoded_password");
+        verify(passwordEncoder).encode(newPassword);
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void testChangePasswordWithValidation_InvalidCurrentPassword() {
-        // Given
         String currentPassword = "wrongPassword";
         String newPassword = "NewPassword123!";
-        
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(false);
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            userService.changePasswordWithValidation(1L, currentPassword, newPassword)
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            userService.changePasswordWithValidation(testUserId, currentPassword, newPassword)
         );
-        
+
         assertEquals("Le mot de passe actuel est incorrect", exception.getMessage());
         verify(passwordEncoder, never()).encode(any());
         verify(userRepository, never()).save(any());
@@ -313,19 +280,17 @@ class UserServiceTest {
 
     @Test
     void testChangePasswordWithValidation_SamePassword() {
-        // Given
         String currentPassword = "currentPassword";
         String newPassword = "currentPassword"; // Même mot de passe
-        
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
         when(passwordEncoder.matches(newPassword, testUser.getPassword())).thenReturn(true);
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            userService.changePasswordWithValidation(1L, currentPassword, newPassword)
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            userService.changePasswordWithValidation(testUserId, currentPassword, newPassword)
         );
-        
+
         assertEquals("Le nouveau mot de passe doit être différent du mot de passe actuel", exception.getMessage());
         verify(passwordEncoder, never()).encode(any());
         verify(userRepository, never()).save(any());
@@ -333,45 +298,38 @@ class UserServiceTest {
 
     @Test
     void testChangePasswordByAdmin_Success() {
-        // Given
         String newPassword = "NewPassword123!";
-        
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(adminUser));
+
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(adminUserId)).thenReturn(Optional.of(adminUser));
         when(passwordEncoder.encode(newPassword)).thenReturn("encoded_new_password");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        // Mock hasRole pour simuler un admin
         UserServiceImpl spyUserService = spy(userService);
-        doReturn(true).when(spyUserService).hasRole(2L, "ADMIN");
+        doReturn(true).when(spyUserService).hasRole(adminUserId, "ADMIN");
 
-        // When
-        spyUserService.changePasswordByAdmin(1L, newPassword, 2L);
+        spyUserService.changePasswordByAdmin(testUserId, newPassword, adminUserId);
 
-        // Then
-        verify(userRepository).findById(1L);
-        verify(userRepository).findById(2L);
+        verify(userRepository).findById(testUserId);
+        verify(userRepository).findById(adminUserId);
         verify(passwordEncoder).encode(newPassword);
         verify(userRepository).save(any(User.class));
     }
 
     @Test
     void testChangePasswordByAdmin_NotAdmin() {
-        // Given
         String newPassword = "NewPassword123!";
-        
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(adminUser));
 
-        // Mock hasRole pour simuler un non-admin
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(adminUserId)).thenReturn(Optional.of(adminUser));
+
         UserServiceImpl spyUserService = spy(userService);
-        doReturn(false).when(spyUserService).hasRole(2L, "ADMIN");
+        doReturn(false).when(spyUserService).hasRole(adminUserId, "ADMIN");
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            spyUserService.changePasswordByAdmin(1L, newPassword, 2L)
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            spyUserService.changePasswordByAdmin(testUserId, newPassword, adminUserId)
         );
-        
+
         assertTrue(exception.getMessage().contains("Seuls les administrateurs peuvent changer les mots de passe"));
         verify(passwordEncoder, never()).encode(any());
         verify(userRepository, never()).save(any());
@@ -379,129 +337,72 @@ class UserServiceTest {
 
     @Test
     void testIsPasswordStrong_ValidPassword() {
-        // Given
-        String strongPassword = "StrongPass123!";
-
-        // When
-        boolean result = userService.isPasswordStrong(strongPassword);
-
-        // Then
-        assertTrue(result);
+        assertTrue(userService.isPasswordStrong("StrongPass123!"));
     }
 
     @Test
     void testIsPasswordStrong_TooShort() {
-        // Given
-        String shortPassword = "Short1!";
-
-        // When
-        boolean result = userService.isPasswordStrong(shortPassword);
-
-        // Then
-        assertFalse(result);
+        assertFalse(userService.isPasswordStrong("Short1!"));
     }
 
     @Test
     void testIsPasswordStrong_NoUppercase() {
-        // Given
-        String noUppercasePassword = "nouppercasepass123!";
-
-        // When
-        boolean result = userService.isPasswordStrong(noUppercasePassword);
-
-        // Then
-        assertFalse(result);
+        assertFalse(userService.isPasswordStrong("nouppercasepass123!"));
     }
 
     @Test
     void testIsPasswordStrong_NoLowercase() {
-        // Given
-        String noLowercasePassword = "NOLOWERCASEPASS123!";
-
-        // When
-        boolean result = userService.isPasswordStrong(noLowercasePassword);
-
-        // Then
-        assertFalse(result);
+        assertFalse(userService.isPasswordStrong("NOLOWERCASEPASS123!"));
     }
 
     @Test
     void testIsPasswordStrong_NoDigit() {
-        // Given
-        String noDigitPassword = "NoDigitPassword!";
-
-        // When
-        boolean result = userService.isPasswordStrong(noDigitPassword);
-
-        // Then
-        assertFalse(result);
+        assertFalse(userService.isPasswordStrong("NoDigitPassword!"));
     }
 
     @Test
     void testIsPasswordStrong_NoSpecialChar() {
-        // Given
-        String noSpecialCharPassword = "NoSpecialChar123";
-
-        // When
-        boolean result = userService.isPasswordStrong(noSpecialCharPassword);
-
-        // Then
-        assertFalse(result);
+        assertFalse(userService.isPasswordStrong("NoSpecialChar123"));
     }
 
     @Test
     void testIsPasswordStrong_NullPassword() {
-        // Given
-        String nullPassword = null;
-
-        // When
-        boolean result = userService.isPasswordStrong(nullPassword);
-
-        // Then
-        assertFalse(result);
+        assertFalse(userService.isPasswordStrong(null));
     }
 
     @Test
     void testCheckCurrentPassword_Success() {
-        // Given
         String password = "testPassword";
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(password, testUser.getPassword())).thenReturn(true);
 
-        // When
-        boolean result = userService.checkCurrentPassword(1L, password);
+        boolean result = userService.checkCurrentPassword(testUserId, password);
 
-        // Then
         assertTrue(result);
         verify(passwordEncoder).matches(password, testUser.getPassword());
     }
 
     @Test
     void testCheckCurrentPassword_Failure() {
-        // Given
         String wrongPassword = "wrongPassword";
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches(wrongPassword, testUser.getPassword())).thenReturn(false);
 
-        // When
-        boolean result = userService.checkCurrentPassword(1L, wrongPassword);
+        boolean result = userService.checkCurrentPassword(testUserId, wrongPassword);
 
-        // Then
         assertFalse(result);
         verify(passwordEncoder).matches(wrongPassword, testUser.getPassword());
     }
 
     @Test
     void testCheckCurrentPassword_UserNotFound() {
-        // Given
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> 
-            userService.checkCurrentPassword(999L, "anyPassword")
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+            userService.checkCurrentPassword(nonExistentId, "anyPassword")
         );
-        
-        assertTrue(exception.getMessage().contains("Utilisateur non trouvé avec l'ID: 999"));
+
+        assertTrue(exception.getMessage().contains("Utilisateur non trouvé"));
         verify(passwordEncoder, never()).matches(any(), any());
     }
 }

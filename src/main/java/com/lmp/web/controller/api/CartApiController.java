@@ -52,7 +52,7 @@ public class CartApiController {
     }
 
     @PostMapping("/add/{serviceId}")
-    public ResponseEntity<?> addToCart(@PathVariable Long serviceId, Authentication authentication) {
+    public ResponseEntity<?> addToCart(@PathVariable java.util.UUID serviceId, Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -68,7 +68,7 @@ public class CartApiController {
     }
 
     @DeleteMapping("/remove/{cartItemId}")
-    public ResponseEntity<?> removeFromCart(@PathVariable Long cartItemId, Authentication authentication) {
+    public ResponseEntity<?> removeFromCart(@PathVariable java.util.UUID cartItemId, Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Non authentifié"));

@@ -27,7 +27,7 @@ public interface PaymentService {
      * @throws PaymentProcessingException si le traitement échoue
      * @throws PaymentValidationException si les données sont invalides
      */
-    PaymentResponseDto processPayment(Long orderId, PaymentRequestDto paymentRequest) 
+    PaymentResponseDto processPayment(java.util.UUID orderId, PaymentRequestDto paymentRequest) 
             throws PaymentProcessingException, PaymentValidationException;
     
     /**
@@ -38,7 +38,7 @@ public interface PaymentService {
      * @throws PaymentProcessingException si le remboursement échoue
      * @throws PaymentValidationException si les données de remboursement sont invalides
      */
-    RefundResponseDto refundPayment(Long transactionId, RefundRequestDto refundRequest)
+    RefundResponseDto refundPayment(java.util.UUID transactionId, RefundRequestDto refundRequest)
             throws PaymentProcessingException, PaymentValidationException;
     
     /**
@@ -47,21 +47,21 @@ public interface PaymentService {
      * @return le statut actuel
      * @throws PaymentProcessingException si la vérification échoue
      */
-    String checkTransactionStatus(Long transactionId) throws PaymentProcessingException;
+    String checkTransactionStatus(java.util.UUID transactionId) throws PaymentProcessingException;
     
     /**
      * Récupère une transaction par son ID
      * @param transactionId l'ID de la transaction
      * @return la transaction
      */
-    PaymentTransaction getTransaction(Long transactionId);
+    PaymentTransaction getTransaction(java.util.UUID transactionId);
     
     /**
      * Récupère toutes les transactions d'une commande
      * @param orderId l'ID de la commande
      * @return la liste des transactions
      */
-    List<PaymentTransaction> getTransactionsByOrder(Long orderId);
+    List<PaymentTransaction> getTransactionsByOrder(java.util.UUID orderId);
     
     /**
      * Calcule les frais de traitement pour un montant et fournisseur donnés
@@ -110,7 +110,7 @@ public interface PaymentService {
      * @param orderId l'ID de la commande (optionnel)
      * @return les statistiques
      */
-    PaymentStatistics getPaymentStatistics(Long orderId);
+    PaymentStatistics getPaymentStatistics(java.util.UUID orderId);
     
     /**
      * Classe interne pour les statistiques de paiement

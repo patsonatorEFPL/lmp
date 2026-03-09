@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 import com.lmp.domain.entity.User;
 import com.lmp.domain.enums.UserStatus;
 
@@ -20,7 +22,7 @@ public interface UserService {
      * @param id L'ID de l'utilisateur
      * @return L'utilisateur s'il existe
      */
-    Optional<User> findById(Long id);
+    Optional<User> findById(UUID id);
 
     /**
      * Trouve un utilisateur par son email.
@@ -66,7 +68,7 @@ public interface UserService {
      * @param id L'ID de l'utilisateur à supprimer définitivement
      * @throws RuntimeException si l'utilisateur n'existe pas ou en cas d'erreur
      */
-    void deleteUser(Long id);
+    void deleteUser(UUID id);
 
     /**
      * Active ou désactive un utilisateur.
@@ -74,7 +76,7 @@ public interface UserService {
      * @param id L'ID de l'utilisateur
      * @param active true pour activer, false pour désactiver
      */
-    void setUserActive(Long id, boolean active);
+    void setUserActive(UUID id, boolean active);
 
     /**
      * Verrouille ou déverrouille un compte utilisateur.
@@ -82,7 +84,7 @@ public interface UserService {
      * @param id L'ID de l'utilisateur
      * @param locked true pour verrouiller, false pour déverrouiller
      */
-    void setUserLocked(Long id, boolean locked);
+    void setUserLocked(UUID id, boolean locked);
 
     /**
      * Change le mot de passe d'un utilisateur.
@@ -90,7 +92,7 @@ public interface UserService {
      * @param userId L'ID de l'utilisateur
      * @param newPassword Le nouveau mot de passe (en clair)
      */
-    void changePassword(Long userId, String newPassword);
+    void changePassword(UUID userId, String newPassword);
 
     /**
      * Change le mot de passe d'un utilisateur avec validation du mot de passe actuel.
@@ -100,7 +102,7 @@ public interface UserService {
      * @param newPassword Le nouveau mot de passe (en clair)
      * @throws RuntimeException si le mot de passe actuel est incorrect
      */
-    void changePasswordWithValidation(Long userId, String currentPassword, String newPassword);
+    void changePasswordWithValidation(UUID userId, String currentPassword, String newPassword);
 
     /**
      * Change le mot de passe d'un utilisateur par un administrateur.
@@ -110,7 +112,7 @@ public interface UserService {
      * @param newPassword Le nouveau mot de passe (en clair)
      * @param adminId L'ID de l'administrateur qui effectue l'action
      */
-    void changePasswordByAdmin(Long userId, String newPassword, Long adminId);
+    void changePasswordByAdmin(UUID userId, String newPassword, UUID adminId);
 
     /**
      * Valide la force d'un mot de passe.
@@ -127,7 +129,7 @@ public interface UserService {
      * @param password Le mot de passe à vérifier
      * @return true si le mot de passe correspond
      */
-    boolean checkCurrentPassword(Long userId, String password);
+    boolean checkCurrentPassword(UUID userId, String password);
 
     /**
      * Met à jour la date de dernière connexion.
@@ -143,7 +145,7 @@ public interface UserService {
      * @param roleName Le nom du rôle
      * @return true si l'utilisateur a le rôle, false sinon
      */
-    boolean hasRole(Long userId, String roleName);
+    boolean hasRole(UUID userId, String roleName);
     
     // Méthodes avec JOIN FETCH pour éviter LazyInitializationException
     
@@ -154,7 +156,7 @@ public interface UserService {
      * @param id L'ID de l'utilisateur
      * @return Optional contenant l'utilisateur avec ses rôles
      */
-    Optional<User> findByIdWithRoles(Long id);
+    Optional<User> findByIdWithRoles(UUID id);
     
     /**
      * Trouve un utilisateur par email avec ses rôles chargés.
@@ -252,5 +254,5 @@ public interface UserService {
      * @param id L'ID de l'utilisateur à supprimer définitivement
      * @throws RuntimeException si l'utilisateur n'existe pas ou en cas d'erreur
      */
-    void hardDeleteUser(Long id);
+    void hardDeleteUser(UUID id);
 }

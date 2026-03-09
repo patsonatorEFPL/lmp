@@ -107,13 +107,9 @@ public class StripeCheckoutController {
             // Si offerId est fourni, le prix est récupéré côté serveur (mode sécurisé)
             BigDecimal amount;
             if (offerIdObj != null) {
-                Long offerId;
+                java.util.UUID offerId;
                 try {
-                    if (offerIdObj instanceof Number) {
-                        offerId = ((Number) offerIdObj).longValue();
-                    } else {
-                        offerId = Long.valueOf(String.valueOf(offerIdObj));
-                    }
+                    offerId = java.util.UUID.fromString(String.valueOf(offerIdObj));
                 } catch (Exception e) {
                     return ResponseEntity.badRequest().body(Map.of(
                             "error", "INVALID_OFFER_ID",
@@ -167,15 +163,9 @@ public class StripeCheckoutController {
                 currency = "EUR"; // Devise par défaut
             }
 
-            Long userId;
+            java.util.UUID userId;
             try {
-                if (userIdObj instanceof Number) {
-                    userId = ((Number) userIdObj).longValue();
-                } else if (userIdObj instanceof String) {
-                    userId = Long.valueOf((String) userIdObj);
-                } else {
-                    throw new IllegalArgumentException("Format d'ID utilisateur invalide");
-                }
+                userId = java.util.UUID.fromString(String.valueOf(userIdObj));
             } catch (Exception e) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "error", "INVALID_USER_ID",
@@ -323,7 +313,7 @@ public class StripeCheckoutController {
      */
     @PostMapping("/create-session/{orderId}")
     @ResponseBody
-    public ResponseEntity<?> createCheckoutSession(@PathVariable Long orderId,
+    public ResponseEntity<?> createCheckoutSession(@PathVariable java.util.UUID orderId,
             HttpServletRequest request) {
 
         logger.info("Creating Stripe Checkout session for existing order: {}", orderId);
@@ -460,7 +450,7 @@ public class StripeCheckoutController {
      * Redirige automatiquement vers la page succès une fois le paiement confirmé.
      */
     @GetMapping("/processing")
-    public String paymentProcessing(@RequestParam("order_id") Long orderId,
+    public String paymentProcessing(@RequestParam("order_id") java.util.UUID orderId,
             @RequestParam("session_id") String sessionId,
             @RequestParam(defaultValue = "success") String type,
             Model model,
@@ -512,7 +502,7 @@ public class StripeCheckoutController {
      * Cette page affiche simplement les informations de la commande.
      */
     @GetMapping("/success")
-    public String paymentSuccess(@RequestParam("order_id") Long orderId,
+    public String paymentSuccess(@RequestParam("order_id") java.util.UUID orderId,
             @RequestParam("session_id") String sessionId,
             @RequestParam(defaultValue = "success") String type,
             Model model,
@@ -583,7 +573,7 @@ public class StripeCheckoutController {
      * Page d'annulation après annulation Stripe Checkout
      */
     @GetMapping("/cancel")
-    public String paymentCancel(@RequestParam(value = "order_id", required = false) Long orderId,
+    public String paymentCancel(@RequestParam(value = "order_id", required = false) java.util.UUID orderId,
             @RequestParam(value = "session_id", required = false) String sessionId,
             @RequestParam(defaultValue = "cancel") String type,
             Model model,

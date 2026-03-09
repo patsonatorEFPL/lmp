@@ -164,7 +164,7 @@ public class AdminAppointmentController {
      * Affiche les détails d'un rendez-vous
      */
     @GetMapping("/{id}")
-    public String viewAppointment(@PathVariable Long id, Model model, Authentication authentication) {
+    public String viewAppointment(@PathVariable java.util.UUID id, Model model, Authentication authentication) {
         String adminEmail = authentication.getName();
         logger.info("Admin viewing appointment {} by: {}", id, adminEmail);
 
@@ -212,7 +212,7 @@ public class AdminAppointmentController {
     public String saveAppointment(
             @Valid @ModelAttribute("appointmentForm") AppointmentForm appointmentForm,
             BindingResult bindingResult,
-            @RequestParam Long userId,
+            @RequestParam java.util.UUID userId,
             Model model,
             RedirectAttributes redirectAttributes,
             Authentication authentication) {
@@ -252,7 +252,7 @@ public class AdminAppointmentController {
      * Formulaire de modification d'un rendez-vous
      */
     @GetMapping("/{id}/edit")
-    public String editAppointmentForm(@PathVariable Long id, Model model, Authentication authentication) {
+    public String editAppointmentForm(@PathVariable java.util.UUID id, Model model, Authentication authentication) {
         String adminEmail = authentication.getName();
         logger.info("Admin editing appointment {} by: {}", id, adminEmail);
 
@@ -287,7 +287,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/update")
     public String updateAppointment(
-            @PathVariable Long id,
+            @PathVariable java.util.UUID id,
             @Valid @ModelAttribute("appointmentForm") AppointmentForm appointmentForm,
             BindingResult bindingResult,
             @RequestParam(required = false) String adminNotes,
@@ -345,7 +345,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/cancel-soft")
     public String cancelAppointmentSoft(
-            @PathVariable Long id,
+            @PathVariable java.util.UUID id,
             RedirectAttributes redirectAttributes,
             Authentication authentication) {
 
@@ -375,7 +375,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/delete")
     public String deleteAppointmentPermanent(
-            @PathVariable Long id,
+            @PathVariable java.util.UUID id,
             RedirectAttributes redirectAttributes,
             Authentication authentication) {
 
@@ -407,7 +407,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/confirm")
     @ResponseBody
-    public Map<String, Object> confirmAppointment(@PathVariable Long id, Authentication authentication) {
+    public Map<String, Object> confirmAppointment(@PathVariable java.util.UUID id, Authentication authentication) {
         String adminEmail = authentication.getName();
         
         try {
@@ -434,7 +434,7 @@ public class AdminAppointmentController {
     @PostMapping("/{id}/cancel")
     @ResponseBody
     public Map<String, Object> cancelAppointment(
-            @PathVariable Long id,
+            @PathVariable java.util.UUID id,
             @RequestParam(defaultValue = "Annulé par l'administrateur") String reason,
             Authentication authentication) {
         
@@ -463,7 +463,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/start")
     @ResponseBody
-    public Map<String, Object> startAppointment(@PathVariable Long id, Authentication authentication) {
+    public Map<String, Object> startAppointment(@PathVariable java.util.UUID id, Authentication authentication) {
         String adminEmail = authentication.getName();
         
         try {
@@ -490,7 +490,7 @@ public class AdminAppointmentController {
     @PostMapping("/{id}/complete")
     @ResponseBody
     public Map<String, Object> completeAppointment(
-            @PathVariable Long id,
+            @PathVariable java.util.UUID id,
             @RequestParam(required = false) String notes,
             Authentication authentication) {
         
@@ -519,7 +519,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/no-show")
     @ResponseBody
-    public Map<String, Object> markAsNoShow(@PathVariable Long id, Authentication authentication) {
+    public Map<String, Object> markAsNoShow(@PathVariable java.util.UUID id, Authentication authentication) {
         String adminEmail = authentication.getName();
         
         try {
@@ -545,7 +545,7 @@ public class AdminAppointmentController {
      */
     @PostMapping("/{id}/delete-permanent")
     @ResponseBody
-    public Map<String, Object> deleteAppointmentPermanentAjax(@PathVariable Long id, Authentication authentication) {
+    public Map<String, Object> deleteAppointmentPermanentAjax(@PathVariable java.util.UUID id, Authentication authentication) {
         String adminEmail = authentication.getName();
         
         try {
@@ -892,7 +892,7 @@ public class AdminAppointmentController {
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             
             for (Appointment appointment : appointments.getContent()) {
-                writer.printf("\"%d\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%s\",\"%s\"%n",
+                writer.printf("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%s\",\"%s\"%n",
                     appointment.getId(),
                     appointment.getEffectiveClientName(),
                     appointment.getEffectiveClientEmail(),

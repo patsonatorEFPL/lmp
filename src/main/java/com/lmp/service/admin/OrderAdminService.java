@@ -107,7 +107,7 @@ public class OrderAdminService {
      * Récupère les détails complets d'une commande
      */
     @Transactional(readOnly = true)
-    public OrderDto getOrderDetails(Long orderId) {
+    public OrderDto getOrderDetails(java.util.UUID orderId) {
         logger.info("Récupération détails commande ID: {}", orderId);
 
         Order order = orderRepository.findById(orderId)
@@ -155,7 +155,7 @@ public class OrderAdminService {
     /**
      * Change le statut d'une commande avec validation et historique
      */
-    public OrderDto changeOrderStatus(Long orderId, OrderStatus newStatus, String adminNote) {
+    public OrderDto changeOrderStatus(java.util.UUID orderId, OrderStatus newStatus, String adminNote) {
         logger.info("Changement statut commande {} vers {}", orderId, newStatus);
 
         Order order = orderRepository.findById(orderId)
@@ -192,7 +192,7 @@ public class OrderAdminService {
     /**
      * Annule une commande avec gestion des remboursements
      */
-    public OrderDto cancelOrder(Long orderId, String reason, boolean processRefund) {
+    public OrderDto cancelOrder(java.util.UUID orderId, String reason, boolean processRefund) {
         logger.info("Annulation commande {} avec remboursement: {}", orderId, processRefund);
 
         Order order = orderRepository.findById(orderId)
@@ -241,7 +241,7 @@ public class OrderAdminService {
     /**
      * Met à jour les notes administratives
      */
-    public OrderDto updateAdminNotes(Long orderId, String adminNotes) {
+    public OrderDto updateAdminNotes(java.util.UUID orderId, String adminNotes) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
 
@@ -256,7 +256,7 @@ public class OrderAdminService {
     /**
      * Met à jour la priorité d'une commande
      */
-    public OrderDto updateOrderPriority(Long orderId, Integer priority) {
+    public OrderDto updateOrderPriority(java.util.UUID orderId, Integer priority) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
 
@@ -271,7 +271,7 @@ public class OrderAdminService {
     /**
      * Met à jour les tags d'une commande
      */
-    public OrderDto updateOrderTags(Long orderId, String tags) {
+    public OrderDto updateOrderTags(java.util.UUID orderId, String tags) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
 
@@ -288,7 +288,7 @@ public class OrderAdminService {
     /**
      * Synchronise une commande avec Stripe
      */
-    public OrderDto syncWithStripe(Long orderId) {
+    public OrderDto syncWithStripe(java.util.UUID orderId) {
         logger.info("Synchronisation Stripe pour commande {}", orderId);
 
         Order order = orderRepository.findById(orderId)
@@ -419,7 +419,7 @@ public class OrderAdminService {
     /**
      * Traite plusieurs commandes en lot
      */
-    public List<OrderDto> processBulkAction(List<Long> orderIds, OrderActionDto action) {
+    public List<OrderDto> processBulkAction(List<java.util.UUID> orderIds, OrderActionDto action) {
         logger.info("Action en lot {} sur {} commandes", action.getActionType(), orderIds.size());
 
         return orderIds.stream()
@@ -437,7 +437,7 @@ public class OrderAdminService {
 
     // ========== Méthodes utilitaires privées ==========
 
-    private OrderDto processSingleAction(Long orderId, OrderActionDto action) {
+    private OrderDto processSingleAction(java.util.UUID orderId, OrderActionDto action) {
         switch (action.getActionType()) {
             case "CHANGE_STATUS":
                 OrderStatus newStatus = OrderStatus.valueOf(action.getNewStatus().toUpperCase());

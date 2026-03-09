@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
  */
 public class OrderStatusHistoryDto {
 
-    private Long id;
-    private Long orderId;
+    private java.util.UUID id;
+    private java.util.UUID orderId;
     private String previousStatus;
     private String newStatus;
     private String reason;
@@ -39,7 +39,7 @@ public class OrderStatusHistoryDto {
     // Constructeurs
     public OrderStatusHistoryDto() {}
     
-    public OrderStatusHistoryDto(Long orderId, String previousStatus, String newStatus, String reason) {
+    public OrderStatusHistoryDto(java.util.UUID orderId, String previousStatus, String newStatus, String reason) {
         this.orderId = orderId;
         this.previousStatus = previousStatus;
         this.newStatus = newStatus;
@@ -51,19 +51,19 @@ public class OrderStatusHistoryDto {
     
     // Getters et Setters
     
-    public Long getId() {
+    public java.util.UUID getId() {
         return id;
     }
     
-    public void setId(Long id) {
+    public void setId(java.util.UUID id) {
         this.id = id;
     }
     
-    public Long getOrderId() {
+    public java.util.UUID getOrderId() {
         return orderId;
     }
     
-    public void setOrderId(Long orderId) {
+    public void setOrderId(java.util.UUID orderId) {
         this.orderId = orderId;
     }
     

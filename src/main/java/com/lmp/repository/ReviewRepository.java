@@ -2,6 +2,7 @@ package com.lmp.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,7 +12,7 @@ import com.lmp.domain.entity.Review;
 import com.lmp.domain.entity.User;
 
 @Repository
-public interface ReviewRepository extends JpaRepository<Review, Long> {
+public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findByUser(User user);
     List<Review> findByOrder(Order order);
     Boolean existsByUserAndOrder(User user, Order order);

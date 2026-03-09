@@ -174,7 +174,7 @@ public class AppointmentController {
      */
     @GetMapping("/{id}")
     @ResponseBody
-    public ResponseEntity<Appointment> getAppointment(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Appointment> getAppointment(@PathVariable java.util.UUID id, Principal principal) {
         try {
             User user = userService.findByEmail(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
@@ -197,7 +197,7 @@ public class AppointmentController {
      */
     @PutMapping("/{id}")
     @ResponseBody
-    public ResponseEntity<?> updateAppointment(@PathVariable Long id,
+    public ResponseEntity<?> updateAppointment(@PathVariable java.util.UUID id,
                                              @Valid @RequestBody AppointmentForm form,
                                              BindingResult result,
                                              Principal principal) {
@@ -232,7 +232,7 @@ public class AppointmentController {
      */
     @DeleteMapping("/{id}")
     @ResponseBody
-    public ResponseEntity<?> cancelAppointment(@PathVariable Long id,
+    public ResponseEntity<?> cancelAppointment(@PathVariable java.util.UUID id,
                                              @RequestParam(required = false) String reason,
                                              Principal principal) {
         try {
@@ -308,7 +308,7 @@ public class AppointmentController {
     @PutMapping("/admin/{id}/confirm")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public ResponseEntity<?> confirmAppointment(@PathVariable Long id) {
+    public ResponseEntity<?> confirmAppointment(@PathVariable java.util.UUID id) {
         try {
             appointmentService.confirmAppointment(id);
             return ResponseEntity.ok(new ApiResponse(true, 
@@ -326,7 +326,7 @@ public class AppointmentController {
     @PutMapping("/admin/{id}/start")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public ResponseEntity<?> startAppointment(@PathVariable Long id) {
+    public ResponseEntity<?> startAppointment(@PathVariable java.util.UUID id) {
         try {
             appointmentService.startAppointment(id);
             return ResponseEntity.ok(new ApiResponse(true, 
@@ -344,7 +344,7 @@ public class AppointmentController {
     @PutMapping("/admin/{id}/complete")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public ResponseEntity<?> completeAppointment(@PathVariable Long id) {
+    public ResponseEntity<?> completeAppointment(@PathVariable java.util.UUID id) {
         try {
             appointmentService.completeAppointment(id, "Rendez-vous terminé via interface admin");
             return ResponseEntity.ok(new ApiResponse(true, 
@@ -362,7 +362,7 @@ public class AppointmentController {
     @PutMapping("/admin/{id}/notes")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public ResponseEntity<?> updateAdminNotes(@PathVariable Long id, 
+    public ResponseEntity<?> updateAdminNotes(@PathVariable java.util.UUID id, 
                                             @RequestBody String notes) {
         try {
             appointmentService.updateAdminNotes(id, notes);

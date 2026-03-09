@@ -468,9 +468,9 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         /**
          * Construit les URLs de callback avec les paramètres appropriés
          */
-        private String buildCallbackUrl(String basePath, Long orderId, String type) {
-                String fullUrl = String.format("%s%s?order_id=%d&session_id={CHECKOUT_SESSION_ID}&type=%s",
-                                baseUrl, basePath, orderId, type);
+        private String buildCallbackUrl(String basePath, java.util.UUID orderId, String type) {
+                String fullUrl = String.format("%s%s?order_id=%s&session_id={CHECKOUT_SESSION_ID}&type=%s",
+                                baseUrl, basePath, orderId.toString(), type);
 
                 // LOG DE DIAGNOSTIC : Tracer la construction des URLs de redirection
                 logger.info("STRIPE_URL_DEBUG - Building {} URL for order {}: baseUrl='{}', basePath='{}', fullUrl='{}'",

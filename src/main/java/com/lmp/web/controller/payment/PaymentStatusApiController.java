@@ -40,7 +40,7 @@ public class PaymentStatusApiController {
      * @return JSON avec orderId, status, paymentStatus, ready
      */
     @GetMapping("/{orderId}")
-    public ResponseEntity<Map<String, Object>> getPaymentStatus(@PathVariable Long orderId) {
+    public ResponseEntity<Map<String, Object>> getPaymentStatus(@PathVariable java.util.UUID orderId) {
         log.debug("Polling payment status for order #{}", orderId);
 
         Optional<Order> orderOpt = orderRepository.findById(orderId);
