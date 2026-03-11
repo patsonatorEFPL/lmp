@@ -1,0 +1,155 @@
+import { Component, signal } from '@angular/core';
+import { AppointmentModalComponent } from '../modals/appointment-modal.component';
+
+@Component({
+  selector: 'lmp-contact-fab',
+  standalone: true,
+  imports: [AppointmentModalComponent],
+  styles: [`
+    @keyframes slideInRight {
+      from { transform: translateX(200%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+    @keyframes pulse-glow {
+      0%   { box-shadow: 0 10px 40px rgba(26,60,255,.4), 0 0 0 0   rgba(26,60,255,.4); }
+      50%  { box-shadow: 0 10px 40px rgba(26,60,255,.6), 0 0 0 20px rgba(26,60,255,0);  }
+      100% { box-shadow: 0 10px 40px rgba(26,60,255,.4), 0 0 0 0   rgba(26,60,255,0);  }
+    }
+
+    @keyframes shake {
+      0%,50%,100% { transform: rotate(0deg);   }
+      10%          { transform: rotate(-10deg); }
+      20%          { transform: rotate(10deg);  }
+      30%          { transform: rotate(-10deg); }
+      40%          { transform: rotate(10deg);  }
+    }
+
+    @keyframes shine {
+      0%   { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%)  translateY(100%)  rotate(45deg); }
+    }
+
+    .fab-btn {
+      position:      fixed;
+      bottom:        30px;
+      right:         30px;
+      z-index:       1000;
+      display:       flex;
+      align-items:   center;
+      gap:           8px;
+      padding:       13px 21px;
+      border:        none;
+      border-radius: 42px;
+      background:    linear-gradient(135deg, #1a3cff 0%, #4c63ff 100%);
+      box-shadow:    0 10px 40px rgba(26,60,255,.41);
+      color:         #fff;
+      font-family:   'Poppins', 'Inter', sans-serif;
+      font-size:     11px;
+      font-weight:   700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      cursor:        pointer;
+      overflow:      hidden;
+      transition:    all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      animation:     slideInRight 0.8s ease-out forwards,
+                     pulse-glow   2s ease    infinite;
+    }
+
+    /* Ripple layer */
+    .fab-btn::before {
+      content:          '';
+      position:         absolute;
+      top:              50%;
+      left:             50%;
+      width:            0;
+      height:           0;
+      border-radius:    50%;
+      background:       rgba(255,255,255,.3);
+      transform:        translate(-50%, -50%);
+      transition:       width .6s, height .6s;
+    }
+    .fab-btn:hover::before {
+      width:  300px;
+      height: 300px;
+    }
+
+    /* Shine sweep */
+    .fab-btn::after {
+      content:    '';
+      position:   absolute;
+      top:        -50%;
+      left:       -50%;
+      width:      200%;
+      height:     200%;
+      background: linear-gradient(45deg,
+        transparent 30%,
+        rgba(255,255,255,.1) 50%,
+        transparent 70%
+      );
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+
+    .fab-btn:hover {
+      transform:  translateY(-6px) scale(1.05);
+      box-shadow: 0 14px 42px rgba(26,60,255,.5);
+      background: linear-gradient(135deg, #1533cc 0%, #3d52ff 100%);
+    }
+
+    .fab-btn:active {
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .contact-icon {
+      font-size:   17px;
+      display:     inline-flex;
+      align-items: center;
+      position:    relative;
+      z-index:     2;
+      animation:   shake 2s infinite;
+      animation-delay: 0.5s;
+    }
+
+    .contact-text {
+      position: relative;
+      z-index:  2;
+    }
+
+    @media (max-width: 768px) {
+      .fab-btn         { bottom: 20px; right: 20px; padding: 10px 17px; font-size: 10px; }
+      .contact-icon    { font-size: 14px; }
+    }
+
+    @media (max-width: 480px) {
+      .fab-btn {
+        bottom:         15px;
+        right:          15px;
+        width:          48px;
+        height:         48px;
+        padding:        0;
+        border-radius:  50%;
+        justify-content: center;
+      }
+      .contact-text { display: none; }
+    }
+  `],
+  template: `
+    <button class="fab-btn" (click)="openModal()">
+      <span class="contact-icon">💬</span>
+      <span class="contact-text">CONTACTEZ-NOUS</span>
+    </button>
+
+    <lmp-appointment-modal
+      [isOpen]="isModalOpen()"
+      (closed)="isModalOpen.set(false)"
+    />
+  `,
+})
+export class ContactFabComponent {
+  readonly isModalOpen = signal(false);
+
+  openModal(): void {
+    this.isModalOpen.set(true);
+  }
+}
