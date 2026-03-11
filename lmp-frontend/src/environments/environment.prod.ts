@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://lmp-services.be',
-  apiBaseUrl: 'https://lmp-services.be/api/v1',
+  apiUrl: '', // Relatif, le navigateur utilisera le domaine courant
+  apiBaseUrl: '/api/v1', // Relatif au domaine courant
   appName: 'LMP Digital Services',
 };
