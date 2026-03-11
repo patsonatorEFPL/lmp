@@ -15,7 +15,7 @@
 
     <main>
         <!-- Hero Section -->
-        <section class="bg-gradient-to-br from-base-200 to-base-100 py-16 lg:py-24 section-animation">
+        <section class="bg-gradient-to-br from-base-200 to-base-100 py-16 lg:py-24 fade-in-up">
             <div class="container mx-auto px-4">
                 <div class="text-center max-w-4xl mx-auto">
                     <h1 class="text-4xl lg:text-5xl xl:text-6xl font-bold text-base-content mb-6 leading-tight">
@@ -30,7 +30,7 @@
         </section>
 
         <!-- Contact Section -->
-        <section class="py-16 bg-base-100 section-animation">
+        <section class="py-16 bg-base-100 slide-in-left">
             <div class="container mx-auto px-4">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     <!-- Contact Information -->
@@ -55,7 +55,6 @@
                                     <p class="text-sm text-base-content/50">Réponse sous 24h</p>
                                 </div>
                             </div>
-
 
                             <div class="flex items-start space-x-4">
                                 <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -84,24 +83,24 @@
                         <div class="pt-6 border-t border-base-200">
                             <h3 class="font-semibold text-base-content mb-4">Suivez-nous</h3>
                             <div class="flex space-x-4">
-                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-all">
-                                    <i class="fab fa-linkedin text-primary hover:text-white" aria-label="LinkedIn LMP marketing digital"></i>
+                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" aria-label="LinkedIn">
+                                    <i class="fab fa-linkedin"></i>
                                 </a>
-                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-all">
-                                    <i class="fab fa-twitter text-primary hover:text-white" aria-label="Twitter LMP actualités marketing local"></i>
+                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" aria-label="Twitter">
+                                    <i class="fab fa-twitter"></i>
                                 </a>
-                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-all">
-                                    <i class="fab fa-facebook text-primary hover:text-white" aria-label="Facebook LMP services référencement local"></i>
+                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" aria-label="Facebook">
+                                    <i class="fab fa-facebook"></i>
                                 </a>
-                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-all">
-                                    <i class="fab fa-instagram text-primary hover:text-white" aria-label="Instagram LMP projets marketing"></i>
+                                <a href="#" class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" aria-label="Instagram">
+                                    <i class="fab fa-instagram"></i>
                                 </a>
                             </div>
                         </div>
                     </div>
 
                     <!-- Contact Form -->
-                    <div class="bg-base-100 border border-base-200 rounded-xl p-8 shadow-lg form-animation delay-200">
+                    <div class="bg-base-100 border border-base-200 rounded-xl p-8 shadow-lg flip-in-y delay-200">
                         <h3 class="text-2xl font-bold text-base-content mb-6">Formulaire Contact SEO</h3>
                         
                         <!-- Message d'erreur globale -->
@@ -187,7 +186,7 @@
         </section>
 
         <!-- FAQ Section -->
-        <section class="py-16 bg-base-200/50 section-animation">
+        <section class="py-16 bg-base-200/50 blur-in">
             <div class="container mx-auto px-4">
                 <div class="text-center mb-12">
                     <h2 class="text-3xl lg:text-4xl font-bold text-base-content mb-4">FAQ Services Marketing Digital</h2>
@@ -196,44 +195,70 @@
                     </p>
                 </div>
 
-                <div class="max-w-4xl mx-auto space-y-6">
-                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200 fade-in-up delay-100">
-                        <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
+                <div class="max-w-4xl mx-auto space-y-4">
+                    <!-- FAQ 1 -->
+                    <div class="bg-base-100 rounded-xl shadow-sm border border-base-200 stagger-fade-up delay-100">
+                        <button onclick="toggleFAQ(this)" class="w-full text-left p-6 flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Délais Résultats SEO</h3>
-                            <i class="fas fa-chevron-down text-primary transition-transform"></i>
+                            <i class="fas fa-chevron-down text-primary transition-transform duration-300"></i>
                         </button>
-                        <div class="hidden mt-4 text-base-content/80">
-                            <p>Les premiers résultats peuvent être visibles en 2-4 semaines, mais une stratégie complète nécessite généralement 3-6 mois pour des résultats optimaux.</p>
+                        <div class="hidden px-6 pb-6 text-base-content/80">
+                            <p>Les premiers résultats peuvent être visibles en 2-4 semaines, mais une stratégie complète nécessite généralement 3-6 mois pour des résultats optimaux. Nous fournissons des rapports mensuels détaillés pour suivre l'évolution de votre positionnement.</p>
                         </div>
                     </div>
 
-                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200 fade-in-up delay-200">
-                        <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
+                    <!-- FAQ 2 -->
+                    <div class="bg-base-100 rounded-xl shadow-sm border border-base-200 stagger-fade-up delay-200">
+                        <button onclick="toggleFAQ(this)" class="w-full text-left p-6 flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Consultation Gratuite Marketing</h3>
-                            <i class="fas fa-chevron-down text-primary transition-transform"></i>
+                            <i class="fas fa-chevron-down text-primary transition-transform duration-300"></i>
                         </button>
-                        <div class="hidden mt-4 text-base-content/80">
-                            <p>Oui, nous offrons une consultation gratuite de 30 minutes pour évaluer vos besoins et vous proposer une stratégie personnalisée.</p>
+                        <div class="hidden px-6 pb-6 text-base-content/80">
+                            <p>Oui, nous offrons une consultation gratuite de 30 minutes pour évaluer vos besoins et vous proposer une stratégie personnalisée. Prenez rendez-vous directement sur notre site ou envoyez-nous un email.</p>
                         </div>
                     </div>
 
-                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200 fade-in-up delay-300">
-                        <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
+                    <!-- FAQ 3 -->
+                    <div class="bg-base-100 rounded-xl shadow-sm border border-base-200 stagger-fade-up delay-300">
+                        <button onclick="toggleFAQ(this)" class="w-full text-left p-6 flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Quels types d'entreprises accompagnez-vous ?</h3>
-                            <i class="fas fa-chevron-down text-primary transition-transform"></i>
+                            <i class="fas fa-chevron-down text-primary transition-transform duration-300"></i>
                         </button>
-                        <div class="hidden mt-4 text-base-content/80">
-                            <p>Nous accompagnons tous types d'entreprises : restaurants, commerces, services professionnels, artisans, et plus encore. Chaque secteur a ses spécificités que nous maîtrisons.</p>
+                        <div class="hidden px-6 pb-6 text-base-content/80">
+                            <p>Nous accompagnons tous types d'entreprises : restaurants, commerces, services professionnels, artisans, et plus encore. Chaque secteur a ses spécificités que nous maîtrisons parfaitement.</p>
                         </div>
                     </div>
 
-                    <div class="bg-base-100 rounded-xl p-6 shadow-sm border border-base-200 fade-in-up delay-400">
-                        <button onclick="toggleFAQ(this)" class="w-full text-left flex items-center justify-between">
+                    <!-- FAQ 4 -->
+                    <div class="bg-base-100 rounded-xl shadow-sm border border-base-200 stagger-fade-up delay-400">
+                        <button onclick="toggleFAQ(this)" class="w-full text-left p-6 flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-base-content">Proposez-vous un suivi des performances ?</h3>
-                            <i class="fas fa-chevron-down text-primary transition-transform"></i>
+                            <i class="fas fa-chevron-down text-primary transition-transform duration-300"></i>
                         </button>
-                        <div class="hidden mt-4 text-base-content/80">
+                        <div class="hidden px-6 pb-6 text-base-content/80">
                             <p>Absolument ! Nous fournissons des rapports mensuels détaillés avec des métriques clés : trafic, conversions, positionnement, et ROI de vos investissements.</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 5 -->
+                    <div class="bg-base-100 rounded-xl shadow-sm border border-base-200 stagger-fade-up delay-500">
+                        <button onclick="toggleFAQ(this)" class="w-full text-left p-6 flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-base-content">Comment fonctionne la gestion des avis Google ?</h3>
+                            <i class="fas fa-chevron-down text-primary transition-transform duration-300"></i>
+                        </button>
+                        <div class="hidden px-6 pb-6 text-base-content/80">
+                            <p>Notre service de gestion des avis inclut la surveillance 24/7 de vos avis Google, la rédaction de réponses professionnelles, et des stratégies proactives pour encourager les avis positifs de vos clients satisfaits.</p>
+                        </div>
+                    </div>
+
+                    <!-- FAQ 6 -->
+                    <div class="bg-base-100 rounded-xl shadow-sm border border-base-200 stagger-fade-up delay-500">
+                        <button onclick="toggleFAQ(this)" class="w-full text-left p-6 flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-base-content">Quelles garanties offrez-vous ?</h3>
+                            <i class="fas fa-chevron-down text-primary transition-transform duration-300"></i>
+                        </button>
+                        <div class="hidden px-6 pb-6 text-base-content/80">
+                            <p>Nous offrons une garantie de satisfaction sur tous nos services premium. Si vous n'êtes pas satisfait des résultats après la période d'engagement, nous travaillons gratuitement jusqu'à atteindre les objectifs fixés ensemble.</p>
                         </div>
                     </div>
                 </div>
@@ -241,7 +266,7 @@
         </section>
 
         <!-- CTA Section -->
-        <section class="py-16 bg-base-200 text-base-content section-animation">
+        <section class="py-16 bg-base-200 text-base-content zoom-in-bounce">
             <div class="container mx-auto px-4 text-center">
                 <h2 class="text-3xl lg:text-4xl font-bold mb-6">
                     Démarrer Votre Projet SEO
@@ -250,13 +275,17 @@
                     Rejoignez des centaines d'entreprises qui ont déjà transformé leur présence en ligne avec LMP.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="mailto:lmp.assistance@gmail.com" class="bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-all duration-200 text-center">
-                        📧 Nous contacter par email
+                    <a href="mailto:lmp.assistance@gmail.com" class="btn btn-primary btn-lg rounded-full shadow-lg hover:shadow-xl gap-2">
+                        <i class="fas fa-envelope"></i>
+                        Nous contacter par email
                     </a>
                 </div>
             </div>
         </section>
     </main>
+
+    <!-- Bouton flottant CONTACTEZ-NOUS -->
+    <th:block th:replace="~{fragments/floating-contact-button :: floating-contact-button}"></th:block>
 
     <!-- Footer -->
     <th:block th:replace="~{fragments/footer :: footer}"></th:block>
@@ -270,8 +299,6 @@
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
         }
-
-        // Fonction de contact supprimée - utilisation de la soumission HTML native vers Spring Boot
 
         function toggleFAQ(button) {
             const content = button.nextElementSibling;

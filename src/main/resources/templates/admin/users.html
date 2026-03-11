@@ -212,25 +212,25 @@
                                 </td>
                                 <td style="text-align:center;">
                                     <div class="db-table-actions" style="justify-content:center;">
-                                        <button class="db-action-btn" th:onclick="'showUserDetails(' + ${user.id} + ')'" title="Détails">
+                                        <button class="db-action-btn" th:attr="data-uid=${user.id}" onclick="showUserDetails(this.getAttribute('data-uid'))" title="Détails">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="db-action-btn" th:onclick="'editUser(' + ${user.id} + ')'" title="Éditer">
+                                        <button class="db-action-btn" th:attr="data-uid=${user.id}" onclick="editUser(this.getAttribute('data-uid'))" title="Éditer">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button th:if="${user.status.name() == 'ACTIVE'}" class="db-action-btn" th:onclick="'deactivateUser(' + ${user.id} + ')'" title="Désactiver">
+                                        <button th:if="${user.status.name() == 'ACTIVE'}" class="db-action-btn" th:attr="data-uid=${user.id}" onclick="deactivateUser(this.getAttribute('data-uid'))" title="Désactiver">
                                             <i class="fas fa-user-times"></i>
                                         </button>
-                                        <button th:if="${user.status.name() != 'ACTIVE'}" class="db-action-btn" th:onclick="'activateUser(' + ${user.id} + ')'" title="Activer">
+                                        <button th:if="${user.status.name() != 'ACTIVE'}" class="db-action-btn" th:attr="data-uid=${user.id}" onclick="activateUser(this.getAttribute('data-uid'))" title="Activer">
                                             <i class="fas fa-user-check"></i>
                                         </button>
-                                        <button th:if="${user.accountLocked}" class="db-action-btn" th:onclick="'unlockUser(' + ${user.id} + ')'" title="Déverrouiller">
+                                        <button th:if="${user.accountLocked}" class="db-action-btn" th:attr="data-uid=${user.id}" onclick="unlockUser(this.getAttribute('data-uid'))" title="Déverrouiller">
                                             <i class="fas fa-unlock"></i>
                                         </button>
-                                        <button th:unless="${user.accountLocked}" class="db-action-btn db-action-btn-danger" th:onclick="'lockUser(' + ${user.id} + ')'" title="Verrouiller">
+                                        <button th:unless="${user.accountLocked}" class="db-action-btn db-action-btn-danger" th:attr="data-uid=${user.id}" onclick="lockUser(this.getAttribute('data-uid'))" title="Verrouiller">
                                             <i class="fas fa-lock"></i>
                                         </button>
-                                        <button class="db-action-btn db-action-btn-danger" th:onclick="'deleteUser(' + ${user.id} + ')'" title="Supprimer">
+                                        <button class="db-action-btn db-action-btn-danger" th:attr="data-uid=${user.id}" onclick="deleteUser(this.getAttribute('data-uid'))" title="Supprimer">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>

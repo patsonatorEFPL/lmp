@@ -1,0 +1,691 @@
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { NgClass, DatePipe, CurrencyPipe, SlicePipe } from '@angular/common';
+import {
+  LucideAngularModule,
+  ShoppingCart,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Eye,
+  X,
+  Check,
+  Save,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+  MessageSquare,
+  FileText,
+} from 'lucide-angular';
+import { FormsModule } from '@angular/forms';
+import { HlmButton } from '@spartan-ng/helm/button';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+
+interface OrderItem {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  serviceName: string;
+  amount: number;
+  status: string;
+  createdAt: string;
+  paidAt: string | null;
+  progressPercentage?: number;
+  progressStatus?: string;
+  processingNotes?: string;
+}
+
+interface OrderDetail {
+  id: string;
+  serviceName: string;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  createdAt: string;
+  paidAt: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  notes: string | null;
+  adminNotes: string | null;
+  processingNotes: string | null;
+  progressPercentage: number;
+  progressStatus: string | null;
+  priority: number;
+  stripeSessionId: string | null;
+  stripePaymentIntentId: string | null;
+  cancellationReason: string | null;
+  userEmail: string | null;
+  userName: string | null;
+  userId: string | null;
+}
+
+interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
+// Order progress steps with thresholds
+const ORDER_STEPS = [
+  { label: 'Commande reçue', threshold: 0, status: 'PENDING' },
+  { label: 'Paiement confirmé', threshold: 10, status: 'CONFIRMED' },
+  { label: 'En traitement', threshold: 30, status: 'PROCESSING' },
+  { label: 'En cours', threshold: 50, status: 'IN_PROGRESS' },
+  { label: 'Livraison', threshold: 80, status: 'SHIPPED' },
+  { label: 'Terminée', threshold: 100, status: 'COMPLETED' },
+];
+
+@Component({
+  selector: 'lmp-admin-orders',
+  standalone: true,
+  imports: [NgClass, DatePipe, CurrencyPipe, SlicePipe, FormsModule, LucideAngularModule, HlmButton],
+  template: `
+    <!-- Header -->
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="font-display text-2xl font-bold text-(--foreground)">
+          Gestion des Commandes
+        </h1>
+        <p class="mt-1 text-sm text-(--muted-foreground)">
+          {{ totalOrders() }} commandes au total
+        </p>
+      </div>
+      <button
+        hlmBtn variant="ghost" size="icon" class="cursor-pointer"
+        (click)="loadOrders()"
+      >
+        <lucide-icon
+          [img]="RefreshCwIcon" [size]="18"
+          [ngClass]="{ 'animate-spin': loading() }"
+        ></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="mt-6 flex items-center gap-3">
+      <select
+        [(ngModel)]="statusFilter"
+        (change)="currentPage.set(0); loadOrders()"
+        class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
+      >
+        <option value="">Tous les statuts</option>
+        <option value="PAYMENT_PENDING">Paiement en attente</option>
+        <option value="PENDING">En attente</option>
+        <option value="CONFIRMED">Confirmées</option>
+        <option value="PROCESSING">En traitement</option>
+        <option value="IN_PROGRESS">En cours</option>
+        <option value="SHIPPED">Expédiées</option>
+        <option value="COMPLETED">Terminées</option>
+        <option value="CANCELLED">Annulées</option>
+        <option value="REFUNDED">Remboursées</option>
+      </select>
+    </div>
+
+    <!-- Orders table -->
+    <div class="mt-6 overflow-x-auto rounded-xl border border-(--border) bg-(--card)">
+      @if (loading()) {
+        <div class="flex items-center justify-center py-12">
+          <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-(--muted-foreground)"></lucide-icon>
+        </div>
+      } @else {
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-(--border) text-left">
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">ID</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Client</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Service</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Montant</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Statut</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Progression</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Date</th>
+              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (order of orders(); track order.id) {
+              <tr class="border-b border-(--border) last:border-0 transition-colors hover:bg-(--accent)/50">
+                <td class="px-4 py-3 font-mono text-xs text-(--muted-foreground)">
+                  {{ order.id | slice:0:8 }}...
+                </td>
+                <td class="px-4 py-3">
+                  <div>
+                    <p class="font-medium text-(--foreground)">{{ order.customerName || '—' }}</p>
+                    <p class="text-xs text-(--muted-foreground)">{{ order.customerEmail || '—' }}</p>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-(--foreground)">{{ order.serviceName }}</td>
+                <td class="px-4 py-3 font-semibold text-(--foreground)">
+                  {{ order.amount | currency:'EUR':'symbol':'1.2-2' }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    [ngClass]="getStatusClass(order.status)"
+                  >
+                    {{ getStatusLabel(order.status) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2">
+                    <div class="h-1.5 w-16 overflow-hidden rounded-full bg-(--muted)">
+                      <div
+                        class="h-full rounded-full transition-all"
+                        [ngClass]="getProgressBarClass(order.progressPercentage || 0)"
+                        [style.width.%]="order.progressPercentage || 0"
+                      ></div>
+                    </div>
+                    <span class="text-xs text-(--muted-foreground)">{{ order.progressPercentage || 0 }}%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-(--muted-foreground)">
+                  {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+                <td class="px-4 py-3">
+                  <button
+                    hlmBtn variant="ghost" size="icon"
+                    class="h-8 w-8 cursor-pointer"
+                    (click)="viewOrderDetail(order.id)"
+                    title="Voir les détails"
+                  >
+                    <lucide-icon [img]="EyeIcon" [size]="16" class="text-(--primary)"></lucide-icon>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="px-4 py-12 text-center text-(--muted-foreground)">
+                  Aucune commande trouvée
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="mt-4 flex items-center justify-between">
+        <p class="text-xs text-(--muted-foreground)">
+          Page {{ currentPage() + 1 }} sur {{ totalPages() }}
+        </p>
+        <div class="flex items-center gap-1">
+          <button
+            hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+            [disabled]="currentPage() === 0"
+            (click)="changePage(currentPage() - 1)"
+          >
+            <lucide-icon [img]="ChevronLeftIcon" [size]="16"></lucide-icon>
+          </button>
+          <button
+            hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+            [disabled]="currentPage() >= totalPages() - 1"
+            (click)="changePage(currentPage() + 1)"
+          >
+            <lucide-icon [img]="ChevronRightIcon" [size]="16"></lucide-icon>
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Order Detail Modal -->
+    @if (showDetailModal()) {
+      <div
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        (click)="closeDetailModal()"
+      >
+        <div
+          class="mx-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          (click)="$event.stopPropagation()"
+        >
+          @if (loadingDetail()) {
+            <div class="flex items-center justify-center py-16">
+              <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-(--primary)"></lucide-icon>
+            </div>
+          } @else if (orderDetail()) {
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
+              <div>
+                <h3 class="font-display text-lg font-bold text-(--foreground)">
+                  Détail de la commande
+                </h3>
+                <p class="font-mono text-xs text-(--muted-foreground)">{{ orderDetail()!.id }}</p>
+              </div>
+              <button
+                hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+                (click)="closeDetailModal()"
+              >
+                <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+              </button>
+            </div>
+
+            <!-- Order Info -->
+            <div class="px-6 py-5 space-y-6">
+              <!-- Summary Cards -->
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <p class="text-xs text-(--muted-foreground)">Montant</p>
+                  <p class="mt-1 font-display text-lg font-bold text-(--foreground)">
+                    {{ orderDetail()!.totalAmount | currency:(orderDetail()!.currency || 'EUR'):'symbol':'1.2-2' }}
+                  </p>
+                </div>
+                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <p class="text-xs text-(--muted-foreground)">Statut</p>
+                  <span
+                    class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    [ngClass]="getStatusClass(orderDetail()!.status)"
+                  >
+                    {{ getStatusLabel(orderDetail()!.status) }}
+                  </span>
+                </div>
+                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <p class="text-xs text-(--muted-foreground)">Paiement</p>
+                  <p class="mt-1 text-sm font-medium text-(--foreground)">
+                    {{ orderDetail()!.paymentStatus || '—' }}
+                  </p>
+                </div>
+                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <p class="text-xs text-(--muted-foreground)">Date</p>
+                  <p class="mt-1 text-sm text-(--foreground)">
+                    {{ orderDetail()!.createdAt | date:'dd/MM/yy' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Client Info -->
+              <div>
+                <p class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Client</p>
+                <div class="mt-2 flex items-center gap-3 rounded-lg border border-(--border) bg-(--background) p-3">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">
+                    <lucide-icon [img]="ShoppingCartIcon" [size]="16"></lucide-icon>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-(--foreground)">{{ orderDetail()!.userName || '—' }}</p>
+                    <p class="text-xs text-(--muted-foreground)">{{ orderDetail()!.userEmail || '—' }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="h-px bg-(--border)"></div>
+
+              <!-- Progress Section -->
+              <div>
+                <div class="flex items-center gap-2 mb-4">
+                  <lucide-icon [img]="TrendingUpIcon" [size]="18" class="text-(--primary)"></lucide-icon>
+                  <h4 class="text-sm font-semibold text-(--foreground)">Progression de la commande</h4>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="relative mb-6">
+                  <div class="h-2 w-full overflow-hidden rounded-full bg-(--muted)">
+                    <div
+                      class="h-full rounded-full transition-all duration-500"
+                      [ngClass]="getProgressBarClass(editProgressForm.percentage)"
+                      [style.width.%]="editProgressForm.percentage"
+                    ></div>
+                  </div>
+                  <div class="mt-1 flex items-center justify-between">
+                    <span class="text-xs text-(--muted-foreground)">0%</span>
+                    <span class="text-sm font-bold" [ngClass]="getProgressTextClass(editProgressForm.percentage)">
+                      {{ editProgressForm.percentage }}%
+                    </span>
+                    <span class="text-xs text-(--muted-foreground)">100%</span>
+                  </div>
+                </div>
+
+                <!-- Steps Timeline -->
+                <div class="space-y-2 mb-4">
+                  @for (step of orderSteps; track step.threshold) {
+                    <div
+                      class="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
+                      [ngClass]="editProgressForm.percentage >= step.threshold
+                        ? 'bg-(--primary)/5'
+                        : 'opacity-40'"
+                    >
+                      <div
+                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white transition-all"
+                        [ngClass]="editProgressForm.percentage >= step.threshold
+                          ? 'bg-(--primary) scale-100'
+                          : 'bg-(--muted-foreground) scale-90'"
+                      >
+                        @if (editProgressForm.percentage >= step.threshold) {
+                          <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+                        } @else {
+                          <lucide-icon [img]="ClockIcon" [size]="14"></lucide-icon>
+                        }
+                      </div>
+                      <span class="text-sm font-medium text-(--foreground)">{{ step.label }}</span>
+                    </div>
+                  }
+                </div>
+
+                <!-- Editable Fields -->
+                <div class="space-y-3 rounded-lg border border-(--border) bg-(--background) p-4">
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                      Progression (%)
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      [(ngModel)]="editProgressForm.percentage"
+                      class="w-full accent-(--primary) cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                      Statut de la commande
+                    </label>
+                    <select
+                      [(ngModel)]="editProgressForm.status"
+                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
+                    >
+                      <option value="PAYMENT_PENDING">Paiement en attente</option>
+                      <option value="PENDING">En attente</option>
+                      <option value="CONFIRMED">Confirmée</option>
+                      <option value="PROCESSING">En traitement</option>
+                      <option value="IN_PROGRESS">En cours</option>
+                      <option value="SHIPPED">Expédiée</option>
+                      <option value="DELIVERED">Livrée</option>
+                      <option value="COMPLETED">Terminée</option>
+                      <option value="CANCELLED">Annulée</option>
+                      <option value="REFUNDED">Remboursée</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                      <lucide-icon [img]="MessageSquareIcon" [size]="12" class="inline mr-1"></lucide-icon>
+                      Message de progression (visible par le client)
+                    </label>
+                    <textarea
+                      [(ngModel)]="editProgressForm.progressMessage"
+                      rows="2"
+                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                      placeholder="Ex: Votre projet est en cours de réalisation..."
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                      <lucide-icon [img]="FileTextIcon" [size]="12" class="inline mr-1"></lucide-icon>
+                      Notes internes (admin uniquement)
+                    </label>
+                    <textarea
+                      [(ngModel)]="editProgressForm.adminNotes"
+                      rows="2"
+                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                      placeholder="Notes internes..."
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end gap-2 border-t border-(--border) px-6 py-4">
+              <button
+                hlmBtn variant="outline" size="sm" class="cursor-pointer"
+                (click)="closeDetailModal()"
+              >
+                Fermer
+              </button>
+              <button
+                hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+                [disabled]="savingProgress()"
+                (click)="saveOrderProgress()"
+              >
+                @if (savingProgress()) {
+                  <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                } @else {
+                  <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
+                }
+                Enregistrer
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Toast -->
+    @if (toast()) {
+      <div
+        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg"
+        [ngClass]="{
+          'border-emerald-500/30 bg-emerald-500/10 text-emerald-500': toast()!.type === 'success',
+          'border-red-500/30 bg-red-500/10 text-red-500': toast()!.type === 'error',
+        }"
+      >
+        @if (toast()!.type === 'success') {
+          <lucide-icon [img]="CheckIcon" [size]="16"></lucide-icon>
+        } @else {
+          <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+        }
+        <span class="text-sm font-medium">{{ toast()!.message }}</span>
+      </div>
+    }
+  `,
+})
+export class AdminOrdersComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+
+  readonly RefreshCwIcon = RefreshCw;
+  readonly ChevronLeftIcon = ChevronLeft;
+  readonly ChevronRightIcon = ChevronRight;
+  readonly Loader2Icon = Loader2;
+  readonly EyeIcon = Eye;
+  readonly XIcon = X;
+  readonly CheckIcon = Check;
+  readonly SaveIcon = Save;
+  readonly ClockIcon = Clock;
+  readonly CheckCircleIcon = CheckCircle;
+  readonly XCircleIcon = XCircle;
+  readonly AlertCircleIcon = AlertCircle;
+  readonly ShoppingCartIcon = ShoppingCart;
+  readonly TrendingUpIcon = TrendingUp;
+  readonly MessageSquareIcon = MessageSquare;
+  readonly FileTextIcon = FileText;
+
+  readonly loading = signal(false);
+  readonly loadingDetail = signal(false);
+  readonly savingProgress = signal(false);
+  readonly orders = signal<OrderItem[]>([]);
+  readonly totalOrders = signal(0);
+  readonly totalPages = signal(0);
+  readonly currentPage = signal(0);
+  readonly showDetailModal = signal(false);
+  readonly orderDetail = signal<OrderDetail | null>(null);
+  readonly toast = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  statusFilter = '';
+  readonly orderSteps = ORDER_STEPS;
+
+  editProgressForm = {
+    percentage: 0,
+    status: 'PENDING',
+    progressMessage: '',
+    adminNotes: '',
+  };
+
+  ngOnInit(): void {
+    this.loadOrders();
+  }
+
+  loadOrders(): void {
+    this.loading.set(true);
+    const params: Record<string, string> = {
+      page: this.currentPage().toString(),
+      size: '20',
+    };
+    if (this.statusFilter) params['status'] = this.statusFilter;
+
+    this.http
+      .get<ApiResponse<PageResponse<OrderItem>>>(
+        `${environment.apiUrl}/api/v1/admin/orders`,
+        { params, withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          const page = res.data!;
+          this.orders.set(page.content.map(o => ({
+            ...o,
+            customerName: (o as any).userName || (o as any).customerName || '',
+            customerEmail: (o as any).userEmail || (o as any).customerEmail || '',
+            amount: (o as any).totalAmount || (o as any).amount || 0,
+          })));
+          this.totalOrders.set(page.totalElements);
+          this.totalPages.set(page.totalPages);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+        },
+      });
+  }
+
+  changePage(page: number): void {
+    this.currentPage.set(page);
+    this.loadOrders();
+  }
+
+  // ========== Order Detail ==========
+
+  viewOrderDetail(orderId: string): void {
+    this.loadingDetail.set(true);
+    this.showDetailModal.set(true);
+
+    this.http
+      .get<ApiResponse<OrderDetail>>(
+        `${environment.apiUrl}/api/v1/admin/orders/${orderId}`,
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          const detail = res.data!;
+          this.orderDetail.set(detail);
+          this.editProgressForm = {
+            percentage: detail.progressPercentage || 0,
+            status: detail.status || 'PENDING',
+            progressMessage: detail.processingNotes || '',
+            adminNotes: detail.adminNotes || '',
+          };
+          this.loadingDetail.set(false);
+        },
+        error: () => {
+          this.loadingDetail.set(false);
+          this.showToast('error', 'Impossible de charger les détails');
+          this.showDetailModal.set(false);
+        },
+      });
+  }
+
+  closeDetailModal(): void {
+    this.showDetailModal.set(false);
+    this.orderDetail.set(null);
+  }
+
+  saveOrderProgress(): void {
+    const detail = this.orderDetail();
+    if (!detail) return;
+
+    this.savingProgress.set(true);
+
+    const payload = {
+      status: this.editProgressForm.status,
+      progressPercentage: this.editProgressForm.percentage,
+      progressStatus: this.editProgressForm.progressMessage,
+      processingNotes: this.editProgressForm.progressMessage,
+      adminNotes: this.editProgressForm.adminNotes,
+    };
+
+    this.http
+      .put<ApiResponse<void>>(
+        `${environment.apiUrl}/api/v1/admin/orders/${detail.id}`,
+        payload,
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          this.showToast('success', 'Commande mise à jour');
+          this.savingProgress.set(false);
+          this.closeDetailModal();
+          this.loadOrders();
+        },
+        error: () => {
+          this.showToast('error', 'Erreur lors de la mise à jour');
+          this.savingProgress.set(false);
+        },
+      });
+  }
+
+  // ========== Helpers ==========
+
+  getStatusClass(status: string): string {
+    switch (status) {
+      case 'COMPLETED': return 'bg-green-500/10 text-green-500';
+      case 'DELIVERED': return 'bg-green-500/10 text-green-500';
+      case 'CONFIRMED': return 'bg-blue-500/10 text-blue-500';
+      case 'PROCESSING': return 'bg-amber-500/10 text-amber-500';
+      case 'IN_PROGRESS': return 'bg-amber-500/10 text-amber-500';
+      case 'SHIPPED': return 'bg-indigo-500/10 text-indigo-500';
+      case 'PENDING': return 'bg-yellow-500/10 text-yellow-500';
+      case 'PAYMENT_PENDING': return 'bg-orange-500/10 text-orange-500';
+      case 'CANCELLED': return 'bg-red-500/10 text-red-500';
+      case 'REFUNDED': return 'bg-violet-500/10 text-violet-500';
+      default: return 'bg-gray-500/10 text-gray-400';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'COMPLETED': return 'Terminée';
+      case 'DELIVERED': return 'Livrée';
+      case 'CONFIRMED': return 'Confirmée';
+      case 'PROCESSING': return 'En traitement';
+      case 'IN_PROGRESS': return 'En cours';
+      case 'SHIPPED': return 'Expédiée';
+      case 'PENDING': return 'En attente';
+      case 'PAYMENT_PENDING': return 'Paiement en attente';
+      case 'CANCELLED': return 'Annulée';
+      case 'REFUNDED': return 'Remboursée';
+      default: return status;
+    }
+  }
+
+  getProgressBarClass(percentage: number): string {
+    if (percentage >= 100) return 'bg-emerald-500';
+    if (percentage >= 60) return 'bg-blue-500';
+    if (percentage >= 30) return 'bg-amber-500';
+    return 'bg-orange-500';
+  }
+
+  getProgressTextClass(percentage: number): string {
+    if (percentage >= 100) return 'text-emerald-500';
+    if (percentage >= 60) return 'text-blue-500';
+    if (percentage >= 30) return 'text-amber-500';
+    return 'text-orange-500';
+  }
+
+  private showToast(type: 'success' | 'error', message: string): void {
+    this.toast.set({ type, message });
+    setTimeout(() => this.toast.set(null), 3000);
+  }
+}

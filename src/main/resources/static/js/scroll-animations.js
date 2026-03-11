@@ -83,7 +83,15 @@ class ScrollAnimationManager {
             '.nav-animation',
             '.icon-animation',
             '.hero-animation',
-            '.section-animation'
+            '.section-animation',
+            '.rotate-in',
+            '.blur-in',
+            '.zoom-in-bounce',
+            '.slide-in-left',
+            '.slide-in-right',
+            '.flip-in-y',
+            '.stagger-fade-up',
+            '.clip-reveal-up'
         ];
         
         selectors.forEach(selector => {
