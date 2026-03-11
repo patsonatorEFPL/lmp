@@ -73,3 +73,12 @@ ${project.build.directory}/
 ### Tool Documentation & Scripts ###
 docs/
 /scripts/
+LMP/
+
+### Temporary/Debug Files ###
+git_status.txt
+preview_payment.py
+take_screenshots.py
+
+### Deployment-Specific Config ###
+docker-compose.coolify.yml
