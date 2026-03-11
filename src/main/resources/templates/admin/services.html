@@ -125,11 +125,12 @@
                                         th:data-cat-name="${cat.name}"
                                         th:data-cat-icon="${cat.icon}"
                                         th:data-cat-order="${cat.displayOrder}"
-                                        onclick="event.stopPropagation();editCategory(parseInt(this.dataset.catId), this.dataset.catName, this.dataset.catIcon, parseInt(this.dataset.catOrder))">
+                                     onclick="event.stopPropagation();editCategory(this.dataset.catId, this.dataset.catName, this.dataset.catIcon, parseInt(this.dataset.catOrder))">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <button class="db-action-btn db-action-btn-danger" style="width:22px;height:22px;font-size:10px;"
-                                        th:onclick="'event.stopPropagation();deleteCategory(' + ${cat.id} + ')'">
+                                         th:attr="data-cat-id=${cat.id}"
+                                         onclick="event.stopPropagation();deleteCategory(this.getAttribute('data-cat-id'))">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -161,13 +162,13 @@
                                     <div class="db-service-item-meta" th:text="${service.category.name}">Catégorie</div>
                                 </div>
                                 <div class="db-table-actions">
-                                    <button class="db-action-btn" th:onclick="'editService(' + ${service.id} + ')'" title="Modifier">
+                                    <button class="db-action-btn" th:attr="data-svc-id=${service.id}" onclick="editService(this.getAttribute('data-svc-id'))" title="Modifier">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="db-action-btn db-action-btn-accent" th:onclick="'manageOffers(' + ${service.id} + ')'" title="Offres">
+                                    <button class="db-action-btn db-action-btn-accent" th:attr="data-svc-id=${service.id}" onclick="manageOffers(this.getAttribute('data-svc-id'))" title="Offres">
                                         <i class="fas fa-tags"></i>
                                     </button>
-                                    <button class="db-action-btn db-action-btn-danger" th:onclick="'deleteService(' + ${service.id} + ')'" title="Supprimer">
+                                    <button class="db-action-btn db-action-btn-danger" th:attr="data-svc-id=${service.id}" onclick="deleteService(this.getAttribute('data-svc-id'))" title="Supprimer">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>

@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Administration - LMP</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
     <script>
         (function () {
@@ -21,6 +24,209 @@
 
     <style>
         html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+        /* Welcome banner */
+        .db-welcome-banner {
+            background: linear-gradient(135deg, var(--db-accent) 0%, var(--db-accent-cyan) 100%);
+            border-radius: 14px;
+            padding: 24px 28px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .db-welcome-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            pointer-events: none;
+        }
+        .db-welcome-banner::after {
+            content: '';
+            position: absolute;
+            bottom: -60%;
+            right: 15%;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            pointer-events: none;
+        }
+        .db-welcome-text h2 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .db-welcome-text p {
+            margin: 0;
+            font-size: 13px;
+            opacity: 0.85;
+            line-height: 1.5;
+        }
+        .db-welcome-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+        .db-welcome-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            cursor: pointer;
+        }
+        .db-welcome-btn:hover {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .db-welcome-btn-solid {
+            background: #fff;
+            color: var(--db-accent);
+            border-color: #fff;
+        }
+        .db-welcome-btn-solid:hover {
+            background: rgba(255,255,255,0.9);
+        }
+
+        /* Stat cards with trend sparkline area */
+        .db-stat-trend {
+            font-size: 11.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+        .db-stat-trend.up { color: var(--db-success); }
+        .db-stat-trend.down { color: var(--db-danger); }
+        .db-stat-trend.neutral { color: var(--db-text-muted); }
+
+        /* Activity timeline */
+        .db-activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--db-border);
+            font-size: 13px;
+        }
+        .db-activity-item:last-child { border-bottom: none; }
+        .db-activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .db-activity-icon.order { background: var(--db-accent-light); color: var(--db-accent); }
+        .db-activity-icon.user { background: rgba(59,130,246,0.1); color: #3b82f6; }
+        .db-activity-icon.appointment { background: var(--db-success-light); color: var(--db-success); }
+        .db-activity-icon.payment { background: var(--db-warning-light); color: var(--db-warning); }
+        .db-activity-text { flex: 1; min-width: 0; }
+        .db-activity-title {
+            font-weight: 600;
+            color: var(--db-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .db-activity-desc {
+            color: var(--db-text-muted);
+            font-size: 12px;
+            margin-top: 1px;
+        }
+
+        /* Order row in recent orders */
+        .db-order-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--db-border);
+        }
+        .db-order-row:last-child { border-bottom: none; }
+        .db-order-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--db-accent-light);
+            color: var(--db-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .db-order-info { flex: 1; min-width: 0; }
+        .db-order-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--db-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .db-order-email {
+            font-size: 11.5px;
+            color: var(--db-text-muted);
+        }
+        .db-order-amount {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--db-text-primary);
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* Chart legend (custom) */
+        .db-chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 12px;
+        }
+        .db-chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--db-text-secondary);
+        }
+        .db-chart-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 900px) {
+            .db-welcome-banner { flex-direction: column; text-align: center; }
+            .db-welcome-actions { flex-wrap: wrap; justify-content: center; }
+        }
+        @media (max-width: 600px) {
+            .db-welcome-text h2 { font-size: 17px; }
+        }
     </style>
 </head>
 <body>
@@ -48,32 +254,28 @@
                 <button class="db-alert-close" onclick="this.parentElement.remove()">&times;</button>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="db-quick-actions">
-                <a th:href="@{/admin/users}" class="db-quick-action">
-                    <i class="fas fa-users"></i>
-                    Gérer les utilisateurs
-                </a>
-                <a th:href="@{/admin/orders}" class="db-quick-action">
-                    <i class="fas fa-shopping-cart"></i>
-                    Gérer les commandes
-                </a>
-                <a th:href="@{/admin/appointments}" class="db-quick-action">
-                    <i class="fas fa-calendar-alt"></i>
-                    Gérer les rendez-vous
-                </a>
-                <a th:href="@{/admin/statistics}" class="db-quick-action">
-                    <i class="fas fa-chart-line"></i>
-                    Statistiques
-                </a>
-                <a th:href="@{/admin/settings}" class="db-quick-action">
-                    <i class="fas fa-cog"></i>
-                    Paramètres système
-                </a>
+            <!-- ── Welcome Banner ── -->
+            <div class="db-welcome-banner">
+                <div class="db-welcome-text">
+                    <h2>Bienvenue, <span th:text="${admin.getDisplayName()}">Administrateur</span> 👋</h2>
+                    <p>Voici un aperçu de l'activité de votre plateforme. Gérez vos utilisateurs, commandes et rendez-vous depuis cette interface.</p>
+                </div>
+                <div class="db-welcome-actions">
+                    <a th:href="@{/admin/orders}" class="db-welcome-btn">
+                        <i class="fas fa-shopping-cart"></i> Commandes
+                    </a>
+                    <a th:href="@{/admin/appointments}" class="db-welcome-btn">
+                        <i class="fas fa-calendar-alt"></i> Rendez-vous
+                    </a>
+                    <a th:href="@{/admin/services}" class="db-welcome-btn db-welcome-btn-solid">
+                        <i class="fas fa-concierge-bell"></i> Services
+                    </a>
+                </div>
             </div>
 
-            <!-- Stat Cards -->
-            <div class="db-stat-grid-4">
+            <!-- ── Stat Cards (6 columns) ── -->
+            <div class="db-stat-grid-4" style="grid-template-columns:repeat(6,1fr);">
+                <!-- Users -->
                 <div class="db-stat-card">
                     <div class="db-stat-header">
                         <span class="db-stat-label"><i class="fas fa-users"></i> Utilisateurs</span>
@@ -82,20 +284,13 @@
                         </span>
                     </div>
                     <div class="db-stat-value" th:text="${totalUsers}">0</div>
-                    <span class="db-stat-badge db-badge-up"><i class="fas fa-user-check"></i> Total</span>
-                </div>
-
-                <div class="db-stat-card">
-                    <div class="db-stat-header">
-                        <span class="db-stat-label"><i class="fas fa-user-check"></i> Actifs</span>
-                        <span class="db-stat-icon-badge" style="background:var(--db-success-light);color:var(--db-success);">
-                            <i class="fas fa-user-check"></i>
-                        </span>
+                    <div class="db-stat-trend up">
+                        <i class="fas fa-user-check"></i>
+                        <span th:text="${activeUsers} + ' actifs'">0 actifs</span>
                     </div>
-                    <div class="db-stat-value" th:text="${activeUsers}">0</div>
-                    <span class="db-stat-badge db-badge-up"><i class="fas fa-check"></i> Actifs</span>
                 </div>
 
+                <!-- Orders -->
                 <div class="db-stat-card">
                     <div class="db-stat-header">
                         <span class="db-stat-label"><i class="fas fa-shopping-cart"></i> Commandes</span>
@@ -104,28 +299,201 @@
                         </span>
                     </div>
                     <div class="db-stat-value" th:text="${totalOrders ?: 0}">0</div>
-                    <span class="db-stat-badge" style="background:var(--db-accent-light);color:var(--db-accent);"><i class="fas fa-box"></i> Total</span>
+                    <div class="db-stat-trend neutral">
+                        <i class="fas fa-clock"></i>
+                        <span th:text="${pendingOrders} + ' en attente'">0 en attente</span>
+                    </div>
                 </div>
 
+                <!-- Revenue -->
                 <div class="db-stat-card">
                     <div class="db-stat-header">
                         <span class="db-stat-label">
                             <i th:class="${defaultCurrency == 'USD' ? 'fas fa-dollar-sign' : (defaultCurrency == 'GBP' ? 'fas fa-pound-sign' : 'fas fa-euro-sign')}"></i>
-                            Chiffre d'affaires
+                            CA Total
                         </span>
-                        <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
-                            <i th:class="${defaultCurrency == 'USD' ? 'fas fa-dollar-sign' : (defaultCurrency == 'GBP' ? 'fas fa-pound-sign' : 'fas fa-euro-sign')}"></i>
+                        <span class="db-stat-icon-badge" style="background:var(--db-success-light);color:var(--db-success);">
+                            <i class="fas fa-chart-line"></i>
                         </span>
                     </div>
                     <div class="db-stat-value"
                          th:with="symbol=${defaultCurrency == 'USD' ? '$' : (defaultCurrency == 'GBP' ? '£' : (defaultCurrency == 'CAD' ? 'CA$' : (defaultCurrency == 'CHF' ? 'CHF' : '€')))}"
                          th:text="${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 0, 2) + ' ' + symbol : '0 ' + symbol}">0 €</div>
-                    <span class="db-stat-badge db-badge-up"><i class="fas fa-chart-line"></i> Revenu</span>
+                    <div class="db-stat-trend up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span th:with="symbol=${defaultCurrency == 'USD' ? '$' : (defaultCurrency == 'GBP' ? '£' : (defaultCurrency == 'CAD' ? 'CA$' : (defaultCurrency == 'CHF' ? 'CHF' : '€')))}"
+                              th:text="${#numbers.formatDecimal(monthlyRevenue, 0, 2) + ' ' + symbol + ' ce mois'}">0 ce mois</span>
+                    </div>
+                </div>
+
+                <!-- Appointments -->
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-calendar-alt"></i> Rendez-vous</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-warning-light);color:var(--db-warning);">
+                            <i class="fas fa-calendar-alt"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalAppointments}">0</div>
+                    <div class="db-stat-trend neutral">
+                        <i class="fas fa-bell"></i>
+                        <span th:text="${pendingAppointments} + ' à confirmer'">0 à confirmer</span>
+                    </div>
+                </div>
+
+                <!-- Services -->
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-concierge-bell"></i> Services</span>
+                        <span class="db-stat-icon-badge" style="background:rgba(6,182,212,0.1);color:#06b6d4;">
+                            <i class="fas fa-concierge-bell"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${totalServices}">0</div>
+                    <div class="db-stat-trend up">
+                        <i class="fas fa-check"></i>
+                        Catalogue actif
+                    </div>
+                </div>
+
+                <!-- Locked Accounts -->
+                <div class="db-stat-card">
+                    <div class="db-stat-header">
+                        <span class="db-stat-label"><i class="fas fa-lock"></i> Verrouillés</span>
+                        <span class="db-stat-icon-badge" style="background:var(--db-danger-light);color:var(--db-danger);">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                    </div>
+                    <div class="db-stat-value" th:text="${lockedUsersCount}">0</div>
+                    <div th:if="${lockedUsersCount == 0}" class="db-stat-trend up">
+                        <i class="fas fa-check-circle"></i> Aucun
+                    </div>
+                    <div th:if="${lockedUsersCount > 0}" class="db-stat-trend down">
+                        <i class="fas fa-exclamation-triangle"></i> Attention requise
+                    </div>
                 </div>
             </div>
 
-            <!-- Two-column layout: Recent users + Locked accounts -->
+            <!-- ── Charts Row ── -->
             <div class="db-chart-row">
+                <!-- Revenue Trend Chart -->
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <div>
+                            <div class="db-card-title">
+                                <i class="fas fa-chart-area"></i>
+                                Revenus &amp; Commandes
+                            </div>
+                            <div class="db-card-trend" style="margin-top:4px;">
+                                Tendance sur les derniers mois
+                            </div>
+                        </div>
+                        <div class="db-card-actions">
+                            <select class="db-period-select" id="revenuePeriod" onchange="updateRevenueChart(this.value)">
+                                <option value="all">Tout</option>
+                                <option value="3m">3 mois</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="db-chart-canvas-wrap">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="db-chart-legend">
+                        <div class="db-chart-legend-item">
+                            <div class="db-chart-legend-dot" style="background:var(--db-accent);"></div>
+                            Revenus (€)
+                        </div>
+                        <div class="db-chart-legend-item">
+                            <div class="db-chart-legend-dot" style="background:var(--db-success);"></div>
+                            Commandes
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Status Donut -->
+                <div class="db-card">
+                    <div class="db-card-header">
+                        <div>
+                            <div class="db-card-title">
+                                <i class="fas fa-chart-pie"></i>
+                                Statut des commandes
+                            </div>
+                        </div>
+                    </div>
+                    <div class="db-chart-canvas-wrap" style="min-height:170px;max-height:210px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="db-donut-channels">
+                        <div class="db-donut-channel">
+                            <div class="db-donut-channel-label">
+                                <div class="db-donut-channel-dot" style="background:var(--db-success);"></div>
+                                Terminées/Livrées
+                            </div>
+                            <span class="db-donut-channel-value" th:text="${completedOrders}">0</span>
+                        </div>
+                        <div class="db-donut-channel">
+                            <div class="db-donut-channel-label">
+                                <div class="db-donut-channel-dot" style="background:var(--db-accent);"></div>
+                                Confirmées
+                            </div>
+                            <span class="db-donut-channel-value" th:text="${confirmedOrders}">0</span>
+                        </div>
+                        <div class="db-donut-channel">
+                            <div class="db-donut-channel-label">
+                                <div class="db-donut-channel-dot" style="background:var(--db-warning);"></div>
+                                En attente
+                            </div>
+                            <span class="db-donut-channel-value" th:text="${pendingOrders}">0</span>
+                        </div>
+                        <div class="db-donut-channel">
+                            <div class="db-donut-channel-label">
+                                <div class="db-donut-channel-dot" style="background:var(--db-danger);"></div>
+                                Annulées
+                            </div>
+                            <span class="db-donut-channel-value" th:text="${cancelledOrders}">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Bottom Row: Recent Orders + Recent Users + Activity ── -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+
+                <!-- Recent Orders -->
+                <div class="db-card" style="padding:0;overflow:hidden;">
+                    <div style="padding:16px 20px;border-bottom:1px solid var(--db-border);">
+                        <div class="db-table-header" style="margin-bottom:0;">
+                            <span class="db-card-title"><i class="fas fa-receipt"></i> Commandes récentes</span>
+                            <a th:href="@{/admin/orders}" class="db-see-all">Voir tout →</a>
+                        </div>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(recentOrdersList)}" class="db-empty">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>Aucune commande</p>
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(recentOrdersList)}" style="padding:8px 16px;">
+                        <div th:each="order : ${recentOrdersList}" class="db-order-row">
+                            <div class="db-order-avatar">
+                                <span th:text="${order['customerName'] != null and order['customerName'] != 'N/A' ? order['customerName'].substring(0,1).toUpperCase() : '?'}">?</span>
+                            </div>
+                            <div class="db-order-info">
+                                <div class="db-order-name" th:text="${order['customerName']}">Client</div>
+                                <div class="db-order-email" th:text="${order['serviceName']}">Service</div>
+                            </div>
+                            <div style="text-align:right;flex-shrink:0;">
+                                <div class="db-order-amount"
+                                     th:text="${order['amount'] + ' €'}">0 €</div>
+                                <span class="db-status-badge"
+                                      th:classappend="${order['status'] == 'COMPLETED' or order['status'] == 'DELIVERED'} ? 'db-status-done' :
+                                                     (${order['status'] == 'IN_PROGRESS' or order['status'] == 'PROCESSING' or order['status'] == 'CONFIRMED'} ? 'db-status-progress' :
+                                                     (${order['status'] == 'PENDING' or order['status'] == 'PAYMENT_PENDING'} ? 'db-status-pending' : 'db-status-cancel'))"
+                                      th:text="${order['status']}">Status</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Recent Users -->
                 <div class="db-card" style="padding:0;overflow:hidden;">
@@ -142,7 +510,7 @@
                     </div>
 
                     <div th:unless="${#lists.isEmpty(recentUsers)}">
-                        <div th:each="user : ${recentUsers}" class="db-user-item">
+                        <div th:each="user,iterStat : ${recentUsers}" th:if="${iterStat.index < 5}" class="db-user-item">
                             <div class="db-user-avatar">
                                 <span th:text="${user.getDisplayName().substring(0,1).toUpperCase()}">U</span>
                             </div>
@@ -153,43 +521,72 @@
                             <div class="db-user-meta">
                                 <div class="db-user-date" th:text="${#temporals.format(user.registrationDate, 'dd/MM/yyyy')}">01/01/2024</div>
                                 <span class="db-status-badge"
-                                      th:classappend="${user.status.name() == 'ACTIVE'} ? 'db-status-done' : (${user.status.name() == 'INACTIVE'} ? 'db-status-pending' : 'db-status-cancel')"
+                                      th:classappend="${user.status.name() == 'ACTIVE'} ? 'db-status-done' : 'db-status-cancel'"
                                       th:text="${user.status.name()}">ACTIVE</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Locked Accounts -->
-                <div class="db-card">
-                    <div class="db-card-header">
-                        <span class="db-card-title"><i class="fas fa-lock"></i> Comptes verrouillés</span>
-                    </div>
-
-                    <div th:if="${lockedUsersCount == 0}" class="db-empty" style="padding:40px 16px;">
-                        <i class="fas fa-check-circle" style="color:var(--db-success);opacity:1;"></i>
-                        <p style="color:var(--db-success);font-weight:500;">Aucun compte verrouillé</p>
-                    </div>
-
-                    <div th:if="${lockedUsersCount > 0}">
-                        <div class="db-alert db-alert-warning" style="margin-bottom:16px;">
-                            <i class="fas fa-exclamation-triangle" style="flex-shrink:0;margin-top:2px;"></i>
-                            <span><strong th:text="${lockedUsersCount}">0</strong> compte(s) verrouillé(s) nécessitent votre attention.</span>
+                <!-- Activity & Locked Accounts -->
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <!-- Locked Accounts -->
+                    <div class="db-card" style="flex:0 0 auto;">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-shield-alt"></i> Sécurité</span>
                         </div>
 
-                        <div th:each="lockedUser : ${lockedUsers}" class="db-user-item">
-                            <div class="db-user-avatar" style="width:30px;height:30px;font-size:11px;">
-                                <span th:text="${lockedUser.getDisplayName().substring(0,1).toUpperCase()}">U</span>
-                            </div>
-                            <div class="db-user-info">
-                                <div class="db-user-name" th:text="${lockedUser.getDisplayName()}">Utilisateur</div>
-                                <div class="db-user-email" th:text="${lockedUser.email}">email@example.com</div>
-                            </div>
+                        <div th:if="${lockedUsersCount == 0}" style="text-align:center;padding:12px 0;">
+                            <i class="fas fa-check-circle" style="font-size:24px;color:var(--db-success);margin-bottom:6px;display:block;"></i>
+                            <span style="font-size:13px;color:var(--db-success);font-weight:600;">Aucun compte verrouillé</span>
                         </div>
 
-                        <div style="text-align:center;margin-top:16px;">
-                            <a th:href="@{/admin/users?status=locked}" class="db-btn db-btn-accent" style="font-size:12px;">
-                                <i class="fas fa-unlock"></i> Gérer les comptes
+                        <div th:if="${lockedUsersCount > 0}">
+                            <div class="db-alert db-alert-warning" style="margin-bottom:10px;padding:8px 12px;">
+                                <i class="fas fa-exclamation-triangle" style="flex-shrink:0;"></i>
+                                <span><strong th:text="${lockedUsersCount}">0</strong> compte(s) verrouillé(s)</span>
+                            </div>
+                            <div th:each="lockedUser,iterStat : ${lockedUsers}" th:if="${iterStat.index < 3}" class="db-user-item" style="padding:8px 0;">
+                                <div class="db-user-avatar" style="width:28px;height:28px;font-size:11px;">
+                                    <span th:text="${lockedUser.getDisplayName().substring(0,1).toUpperCase()}">U</span>
+                                </div>
+                                <div class="db-user-info">
+                                    <div class="db-user-name" style="font-size:12.5px;" th:text="${lockedUser.getDisplayName()}">User</div>
+                                </div>
+                            </div>
+                            <div style="text-align:center;margin-top:8px;">
+                                <a th:href="@{/admin/users?status=locked}" class="db-btn db-btn-accent db-btn-sm">
+                                    <i class="fas fa-unlock"></i> Gérer
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links -->
+                    <div class="db-card" style="flex:1;">
+                        <div class="db-card-header">
+                            <span class="db-card-title"><i class="fas fa-bolt"></i> Accès rapide</span>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <a th:href="@{/admin/users}" class="db-quick-action" style="flex-direction:row;padding:10px 12px;">
+                                <i class="fas fa-users" style="font-size:14px;"></i>
+                                Gérer les utilisateurs
+                            </a>
+                            <a th:href="@{/admin/orders}" class="db-quick-action" style="flex-direction:row;padding:10px 12px;">
+                                <i class="fas fa-shopping-cart" style="font-size:14px;"></i>
+                                Gérer les commandes
+                            </a>
+                            <a th:href="@{/admin/appointments}" class="db-quick-action" style="flex-direction:row;padding:10px 12px;">
+                                <i class="fas fa-calendar-alt" style="font-size:14px;"></i>
+                                Rendez-vous
+                            </a>
+                            <a th:href="@{/admin/statistics}" class="db-quick-action" style="flex-direction:row;padding:10px 12px;">
+                                <i class="fas fa-chart-line" style="font-size:14px;"></i>
+                                Statistiques
+                            </a>
+                            <a th:href="@{/admin/settings}" class="db-quick-action" style="flex-direction:row;padding:10px 12px;">
+                                <i class="fas fa-cog" style="font-size:14px;"></i>
+                                Paramètres
                             </a>
                         </div>
                     </div>
@@ -200,7 +597,185 @@
     </div><!-- /db-main -->
 </div><!-- /db-root -->
 
+<!-- Toast notification container -->
+<div class="db-toast" id="db-toast">
+    <span id="db-toast-message"></span>
+</div>
+
 <th:block th:replace="~{admin/fragments/admin-scripts :: scripts}"></th:block>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+
+/* ── Thymeleaf data ── */
+var MONTHLY_DATA      = /*[[${monthlyRevenueData}]]*/ [];
+var PENDING_ORDERS    = /*[[${pendingOrders}]]*/ 0;
+var CONFIRMED_ORDERS  = /*[[${confirmedOrders}]]*/ 0;
+var COMPLETED_ORDERS  = /*[[${completedOrders}]]*/ 0;
+var CANCELLED_ORDERS  = /*[[${cancelledOrders}]]*/ 0;
+
+/* ── Helpers ── */
+function getCssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ── Charts ── */
+var revenueChartInst = null;
+var statusChartInst = null;
+
+function buildRevenueChart(dataSlice) {
+    var ctx = document.getElementById('revenueChart');
+    if (!ctx) return;
+    ctx = ctx.getContext('2d');
+
+    var accent  = getCssVar('--db-accent');
+    var success = getCssVar('--db-success');
+    var border  = getCssVar('--db-border');
+    var muted   = getCssVar('--db-text-muted');
+
+    var labels = dataSlice.map(function(d) { return d.month || ''; });
+    var revenues = dataSlice.map(function(d) { return d.revenue || 0; });
+    var counts   = dataSlice.map(function(d) { return d.count || 0; });
+
+    if (revenueChartInst) revenueChartInst.destroy();
+    revenueChartInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Revenus',
+                    data: revenues,
+                    backgroundColor: accent + '33',
+                    borderColor: accent,
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    yAxisID: 'y',
+                    order: 2
+                },
+                {
+                    label: 'Commandes',
+                    data: counts,
+                    type: 'line',
+                    borderColor: success,
+                    backgroundColor: success + '22',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: success,
+                    tension: 0.3,
+                    fill: true,
+                    yAxisID: 'y1',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    grid: { color: border + '80', drawBorder: false },
+                    ticks: { color: muted, font: { size: 11 } }
+                },
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    grid: { color: border + '80', drawBorder: false },
+                    ticks: {
+                        color: muted,
+                        font: { size: 11 },
+                        callback: function(v) { return v.toLocaleString('fr-FR') + ' €'; }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: { display: false },
+                    ticks: { color: muted, font: { size: 11 }, stepSize: 1 }
+                }
+            }
+        }
+    });
+}
+
+function updateRevenueChart(period) {
+    var data = MONTHLY_DATA;
+    if (period === '3m') data = MONTHLY_DATA.slice(-3);
+    buildRevenueChart(data);
+}
+
+function buildStatusChart() {
+    var ctx = document.getElementById('statusChart');
+    if (!ctx) return;
+    ctx = ctx.getContext('2d');
+
+    var success = getCssVar('--db-success');
+    var accent  = getCssVar('--db-accent');
+    var warning = getCssVar('--db-warning');
+    var danger  = getCssVar('--db-danger');
+    var bgCard  = getCssVar('--db-card-bg');
+
+    var totalOrders = COMPLETED_ORDERS + CONFIRMED_ORDERS + PENDING_ORDERS + CANCELLED_ORDERS;
+
+    if (statusChartInst) statusChartInst.destroy();
+    statusChartInst = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Terminées', 'Confirmées', 'En attente', 'Annulées'],
+            datasets: [{
+                data: totalOrders === 0 ? [1, 0, 0, 0] : [COMPLETED_ORDERS, CONFIRMED_ORDERS, PENDING_ORDERS, CANCELLED_ORDERS],
+                backgroundColor: [success + 'cc', accent + 'cc', warning + 'cc', danger + '99'],
+                borderColor: bgCard,
+                borderWidth: 3,
+                hoverBorderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: totalOrders > 0 }
+            }
+        }
+    });
+}
+
+function updateChartsTheme() {
+    buildRevenueChart(MONTHLY_DATA);
+    buildStatusChart();
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', function () {
+    buildRevenueChart(MONTHLY_DATA);
+    buildStatusChart();
+});
+
+/* Override theme toggle to also refresh charts */
+var _origToggle = typeof toggleTheme === 'function' ? toggleTheme : null;
+function toggleTheme() {
+    if (_origToggle) _origToggle();
+    else {
+        var root = document.documentElement;
+        var cur = root.getAttribute('data-theme') || 'light';
+        var next = cur === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('lmp-dashboard-theme', next);
+        var icon = document.getElementById('theme-icon');
+        if (icon) icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    setTimeout(updateChartsTheme, 50);
+}
+
+/*]]>*/
+</script>
 
 </body>
 </html>

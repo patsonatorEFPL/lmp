@@ -1,0 +1,12 @@
+package com.lmp.billing.repository;
+
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.lmp.billing.domain.CartItem;
+
+@Repository
+public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
+}

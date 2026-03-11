@@ -110,8 +110,8 @@
                         </div>
                     </div>
 
-                    <!-- Hero Visual - Enhanced 3D Orb with orbiting elements -->
-                    <div class="flex-1 lg:flex-grow w-full relative min-h-[500px] lg:min-h-[600px] flex items-center justify-center perspective-1000 hero-reveal">
+                    <!-- Hero Visual - Office Background with floating stats -->
+                    <div class="flex-1 lg:flex-grow w-full relative min-h-[500px] lg:min-h-[600px] flex items-center justify-center hero-reveal">
 
                         <!-- Floating stat chips -->
                         <div class="hero-stat-chip hero-stat-chip--top-left hero-reveal">
@@ -134,27 +134,28 @@
                             </div>
                         </div>
 
-                        <div class="relative w-72 h-72 md:w-96 md:h-96 orb-3d-container">
-                            <!-- Deep ambient halos -->
-                            <div class="absolute inset-[-30%] bg-primary/20 rounded-full blur-[100px] animate-pulse-slow"></div>
-                            <div class="absolute inset-[-20%] bg-accent/15 rounded-full blur-[80px] animate-pulse-slower" style="animation-delay: -2s;"></div>
-                            <div class="absolute inset-[-10%] bg-violet-500/10 rounded-full blur-[60px] animate-pulse-slow" style="animation-delay: -4s;"></div>
-
-                            <!-- Orbiting satellite ring 1 -->
-                            <div class="orb-orbit orb-orbit--1">
-                                <div class="orb-satellite orb-satellite--blue"></div>
+                        <!-- Office image with glassmorphism overlay -->
+                        <div class="relative w-full max-w-lg hero-office-visual">
+                            <div class="absolute inset-[-20%] bg-primary/15 rounded-full blur-[80px] animate-pulse-slow"></div>
+                            <div class="absolute inset-[-10%] bg-accent/10 rounded-full blur-[60px] animate-pulse-slower" style="animation-delay: -2s;"></div>
+                            <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+                                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgbYHirlZXNOy9WxZsI6GlVFr3qNleSLUkdoLkBmdu5jm9-VhDnTd_NPNTa2vIzFNIU631cw7XDeyVW-rEmawn8yM3kWUm9sXBdk6IZyX9xKE5Pe9pFLwt30bNVR1WaqxoSjlGEkaSBVkrHp_mM-d86lA9y6UwbYohuEc12u4ZJcXommOX7go40y5rpwmU9206WQxk_jBoQNeupQSOX3Wq1unrgf4SyNBT7Ir9J0inP064DOL8LoPOZZiL1eHDhY5bPn_N_r-L2gph"
+                                     alt="Bureau moderne LMP Digital Services"
+                                     class="w-full h-auto object-cover aspect-[4/3]"
+                                     loading="eager">
+                                <div class="absolute inset-0 bg-gradient-to-t from-[#0f172a]/70 via-transparent to-transparent"></div>
+                                <div class="absolute bottom-6 left-6 right-6">
+                                    <div class="flex items-center gap-3 text-white/90">
+                                        <div class="w-10 h-10 rounded-xl bg-primary/30 backdrop-blur-sm flex items-center justify-center">
+                                            <i class="fas fa-building text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-semibold">LMP Digital Services</div>
+                                            <div class="text-xs text-white/60">Bruxelles, Belgique</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <!-- Orbiting satellite ring 2 -->
-                            <div class="orb-orbit orb-orbit--2">
-                                <div class="orb-satellite orb-satellite--violet"></div>
-                            </div>
-                            <!-- Orbiting satellite ring 3 -->
-                            <div class="orb-orbit orb-orbit--3">
-                                <div class="orb-satellite orb-satellite--cyan"></div>
-                            </div>
-
-                            <!-- Earth Globe (Three.js) -->
-                            <canvas id="hero-globe" style="width:100%;height:100%;border-radius:50%;display:block;"></canvas>
                         </div>
                     </div>
 
@@ -516,7 +517,7 @@
         </section>
 
         <!-- Stats Section - Premium Redesign -->
-        <section class="stats-premium-section relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-2xl scroll-reveal overflow-hidden
+        <section class="stats-premium-section relative z-20 -mt-10 mx-4 rounded-t-[3rem] shadow-2xl blur-in overflow-hidden
                         bg-white dark:bg-[#0d1117]
                         border border-gray-100 dark:border-white/[0.06]">
 
@@ -628,7 +629,7 @@
                         </div>
                         <div class="text-sm font-semibold text-base-content/80 mb-2">Années d'expérience</div>
                         <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full
-                                    bg-warning/10 dark:bg-warning/15 text-warning text-[11px] font-semibold">
+                                    bg-primary/10 dark:bg-primary/15 text-primary text-[11px] font-semibold">
                             <i class="fas fa-certificate text-[10px]"></i>
                             <span>Certifié Google</span>
                         </div>
@@ -673,7 +674,7 @@
         </section>
 
         <!-- Services Section -->
-        <section id="services" class="py-24 bg-base-200/50 scroll-reveal">
+        <section id="services" class="py-24 bg-base-200/50 clip-reveal-up">
             <div class="container mx-auto px-4">
 
                 <!-- Section Header -->
@@ -757,7 +758,7 @@
         </section>
         
         <!-- About Section with DaisyUI -->
-        <section id="about" class="py-32 bg-base-100 relative overflow-hidden scroll-reveal">
+        <section id="about" class="py-32 bg-base-100 relative overflow-hidden fade-in-up">
             <!-- Background Decoration -->
             <div class="absolute top-0 right-0 w-1/3 h-full bg-base-200/50 skew-x-12 opacity-50 -z-10"></div>
             
@@ -773,7 +774,7 @@
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300">
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300 stagger-fade-up delay-100">
                         <div class="card-body items-center text-center">
                             <div class="avatar placeholder">
                                 <div class="bg-primary/10 text-primary w-16 rounded-2xl">
@@ -785,7 +786,7 @@
                         </div>
                     </div>
                     
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300">
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300 stagger-fade-up delay-200">
                         <div class="card-body items-center text-center">
                             <div class="avatar placeholder">
                                 <div class="bg-accent/10 text-accent w-16 rounded-2xl">
@@ -797,7 +798,7 @@
                         </div>
                     </div>
                     
-                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300">
+                    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-base-300 stagger-fade-up delay-300">
                         <div class="card-body items-center text-center">
                             <div class="avatar placeholder">
                                 <div class="bg-success/10 text-success w-16 rounded-2xl">
@@ -813,7 +814,7 @@
         </section>
 
         <!-- Testimonials Section with DaisyUI -->
-        <section id="temoignages" class="py-24 bg-base-200 relative overflow-hidden scroll-reveal">
+        <section id="temoignages" class="py-24 bg-base-200 relative overflow-hidden slide-in-left">
             <!-- Decorative Elements -->
             <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
                 <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary rounded-full blur-[120px]"></div>
@@ -846,11 +847,11 @@
                     <div class="card bg-base-100 shadow-xl border border-base-200 hover:-translate-y-2 transition-all duration-300">
                         <div class="card-body">
                             <div class="rating rating-sm mb-4">
-                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-1" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-1" class="mask mask-star" style="background-color:#facc15" checked />
                             </div>
                             <p class="text-base-content/80 text-lg mb-6 leading-relaxed">
                                 "LMP a complètement changé notre approche locale. En 3 mois, nos appels entrants ont doublé. Le tableau de bord est clair et le support ultra réactif."
@@ -873,11 +874,11 @@
                     <div class="card bg-base-100 shadow-lg border border-base-200 hover:-translate-y-2 transition-all duration-300">
                         <div class="card-body">
                             <div class="rating rating-sm mb-4">
-                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-2" class="mask mask-star bg-warning" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-2" class="mask mask-star" style="background-color:#facc15" checked />
                             </div>
                             <p class="text-base-content/80 text-lg mb-6 leading-relaxed">
                                 "Le service de gestion des avis m'a sauvé un temps précieux. Je ne m'occupe plus de rien, et ma note moyenne est passée de 3.8 à 4.7. Indispensable."
@@ -900,11 +901,11 @@
                     <div class="card bg-base-100 shadow-xl border border-base-200 hover:-translate-y-2 transition-all duration-300">
                         <div class="card-body">
                             <div class="rating rating-sm mb-4">
-                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" checked />
-                                <input type="radio" name="rating-3" class="mask mask-star bg-warning" />
+                                <input type="radio" name="rating-3" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star" style="background-color:#facc15" checked />
+                                <input type="radio" name="rating-3" class="mask mask-star" style="background-color:#d1d5db" />
                             </div>
                             <p class="text-base-content/80 text-lg mb-6 leading-relaxed">
                                 "L'équipe technique est impressionnante. Ils ont réglé un problème de fiche suspendue en 48h que je traînais depuis des mois. Merci pour l'efficacité."
@@ -927,7 +928,7 @@
         </section>
         
         <!-- Contact Section with DaisyUI -->
-        <section id="contact" class="py-32 bg-base-200 text-base-content relative overflow-hidden scroll-reveal">
+        <section id="contact" class="py-32 bg-base-200 text-base-content relative overflow-hidden zoom-in-bounce">
              <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
              <!-- Minimalist Gradient Glow -->
              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 blur-[150px] rounded-full pointer-events-none"></div>
@@ -1065,105 +1066,15 @@
     <!-- GTranslate Config -->
     <th:block th:replace="~{fragments/theme-language-controls :: gtranslate-config}"></th:block>
 
-    <!-- Three.js Earth Globe -->
-    <script th:src="@{/js/three.min.js}"></script>
-    <script>
-    (function () {
-        function initGlobe() {
-            var canvas = document.getElementById('hero-globe');
-            if (!canvas || typeof THREE === 'undefined') return;
-
-            var container = canvas.parentElement;
-            var w = container.offsetWidth || 384;
-            var h = container.offsetHeight || 384;
-
-            // Renderer
-            var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(w, h);
-            renderer.setClearColor(0x000000, 0);
-
-            // Scene & Camera
-            var scene = new THREE.Scene();
-            var camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-            camera.position.z = 2.5;
-
-            // Texture loader
-            var loader = new THREE.TextureLoader();
-            var CDN = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/';
-
-            // Earth mesh
-            var earthGeo = new THREE.SphereGeometry(1, 64, 64);
-            var earthMat = new THREE.MeshPhongMaterial({
-                map:         loader.load(CDN + 'earth_atmos_2048.jpg'),
-                specularMap: loader.load(CDN + 'earth_specular_2048.jpg'),
-                specular:    new THREE.Color(0x1a2233),
-                shininess:   8
-            });
-            var earth = new THREE.Mesh(earthGeo, earthMat);
-            earth.rotation.x = 0.41; // ~23.5° axial tilt
-            scene.add(earth);
-
-            // Thin atmosphere shell
-            var atmMat = new THREE.MeshPhongMaterial({
-                color: 0x4488ff,
-                transparent: true,
-                opacity: 0.10,
-                side: THREE.FrontSide
-            });
-            var atmosphere = new THREE.Mesh(new THREE.SphereGeometry(1.03, 64, 64), atmMat);
-            scene.add(atmosphere);
-
-            // Outer halo glow
-            var haloMat = new THREE.MeshPhongMaterial({
-                color: 0x2255cc,
-                transparent: true,
-                opacity: 0.05,
-                side: THREE.FrontSide
-            });
-            var halo = new THREE.Mesh(new THREE.SphereGeometry(1.09, 64, 64), haloMat);
-            scene.add(halo);
-
-            // Lights
-            scene.add(new THREE.AmbientLight(0x334466, 1.2));
-            var sun = new THREE.DirectionalLight(0xddeeff, 0.9);
-            sun.position.set(5, 3, 5);
-            scene.add(sun);
-
-            // Animation loop
-            var t = 0;
-            function animate() {
-                requestAnimationFrame(animate);
-                t += 0.005;
-                earth.rotation.y += 0.003;
-                var floatY = Math.sin(t) * 0.04;
-                earth.position.y   = floatY;
-                atmosphere.rotation.y = earth.rotation.y;
-                atmosphere.position.y = floatY;
-                halo.rotation.y       = earth.rotation.y;
-                halo.position.y       = floatY;
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            // Resize handling
-            if (window.ResizeObserver) {
-                new ResizeObserver(function () {
-                    var nw = container.offsetWidth;
-                    var nh = container.offsetHeight;
-                    renderer.setSize(nw, nh);
-                    camera.aspect = nw / nh;
-                    camera.updateProjectionMatrix();
-                }).observe(container);
-            }
+    <!-- Hero office image float animation -->
+    <style>
+        .hero-office-visual {
+            animation: office-float 8s ease-in-out infinite;
         }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initGlobe);
-        } else {
-            initGlobe();
+        @keyframes office-float {
+            0%, 100% { transform: translateY(0px); }
+            50%      { transform: translateY(-12px); }
         }
-    })();
-    </script>
+    </style>
 </body>
 </html>

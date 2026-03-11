@@ -231,7 +231,15 @@
     .nav-animation,
     .icon-animation,
     .hero-animation,
-    .section-animation {
+    .section-animation,
+    .rotate-in,
+    .blur-in,
+    .zoom-in-bounce,
+    .slide-in-left,
+    .slide-in-right,
+    .flip-in-y,
+    .stagger-fade-up,
+    .clip-reveal-up {
         transition: none;
         transform: none;
         opacity: 1;
@@ -287,8 +295,106 @@
 .nav-animation,
 .icon-animation,
 .hero-animation,
-.section-animation {
+.section-animation,
+.rotate-in,
+.blur-in,
+.zoom-in-bounce,
+.slide-in-left,
+.slide-in-right,
+.flip-in-y,
+.stagger-fade-up,
+.clip-reveal-up {
     will-change: opacity, transform;
+}
+
+/* ── New: Rotate In animation ── */
+.rotate-in {
+    opacity: 0;
+    transform: rotate(-10deg) scale(0.9);
+    transition: all 1s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.rotate-in.animate {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+/* ── New: Blur In animation ── */
+.blur-in {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(15px);
+    transition: all 0.9s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.blur-in.animate {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+}
+
+/* ── New: Zoom In Bounce animation ── */
+.zoom-in-bounce {
+    opacity: 0;
+    transform: scale(0.7);
+    transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.zoom-in-bounce.animate {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ── New: Slide In Left animation ── */
+.slide-in-left {
+    opacity: 0;
+    transform: translateX(-60px);
+    transition: all 0.9s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.slide-in-left.animate {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ── New: Slide In Right animation ── */
+.slide-in-right {
+    opacity: 0;
+    transform: translateX(60px);
+    transition: all 0.9s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.slide-in-right.animate {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ── New: Flip In Y animation ── */
+.flip-in-y {
+    opacity: 0;
+    transform: perspective(800px) rotateY(20deg);
+    transition: all 1s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.flip-in-y.animate {
+    opacity: 1;
+    transform: perspective(800px) rotateY(0deg);
+}
+
+/* ── New: Stagger Fade Up (for grids) ── */
+.stagger-fade-up {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.7s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.stagger-fade-up.animate {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── New: Clip Reveal from bottom ── */
+.clip-reveal-up {
+    opacity: 0;
+    clip-path: inset(100% 0 0 0);
+    transition: all 1s cubic-bezier(0.25, 0.25, 0.25, 1);
+}
+.clip-reveal-up.animate {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
 }
 
 /* Nettoyage après animation */

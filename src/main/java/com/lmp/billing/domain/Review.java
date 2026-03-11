@@ -1,0 +1,63 @@
+package com.lmp.billing.domain;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import com.lmp.auth.domain.User;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "reviews")
+public class Review {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
+    
+    @Column(nullable = false)
+    private Integer rating;
+    
+    @Column(columnDefinition = "TEXT")
+    private String comment;
+    
+    @Column(name = "admin_approved")
+    private Boolean adminApproved = false;
+    
+    private Boolean featured = false;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+    
+    public Review() {}
+    
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public Order getOrder() { return order; }
+    public void setOrder(Order order) { this.order = order; }
+    public Integer getRating() { return rating; }
+    public void setRating(Integer rating) { this.rating = rating; }
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
+    public Boolean getAdminApproved() { return adminApproved; }
+    public void setAdminApproved(Boolean adminApproved) { this.adminApproved = adminApproved; }
+    public Boolean getFeatured() { return featured; }
+    public void setFeatured(Boolean featured) { this.featured = featured; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
+}

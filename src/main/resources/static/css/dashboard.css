@@ -769,11 +769,17 @@ html, body { margin: 0; padding: 0; height: 100%; }
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
 }
+@media (max-width: 1200px) {
+    .db-stat-grid-4 { grid-template-columns: repeat(3, 1fr); }
+    .db-stat-grid-4[style*="repeat(6"] { grid-template-columns: repeat(3, 1fr) !important; }
+}
 @media (max-width: 1024px) {
     .db-stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .db-stat-grid-4[style*="repeat(6"] { grid-template-columns: repeat(2, 1fr) !important; }
 }
 @media (max-width: 480px) {
     .db-stat-grid-4 { grid-template-columns: 1fr; }
+    .db-stat-grid-4[style*="repeat(6"] { grid-template-columns: 1fr !important; }
 }
 
 /* Admin icon badge for stat cards */
@@ -1196,6 +1202,18 @@ html, body { margin: 0; padding: 0; height: 100%; }
 }
 @media (max-width: 600px) {
     .db-hide-mobile { display: none !important; }
+}
+
+/* Bottom 3-column grid responsive */
+@media (max-width: 1100px) {
+    .db-content > div[style*="grid-template-columns:1fr 1fr 1fr"] {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+@media (max-width: 768px) {
+    .db-content > div[style*="grid-template-columns:1fr 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 /* Admin badge */

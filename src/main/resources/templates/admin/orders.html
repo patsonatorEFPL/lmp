@@ -92,7 +92,8 @@
                     <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
                         <a th:each="order : ${needsAttention}"
                            href="javascript:void(0)"
-                           th:onclick="'showOrderDetail(' + ${order.id} + ')'"
+                           th:attr="data-oid=${order.id}"
+                           onclick="showOrderDetail(this.getAttribute('data-oid'))"
                            class="db-btn db-btn-sm" style="font-size:11px;">
                             #<span th:text="${order.id}">0</span> — <span th:text="${order.customerEmail}">email</span>
                         </a>
@@ -456,9 +457,10 @@
         orders.forEach(function (order) {
             var tr = document.createElement('tr');
             tr.setAttribute('data-order-id', order.id);
+            var oid = order.id;
             tr.innerHTML =
-                '<td><input type="checkbox" class="db-table-check order-checkbox" value="' + order.id + '"></td>' +
-                '<td><a href="javascript:void(0)" onclick="showOrderDetail(' + order.id + ')" style="color:var(--db-accent);font-weight:600;text-decoration:none;cursor:pointer;">#' + order.id + '</a></td>' +
+                '<td><input type="checkbox" class="db-table-check order-checkbox" value="' + oid + '"></td>' +
+                '<td><a href="javascript:void(0)" onclick="showOrderDetail(\'' + oid + '\')" style="color:var(--db-accent);font-weight:600;text-decoration:none;cursor:pointer;">#' + (order.orderNumber || oid.substring(0,8)) + '</a></td>' +
                 '<td style="font-size:12px;color:var(--db-text-muted);">' + formatDate(order.createdAt) + '</td>' +
                 '<td><div style="font-weight:500;color:var(--db-text-primary);">' + (order.customerEmail || '') + '</div>' +
                     (order.customerName ? '<div style="font-size:11px;color:var(--db-text-muted);">' + order.customerName + '</div>' : '') + '</td>' +
@@ -467,15 +469,15 @@
                 '<td>' + getStatusBadge(order.status) + '</td>' +
                 '<td class="db-hide-tablet">' + getPaymentBadge(order.paymentStatus) + '</td>' +
                 '<td><div class="db-table-actions" style="justify-content:center;">' +
-                    '<button class="db-action-btn" onclick="showOrderDetail(' + order.id + ')" title="Voir"><i class="fas fa-eye"></i></button>' +
-                    '<button class="db-action-btn db-action-btn-warning" onclick="syncWithStripe(' + order.id + ')" title="Sync Stripe"><i class="fab fa-stripe-s"></i></button>' +
+                    '<button class="db-action-btn" onclick="showOrderDetail(\'' + oid + '\')" title="Voir"><i class="fas fa-eye"></i></button>' +
+                    '<button class="db-action-btn db-action-btn-warning" onclick="syncWithStripe(\'' + oid + '\')" title="Sync Stripe"><i class="fab fa-stripe-s"></i></button>' +
                 '</div></td>';
             tbody.appendChild(tr);
         });
         // Re-attach checkbox events
         document.querySelectorAll('.order-checkbox').forEach(function (cb) {
             cb.addEventListener('change', function () {
-                var id = parseInt(this.value);
+                var id = this.value; // UUID string
                 if (this.checked) config.selectedOrders.add(id);
                 else config.selectedOrders.delete(id);
                 updateSelectionUI();
@@ -527,7 +529,7 @@
         config.selectedOrders.clear();
         document.querySelectorAll('.order-checkbox').forEach(function (cb) {
             cb.checked = checked;
-            if (checked) config.selectedOrders.add(parseInt(cb.value));
+            if (checked) config.selectedOrders.add(cb.value); // UUID string
         });
         updateSelectionUI();
     }
@@ -657,6 +659,32 @@
             if (order.paymentMethod) html += detailRow('Méthode', order.paymentMethod);
             html += '</div></div>';
         }
+
+        // Progress bar card
+        var pct = order.progressPercentage != null ? order.progressPercentage : 0;
+        var pctColor = pct < 30 ? 'var(--db-warning)' : pct < 70 ? 'var(--db-accent)' : 'var(--db-success)';
+        html += '<div class="db-card" style="margin:0;">';
+        html += '<div class="db-card-header"><span class="db-card-title"><i class="fas fa-tasks"></i> Avancement de la commande</span></div>';
+        html += '<div style="margin-top:14px;">';
+        // Progress bar
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
+        html += '<span style="font-size:13px;font-weight:600;color:var(--db-text-primary);">' + (order.progressStatus || 'En attente de traitement') + '</span>';
+        html += '<span style="font-size:18px;font-weight:700;color:' + pctColor + ';">' + pct + '%</span>';
+        html += '</div>';
+        html += '<div style="height:12px;background:var(--db-border);border-radius:8px;overflow:hidden;margin-bottom:14px;">';
+        html += '<div style="height:100%;width:' + pct + '%;background:' + pctColor + ';border-radius:8px;transition:width 0.4s ease;"></div>';
+        html += '</div>';
+        // Admin update form
+        html += '<div style="padding:12px;background:var(--db-hover);border-radius:10px;border:1px solid var(--db-border);">';
+        html += '<div style="font-size:12px;font-weight:600;color:var(--db-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;"><i class="fas fa-edit"></i> Mettre à jour l\'avancement</div>';
+        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">';
+        html += '<input type="range" id="progressSlider" min="0" max="100" value="' + pct + '" style="flex:1;accent-color:var(--db-accent);" oninput="document.getElementById(\'progressPctDisplay\').textContent=this.value+\'%\'">';
+        html += '<span id="progressPctDisplay" style="width:42px;text-align:right;font-weight:700;color:var(--db-accent);">' + pct + '%</span>';
+        html += '</div>';
+        html += '<input type="text" id="progressStatusInput" class="db-input" value="' + (order.progressStatus || '') + '" placeholder="Étape en cours (ex: Analyse en cours…)" style="width:100%;margin-bottom:10px;">';
+        html += '<button class="db-btn db-btn-sm db-btn-accent" onclick="saveOrderProgress()" style="width:100%;justify-content:center;"><i class="fas fa-save"></i> Enregistrer l\'avancement</button>';
+        html += '</div>';
+        html += '</div></div>';
 
         html += '</div>'; // end left column
 
@@ -789,6 +817,26 @@
                 else showToast(d.message, 'error');
             })
             .catch(function() { showToast('Erreur', 'error'); });
+    }
+
+    function saveOrderProgress() {
+        if (!currentDetailOrderId) return;
+        var pct = parseInt(document.getElementById('progressSlider').value);
+        var status = document.getElementById('progressStatusInput').value;
+        adminFetch(config.apiBaseUrl + '/' + currentDetailOrderId + '/progress', {
+            method: 'PUT',
+            body: JSON.stringify({ progressPercentage: pct, progressStatus: status })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                showToast('Avancement mis à jour : ' + d.progressPercentage + '%', 'success');
+                showOrderDetail(currentDetailOrderId);
+            } else {
+                showToast(d.message, 'error');
+            }
+        })
+        .catch(function() { showToast('Erreur lors de la sauvegarde', 'error'); });
     }
 
     // Auto-open detail if ?detail=xxx in URL

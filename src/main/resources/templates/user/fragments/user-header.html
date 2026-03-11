@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--
+  User Header Fragment
+  Usage: <div th:replace="~{user/fragments/user-header :: header(title='Tableau de bord', subtitle=null)}"></div>
+-->
+<div th:fragment="header(title, subtitle)" class="db-header">
+    <div style="display:flex;align-items:center;">
+        <button class="db-mobile-toggle" onclick="openSidebar()" aria-label="Ouvrir le menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div>
+            <h1 class="db-header-title" style="margin:0;" th:text="${title}">Page</h1>
+            <div th:if="${subtitle}" style="font-size:12px;color:var(--db-text-muted);margin-top:2px;" th:text="${subtitle}"></div>
+        </div>
+    </div>
+    <div class="db-header-controls">
+        <span class="db-date-badge">
+            <i class="fas fa-calendar-alt"></i>
+            <span id="current-date"></span>
+        </span>
+        <a th:href="@{/}" class="db-btn">
+            <i class="fas fa-home"></i>
+            <span class="db-hide-mobile">Accueil</span>
+        </a>
+        <a th:href="@{/services}" class="db-btn db-btn-accent">
+            <i class="fas fa-plus"></i>
+            <span class="db-hide-mobile">Nouvelle commande</span>
+        </a>
+        <button class="db-btn db-theme-toggle" onclick="toggleTheme()" title="Changer le thème">
+            <i id="theme-icon" class="fas fa-moon"></i>
+        </button>
+    </div>
+</div>
+
+</html>

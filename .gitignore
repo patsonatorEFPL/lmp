@@ -71,8 +71,5 @@ ${project.build.directory}/
 .gemini/
 
 ### Tool Documentation & Scripts ###
-CLAUDE.md
-docs/ARCHITECTURE.md
-docs/STATUS.md
-docs/plan.md
-scripts/
+docs/
+/scripts/
