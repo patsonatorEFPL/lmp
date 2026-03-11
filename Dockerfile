@@ -37,7 +37,7 @@ RUN apk add --no-cache \
     ttf-dejavu
 
 # Configuration du timezone
-ENV TZ=America/Toronto
+ENV TZ=Europe/Zurich
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Création d'un utilisateur non-root pour la sécurité
@@ -60,7 +60,7 @@ USER spring
 # Variables d'environnement Spring Boot
 ENV SERVER_PORT=8080
 
-# Port exposé (Railway utilisera la variable PORT)
+# Port exposé (Dokploy utilisera la variable PORT)
 EXPOSE 8080
 
 # Health check pour Dokploy
