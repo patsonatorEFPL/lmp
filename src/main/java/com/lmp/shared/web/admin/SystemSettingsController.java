@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -28,6 +29,9 @@ public class SystemSettingsController {
     private static final Logger logger = LoggerFactory.getLogger(SystemSettingsController.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + SystemSettingsController.class.getName());
 
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
+
         private final SystemConfigService systemConfigService;
 
 
@@ -36,90 +40,27 @@ public class SystemSettingsController {
     }
 
     /**
-     * Affiche la page des paramètres système
+     * Redirige vers le frontend Angular pour les paramètres système.
      */
     @GetMapping
-    public String showSettingsPage(Model model) {
-        try {
-            // Charger les paramètres actuels
-            SystemSettingsDto settings = systemConfigService.loadAllSettings();
-            model.addAttribute("settings", settings);
-            
-            // Statistiques de configuration
-            Map<String, Object> configStats = systemConfigService.getConfigurationStats();
-            model.addAttribute("configStats", configStats);
-            
-            logger.info("Settings page loaded successfully");
-            return "admin/settings";
-            
-        } catch (Exception e) {
-            logger.error("Error loading settings page: {}", e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement des paramètres: " + e.getMessage());
-            
-            // Créer un objet settings par défaut pour éviter les erreurs de template
-            model.addAttribute("settings", new SystemSettingsDto());
-            return "admin/settings";
-        }
+    public String showSettingsPage() {
+        return "redirect:" + frontendUrl + "/admin/settings";
     }
 
     /**
-     * Sauvegarde les paramètres système
+     * Legacy form save — redirects to Angular.
      */
     @PostMapping("/save")
-    public String saveSettings(@Valid @ModelAttribute("settings") SystemSettingsDto settings,
-                              BindingResult bindingResult,
-                              RedirectAttributes redirectAttributes,
-                              Model model) {
-        try {
-            if (bindingResult.hasErrors()) {
-                // Recharger les statistiques en cas d'erreur
-                Map<String, Object> configStats = systemConfigService.getConfigurationStats();
-                model.addAttribute("configStats", configStats);
-                model.addAttribute("errorMessage", "Veuillez corriger les erreurs dans le formulaire");
-                return "admin/settings";
-            }
-            
-            // Sauvegarder les paramètres
-            systemConfigService.saveSettings(settings);
-            
-            auditLogger.info("System settings saved successfully");
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Paramètres système sauvegardés avec succès");
-            
-            return "redirect:/admin/settings";
-            
-        } catch (Exception e) {
-            logger.error("Error saving settings: {}", e.getMessage(), e);
-            
-            // Recharger les statistiques en cas d'erreur
-            Map<String, Object> configStats = systemConfigService.getConfigurationStats();
-            model.addAttribute("configStats", configStats);
-            model.addAttribute("errorMessage", "Erreur lors de la sauvegarde: " + e.getMessage());
-            return "admin/settings";
-        }
+    public String saveSettings() {
+        return "redirect:" + frontendUrl + "/admin/settings";
     }
 
     /**
-     * Réinitialise les paramètres aux valeurs par défaut
+     * Legacy reset — redirects to Angular.
      */
     @PostMapping("/reset")
-    public String resetToDefaults(RedirectAttributes redirectAttributes) {
-        try {
-            SystemSettingsDto defaults = systemConfigService.resetToDefaults();
-            
-            auditLogger.info("System settings reset to defaults");
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Paramètres réinitialisés aux valeurs par défaut");
-            redirectAttributes.addFlashAttribute("settings", defaults);
-            
-            return "redirect:/admin/settings";
-            
-        } catch (Exception e) {
-            logger.error("Error resetting settings: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("errorMessage", 
-                "Erreur lors de la réinitialisation: " + e.getMessage());
-            return "redirect:/admin/settings";
-        }
+    public String resetToDefaults() {
+        return "redirect:" + frontendUrl + "/admin/settings";
     }
 
     /**

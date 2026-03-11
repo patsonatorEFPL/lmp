@@ -6,6 +6,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,6 +21,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
 
     /**
      * Gère les erreurs d'accès refusé (403 Forbidden).
@@ -80,12 +84,12 @@ public class GlobalExceptionHandler {
         }
         
         redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
-        return "redirect:/login?error=true";
+        return "redirect:" + frontendUrl + "/login?error=true";
     }
 
     /**
      * Gère les erreurs de compte désactivé.
-     * 
+     *
      * @param ex L'exception de compte désactivé
      * @param redirectAttributes Les attributs de redirection
      * @return Redirection vers la page de connexion
@@ -94,12 +98,12 @@ public class GlobalExceptionHandler {
     public String handleDisabledException(DisabledException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", 
             "Votre compte est désactivé. Contactez l'administrateur.");
-        return "redirect:/login?error=true";
+        return "redirect:" + frontendUrl + "/login?error=true";
     }
 
     /**
      * Gère les erreurs de compte verrouillé.
-     * 
+     *
      * @param ex L'exception de compte verrouillé
      * @param redirectAttributes Les attributs de redirection
      * @return Redirection vers la page de connexion
@@ -108,7 +112,7 @@ public class GlobalExceptionHandler {
     public String handleLockedException(LockedException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", 
             "Votre compte est temporairement verrouillé. Contactez l'administrateur.");
-        return "redirect:/login?error=true";
+        return "redirect:" + frontendUrl + "/login?error=true";
     }
 
     /**

@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -50,6 +51,9 @@ public class OrderAdminController {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderAdminController.class);
 
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
+
         private final OrderAdminService orderAdminService;
         private final OrderStatusHistoryService historyService;
         private final RefundService refundService;
@@ -74,58 +78,27 @@ public class OrderAdminController {
     // ========== Pages principales ==========
 
     /**
-     * Page principale de gestion des commandes
+     * Redirige vers le frontend Angular pour la gestion des commandes.
      */
     @GetMapping
-    public String ordersPage(Model model) {
-        logger.info("Accès à la page de gestion des commandes");
-
-        // Statistiques rapides pour le dashboard
-        Page<OrderDto> latestOrders = orderAdminService.getLatestOrders(0, 10);
-        List<OrderDto> needsAttention = orderAdminService.getOrdersNeedingAttention();
-
-        model.addAttribute("latestOrders", latestOrders.getContent());
-        model.addAttribute("needsAttention", needsAttention);
-        model.addAttribute("totalOrders", latestOrders.getTotalElements());
-        model.addAttribute("statuses", OrderStatus.values());
-
-        // Devise par défaut pour l'affichage dynamique
-        String defaultCurrency = systemConfigService.getProperty("payment.default.currency", "EUR");
-        model.addAttribute("defaultCurrency", defaultCurrency);
-
-        return "admin/orders";
+    public String ordersPage() {
+        return "redirect:" + frontendUrl + "/admin/orders";
     }
 
     /**
-     * Redirige les anciens liens /admin/orders/{id} vers la page liste avec modal.
+     * Redirige vers le frontend Angular pour les détails d'une commande.
      */
     @GetMapping("/{orderId}")
     public String orderDetailsRedirect(@PathVariable java.util.UUID orderId) {
-        return "redirect:/admin/orders?detail=" + orderId;
+        return "redirect:" + frontendUrl + "/admin/orders/" + orderId;
     }
 
     /**
-     * Page de rapports et statistiques
+     * Redirige vers le frontend Angular pour les rapports.
      */
     @GetMapping("/reports")
-    public String reportsPage(Model model,
-                             @RequestParam(defaultValue = "30") int days) {
-        logger.info("Accès à la page de rapports - derniers {} jours", days);
-
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(days);
-
-        try {
-            OrderReportDto report = reportsService.generateOrderReport(startDate, endDate);
-            model.addAttribute("report", report);
-            model.addAttribute("days", days);
-
-        } catch (Exception e) {
-            logger.error("Erreur génération rapport: {}", e.getMessage());
-            model.addAttribute("error", "Erreur lors de la génération du rapport");
-        }
-
-        return "admin/order-reports";
+    public String reportsPage() {
+        return "redirect:" + frontendUrl + "/admin/orders/reports";
     }
 
     // ========== API REST pour recherche et pagination ==========

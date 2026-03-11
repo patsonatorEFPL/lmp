@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,6 +64,9 @@ public class StripeCheckoutController {
         private final UserRepository userRepository;
 
         private final ServiceCatalogService serviceCatalogService;
+
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
 
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
@@ -461,7 +463,6 @@ public class StripeCheckoutController {
     public String paymentProcessing(@RequestParam("order_id") java.util.UUID orderId,
             @RequestParam("session_id") String sessionId,
             @RequestParam(defaultValue = "success") String type,
-            Model model,
             RedirectAttributes redirectAttributes) {
 
         logger.info("Displaying payment processing page - Order: {}, Session: {}", orderId, sessionId);
@@ -479,27 +480,22 @@ public class StripeCheckoutController {
                         + "&session_id=" + sessionId + "&type=success";
             }
 
-            // Sinon, afficher la page de traitement avec les infos nécessaires au polling
-            model.addAttribute("orderId", orderId);
-            model.addAttribute("sessionId", sessionId);
-            model.addAttribute("serviceName", order.getServiceName());
-            model.addAttribute("totalAmount", order.getTotalAmount());
-            model.addAttribute("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
-
-            return "payment/processing";
+            // Rediriger vers le frontend Angular avec les paramètres de polling
+            return "redirect:" + frontendUrl + "/payment/processing?order_id=" + orderId
+                    + "&session_id=" + sessionId;
 
         } catch (ResourceNotFoundException e) {
             logger.warn("Order not found in processing callback: {}", orderId);
             redirectAttributes.addFlashAttribute("error",
                     "Commande non trouvée. Veuillez contacter le support.");
-            return "redirect:/services";
+            return "redirect:" + frontendUrl + "/services";
 
         } catch (Exception e) {
             logger.error("Error processing payment processing callback - Order: {}, Session: {}: {}",
                     orderId, sessionId, e.getMessage(), e);
             redirectAttributes.addFlashAttribute("error",
                     "Une erreur s'est produite. Veuillez contacter le support.");
-            return "redirect:/services";
+            return "redirect:" + frontendUrl + "/services";
         }
     }
 
@@ -513,7 +509,6 @@ public class StripeCheckoutController {
     public String paymentSuccess(@RequestParam("order_id") java.util.UUID orderId,
             @RequestParam("session_id") String sessionId,
             @RequestParam(defaultValue = "success") String type,
-            Model model,
             RedirectAttributes redirectAttributes) {
 
         logger.info("Processing Stripe Checkout success callback - Order: {}, Session: {}", orderId, sessionId);
@@ -521,49 +516,25 @@ public class StripeCheckoutController {
                 orderId, sessionId, type);
 
         try {
-            // Récupérer la commande
+            // Récupérer la commande (validation qu'elle existe)
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Commande non trouvée: " + orderId));
 
-            // Vérifier si le webhook a déjà mis à jour la commande
             boolean paymentConfirmed = order.getStatus() != OrderStatus.PAYMENT_PENDING;
 
-            // Ajouter les informations de base au modèle
-            model.addAttribute("order", order);
-            model.addAttribute("sessionId", sessionId);
-            model.addAttribute("success", true);
-            model.addAttribute("totalAmount", order.getTotalAmount());
-            model.addAttribute("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
-            model.addAttribute("paymentMethod", "Stripe Checkout");
-
-            // Essayer de récupérer la transaction (peut ne pas encore exister si webhook en
-            // attente)
-            Optional<PaymentTransaction> transactionOpt = paymentTransactionRepository.findByTransactionId(sessionId);
-
-            if (transactionOpt.isPresent()) {
-                PaymentTransaction transaction = transactionOpt.get();
-                model.addAttribute("transaction", transaction);
-                logger.info("Transaction found for payment success - Order: {}, Transaction: {}",
-                        orderId, transaction.getId());
-            } else {
-                // La transaction n'existe pas encore (webhook en cours de traitement)
-                logger.info("Transaction not yet created (webhook pending) - Order: {}, Session: {}",
-                        orderId, sessionId);
-                model.addAttribute("transaction", null);
-                model.addAttribute("webhookPending", !paymentConfirmed);
-            }
-
             auditLogger.info(
-                    "Payment success page displayed - Order: {}, Amount: {} {}, Status: {}, PaymentConfirmed: {}",
+                    "Payment success callback - Order: {}, Amount: {} {}, Status: {}, PaymentConfirmed: {}",
                     orderId, order.getTotalAmount(), order.getCurrency(), order.getStatus(), paymentConfirmed);
 
-            return "payment/success";
+            // Rediriger vers le frontend Angular
+            return "redirect:" + frontendUrl + "/payment/success?order_id=" + orderId
+                    + "&session_id=" + sessionId;
 
         } catch (ResourceNotFoundException e) {
             logger.warn("Order not found in success callback: {}", orderId);
             redirectAttributes.addFlashAttribute("error",
                     "Commande non trouvée. Veuillez contacter le support.");
-            return "redirect:/services";
+            return "redirect:" + frontendUrl + "/services";
 
         } catch (Exception e) {
             logger.error("Error processing payment success callback - Order: {}, Session: {}: {}",
@@ -573,7 +544,7 @@ public class StripeCheckoutController {
 
             redirectAttributes.addFlashAttribute("error",
                     "Une erreur s'est produite. Veuillez contacter le support.");
-            return "redirect:/services";
+            return "redirect:" + frontendUrl + "/services";
         }
     }
 
@@ -584,16 +555,7 @@ public class StripeCheckoutController {
     public String paymentCancel(@RequestParam(value = "order_id", required = false) java.util.UUID orderId,
             @RequestParam(value = "session_id", required = false) String sessionId,
             @RequestParam(defaultValue = "cancel") String type,
-            Model model,
-            RedirectAttributes redirectAttributes,
-            HttpServletRequest request) {
-
-        // 🔍 LOGS DE DIAGNOSTIC - Validation des paramètres reçus
-        logger.warn("🔍 DIAGNOSTIC ALERTE CHROME - Cancel callback appelé");
-        logger.warn("🔍 Parameters reçus - orderId: {}, sessionId: {}, type: {}", orderId, sessionId, type);
-        logger.warn("🔍 Request URL complète: {}", request.getRequestURL() + "?" + request.getQueryString());
-        logger.warn("🔍 Headers User-Agent: {}", request.getHeader("User-Agent"));
-        logger.warn("🔍 Headers Referer: {}", request.getHeader("Referer"));
+            RedirectAttributes redirectAttributes) {
 
         logger.info("Processing Stripe Checkout cancel callback - Order: {}, Session: {}", orderId, sessionId);
         auditLogger.info("Payment cancel callback - Order: {}, Session: {}, Type: {}",
@@ -602,15 +564,15 @@ public class StripeCheckoutController {
         try {
             // Validation des paramètres critiques
             if (orderId == null) {
-                logger.warn("🔍 DIAGNOSTIC - orderId est null, redirection vers /services");
+                logger.warn("Cancel callback: orderId is null, redirecting to services");
                 redirectAttributes.addFlashAttribute("info", "Paiement annulé. Vous pouvez réessayer à tout moment.");
-                return "redirect:/services";
+                return "redirect:" + frontendUrl + "/services";
             }
 
             if (sessionId == null || sessionId.trim().isEmpty()) {
-                logger.warn("🔍 DIAGNOSTIC - sessionId est null/vide, redirection vers /services");
+                logger.warn("Cancel callback: sessionId is null/empty, redirecting to services");
                 redirectAttributes.addFlashAttribute("info", "Paiement annulé. Vous pouvez réessayer à tout moment.");
-                return "redirect:/services";
+                return "redirect:" + frontendUrl + "/services";
             }
 
             // Récupérer la commande
@@ -620,44 +582,30 @@ public class StripeCheckoutController {
             // Récupérer la page source depuis les métadonnées de la session Stripe
             String sourcePage = getSourcePageFromStripeSession(sessionId);
 
-            // 🔍 LOGS DE DIAGNOSTIC - Analyse de la sourcePage
-            logger.warn("🔍 DIAGNOSTIC - sourcePage récupérée: '{}'", sourcePage);
-            if (sourcePage != null) {
-                logger.warn("🔍 DIAGNOSTIC - sourcePage validation:");
-                logger.warn("🔍   - Commence par http: {}", sourcePage.startsWith("http"));
-                logger.warn("🔍   - Commence par /: {}", sourcePage.startsWith("/"));
-                logger.warn("🔍   - Contient domaine externe: {}",
-                        sourcePage.contains("://") && !sourcePage.contains("lmp-services.ca"));
-                logger.warn("🔍   - Longueur: {}", sourcePage.length());
-            }
-
             auditLogger.info("Payment cancel callback - Order: {}, Amount: {} EUR, Source: {}",
                     orderId, order.getTotalAmount(), sourcePage);
 
             redirectAttributes.addFlashAttribute("info",
                     "Paiement annulé. Vous pouvez réessayer à tout moment.");
 
-            // 🔒 SÉCURISATION - Validation stricte de la redirection
+            // Validation stricte de la redirection
             String redirectUrl;
             if (sourcePage != null && isValidInternalUrl(sourcePage)) {
-                redirectUrl = sourcePage;
-                logger.warn("🔍 DIAGNOSTIC - Redirection vers sourcePage validée: {}", redirectUrl);
+                redirectUrl = frontendUrl + sourcePage;
             } else {
-                redirectUrl = "/services";
-                logger.warn("🔍 DIAGNOSTIC - Redirection sécurisée vers /services");
+                redirectUrl = frontendUrl + "/services";
                 if (sourcePage != null) {
-                    logger.warn("🔍 DIAGNOSTIC - sourcePage rejetée car non valide: {}", sourcePage);
+                    logger.warn("Cancel callback: sourcePage rejected as invalid: {}", sourcePage);
                 }
             }
 
-            // Rediriger vers la page validée
             return "redirect:" + redirectUrl;
 
         } catch (ResourceNotFoundException e) {
             logger.warn("Order not found in cancel callback: {}", orderId);
             redirectAttributes.addFlashAttribute("info",
                     "Paiement annulé. Vous pouvez réessayer à tout moment.");
-            return "redirect:/services";
+            return "redirect:" + frontendUrl + "/services";
 
         } catch (Exception e) {
             logger.error("Error processing payment cancel callback - Order: {}, Session: {}: {}",
@@ -667,51 +615,37 @@ public class StripeCheckoutController {
 
             redirectAttributes.addFlashAttribute("info",
                     "Paiement annulé. Vous pouvez réessayer à tout moment.");
-            return "redirect:/services";
+            return "redirect:" + frontendUrl + "/services";
         }
     }
 
     /**
-     * 🔒 Valide qu'une URL est interne et sécurisée
+     * Valide qu'une URL est un chemin interne autorisé (relative path uniquement).
      */
     private boolean isValidInternalUrl(String url) {
         if (url == null || url.trim().isEmpty()) {
             return false;
         }
 
-        // 🔍 LOGS DE DIAGNOSTIC - Validation URL
-        logger.warn("🔍 DIAGNOSTIC - Validation URL: '{}'", url);
-
-        // Nettoyer l'URL
         String cleanUrl = url.trim();
 
-        // Rejeter les URLs absolues externes
+        // Rejeter les URLs absolues — seuls les chemins relatifs sont autorisés
         if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
-            if (!cleanUrl.contains("lmp-services.ca") && !cleanUrl.contains("localhost")) {
-                logger.warn("🔍 DIAGNOSTIC - URL externe rejetée: {}", cleanUrl);
-                return false;
-            }
+            return false;
         }
 
-        // Autoriser seulement les URLs relatives valides
+        // Autoriser seulement les chemins relatifs connus
         if (cleanUrl.startsWith("/")) {
-            // Listes des chemins autorisés
             String[] allowedPaths = { "/services", "/", "/contact", "/about", "/legal", "/terms", "/privacy" };
 
             for (String allowedPath : allowedPaths) {
                 if (cleanUrl.equals(allowedPath) || cleanUrl.startsWith(allowedPath + "/")
                         || cleanUrl.startsWith(allowedPath + "?")) {
-                    logger.warn("🔍 DIAGNOSTIC - URL autorisée: {}", cleanUrl);
                     return true;
                 }
             }
-
-            logger.warn("🔍 DIAGNOSTIC - URL relative non autorisée: {}", cleanUrl);
-            return false;
         }
 
-        // Rejeter tout le reste
-        logger.warn("🔍 DIAGNOSTIC - URL format invalide: {}", cleanUrl);
         return false;
     }
 

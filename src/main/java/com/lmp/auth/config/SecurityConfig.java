@@ -43,8 +43,8 @@ import jakarta.servlet.http.HttpServletResponse;
  * Configuration de sécurité Spring Security pour l'application LMP.
  * 
  * Deux chaînes de filtres :
- * 1. API REST (/api/**) → JSON 401/403, CSRF cookie, stateless-like sessions
- * 2. Thymeleaf (legacy) → formLogin redirects, CSRF standard
+ * 1. API REST (/api/**) → JSON 401/403, CSRF cookie pour SPA Angular
+ * 2. Backend routes (legacy redirects, Stripe, webhooks) → formLogin pour session auth
  */
 @Configuration
 @EnableWebSecurity
@@ -153,15 +153,15 @@ public class SecurityConfig {
     }
 
     // =========================================================================
-    // Chaîne 2 : Thymeleaf + pages classiques (legacy)
+    // Chaîne 2 : Backend routes (redirects vers Angular, Stripe, webhooks, auth)
     // =========================================================================
 
     @Bean
     @Order(2)
-    public SecurityFilterChain thymeleafFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain backendFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        // Pages publiques accessibles à tous (visiteurs)
+                        // Routes publiques (redirections vers Angular + endpoints backend)
                         .requestMatchers(
                                 "/",
                                 "/about",
@@ -177,8 +177,6 @@ public class SecurityConfig {
                                 "/login",
                                 "/verify-email",
                                 "/resend-verification",
-                                "/css/**",
-                                "/js/**",
                                 "/images/**",
                                 "/favicon.ico",
                                 "/error")
@@ -198,14 +196,11 @@ public class SecurityConfig {
                                 "/googleb72d4c095922c4a8.html")
                         .permitAll()
 
-                        // Endpoints Stripe Checkout (legacy)
+                        // Endpoints Stripe Checkout
                         .requestMatchers(
                                 "/stripe/checkout/**",
                                 "/stripe/webhook/**")
                         .permitAll()
-
-                        // Endpoints temporaires de test
-                        .requestMatchers("/temp/**").permitAll()
 
                         // Endpoints de rendez-vous publics
                         .requestMatchers(
@@ -219,7 +214,7 @@ public class SecurityConfig {
                         // Pages d'administration
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        // Pages utilisateur
+                        // Pages utilisateur (redirections vers Angular)
                         .requestMatchers(
                                 "/dashboard/**",
                                 "/profile/**",
@@ -230,7 +225,7 @@ public class SecurityConfig {
                         // Toutes les autres requêtes nécessitent une authentification
                         .anyRequest().authenticated())
 
-                // Configuration du formulaire de connexion (Thymeleaf)
+                // Configuration du formulaire de connexion (session-based auth pour backend)
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/perform-login")
@@ -277,7 +272,7 @@ public class SecurityConfig {
                         .expiredUrl("/login?expired=true")
                         .sessionRegistry(sessionRegistry()))
 
-                // CSRF standard pour Thymeleaf + exceptions webhooks
+                // CSRF exceptions pour webhooks et endpoints publics
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 "/webhook/**",
@@ -285,8 +280,7 @@ public class SecurityConfig {
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
                                 "/appointments/create",
-                                "/appointments/available-slots",
-                                "/temp/**"))
+                                "/appointments/available-slots"))
 
                 // CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));

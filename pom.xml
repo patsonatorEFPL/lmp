@@ -46,7 +46,7 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
-		<!-- Thymeleaf pour les templates HTML (legacy — sera remplacé par Angular) -->
+		<!-- Thymeleaf — utilisé pour les emails HTML et le back-office admin -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
@@ -174,7 +174,7 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Thymeleaf Spring Security Integration (legacy) -->
+		<!-- Thymeleaf Spring Security Integration (back-office admin) -->
 		<dependency>
 			<groupId>org.thymeleaf.extras</groupId>
 			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
