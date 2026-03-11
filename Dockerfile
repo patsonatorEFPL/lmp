@@ -1,10 +1,10 @@
 # ========================================
-# Dockerfile pour Coolify Deployment
+# Dockerfile pour Dokploy Deployment
 # Application Spring Boot LMP - Java 21
 # ========================================
 
-# Étape 1: Build de l'application avec Java 17 (compatible Coolify)
-FROM maven:3.9.5-eclipse-temurin-17-alpine AS build
+# Étape 1: Build de l'application avec Java 21
+FROM maven:3.9.5-eclipse-temurin-21-alpine AS build
 
 WORKDIR /app
 
@@ -22,12 +22,12 @@ RUN ./mvnw dependency:go-offline -B
 # Copier le code source
 COPY src ./src
 
-# Compiler l'application avec Java 17
+# Compiler l'application avec Java 21
 RUN ./mvnw clean package -DskipTests -B
 
 # ========================================
-# Étape 2: Runtime optimisé avec Java 17
-FROM eclipse-temurin:17-jre-alpine
+# Étape 2: Runtime optimisé avec Java 21
+FROM eclipse-temurin:21-jre-alpine
 
 # Installation des outils nécessaires
 RUN apk add --no-cache \
@@ -37,7 +37,7 @@ RUN apk add --no-cache \
     ttf-dejavu
 
 # Configuration du timezone
-ENV TZ=America/Toronto
+ENV TZ=Europe/Zurich
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Création d'un utilisateur non-root pour la sécurité
@@ -60,12 +60,12 @@ USER spring
 # Variables d'environnement Spring Boot
 ENV SERVER_PORT=8080
 
-# Port exposé (Railway utilisera la variable PORT)
+# Port exposé (Dokploy utilisera la variable PORT)
 EXPOSE 8080
 
-# Health check pour Coolify
+# Health check pour Dokploy
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Point d'entrée avec profil production pour Coolify
+# Point d'entrée avec profil production pour Dokploy
 ENTRYPOINT ["java", "-Xmx1024m", "-XX:+UseG1GC", "-Dspring.profiles.active=prod", "-jar", "app.jar"]

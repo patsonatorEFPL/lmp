@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "importAlias": "@spartan-ng/helm"
+  }
+}
