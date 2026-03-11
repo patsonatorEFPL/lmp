@@ -6,15 +6,11 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import com.lmp.auth.domain.User;
@@ -38,6 +34,9 @@ public class AdminUserViewController {
     private static final Logger logger = LoggerFactory.getLogger(AdminUserViewController.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + AdminUserViewController.class.getName());
 
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
+
     private final UserService userService;
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
@@ -54,66 +53,11 @@ public class AdminUserViewController {
     }
 
     /**
-     * Affiche la page de gestion des utilisateurs
+     * Redirige vers le frontend Angular pour la gestion des utilisateurs.
      */
     @GetMapping
-    public String showUsersPage(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "registrationDate") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir,
-            Model model) {
-        
-        try {
-            // Configuration pagination et tri
-            Sort sort = Sort.by(sortDir.equals("desc") ? Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
-            Pageable pageable = PageRequest.of(page, size, sort);
-            
-            // Filtrage des utilisateurs
-            Page<User> usersPage;
-            if (status != null && !status.isEmpty()) {
-                UserStatus userStatus = UserStatus.valueOf(status.toUpperCase());
-                usersPage = userService.findByStatus(userStatus, pageable);
-            } else if (search != null && !search.isEmpty()) {
-                usersPage = userService.findByEmailContaining(search, pageable);
-            } else {
-                usersPage = userService.findAll(pageable);
-            }
-            
-            // Statistiques rapides
-            long totalUsers = userService.count();
-            long activeUsers = userService.countByStatus(UserStatus.ACTIVE);
-            long inactiveUsers = userService.countByStatus(UserStatus.INACTIVE);
-            long lockedUsers = userService.countByAccountLocked(true);
-            
-            // Ajout au modèle
-            model.addAttribute("usersPage", usersPage);
-            model.addAttribute("currentPage", page);
-            model.addAttribute("totalPages", usersPage.getTotalPages());
-            model.addAttribute("totalElements", usersPage.getTotalElements());
-            model.addAttribute("currentStatus", status);
-            model.addAttribute("currentSearch", search);
-            model.addAttribute("currentSort", sortBy);
-            model.addAttribute("currentSortDir", sortDir);
-            
-            // Statistiques
-            model.addAttribute("totalUsers", totalUsers);
-            model.addAttribute("activeUsers", activeUsers);
-            model.addAttribute("inactiveUsers", inactiveUsers);
-            model.addAttribute("lockedUsers", lockedUsers);
-            
-            logger.info("Users page loaded successfully - Total: {}, Page: {}/{}", 
-                       usersPage.getTotalElements(), page + 1, usersPage.getTotalPages());
-            
-            return "admin/users";
-            
-        } catch (Exception e) {
-            logger.error("Error loading users page: {}", e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement des utilisateurs: " + e.getMessage());
-            return "admin/users";
-        }
+    public String showUsersPage() {
+        return "redirect:" + frontendUrl + "/admin/users";
     }
 
     /**

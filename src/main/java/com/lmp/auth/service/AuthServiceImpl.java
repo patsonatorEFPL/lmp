@@ -67,6 +67,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${company.website:https://lmp-services.ca}")
     private String companyWebsite;
 
+    @Value("${app.frontend.url:${app.base.url:https://lmp-services.ca}}")
+    private String frontendUrl;
+
 
     public AuthServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -187,6 +190,7 @@ public class AuthServiceImpl implements AuthService {
             context.setVariable("user", user);
             context.setVariable("companyName", companyName);
             context.setVariable("baseUrl", baseUrl);
+            context.setVariable("frontendUrl", frontendUrl);
             context.setVariable("companyEmail", companyEmail);
             context.setVariable("companyWebsite", companyWebsite);
 

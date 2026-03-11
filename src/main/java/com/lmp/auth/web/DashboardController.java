@@ -2,7 +2,6 @@ package com.lmp.auth.web;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -14,8 +13,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import com.lmp.billing.domain.Order;
-import com.lmp.billing.domain.Review;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
@@ -38,6 +38,9 @@ public class DashboardController {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + DashboardController.class.getName());
+
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
 
         private final UserService userService;
 
@@ -75,90 +78,24 @@ public class DashboardController {
                               @RequestParam(name = "processPurchase", required = false) Boolean processPurchase,
                               HttpServletRequest request) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:/login";
+            return "redirect:" + frontendUrl + "/login";
         }
 
-        String userEmail = authentication.getName();
-        logger.info("Dashboard accessed by user: {}", userEmail);
-
-        try {
-            User user = userService.findByEmailWithAllCollections(userEmail)
-                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            // Redirection intelligente : Les ADMIN sont automatiquement redirigés vers leur interface
-            if (userService.hasRole(user.getId(), "ADMIN")) {
-                logger.info("Admin user {} redirected to admin dashboard", userEmail);
-                
-                // Si une intention de paiement existe, la transférer à l'admin dashboard
-                if (Boolean.TRUE.equals(processPurchase)) {
-                    return "redirect:/admin/dashboard?processPurchase=true";
-                }
-                
-                return "redirect:/admin/dashboard";
-            }
-
-            // Vérifier s'il faut traiter une intention de paiement pour les USER
-            if (Boolean.TRUE.equals(processPurchase)) {
-                logger.info("Processing purchase intent for user: {}", userEmail);
+        // Vérifier s'il faut traiter une intention de paiement
+        if (Boolean.TRUE.equals(processPurchase)) {
+            String userEmail = authentication.getName();
+            logger.info("Processing purchase intent for user: {}", userEmail);
+            try {
+                User user = userService.findByEmailWithAllCollections(userEmail)
+                        .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
                 return handlePurchaseIntentProcessing(user, request);
+            } catch (Exception e) {
+                logger.error("Error processing purchase intent for user {}: {}", userEmail, e.getMessage(), e);
             }
-
-            // Interface client pour les utilisateurs USER
-            logger.info("User {} accessing client dashboard", userEmail);
-
-            // Informations utilisateur
-            model.addAttribute("user", user);
-            model.addAttribute("userName", user.getDisplayName());
-            model.addAttribute("currentUserDisplayName", user.getDisplayName());
-            String initials = user.getDisplayName() != null && !user.getDisplayName().isEmpty()
-                    ? user.getDisplayName().substring(0, 1).toUpperCase() : "U";
-            model.addAttribute("currentUserInitials", initials);
-
-            // 🆕 Statistiques des commandes : exclure les PAYMENT_PENDING
-            List<Order> userOrders = user.getOrders() != null ?
-                    user.getOrders().stream()
-                            .filter(order -> order.getStatus() != OrderStatus.PAYMENT_PENDING)
-                            .toList() : List.of();
-            model.addAttribute("totalOrders", userOrders.size());
-            
-            long completedOrders = userOrders.stream()
-                    .filter(order -> order.getStatus().name().equals("COMPLETED"))
-                    .count();
-            model.addAttribute("completedOrders", completedOrders);
-            
-            long pendingOrders = userOrders.stream()
-                    .filter(order -> order.getStatus().name().equals("PENDING") ||
-                                   order.getStatus().name().equals("IN_PROGRESS"))
-                    .count();
-            model.addAttribute("pendingOrders", pendingOrders);
-
-            // Commandes récentes (les 3 dernières pour le client) : exclure les PAYMENT_PENDING
-            List<Order> recentOrders = userOrders.stream()
-                    .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()))
-                    .limit(3)
-                    .toList();
-            model.addAttribute("recentOrders", recentOrders);
-
-            // Avis récents
-            List<Review> userReviews = user.getReviews() != null ? user.getReviews().stream().toList() : List.of();
-            List<Review> recentReviews = userReviews.stream()
-                    .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
-                    .limit(3)
-                    .toList();
-            model.addAttribute("recentReviews", recentReviews);
-            model.addAttribute("totalReviews", userReviews.size());
-
-            // Statut de vérification de l'email
-            model.addAttribute("emailVerified", user.getEmailVerified());
-
-            // Interface client épurée pour les utilisateurs USER
-            return "user/client-dashboard";
-
-        } catch (Exception e) {
-            logger.error("Error loading dashboard for user {}: {}", userEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement du tableau de bord : " + e.getMessage());
-            return "error/500";
         }
+
+        // Rediriger vers le frontend Angular
+        return "redirect:" + frontendUrl + "/dashboard";
     }
 
     /**
@@ -177,13 +114,13 @@ public class DashboardController {
             
             if (intent == null) {
                 logger.warn("No purchase intent found in session for user: {}", user.getEmail());
-                return "redirect:/dashboard?error=no_intent_found";
+                return "redirect:" + frontendUrl + "/dashboard?error=no_intent_found";
             }
             
             if (!intent.isValid()) {
                 logger.warn("Invalid or expired purchase intent for user: {}", user.getEmail());
                 session.removeAttribute("pendingPurchaseIntent");
-                return "redirect:/dashboard?error=intent_expired";
+                return "redirect:" + frontendUrl + "/dashboard?error=intent_expired";
             }
             
             logger.info("Valid purchase intent found for user {}: {} - Amount: {} {}",
@@ -230,12 +167,12 @@ public class DashboardController {
                                 user.getId(), intent.getServiceName(), e.getMessage());
                 
                 // Rediriger vers dashboard avec erreur
-                return "redirect:/dashboard?error=payment_processing_failed";
+                return "redirect:" + frontendUrl + "/dashboard?error=payment_processing_failed";
             }
             
         } catch (Exception e) {
             logger.error("Error handling purchase intent for user {}: {}", user.getEmail(), e.getMessage(), e);
-            return "redirect:/dashboard?error=processing_error";
+            return "redirect:" + frontendUrl + "/dashboard?error=processing_error";
         }
     }
 
@@ -268,131 +205,22 @@ public class DashboardController {
      * @return Le nom de la vue
      */
     @GetMapping("/invoices")
-    public String showInvoices(Model model, Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:/login";
-        }
-
-        try {
-            User user = userService.findByEmailWithAllCollections(authentication.getName())
-                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            // Filtrer les commandes éligibles pour une facture
-            List<Order> invoiceEligibleOrders = user.getOrders() != null ?
-                    user.getOrders().stream()
-                            .filter(order -> {
-                                String status = order.getStatus().name();
-                                return "CONFIRMED".equals(status) || "COMPLETED".equals(status) ||
-                                       "DELIVERED".equals(status) || "PROCESSING".equals(status) ||
-                                       "IN_PROGRESS".equals(status);
-                            })
-                            .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()))
-                            .toList() : List.of();
-
-            model.addAttribute("user", user);
-            model.addAttribute("orders", invoiceEligibleOrders);
-
-            return "user/invoices";
-
-        } catch (Exception e) {
-            logger.error("Error loading invoices for user {}: {}", authentication.getName(), e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement des factures : " + e.getMessage());
-            return "error/500";
-        }
+    public String showInvoices() {
+        return "redirect:" + frontendUrl + "/dashboard";
     }
 
-    /**
-     * Affiche la liste complète des commandes de l'utilisateur.
-     * 
-     * @param model Le modèle pour la vue
-     * @param authentication L'authentification actuelle
-     * @return Le nom de la vue
-     */
     @GetMapping("/orders")
-    public String showOrders(Model model, Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:/login";
-        }
-
-        try {
-            User user = userService.findByEmailWithAllCollections(authentication.getName())
-                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            // 🆕 Exclure les commandes PAYMENT_PENDING de la liste complète
-            List<Order> orders = user.getOrders() != null ?
-                    user.getOrders().stream()
-                            .filter(order -> order.getStatus() != OrderStatus.PAYMENT_PENDING)
-                            .sorted((o1, o2) -> o2.getCreatedAt().compareTo(o1.getCreatedAt()))
-                            .toList() : List.of();
-
-            model.addAttribute("user", user);
-            model.addAttribute("orders", orders);
-
-            return "user/orders";
-
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", "Erreur lors du chargement des commandes : " + e.getMessage());
-            return "error/500";
-        }
+    public String showOrders() {
+        return "redirect:" + frontendUrl + "/dashboard";
     }
 
-    /**
-     * Affiche la liste des avis de l'utilisateur.
-     * 
-     * @param model Le modèle pour la vue
-     * @param authentication L'authentification actuelle
-     * @return Le nom de la vue
-     */
     @GetMapping("/reviews")
-    public String showReviews(Model model, Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:/login";
-        }
-
-        try {
-            User user = userService.findByEmailWithAllCollections(authentication.getName())
-                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            List<Review> reviews = user.getReviews() != null ? 
-                    user.getReviews().stream()
-                            .sorted((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
-                            .toList() : List.of();
-
-            model.addAttribute("user", user);
-            model.addAttribute("reviews", reviews);
-
-            return "user/reviews";
-
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", "Erreur lors du chargement des avis : " + e.getMessage());
-            return "error/500";
-        }
+    public String showReviews() {
+        return "redirect:" + frontendUrl + "/dashboard";
     }
 
-    /**
-     * Affiche les paramètres du compte utilisateur.
-     * 
-     * @param model Le modèle pour la vue
-     * @param authentication L'authentification actuelle
-     * @return Le nom de la vue
-     */
     @GetMapping("/settings")
-    public String showSettings(Model model, Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:/login";
-        }
-
-        try {
-            User user = userService.findByEmailWithAllCollections(authentication.getName())
-                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-            model.addAttribute("user", user);
-
-            return "user/settings";
-
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", "Erreur lors du chargement des paramètres : " + e.getMessage());
-            return "error/500";
-        }
+    public String showSettings() {
+        return "redirect:" + frontendUrl + "/settings";
     }
 }

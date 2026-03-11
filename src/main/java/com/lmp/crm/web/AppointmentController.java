@@ -49,6 +49,9 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
     private final UserService userService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
+
     public AppointmentController(AppointmentService appointmentService, UserService userService) {
         this.appointmentService = appointmentService;
         this.userService = userService;
@@ -260,13 +263,12 @@ public class AppointmentController {
     // =================================
 
     /**
-     * Page d'administration des rendez-vous
+     * Redirige l'ancienne page d'administration des rendez-vous vers Angular.
      */
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public String adminAppointments(Model model) {
-        model.addAttribute("title", "Gestion des rendez-vous");
-        return "admin/appointments";
+    public String adminAppointments() {
+        return "redirect:" + frontendUrl + "/admin/appointments";
     }
 
     /**

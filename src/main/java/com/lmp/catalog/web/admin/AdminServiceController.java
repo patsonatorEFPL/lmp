@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -36,6 +37,9 @@ public class AdminServiceController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminServiceController.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + AdminServiceController.class.getName());
+
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
 
         private final ServiceCatalogService catalogService;
 
@@ -67,26 +71,8 @@ public class AdminServiceController {
     // ========== Page principale ==========
 
     @GetMapping
-    public String servicesPage(Model model) {
-        List<ServiceCategory> categories = categoryRepository.findAllByOrderByDisplayOrderAsc();
-        List<Service> services = serviceRepository.findAll();
-        List<ServiceOffer> offers = offerRepository.findAll();
-
-        // Eagerly load offer benefits for display
-        for (ServiceOffer offer : offers) {
-            List<OfferBenefit> benefits = offerBenefitRepository.findByOfferIdOrderByDisplayOrderAsc(offer.getId());
-            offer.setBenefits(new java.util.LinkedHashSet<>(benefits));
-        }
-
-        model.addAttribute("categories", categories);
-        model.addAttribute("services", services);
-        model.addAttribute("offers", offers);
-        model.addAttribute("durationTypes", DurationType.values());
-        model.addAttribute("totalCategories", categories.size());
-        model.addAttribute("totalServices", services.size());
-        model.addAttribute("totalOffers", offers.size());
-
-        return "admin/services";
+    public String servicesPage() {
+        return "redirect:" + frontendUrl + "/admin/services";
     }
 
     // ========== API Catégories ==========

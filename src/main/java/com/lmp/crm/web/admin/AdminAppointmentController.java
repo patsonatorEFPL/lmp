@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -55,6 +56,9 @@ public class AdminAppointmentController {
     private static final Logger logger = LoggerFactory.getLogger(AdminAppointmentController.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + AdminAppointmentController.class.getName());
 
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
+
         private final AppointmentService appointmentService;
 
         private final UserService userService;
@@ -71,278 +75,51 @@ public class AdminAppointmentController {
     }
 
     /**
-     * Page principale de gestion des rendez-vous
+     * Redirige vers le frontend Angular pour la gestion des rendez-vous.
      */
     @GetMapping
-    public String listAppointments(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "appointmentDate") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection,
-            @RequestParam(required = false) AppointmentStatus status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(required = false) String search,
-            Model model,
-            Authentication authentication) {
-
-        String adminEmail = authentication.getName();
-        logger.info("Admin appointments list accessed by: {}", adminEmail);
-
-        try {
-            // Configuration de la pagination et du tri
-            Sort sort = sortDirection.equalsIgnoreCase("desc") ? 
-                Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-
-            logger.debug("Listing appointments - page: {}, size: {}, sortBy: {}, sortDirection: {}, status: {}, search: {}",
-                page, size, sortBy, sortDirection, status, search);
-
-            // Récupération des rendez-vous avec filtres
-            Page<Appointment> appointments;
-            
-            if (search != null && !search.trim().isEmpty()) {
-                logger.debug("Searching appointments with keyword: {}", search.trim());
-                appointments = appointmentService.searchAppointments(search.trim(), pageable);
-            } else {
-                logger.debug("Finding appointments with filters - status: {}, startDate: {}, endDate: {}", status, startDate, endDate);
-                appointments = appointmentService.findAppointments(status, startDate, endDate, pageable);
-            }
-            
-            logger.info("Found {} appointments (total: {})", appointments.getNumberOfElements(), appointments.getTotalElements());
-
-            // Statistiques par statut
-            Map<AppointmentStatus, Long> statusCounts = Map.of(
-                AppointmentStatus.PENDING, appointmentService.countAppointmentsByStatus(AppointmentStatus.PENDING),
-                AppointmentStatus.CONFIRMED, appointmentService.countAppointmentsByStatus(AppointmentStatus.CONFIRMED),
-                AppointmentStatus.IN_PROGRESS, appointmentService.countAppointmentsByStatus(AppointmentStatus.IN_PROGRESS),
-                AppointmentStatus.COMPLETED, appointmentService.countAppointmentsByStatus(AppointmentStatus.COMPLETED),
-                AppointmentStatus.CANCELLED, appointmentService.countAppointmentsByStatus(AppointmentStatus.CANCELLED),
-                AppointmentStatus.NO_SHOW, appointmentService.countAppointmentsByStatus(AppointmentStatus.NO_SHOW)
-            );
-
-            // Calcul des statistiques individuelles
-            long totalAppointments = appointments.getTotalElements();
-            long confirmedCount = statusCounts.get(AppointmentStatus.CONFIRMED);
-            long pendingCount = statusCounts.get(AppointmentStatus.PENDING);
-            long cancelledCount = statusCounts.get(AppointmentStatus.CANCELLED);
-            long completedCount = statusCounts.get(AppointmentStatus.COMPLETED);
-            long inProgressCount = statusCounts.get(AppointmentStatus.IN_PROGRESS);
-            long noShowCount = statusCounts.get(AppointmentStatus.NO_SHOW);
-
-            // Ajout des données au modèle
-            model.addAttribute("appointments", appointments);
-            model.addAttribute("statusCounts", statusCounts);
-            model.addAttribute("currentPage", page);
-            model.addAttribute("totalPages", appointments.getTotalPages());
-            model.addAttribute("pageSize", size);
-            model.addAttribute("sortBy", sortBy);
-            model.addAttribute("sortDirection", sortDirection);
-            model.addAttribute("status", status);
-            model.addAttribute("startDate", startDate);
-            model.addAttribute("endDate", endDate);
-            model.addAttribute("search", search);
-            model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            
-            // Statistiques pour les cartes du template
-            model.addAttribute("totalAppointments", totalAppointments);
-            model.addAttribute("confirmedCount", confirmedCount);
-            model.addAttribute("pendingCount", pendingCount);
-            model.addAttribute("cancelledCount", cancelledCount);
-            model.addAttribute("completedCount", completedCount);
-            model.addAttribute("inProgressCount", inProgressCount);
-            model.addAttribute("noShowCount", noShowCount);
-
-            auditLogger.info("Admin appointments list viewed by: {} - {} appointments", 
-                adminEmail, appointments.getTotalElements());
-
-            return "admin/appointments";
-
-        } catch (Exception e) {
-            logger.error("Error loading appointments list for admin {}: {}", adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement des rendez-vous : " + e.getMessage());
-            return "admin/appointments";
-        }
+    public String listAppointments() {
+        return "redirect:" + frontendUrl + "/admin/appointments";
     }
 
     /**
-     * Affiche les détails d'un rendez-vous
+     * Redirige vers le frontend Angular pour les détails d'un rendez-vous.
      */
     @GetMapping("/{id}")
-    public String viewAppointment(@PathVariable java.util.UUID id, Model model, Authentication authentication) {
-        String adminEmail = authentication.getName();
-        logger.info("Admin viewing appointment {} by: {}", id, adminEmail);
-
-        try {
-            Appointment appointment = appointmentService.findById(id);
-            model.addAttribute("appointment", appointment);
-            
-            auditLogger.info("Appointment {} viewed by admin: {}", id, adminEmail);
-            
-            return "admin/appointment-details";
-
-        } catch (Exception e) {
-            logger.error("Error loading appointment {} for admin {}: {}", id, adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Rendez-vous non trouvé ou erreur : " + e.getMessage());
-            return "redirect:/admin/appointments";
-        }
+    public String viewAppointment(@PathVariable java.util.UUID id) {
+        return "redirect:" + frontendUrl + "/admin/appointments/" + id;
     }
 
     /**
-     * Formulaire de création d'un nouveau rendez-vous
+     * Redirige vers le frontend Angular pour la création d'un rendez-vous.
      */
     @GetMapping("/new")
-    public String newAppointmentForm(Model model, Authentication authentication) {
-        String adminEmail = authentication.getName();
-        logger.info("Admin creating new appointment by: {}", adminEmail);
-
-        try {
-            model.addAttribute("appointmentForm", new AppointmentForm());
-            model.addAttribute("users", userService.findAll());
-            model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            
-            return "admin/appointment-form";
-
-        } catch (Exception e) {
-            logger.error("Error loading new appointment form for admin {}: {}", adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement du formulaire : " + e.getMessage());
-            return "redirect:/admin/appointments";
-        }
+    public String newAppointmentForm() {
+        return "redirect:" + frontendUrl + "/admin/appointments/new";
     }
 
     /**
-     * Sauvegarde d'un nouveau rendez-vous
+     * Legacy form submission — redirects to Angular.
      */
     @PostMapping("/save")
-    public String saveAppointment(
-            @Valid @ModelAttribute("appointmentForm") AppointmentForm appointmentForm,
-            BindingResult bindingResult,
-            @RequestParam java.util.UUID userId,
-            Model model,
-            RedirectAttributes redirectAttributes,
-            Authentication authentication) {
-
-        String adminEmail = authentication.getName();
-        logger.info("Admin saving new appointment by: {}", adminEmail);
-
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("users", userService.findAll());
-            model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            return "admin/appointment-form";
-        }
-
-        try {
-            User user = userService.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-            
-            Appointment appointment = appointmentService.createAppointment(appointmentForm, user);
-            
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Rendez-vous créé avec succès (ID: " + appointment.getId() + ")");
-            
-            auditLogger.info("New appointment {} created by admin: {}", appointment.getId(), adminEmail);
-            
-            return "redirect:/admin/appointments";
-
-        } catch (Exception e) {
-            logger.error("Error saving appointment by admin {}: {}", adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors de la création : " + e.getMessage());
-            model.addAttribute("users", userService.findAll());
-            model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            return "admin/appointment-form";
-        }
+    public String saveAppointment() {
+        return "redirect:" + frontendUrl + "/admin/appointments";
     }
 
     /**
-     * Formulaire de modification d'un rendez-vous
+     * Redirige vers le frontend Angular pour la modification d'un rendez-vous.
      */
     @GetMapping("/{id}/edit")
-    public String editAppointmentForm(@PathVariable java.util.UUID id, Model model, Authentication authentication) {
-        String adminEmail = authentication.getName();
-        logger.info("Admin editing appointment {} by: {}", id, adminEmail);
-
-        try {
-            Appointment appointment = appointmentService.findById(id);
-            
-            // Conversion vers AppointmentForm
-            AppointmentForm appointmentForm = new AppointmentForm(
-                appointment.getSubject(),
-                appointment.getDescription(),
-                appointment.getAppointmentDate(),
-                appointment.getDurationMinutes(),
-                appointment.getPriority()
-            );
-
-            model.addAttribute("appointmentForm", appointmentForm);
-            model.addAttribute("appointment", appointment);
-            model.addAttribute("users", userService.findAll());
-            model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            
-            return "admin/appointment-form";
-
-        } catch (Exception e) {
-            logger.error("Error loading edit form for appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement : " + e.getMessage());
-            return "redirect:/admin/appointments";
-        }
+    public String editAppointmentForm(@PathVariable java.util.UUID id) {
+        return "redirect:" + frontendUrl + "/admin/appointments/" + id + "/edit";
     }
 
     /**
-     * Mise à jour d'un rendez-vous existant
+     * Legacy form update — redirects to Angular.
      */
     @PostMapping("/{id}/update")
-    public String updateAppointment(
-            @PathVariable java.util.UUID id,
-            @Valid @ModelAttribute("appointmentForm") AppointmentForm appointmentForm,
-            BindingResult bindingResult,
-            @RequestParam(required = false) String adminNotes,
-            Model model,
-            RedirectAttributes redirectAttributes,
-            Authentication authentication) {
-
-        String adminEmail = authentication.getName();
-        logger.info("Admin updating appointment {} by: {}", id, adminEmail);
-
-        if (bindingResult.hasErrors()) {
-            try {
-                Appointment appointment = appointmentService.findById(id);
-                model.addAttribute("appointment", appointment);
-                model.addAttribute("users", userService.findAll());
-                model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            } catch (Exception e) {
-                logger.error("Error reloading appointment {} for validation errors", id, e);
-            }
-            return "admin/appointment-form";
-        }
-
-        try {
-            Appointment appointment = appointmentService.updateAppointment(id, appointmentForm);
-            
-            // Mise à jour des notes administratives si fournies
-            if (adminNotes != null && !adminNotes.trim().isEmpty()) {
-                appointmentService.updateAdminNotes(id, adminNotes.trim());
-            }
-            
-            redirectAttributes.addFlashAttribute("successMessage", 
-                "Rendez-vous mis à jour avec succès");
-            
-            auditLogger.info("Appointment {} updated by admin: {}", id, adminEmail);
-            
-            return "redirect:/admin/appointments/" + id;
-
-        } catch (Exception e) {
-            logger.error("Error updating appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors de la mise à jour : " + e.getMessage());
-            try {
-                Appointment appointment = appointmentService.findById(id);
-                model.addAttribute("appointment", appointment);
-                model.addAttribute("users", userService.findAll());
-                model.addAttribute("allStatuses", Arrays.asList(AppointmentStatus.values()));
-            } catch (Exception ex) {
-                logger.error("Error reloading appointment {} after update error", id, ex);
-            }
-            return "admin/appointment-form";
-        }
+    public String updateAppointment(@PathVariable java.util.UUID id) {
+        return "redirect:" + frontendUrl + "/admin/appointments/" + id;
     }
 
     /**
@@ -365,13 +142,13 @@ public class AdminAppointmentController {
             
             auditLogger.info("Appointment {} cancelled (soft delete) by admin: {}", id, adminEmail);
             
-            return "redirect:/admin/appointments";
+            return "redirect:" + frontendUrl + "/admin/appointments";
 
         } catch (Exception e) {
             logger.error("Error cancelling appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", 
                 "Erreur lors de l'annulation : " + e.getMessage());
-            return "redirect:/admin/appointments";
+            return "redirect:" + frontendUrl + "/admin/appointments";
         }
     }
     
@@ -395,13 +172,13 @@ public class AdminAppointmentController {
             
             auditLogger.warn("Appointment {} permanently deleted by admin: {}", id, adminEmail);
             
-            return "redirect:/admin/appointments";
+            return "redirect:" + frontendUrl + "/admin/appointments";
 
         } catch (Exception e) {
             logger.error("Error permanently deleting appointment {} by admin {}: {}", id, adminEmail, e.getMessage(), e);
             redirectAttributes.addFlashAttribute("errorMessage", 
                 "Erreur lors de la suppression définitive : " + e.getMessage());
-            return "redirect:/admin/appointments";
+            return "redirect:" + frontendUrl + "/admin/appointments";
         }
     }
 
@@ -584,13 +361,11 @@ public class AdminAppointmentController {
     }
 
     /**
-     * Page de test et diagnostic complète
+     * Redirige vers Angular (test page supprimée).
      */
     @GetMapping("/test-page")
-    public String testPage(Model model, Authentication authentication) {
-        String adminEmail = authentication.getName();
-        logger.info("Accès à la page de test et diagnostic des rendez-vous par: {}", adminEmail);
-        return "admin/appointments-test";
+    public String testPage() {
+        return "redirect:" + frontendUrl + "/admin/appointments";
     }
     
     /**
@@ -688,50 +463,11 @@ public class AdminAppointmentController {
     }
     
     /**
-     * Page simple pour le debug
+     * Redirige vers Angular (simple list supprimée).
      */
     @GetMapping("/simple")
-    public String listAppointmentsSimple(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            Model model,
-            Authentication authentication) {
-
-        String adminEmail = authentication.getName();
-        logger.info("Admin appointments simple list accessed by: {}", adminEmail);
-
-        try {
-            // Configuration simple
-            Pageable pageable = PageRequest.of(page, size, Sort.by("appointmentDate").descending());
-
-            // Récupération des rendez-vous sans filtres
-            Page<Appointment> appointments = appointmentService.findAppointments(null, null, null, pageable);
-
-            // Statistiques par statut
-            Map<AppointmentStatus, Long> statusCounts = Map.of(
-                AppointmentStatus.PENDING, appointmentService.countAppointmentsByStatus(AppointmentStatus.PENDING),
-                AppointmentStatus.CONFIRMED, appointmentService.countAppointmentsByStatus(AppointmentStatus.CONFIRMED),
-                AppointmentStatus.IN_PROGRESS, appointmentService.countAppointmentsByStatus(AppointmentStatus.IN_PROGRESS),
-                AppointmentStatus.COMPLETED, appointmentService.countAppointmentsByStatus(AppointmentStatus.COMPLETED),
-                AppointmentStatus.CANCELLED, appointmentService.countAppointmentsByStatus(AppointmentStatus.CANCELLED),
-                AppointmentStatus.NO_SHOW, appointmentService.countAppointmentsByStatus(AppointmentStatus.NO_SHOW)
-            );
-
-            // Ajout des données au modèle
-            model.addAttribute("appointments", appointments);
-            model.addAttribute("statusCounts", statusCounts);
-            model.addAttribute("pageSize", size);
-
-            logger.info("Simple appointments list loaded: {} appointments (total: {})", 
-                appointments.getNumberOfElements(), appointments.getTotalElements());
-
-            return "admin/appointments-simple";
-
-        } catch (Exception e) {
-            logger.error("Error loading simple appointments list for admin {}: {}", adminEmail, e.getMessage(), e);
-            model.addAttribute("errorMessage", "Erreur lors du chargement des rendez-vous : " + e.getMessage());
-            return "admin/appointments-simple";
-        }
+    public String listAppointmentsSimple() {
+        return "redirect:" + frontendUrl + "/admin/appointments";
     }
 
     /**

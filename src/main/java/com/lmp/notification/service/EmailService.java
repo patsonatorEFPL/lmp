@@ -40,6 +40,9 @@ public class EmailService {
     @Value("${app.name:LMP Digital Services}")
     private String appName;
 
+    @Value("${app.frontend.url:${app.base.url:https://lmp-services.ca}}")
+    private String frontendUrl;
+
 
     public EmailService(JavaMailSender mailSender,
                            TemplateEngine templateEngine,
@@ -233,6 +236,7 @@ public class EmailService {
         variables.put("companyName", appName);
         variables.put("companyEmail", mailAddressConfig.getReplyToSupport());
         variables.put("companyWebsite", "https://lmp-services.ca");
+        variables.put("frontendUrl", frontendUrl);
         variables.put("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         
         String subject = "Bienvenue chez " + appName + " !";
@@ -258,6 +262,7 @@ public class EmailService {
         variables.put("orderId", orderId);
         variables.put("amount", amount);
         variables.put("companyName", appName);
+        variables.put("frontendUrl", frontendUrl);
         variables.put("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
         
         String subject = "Confirmation de votre commande #" + orderId;

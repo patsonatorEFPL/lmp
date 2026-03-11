@@ -19,10 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,6 +43,8 @@ import static org.mockito.Mockito.*;
 @WithMockUser(roles = "ADMIN")
 class AdminAppointmentControllerTest {
 
+    private static final String FRONTEND_URL = "http://localhost:4200";
+
     @Mock
     private AppointmentService appointmentService;
 
@@ -54,28 +52,20 @@ class AdminAppointmentControllerTest {
     private UserService userService;
 
     @Mock
-    private Model model;
-
-    @Mock
-    private BindingResult bindingResult;
-
-    @Mock
     private RedirectAttributes redirectAttributes;
 
     @InjectMocks
     private AdminAppointmentController controller;
 
-    private MockMvc mockMvc;
-
     private User testUser;
     private Appointment testAppointment;
-    private AppointmentForm testAppointmentForm;
     private UUID userId;
     private UUID appointmentId;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        // Inject frontendUrl since @Value is not processed by Mockito
+        ReflectionTestUtils.setField(controller, "frontendUrl", FRONTEND_URL);
 
         userId = UUID.randomUUID();
         appointmentId = UUID.randomUUID();
@@ -95,149 +85,47 @@ class AdminAppointmentControllerTest {
         testAppointment.setPriority(5);
         testAppointment.setStatus(AppointmentStatus.PENDING);
         testAppointment.setCreatedAt(LocalDateTime.now());
+    }
 
-        testAppointmentForm = new AppointmentForm();
-        testAppointmentForm.setSubject("Test Appointment");
-        testAppointmentForm.setAppointmentDate(LocalDateTime.now().plusDays(1));
-        testAppointmentForm.setDurationMinutes(60);
-        testAppointmentForm.setPriority(5);
+    // ======== REDIRECT TESTS (simplified controller methods) ========
+
+    @Test
+    void testListAppointments_RedirectsToAngular() {
+        String result = controller.listAppointments();
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments", result);
     }
 
     @Test
-    void testListAppointments_Success() {
-        List<Appointment> appointments = Arrays.asList(testAppointment);
-        Page<Appointment> appointmentPage = new PageImpl<>(appointments);
-
-        when(appointmentService.findAppointments(any(), any(), any(), any(Pageable.class)))
-            .thenReturn(appointmentPage);
-        when(appointmentService.countAppointmentsByStatus(any(AppointmentStatus.class)))
-            .thenReturn(1L);
-
-        String result = controller.listAppointments(0, 10, "appointmentDate", "desc",
-            null, null, null, null, model,
-            createMockAuthentication()
-        );
-
-        assertEquals("admin/appointments", result);
-        verify(model).addAttribute(eq("appointments"), eq(appointmentPage));
-        verify(model).addAttribute(eq("statusCounts"), any(Map.class));
+    void testViewAppointment_RedirectsToAngular() {
+        String result = controller.viewAppointment(appointmentId);
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/" + appointmentId, result);
     }
 
     @Test
-    void testListAppointments_WithSearch() {
-        List<Appointment> appointments = Arrays.asList(testAppointment);
-        Page<Appointment> appointmentPage = new PageImpl<>(appointments);
-
-        when(appointmentService.searchAppointments(eq("test"), any(Pageable.class)))
-            .thenReturn(appointmentPage);
-        when(appointmentService.countAppointmentsByStatus(any(AppointmentStatus.class)))
-            .thenReturn(1L);
-
-        String result = controller.listAppointments(0, 10, "appointmentDate", "desc",
-            null, null, null, "test", model,
-            createMockAuthentication()
-        );
-
-        assertEquals("admin/appointments", result);
-        verify(appointmentService).searchAppointments(eq("test"), any(Pageable.class));
+    void testNewAppointmentForm_RedirectsToAngular() {
+        String result = controller.newAppointmentForm();
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/new", result);
     }
 
     @Test
-    void testViewAppointment_Success() {
-        when(appointmentService.findById(appointmentId)).thenReturn(testAppointment);
-
-        String result = controller.viewAppointment(appointmentId, model, createMockAuthentication());
-
-        assertEquals("admin/appointment-details", result);
-        verify(model).addAttribute(eq("appointment"), eq(testAppointment));
+    void testSaveAppointment_RedirectsToAngular() {
+        String result = controller.saveAppointment();
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments", result);
     }
 
     @Test
-    void testViewAppointment_NotFound() {
-        when(appointmentService.findById(appointmentId))
-            .thenThrow(new RuntimeException("Rendez-vous non trouvé"));
-
-        String result = controller.viewAppointment(appointmentId, model, createMockAuthentication());
-
-        assertEquals("redirect:/admin/appointments", result);
-        verify(model).addAttribute(eq("errorMessage"), contains("non trouvé"));
+    void testEditAppointmentForm_RedirectsToAngular() {
+        String result = controller.editAppointmentForm(appointmentId);
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/" + appointmentId + "/edit", result);
     }
 
     @Test
-    void testNewAppointmentForm_Success() {
-        when(userService.findAll()).thenReturn(Arrays.asList(testUser));
-
-        String result = controller.newAppointmentForm(model, createMockAuthentication());
-
-        assertEquals("admin/appointment-form", result);
-        verify(model).addAttribute(eq("appointmentForm"), any(AppointmentForm.class));
-        verify(model).addAttribute(eq("users"), any(List.class));
+    void testUpdateAppointment_RedirectsToAngular() {
+        String result = controller.updateAppointment(appointmentId);
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/" + appointmentId, result);
     }
 
-    @Test
-    void testSaveAppointment_Success() {
-        when(bindingResult.hasErrors()).thenReturn(false);
-        when(userService.findById(userId)).thenReturn(Optional.of(testUser));
-        when(appointmentService.createAppointment(any(AppointmentForm.class), any(User.class)))
-            .thenReturn(testAppointment);
-
-        String result = controller.saveAppointment(testAppointmentForm, bindingResult,
-            userId, model, redirectAttributes, createMockAuthentication());
-
-        assertEquals("redirect:/admin/appointments", result);
-        verify(redirectAttributes).addFlashAttribute(eq("successMessage"), anyString());
-    }
-
-    @Test
-    void testSaveAppointment_ValidationErrors() {
-        when(bindingResult.hasErrors()).thenReturn(true);
-        when(userService.findAll()).thenReturn(Arrays.asList(testUser));
-
-        String result = controller.saveAppointment(testAppointmentForm, bindingResult,
-            userId, model, redirectAttributes, createMockAuthentication());
-
-        assertEquals("admin/appointment-form", result);
-        verify(model).addAttribute(eq("users"), any(List.class));
-        verify(redirectAttributes, never()).addFlashAttribute(anyString(), anyString());
-    }
-
-    @Test
-    void testEditAppointmentForm_Success() {
-        when(appointmentService.findById(appointmentId)).thenReturn(testAppointment);
-        when(userService.findAll()).thenReturn(Arrays.asList(testUser));
-
-        String result = controller.editAppointmentForm(appointmentId, model, createMockAuthentication());
-
-        assertEquals("admin/appointment-form", result);
-        verify(model).addAttribute(eq("appointmentForm"), any(AppointmentForm.class));
-        verify(model).addAttribute(eq("appointment"), eq(testAppointment));
-    }
-
-    @Test
-    void testUpdateAppointment_Success() {
-        when(bindingResult.hasErrors()).thenReturn(false);
-        when(appointmentService.updateAppointment(eq(appointmentId), any(AppointmentForm.class)))
-            .thenReturn(testAppointment);
-
-        String result = controller.updateAppointment(appointmentId, testAppointmentForm, bindingResult,
-            null, model, redirectAttributes, createMockAuthentication());
-
-        assertEquals("redirect:/admin/appointments/" + appointmentId, result);
-        verify(redirectAttributes).addFlashAttribute(eq("successMessage"), anyString());
-    }
-
-    @Test
-    void testUpdateAppointment_WithAdminNotes() {
-        when(bindingResult.hasErrors()).thenReturn(false);
-        when(appointmentService.updateAppointment(eq(appointmentId), any(AppointmentForm.class)))
-            .thenReturn(testAppointment);
-
-        String result = controller.updateAppointment(appointmentId, testAppointmentForm, bindingResult,
-            "Admin notes", model, redirectAttributes, createMockAuthentication());
-
-        assertEquals("redirect:/admin/appointments/" + appointmentId, result);
-        verify(appointmentService).updateAdminNotes(appointmentId, "Admin notes");
-    }
+    // ======== ACTION TESTS (still have business logic) ========
 
     @Test
     void testDeleteAppointmentPermanent_Success() {
@@ -245,7 +133,7 @@ class AdminAppointmentControllerTest {
 
         String result = controller.deleteAppointmentPermanent(appointmentId, redirectAttributes, createMockAuthentication());
 
-        assertEquals("redirect:/admin/appointments", result);
+        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments", result);
         verify(redirectAttributes).addFlashAttribute(eq("successMessage"), anyString());
         verify(appointmentService).deleteAppointment(eq(appointmentId), anyString());
     }
