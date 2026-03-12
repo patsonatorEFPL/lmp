@@ -107,10 +107,21 @@ public class DataInitializer implements CommandLineRunner {
     // -------------------------------------------------------------------------
 
     private void initializeDefaultUsers() {
-        if (!userRepository.existsByEmail("admin@lmp.ca")) {
-            Role adminRole = roleRepository.findByName("ADMIN")
-                    .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
+        Role adminRole = roleRepository.findByName("ADMIN")
+                .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
 
+        var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
+        if (existingAdmin.isPresent()) {
+            // V3 migration may have inserted admin with a hash that doesn't match "admin123".
+            // Force-sync the password so the documented default password always works.
+            User admin = existingAdmin.get();
+            String expectedHash = passwordEncoder.encode("admin123");
+            if (!passwordEncoder.matches("admin123", admin.getPassword())) {
+                admin.setPassword(expectedHash);
+                userRepository.save(admin);
+                logger.info("🔑 Mot de passe admin synchronisé avec la valeur par défaut.");
+            }
+        } else {
             User admin = new User();
             admin.setEmail("admin@lmp.ca");
             admin.setPassword(passwordEncoder.encode("admin123"));
