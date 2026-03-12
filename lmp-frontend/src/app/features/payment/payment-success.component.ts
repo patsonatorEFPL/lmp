@@ -18,6 +18,7 @@ interface PaymentStatusResponse {
   status: string;
   paymentStatus: string;
   ready: boolean;
+  paymentConfirmed: boolean;
 }
 
 interface ApiResponse<T> {
@@ -228,8 +229,16 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
           if (res.data?.ready) {
             this.stopPolling();
             this.polling.set(false);
-            this.confirmed.set(true);
-            this.orderStatus.set(res.data.status);
+            if (res.data.paymentConfirmed) {
+              this.confirmed.set(true);
+              this.orderStatus.set(res.data.status);
+            } else {
+              // Payment was processed but NOT confirmed (cancelled, refunded, or failed)
+              this.error.set(
+                'Votre paiement n\'a pas pu être confirmé. Statut : ' +
+                res.data.status + '. Veuillez contacter le support si vous pensez qu\'il s\'agit d\'une erreur.'
+              );
+            }
           }
         },
         error: () => {

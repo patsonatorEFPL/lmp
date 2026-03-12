@@ -1,120 +1,165 @@
 -- =============================================
 -- V5: Seed default service categories, services, offers and benefits
+-- Idempotent: uses ON CONFLICT DO NOTHING and conditional inserts
+-- Uses subqueries for category_id to avoid FK constraint issues
+-- when categories already exist from DataInitializer with different UUIDs
 -- =============================================
 
--- ===== CATEGORIES =====
+-- ===== CATEGORIES (unique on slug) =====
 
 INSERT INTO service_categories (id, name, slug, description, icon, display_order) VALUES
-    ('a1000000-0000-0000-0000-000000000001', 'Marketing Digital', 'marketing-digital', 'Services de marketing digital et publicité en ligne', '📈', 1),
-    ('a1000000-0000-0000-0000-000000000002', 'Développement Web', 'developpement-web', 'Création et développement de sites web et applications', '💻', 2),
-    ('a1000000-0000-0000-0000-000000000003', 'Design & Branding', 'design-branding', 'Identité visuelle, logos et design graphique', '🎨', 3);
+    (gen_random_uuid(), 'Marketing Digital', 'marketing-digital', 'Services de marketing digital et publicité en ligne', '📈', 1),
+    (gen_random_uuid(), 'Développement Web', 'developpement-web', 'Création et développement de sites web et applications', '💻', 2),
+    (gen_random_uuid(), 'Design & Branding', 'design-branding', 'Identité visuelle, logos et design graphique', '🎨', 3)
+ON CONFLICT (slug) DO NOTHING;
 
--- ===== SERVICES =====
+-- ===== SERVICES (unique on slug, using subqueries for category_id) =====
 
--- Service 1: SEO
-INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at) VALUES
-    ('b1000000-0000-0000-0000-000000000001',
-     'a1000000-0000-0000-0000-000000000001',
-     'Référencement SEO',
-     'referencement-seo',
-     'Optimisez votre visibilité sur Google et les moteurs de recherche. Audit complet, stratégie de mots-clés, optimisation on-page et off-page pour dominer les résultats de recherche.',
-     '🔍', 1, true, true, NOW(), NOW());
+INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at)
+SELECT gen_random_uuid(), sc.id, 'Référencement SEO', 'referencement-seo',
+       'Optimisez votre visibilité sur Google et les moteurs de recherche. Audit complet, stratégie de mots-clés, optimisation on-page et off-page pour dominer les résultats de recherche.',
+       '🔍', 1, true, true, NOW(), NOW()
+FROM service_categories sc WHERE sc.slug = 'marketing-digital'
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'referencement-seo');
 
--- Service 2: Social Media
-INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at) VALUES
-    ('b1000000-0000-0000-0000-000000000002',
-     'a1000000-0000-0000-0000-000000000001',
-     'Gestion Réseaux Sociaux',
-     'gestion-reseaux-sociaux',
-     'Développez votre présence sur les réseaux sociaux avec une stratégie sur mesure. Création de contenu, planification, engagement communautaire et analyse des performances.',
-     '📱', 2, true, true, NOW(), NOW());
+INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at)
+SELECT gen_random_uuid(), sc.id, 'Gestion Réseaux Sociaux', 'gestion-reseaux-sociaux',
+       'Développez votre présence sur les réseaux sociaux avec une stratégie sur mesure. Création de contenu, planification, engagement communautaire et analyse des performances.',
+       '📱', 2, true, true, NOW(), NOW()
+FROM service_categories sc WHERE sc.slug = 'marketing-digital'
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'gestion-reseaux-sociaux');
 
--- Service 3: Site Web
-INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at) VALUES
-    ('b1000000-0000-0000-0000-000000000003',
-     'a1000000-0000-0000-0000-000000000002',
-     'Création Site Web',
-     'creation-site-web',
-     'Site web professionnel, responsive et optimisé. Design moderne, expérience utilisateur soignée et performances maximales pour convertir vos visiteurs en clients.',
-     '🌐', 3, true, true, NOW(), NOW());
+INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at)
+SELECT gen_random_uuid(), sc.id, 'Création Site Web', 'creation-site-web-v5',
+       'Site web professionnel, responsive et optimisé. Design moderne, expérience utilisateur soignée et performances maximales pour convertir vos visiteurs en clients.',
+       '🌐', 3, true, true, NOW(), NOW()
+FROM service_categories sc WHERE sc.slug = 'developpement-web'
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'creation-site-web-v5')
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'creation-site-web');
 
--- Service 4: E-commerce
-INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at) VALUES
-    ('b1000000-0000-0000-0000-000000000004',
-     'a1000000-0000-0000-0000-000000000002',
-     'Boutique E-commerce',
-     'boutique-e-commerce',
-     'Lancez votre boutique en ligne avec une plateforme e-commerce complète. Paiement sécurisé, gestion des stocks, et interface d''achat optimisée pour maximiser vos ventes.',
-     '🛒', 4, false, true, NOW(), NOW());
+INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at)
+SELECT gen_random_uuid(), sc.id, 'Boutique E-commerce', 'boutique-e-commerce',
+       'Lancez votre boutique en ligne avec une plateforme e-commerce complète. Paiement sécurisé, gestion des stocks, et interface d''achat optimisée pour maximiser vos ventes.',
+       '🛒', 4, false, true, NOW(), NOW()
+FROM service_categories sc WHERE sc.slug = 'developpement-web'
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'boutique-e-commerce');
 
--- Service 5: Logo & Branding
-INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at) VALUES
-    ('b1000000-0000-0000-0000-000000000005',
-     'a1000000-0000-0000-0000-000000000003',
-     'Logo & Identité Visuelle',
-     'logo-identite-visuelle',
-     'Créez une identité de marque forte et mémorable. Logo professionnel, charte graphique complète et supports de communication cohérents.',
-     '✨', 5, true, true, NOW(), NOW());
+INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at)
+SELECT gen_random_uuid(), sc.id, 'Logo & Identité Visuelle', 'logo-identite-visuelle',
+       'Créez une identité de marque forte et mémorable. Logo professionnel, charte graphique complète et supports de communication cohérents.',
+       '✨', 5, true, true, NOW(), NOW()
+FROM service_categories sc WHERE sc.slug = 'design-branding'
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'logo-identite-visuelle');
 
--- Service 6: Publicité en ligne
-INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at) VALUES
-    ('b1000000-0000-0000-0000-000000000006',
-     'a1000000-0000-0000-0000-000000000001',
-     'Publicité en Ligne',
-     'publicite-en-ligne',
-     'Campagnes publicitaires ciblées sur Google Ads, Facebook Ads et Instagram. Maximisez votre ROI avec des stratégies data-driven et un suivi des conversions précis.',
-     '📣', 6, false, true, NOW(), NOW());
+INSERT INTO services (id, category_id, title, slug, description, icon, display_order, featured, active, created_at, updated_at)
+SELECT gen_random_uuid(), sc.id, 'Publicité en Ligne', 'publicite-en-ligne',
+       'Campagnes publicitaires ciblées sur Google Ads, Facebook Ads et Instagram. Maximisez votre ROI avec des stratégies data-driven et un suivi des conversions précis.',
+       '📣', 6, false, true, NOW(), NOW()
+FROM service_categories sc WHERE sc.slug = 'marketing-digital'
+AND NOT EXISTS (SELECT 1 FROM services WHERE slug = 'publicite-en-ligne');
 
--- ===== SERVICE BENEFITS =====
+-- ===== SERVICE BENEFITS (only for newly inserted V5 services) =====
 
--- SEO Benefits
-INSERT INTO service_benefits (id, service_id, benefit) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000001', 'Audit SEO complet de votre site'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000001', 'Recherche et stratégie de mots-clés'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000001', 'Optimisation on-page et technique'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000001', 'Rapport de positionnement mensuel');
+INSERT INTO service_benefits (id, service_id, benefit)
+SELECT gen_random_uuid(), s.id, b.benefit
+FROM services s
+CROSS JOIN (VALUES
+    ('Audit SEO complet de votre site'),
+    ('Recherche et stratégie de mots-clés'),
+    ('Optimisation on-page et technique'),
+    ('Rapport de positionnement mensuel')
+) AS b(benefit)
+WHERE s.slug = 'referencement-seo'
+AND NOT EXISTS (SELECT 1 FROM service_benefits sb WHERE sb.service_id = s.id AND sb.benefit = b.benefit);
 
--- Social Media Benefits
-INSERT INTO service_benefits (id, service_id, benefit) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000002', 'Stratégie de contenu personnalisée'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000002', 'Création de 20 publications/mois'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000002', 'Gestion de la communauté'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000002', 'Analyse de performance mensuelle');
+INSERT INTO service_benefits (id, service_id, benefit)
+SELECT gen_random_uuid(), s.id, b.benefit
+FROM services s
+CROSS JOIN (VALUES
+    ('Stratégie de contenu personnalisée'),
+    ('Création de 20 publications/mois'),
+    ('Gestion de la communauté'),
+    ('Analyse de performance mensuelle')
+) AS b(benefit)
+WHERE s.slug = 'gestion-reseaux-sociaux'
+AND NOT EXISTS (SELECT 1 FROM service_benefits sb WHERE sb.service_id = s.id AND sb.benefit = b.benefit);
 
--- Site Web Benefits
-INSERT INTO service_benefits (id, service_id, benefit) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000003', 'Design responsive et moderne'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000003', 'Optimisé pour le référencement'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000003', 'Hébergement inclus 1 an'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000003', 'Formation à la gestion du contenu');
+INSERT INTO service_benefits (id, service_id, benefit)
+SELECT gen_random_uuid(), s.id, b.benefit
+FROM services s
+CROSS JOIN (VALUES
+    ('Design responsive et moderne'),
+    ('Optimisé pour le référencement'),
+    ('Hébergement inclus 1 an'),
+    ('Formation à la gestion du contenu')
+) AS b(benefit)
+WHERE s.slug IN ('creation-site-web-v5', 'creation-site-web')
+AND NOT EXISTS (SELECT 1 FROM service_benefits sb WHERE sb.service_id = s.id AND sb.benefit = b.benefit);
 
--- E-commerce Benefits
-INSERT INTO service_benefits (id, service_id, benefit) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000004', 'Paiement sécurisé (Stripe)'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000004', 'Gestion des produits et stocks'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000004', 'Tableau de bord analytique'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000004', 'Intégration livraison');
+INSERT INTO service_benefits (id, service_id, benefit)
+SELECT gen_random_uuid(), s.id, b.benefit
+FROM services s
+CROSS JOIN (VALUES
+    ('Paiement sécurisé (Stripe)'),
+    ('Gestion des produits et stocks'),
+    ('Tableau de bord analytique'),
+    ('Intégration livraison')
+) AS b(benefit)
+WHERE s.slug = 'boutique-e-commerce'
+AND NOT EXISTS (SELECT 1 FROM service_benefits sb WHERE sb.service_id = s.id AND sb.benefit = b.benefit);
 
--- Logo & Branding Benefits
-INSERT INTO service_benefits (id, service_id, benefit) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000005', '3 propositions de logo'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000005', 'Charte graphique complète'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000005', 'Fichiers haute résolution (tous formats)'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000005', 'Guide d''utilisation de la marque');
+INSERT INTO service_benefits (id, service_id, benefit)
+SELECT gen_random_uuid(), s.id, b.benefit
+FROM services s
+CROSS JOIN (VALUES
+    ('3 propositions de logo'),
+    ('Charte graphique complète'),
+    ('Fichiers haute résolution (tous formats)'),
+    ('Guide d''utilisation de la marque')
+) AS b(benefit)
+WHERE s.slug = 'logo-identite-visuelle'
+AND NOT EXISTS (SELECT 1 FROM service_benefits sb WHERE sb.service_id = s.id AND sb.benefit = b.benefit);
 
--- Publicité en ligne Benefits
-INSERT INTO service_benefits (id, service_id, benefit) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000006', 'Création et gestion de campagnes'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000006', 'Ciblage avancé par audience'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000006', 'Optimisation du budget publicitaire'),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000006', 'Rapports de performance détaillés');
+INSERT INTO service_benefits (id, service_id, benefit)
+SELECT gen_random_uuid(), s.id, b.benefit
+FROM services s
+CROSS JOIN (VALUES
+    ('Création et gestion de campagnes'),
+    ('Ciblage avancé par audience'),
+    ('Optimisation du budget publicitaire'),
+    ('Rapports de performance détaillés')
+) AS b(benefit)
+WHERE s.slug = 'publicite-en-ligne'
+AND NOT EXISTS (SELECT 1 FROM service_benefits sb WHERE sb.service_id = s.id AND sb.benefit = b.benefit);
 
--- ===== SERVICE OFFERS (default pricing) =====
+-- ===== SERVICE OFFERS (default pricing, only for V5 services that exist) =====
 
-INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active) VALUES
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000001', 'SEO Mensuel', 499.00, 699.00, 'MONTHLY', 'MONTHLY', true, true),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000002', 'Social Media Mensuel', 399.00, 549.00, 'MONTHLY', 'MONTHLY', true, true),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000003', 'Site Web Vitrine', 1499.00, 1999.00, 'ONE_TIME', 'ONE_TIME', true, true),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000004', 'Boutique E-commerce', 2999.00, 3999.00, 'ONE_TIME', 'ONE_TIME', true, true),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000005', 'Pack Identité Visuelle', 799.00, 999.00, 'ONE_TIME', 'ONE_TIME', true, true),
-    (gen_random_uuid(), 'b1000000-0000-0000-0000-000000000006', 'Publicité Mensuelle', 599.00, NULL, 'MONTHLY', 'MONTHLY', true, true);
+INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active)
+SELECT gen_random_uuid(), s.id, 'SEO Mensuel', 499.00, 699.00, 'MONTHLY', 'MONTHLY', true, true
+FROM services s WHERE s.slug = 'referencement-seo'
+AND NOT EXISTS (SELECT 1 FROM service_offers so WHERE so.service_id = s.id AND so.is_default = true);
+
+INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active)
+SELECT gen_random_uuid(), s.id, 'Social Media Mensuel', 399.00, 549.00, 'MONTHLY', 'MONTHLY', true, true
+FROM services s WHERE s.slug = 'gestion-reseaux-sociaux'
+AND NOT EXISTS (SELECT 1 FROM service_offers so WHERE so.service_id = s.id AND so.is_default = true);
+
+INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active)
+SELECT gen_random_uuid(), s.id, 'Site Web Vitrine', 1499.00, 1999.00, 'ONE_TIME', 'ONE_TIME', true, true
+FROM services s WHERE s.slug IN ('creation-site-web-v5', 'creation-site-web')
+AND NOT EXISTS (SELECT 1 FROM service_offers so WHERE so.service_id = s.id AND so.is_default = true);
+
+INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active)
+SELECT gen_random_uuid(), s.id, 'Boutique E-commerce', 2999.00, 3999.00, 'ONE_TIME', 'ONE_TIME', true, true
+FROM services s WHERE s.slug = 'boutique-e-commerce'
+AND NOT EXISTS (SELECT 1 FROM service_offers so WHERE so.service_id = s.id AND so.is_default = true);
+
+INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active)
+SELECT gen_random_uuid(), s.id, 'Pack Identité Visuelle', 799.00, 999.00, 'ONE_TIME', 'ONE_TIME', true, true
+FROM services s WHERE s.slug = 'logo-identite-visuelle'
+AND NOT EXISTS (SELECT 1 FROM service_offers so WHERE so.service_id = s.id AND so.is_default = true);
+
+INSERT INTO service_offers (id, service_id, name, price, original_price, duration_type, duration, is_default, active)
+SELECT gen_random_uuid(), s.id, 'Publicité Mensuelle', 599.00, NULL, 'MONTHLY', 'MONTHLY', true, true
+FROM services s WHERE s.slug = 'publicite-en-ligne'
+AND NOT EXISTS (SELECT 1 FROM service_offers so WHERE so.service_id = s.id AND so.is_default = true);
