@@ -23,11 +23,20 @@ public class OpenApiConfig {
     @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
 
+    @Value("${company.email:support@localhost}")
+    private String companyEmail;
+
+    @Value("${company.website:http://localhost:8080}")
+    private String companyWebsite;
+
+    @Value("${company.name:LMP Digital Services}")
+    private String companyName;
+
     @Bean
     public OpenAPI lmpOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("LMP Digital Services — API")
+                        .title(companyName + " — API")
                         .version("1.0")
                         .description("""
                                 API REST du SaaS LMP Digital Services.
@@ -42,12 +51,12 @@ public class OpenApiConfig {
                                 Tous les endpoints sont préfixés par `/api/v1/`.
                                 """)
                         .contact(new Contact()
-                                .name("LMP Digital Services")
-                                .email("support@lmp-services.be")
-                                .url("https://lmp-services.be"))
+                                .name(companyName)
+                                .email(companyEmail)
+                                .url(companyWebsite))
                         .license(new License()
                                 .name("Proprietary")
-                                .url("https://lmp-services.be/terms")))
+                                .url(companyWebsite + "/terms")))
                 .servers(List.of(
                         new Server().url(baseUrl).description("Current environment")));
     }

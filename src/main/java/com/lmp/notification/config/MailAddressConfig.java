@@ -7,11 +7,11 @@ import org.springframework.stereotype.Component;
  * Configuration centralisée pour les adresses email avec routing Cloudflare.
  * 
  * Cette classe gère la stratégie d'adresses email :
- * - noreply@lmp-services.ca : emails transactionnels (avec Reply-To vers support)
- * - support@lmp-services.ca : emails bidirectionnels de support
+ * - noreply@ : emails transactionnels (avec Reply-To cohérent)
+ * - support@ : emails bidirectionnels de support
  * 
- * Les adresses sont routées par Cloudflare vers lmp.assistance@gmail.com
- * mais les clients voient seulement les adresses professionnelles.
+ * Les adresses sont configurées via les propriétés mail.from.* 
+ * (variables d'environnement MAIL_FROM_NOREPLY, MAIL_FROM_SUPPORT, etc.)
  */
 @Component
 @ConfigurationProperties(prefix = "mail.from")
@@ -21,18 +21,18 @@ public class MailAddressConfig {
      * Adresse noreply pour emails transactionnels
      * (confirmations de commande, bienvenue, notifications système)
      */
-    private String noreply = "noreply@lmp-services.ca";
+    private String noreply = "noreply@localhost";
     
     /**
      * Adresse support pour emails bidirectionnels
      * (formulaires de contact, communications client-service)
      */
-    private String support = "support@lmp-services.ca";
+    private String support = "support@localhost";
     
     /**
      * Configuration du Reply-To pour les emails noreply (même adresse que l'expéditeur)
      */
-    private String replyToSupport = "noreply@lmp-services.ca";
+    private String replyToSupport = "noreply@localhost";
     
     /**
      * Nom affiché pour l'expéditeur
@@ -43,7 +43,6 @@ public class MailAddressConfig {
     
     /**
      * Obtient l'adresse noreply pour les emails transactionnels
-     * @return noreply@lmp-services.ca
      */
     public String getNoreply() {
         return noreply;
@@ -55,7 +54,6 @@ public class MailAddressConfig {
     
     /**
      * Obtient l'adresse support pour les emails bidirectionnels
-     * @return support@lmp-services.ca
      */
     public String getSupport() {
         return support;
@@ -67,7 +65,6 @@ public class MailAddressConfig {
     
     /**
      * Obtient l'adresse Reply-To pour les emails noreply
-     * @return noreply@lmp-services.ca
      */
     public String getReplyToSupport() {
         return replyToSupport;
@@ -79,7 +76,6 @@ public class MailAddressConfig {
     
     /**
      * Obtient le nom affiché pour l'expéditeur
-     * @return LMP Digital Services
      */
     public String getName() {
         return name;

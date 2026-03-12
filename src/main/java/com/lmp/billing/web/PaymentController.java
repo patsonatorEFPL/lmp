@@ -33,7 +33,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/payments")
 @Validated
-@CrossOrigin(origins = {"http://localhost:3000", "https://lmp-services.ca"})
 public class PaymentController {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);

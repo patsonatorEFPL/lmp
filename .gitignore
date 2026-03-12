@@ -82,3 +82,4 @@ take_screenshots.py
 
 ### Deployment-Specific Config ###
 docker-compose.coolify.yml
+application-secrets.properties
