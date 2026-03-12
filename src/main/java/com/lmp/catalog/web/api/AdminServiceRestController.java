@@ -148,7 +148,7 @@ public class AdminServiceRestController {
     @GetMapping
     @Operation(summary = "Lister tous les services (admin)", description = "Inclut les services inactifs")
     public ResponseEntity<ApiResponse<List<ServiceResponse>>> getAllServices() {
-        List<ServiceResponse> services = serviceRepository.findAll().stream()
+        List<ServiceResponse> services = serviceRepository.findAllWithDetails().stream()
                 .sorted(Comparator.comparingInt(s -> s.getDisplayOrder() != null ? s.getDisplayOrder() : 0))
                 .map(ServiceResponse::from)
                 .collect(Collectors.toList());
