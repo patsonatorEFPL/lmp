@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -37,6 +38,7 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/api/v1/payments")
+@Transactional
 @Tag(name = "Payments", description = "Stripe Checkout et statut de paiement")
 public class PaymentRestController {
 

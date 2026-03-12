@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/admin/services")
 @PreAuthorize("hasRole('ADMIN')")
+@Transactional(readOnly = true)
 @Tag(name = "Admin Services", description = "CRUD catalogue de services (ADMIN only)")
 public class AdminServiceRestController {
 
@@ -90,6 +92,7 @@ public class AdminServiceRestController {
     }
 
     @PostMapping("/categories")
+    @Transactional
     @Operation(summary = "Créer une catégorie")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createCategory(@RequestBody Map<String, Object> data) {
         try {
@@ -109,6 +112,7 @@ public class AdminServiceRestController {
     }
 
     @PutMapping("/categories/{id}")
+    @Transactional
     @Operation(summary = "Modifier une catégorie")
     public ResponseEntity<ApiResponse<Void>> updateCategory(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
@@ -127,6 +131,7 @@ public class AdminServiceRestController {
     }
 
     @DeleteMapping("/categories/{id}")
+    @Transactional
     @Operation(summary = "Supprimer une catégorie")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable UUID id) {
         try {
@@ -186,6 +191,7 @@ public class AdminServiceRestController {
     }
 
     @PostMapping
+    @Transactional
     @Operation(summary = "Créer un service")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createService(@RequestBody Map<String, Object> data) {
         try {
@@ -229,6 +235,7 @@ public class AdminServiceRestController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     @Operation(summary = "Modifier un service")
     public ResponseEntity<ApiResponse<Void>> updateService(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
@@ -255,6 +262,7 @@ public class AdminServiceRestController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     @Operation(summary = "Supprimer un service")
     public ResponseEntity<ApiResponse<Void>> deleteService(@PathVariable UUID id) {
         try {
@@ -269,6 +277,7 @@ public class AdminServiceRestController {
     // ========== Offers ==========
 
     @PostMapping("/{serviceId}/offers")
+    @Transactional
     @Operation(summary = "Créer une offre pour un service")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createOffer(@PathVariable UUID serviceId, @RequestBody Map<String, Object> data) {
         try {
@@ -294,6 +303,7 @@ public class AdminServiceRestController {
     }
 
     @PutMapping("/offers/{id}")
+    @Transactional
     @Operation(summary = "Modifier une offre")
     public ResponseEntity<ApiResponse<Void>> updateOffer(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
@@ -317,6 +327,7 @@ public class AdminServiceRestController {
     }
 
     @DeleteMapping("/offers/{id}")
+    @Transactional
     @Operation(summary = "Supprimer une offre")
     public ResponseEntity<ApiResponse<Void>> deleteOffer(@PathVariable UUID id) {
         try {
@@ -331,6 +342,7 @@ public class AdminServiceRestController {
     // ========== Benefits ==========
 
     @PostMapping("/{serviceId}/benefits")
+    @Transactional
     @Operation(summary = "Ajouter un avantage à un service")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createBenefit(@PathVariable UUID serviceId, @RequestBody Map<String, Object> data) {
         try {
@@ -347,6 +359,7 @@ public class AdminServiceRestController {
     }
 
     @DeleteMapping("/benefits/{id}")
+    @Transactional
     @Operation(summary = "Supprimer un avantage")
     public ResponseEntity<ApiResponse<Void>> deleteBenefit(@PathVariable UUID id) {
         try {
