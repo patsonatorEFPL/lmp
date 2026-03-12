@@ -41,7 +41,7 @@ public class NotificationService {
     
         private final MailAddressConfig mailAddressConfig;
     
-    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:${app.base.url:https://lmp-services.ca}}")
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
     
     @org.springframework.beans.factory.annotation.Value("${spring.mail.host:NON_CONFIGURÉ}")

@@ -40,7 +40,7 @@ public class EmailService {
     @Value("${app.name:LMP Digital Services}")
     private String appName;
 
-    @Value("${app.frontend.url:${app.base.url:https://lmp-services.ca}}")
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
 
@@ -235,7 +235,7 @@ public class EmailService {
         variables.put("user", user);
         variables.put("companyName", appName);
         variables.put("companyEmail", mailAddressConfig.getReplyToSupport());
-        variables.put("companyWebsite", "https://lmp-services.ca");
+        variables.put("companyWebsite", frontendUrl);
         variables.put("frontendUrl", frontendUrl);
         variables.put("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         
@@ -243,13 +243,13 @@ public class EmailService {
         
         try {
             sendHtmlEmail(to, subject, "emails/welcome-minimal-clean", variables);
-            logger.info("✅ Email de bienvenue HTML envoyé avec succès depuis noreply@lmp-services.ca (Reply-To: noreply)");
+            logger.info("✅ Email de bienvenue HTML envoyé avec succès (Reply-To: noreply)");
         } catch (Exception e) {
             logger.error("Erreur template, tentative avec email simple: {}", e.getMessage());
             // Fallback vers email simple si template échoue
             String body = "Bienvenue " + firstName + " !\n\nVotre compte a été créé avec succès chez " + appName + ".\n\nCordialement,\nL'équipe " + appName;
             sendSimpleEmail(to, subject, body);
-            logger.info("✅ Email de bienvenue simple envoyé avec succès depuis noreply@lmp-services.ca (Reply-To: noreply)");
+            logger.info("✅ Email de bienvenue simple envoyé avec succès (Reply-To: noreply)");
         }
     }
 

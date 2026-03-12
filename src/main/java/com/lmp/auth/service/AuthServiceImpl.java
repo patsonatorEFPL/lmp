@@ -58,16 +58,16 @@ public class AuthServiceImpl implements AuthService {
     @Value("${company.name:LMP Services}")
     private String companyName;
 
-    @Value("${app.base.url:https://lmp-services.ca}")
+    @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
 
-    @Value("${company.email:lmp.assistance@gmail.com}")
+    @Value("${company.email:support@localhost}")
     private String companyEmail;
 
-    @Value("${company.website:https://lmp-services.ca}")
+    @Value("${company.website:http://localhost:8080}")
     private String companyWebsite;
 
-    @Value("${app.frontend.url:${app.base.url:https://lmp-services.ca}}")
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
 

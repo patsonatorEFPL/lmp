@@ -30,10 +30,11 @@ public class ErpNextEventListener {
                 event.type(), event.sourceModule(), event.entityId(), event.eventId());
 
         // TODO: Phase 2 — Transmettre vers ERPNext via n8n ou API REST directe
+        // Les URLs ERPNext seront configurées via variables d'environnement
         // Exemples :
-        //   ORDER_CONFIRMED  → POST https://erpnext.lmp-services.ca/api/resource/Sales Order
-        //   USER_REGISTERED  → POST https://erpnext.lmp-services.ca/api/resource/Customer
-        //   INVOICE_GENERATED → POST https://erpnext.lmp-services.ca/api/resource/Sales Invoice
+        //   ORDER_CONFIRMED  → POST ${ERPNEXT_URL}/api/resource/Sales Order
+        //   USER_REGISTERED  → POST ${ERPNEXT_URL}/api/resource/Customer
+        //   INVOICE_GENERATED → POST ${ERPNEXT_URL}/api/resource/Sales Invoice
 
         switch (event.type()) {
             case USER_REGISTERED -> logEvent("Nouveau client à créer dans ERPNext", event);

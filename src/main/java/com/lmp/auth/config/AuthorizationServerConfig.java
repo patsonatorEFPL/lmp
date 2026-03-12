@@ -58,6 +58,18 @@ public class AuthorizationServerConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthorizationServerConfig.class);
 
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erpnext.client-id:erpnext-client}")
+    private String erpnextClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erpnext.client-secret:}")
+    private String erpnextClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erpnext.redirect-uri:http://localhost:8069/api/method/frappe.integrations.oauth2_logins.login_via_oauth2}")
+    private String erpnextRedirectUri;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
+    private String issuerUri;
+
     @Bean
     @Order(0) // Avant les autres SecurityFilterChains
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -86,16 +98,15 @@ public class AuthorizationServerConfig {
         JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
         // Enregistrer le client ERPNext si absent
-        if (repository.findByClientId("erpnext-client") == null) {
+        if (repository.findByClientId(erpnextClientId) == null) {
             RegisteredClient erpnextClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                    .clientId("erpnext-client")
-                    .clientSecret(passwordEncoder.encode("erpnext-secret-change-me"))
+                    .clientId(erpnextClientId)
+                    .clientSecret(passwordEncoder.encode(erpnextClientSecret))
                     .clientName("ERPNext Back-Office")
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                    .redirectUri("https://erp.lmp-services.be/api/method/frappe.integrations.oauth2_logins.login_via_oauth2")
-                    .redirectUri("http://localhost:8069/api/method/frappe.integrations.oauth2_logins.login_via_oauth2")
+                    .redirectUri(erpnextRedirectUri)
                     .scope(OidcScopes.OPENID)
                     .scope(OidcScopes.PROFILE)
                     .scope(OidcScopes.EMAIL)
@@ -130,7 +141,7 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:8080") // Overridden in prod via env var
+                .issuer(issuerUri)
                 .build();
     }
 

@@ -42,6 +42,9 @@ public class StripeConfig {
     
     @Value("${stripe.read.timeout:80000}")
     private int readTimeout;
+
+    @Value("${company.website:http://localhost:8080}")
+    private String companyWebsite;
     
     /**
      * Initialise la configuration Stripe globale
@@ -62,7 +65,7 @@ public class StripeConfig {
             Stripe.setAppInfo(
                 "LMP-Payment-System",
                 "1.0.0",
-                "https://lmp-services.ca",
+                companyWebsite,
                 "pp_partner_LMP"
             );
             

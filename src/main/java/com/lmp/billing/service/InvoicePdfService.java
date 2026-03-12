@@ -13,6 +13,8 @@ import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.springframework.beans.factory.annotation.Value;
+
 /**
  * Service pour générer des factures PDF premium avec OpenPDF.
  * Design : palette charcoal/gold, typographie raffinée, composition aérée.
@@ -36,15 +38,28 @@ public class InvoicePdfService {
     private static final Color WHITE = new Color(255, 255, 255);
 
     // ═══════════════════════════════════════════════════════
-    // INFORMATIONS ENTREPRISE
+    // INFORMATIONS ENTREPRISE (injectées depuis les properties)
     // ═══════════════════════════════════════════════════════
-    private static final String COMPANY_NAME = "LMP DIGITAL SERVICES";
-    private static final String COMPANY_TAGLINE = "Marketing Digital & Solutions Web";
-    private static final String COMPANY_ADDRESS = "Rue Gatti De Gamond 97";
-    private static final String COMPANY_CITY = "1180 Uccle, Belgique";
-    private static final String COMPANY_EMAIL = "contact@lmp-services.ca";
-    private static final String COMPANY_PHONE = "+32 2 XXX XX XX";
-    private static final String COMPANY_WEB = "www.lmp-services.ca";
+    @Value("${company.name:LMP DIGITAL SERVICES}")
+    private String companyName;
+
+    @Value("${company.tagline:Marketing Digital & Solutions Web}")
+    private String companyTagline;
+
+    @Value("${company.address:123 Rue Principale}")
+    private String companyAddress;
+
+    @Value("${company.city:Ville, Province}")
+    private String companyCity;
+
+    @Value("${company.email:support@localhost}")
+    private String companyEmail;
+
+    @Value("${company.phone:+1 (555) 123-4567}")
+    private String companyPhone;
+
+    @Value("${company.website:http://localhost:8080}")
+    private String companyWebsite;
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm");
@@ -127,12 +142,12 @@ public class InvoicePdfService {
         logoCell.setPaddingLeft(10);
 
         Font companyFont = new Font(Font.HELVETICA, 22, Font.BOLD, CHARCOAL);
-        Paragraph company = new Paragraph(COMPANY_NAME, companyFont);
+        Paragraph company = new Paragraph(companyName.toUpperCase(), companyFont);
         company.setSpacingAfter(2);
         logoCell.addElement(company);
 
         Font taglineFont = new Font(Font.HELVETICA, 9, Font.NORMAL, TEXT_SECONDARY);
-        Paragraph tagline = new Paragraph(COMPANY_TAGLINE, taglineFont);
+        Paragraph tagline = new Paragraph(companyTagline, taglineFont);
         logoCell.addElement(tagline);
 
         headerTable.addCell(logoCell);
@@ -187,14 +202,14 @@ public class InvoicePdfService {
         emLabel.setSpacingAfter(6);
         companyCell.addElement(emLabel);
 
-        companyCell.addElement(new Paragraph(COMPANY_NAME, new Font(Font.HELVETICA, 10, Font.BOLD, TEXT_PRIMARY)));
-        companyCell.addElement(new Paragraph(COMPANY_ADDRESS, valueFont));
-        companyCell.addElement(new Paragraph(COMPANY_CITY, valueFont));
+        companyCell.addElement(new Paragraph(companyName.toUpperCase(), new Font(Font.HELVETICA, 10, Font.BOLD, TEXT_PRIMARY)));
+        companyCell.addElement(new Paragraph(companyAddress, valueFont));
+        companyCell.addElement(new Paragraph(companyCity, valueFont));
 
-        Paragraph emailLine = new Paragraph(COMPANY_EMAIL, valueSmallFont);
+        Paragraph emailLine = new Paragraph(companyEmail, valueSmallFont);
         emailLine.setSpacingBefore(4);
         companyCell.addElement(emailLine);
-        companyCell.addElement(new Paragraph(COMPANY_WEB, valueSmallFont));
+        companyCell.addElement(new Paragraph(companyWebsite.replace("https://", "").replace("http://", ""), valueSmallFont));
 
         infoTable.addCell(companyCell);
 
@@ -549,11 +564,12 @@ public class InvoicePdfService {
         Font footerBoldFont = new Font(Font.HELVETICA, 7, Font.BOLD, CHARCOAL);
 
         ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
-                new Phrase(COMPANY_NAME + "  ·  " + COMPANY_ADDRESS + ", " + COMPANY_CITY, footerFont),
+                new Phrase(companyName.toUpperCase() + "  ·  " + companyAddress + ", " + companyCity, footerFont),
                 297.5f, 42, 0);
 
+        String webDisplay = companyWebsite.replace("https://", "").replace("http://", "");
         ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
-                new Phrase(COMPANY_EMAIL + "  ·  " + COMPANY_WEB, footerFont),
+                new Phrase(companyEmail + "  ·  " + webDisplay, footerFont),
                 297.5f, 32, 0);
 
         ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
