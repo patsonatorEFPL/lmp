@@ -1343,7 +1343,7 @@ public class StripeWebhookHandler {
                     + "- Service : " + order.getServiceName() + "\n"
                     + "- Montant : " + order.getTotalAmount() + " " + order.getCurrency() + "\n"
                     + "- Date de paiement : " + formattedDate + "\n\n"
-                    + "Cordialement,\nL'équipe LMP\nlmp.assistance@gmail.com\n";
+                    + "Cordialement,\nL'équipe LMP\n";
         }
     }
 }

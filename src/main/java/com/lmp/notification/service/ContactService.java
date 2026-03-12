@@ -53,7 +53,7 @@ public class ContactService {
     // @Value("${mail.from.name:LMP Digital Services}")
     // private String fromName;
     
-    @Value("${company.email:lmp.assistance@gmail.com}")
+    @Value("${company.email:support@localhost}")
     private String adminEmail; // Garde pour la réception admin
     
     @Value("${company.name:LMP Digital Services}")

@@ -14,7 +14,9 @@ import java.util.List;
  */
 public class MailtrapSimpleTest {
 
-    private static final String TOKEN = "***MAILTRAP_TOKEN_REMOVED***";
+    // IMPORTANT: Ne jamais committer de tokens en dur — utiliser les variables d'environnement
+    private static final String TOKEN = System.getenv("MAILTRAP_API_TOKEN") != null 
+            ? System.getenv("MAILTRAP_API_TOKEN") : "CHANGE_ME";
 
     public static void main(String[] args) {
         System.out.println("🔧 Test de configuration Mailtrap...");
@@ -26,8 +28,8 @@ public class MailtrapSimpleTest {
         final MailtrapClient client = MailtrapClientFactory.createMailtrapClient(config);
 
         final MailtrapMail mail = MailtrapMail.builder()
-            .from(new Address("hello@lmp-services.ca", "Mailtrap Test"))
-            .to(List.of(new Address("patsonator32@gmail.com")))
+            .from(new Address(System.getenv("MAIL_FROM_NOREPLY") != null ? System.getenv("MAIL_FROM_NOREPLY") : "noreply@localhost", "Mailtrap Test"))
+            .to(List.of(new Address(args.length > 0 ? args[0] : "test@example.com")))
             .subject("You are awesome!")
             .text("Congrats for sending test email with Mailtrap!")
             .category("Integration Test")

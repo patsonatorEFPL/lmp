@@ -584,9 +584,15 @@ public class AppointmentService {
     }
 
     // ======== MÉTHODES D'EMAIL ========
-    
-    // Email de l'équipe LMP pour les notifications internes (routing Cloudflare vers lmp.assistance@gmail.com)
-    private static final String TEAM_EMAIL = "support@lmp-services.ca";
+
+    @org.springframework.beans.factory.annotation.Value("${company.team.email:support@localhost}")
+    private String teamEmail;
+
+    @org.springframework.beans.factory.annotation.Value("${company.admin.email:admin@localhost}")
+    private String adminEmail;
+
+    @org.springframework.beans.factory.annotation.Value("${app.base.url:http://localhost:8080}")
+    private String appBaseUrl;
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                            UserRepository userRepository,
@@ -597,8 +603,6 @@ public class AppointmentService {
         this.mailSender = mailSender;
         this.mailAddressConfig = mailAddressConfig;
     }
-
-    private static final String ADMIN_EMAIL = "admin@lmp-services.ca"; // Email admin principal
 
     /**
      * Envoie un email de confirmation de rendez-vous
@@ -831,9 +835,9 @@ public class AppointmentService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
-            message.setTo(TEAM_EMAIL);
-            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
-                message.setCc(ADMIN_EMAIL);
+            message.setTo(teamEmail);
+            if (!adminEmail.equals(teamEmail)) {
+                message.setCc(adminEmail);
             }
             message.setSubject("🎆 Nouveau rendez-vous reçu - LMP Admin");
             
@@ -864,7 +868,7 @@ public class AppointmentService {
                 appointment.getPriority(),
                 appointment.getStatus().getDisplayName(),
                 appointment.getDescription() != null ? appointment.getDescription() : "Aucune description",
-                "https://lmp-services.ca", // Base URL de l'app
+                appBaseUrl,
                 appointment.getId()
             );
             
@@ -886,9 +890,9 @@ public class AppointmentService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
-            message.setTo(TEAM_EMAIL);
-            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
-                message.setCc(ADMIN_EMAIL);
+            message.setTo(teamEmail);
+            if (!adminEmail.equals(teamEmail)) {
+                message.setCc(adminEmail);
             }
             message.setSubject("🔄 Changement statut RDV #" + appointment.getId() + " - LMP Admin");
             
@@ -915,7 +919,7 @@ public class AppointmentService {
                 newStatus,
                 adminEmail != null ? adminEmail : "Système",
                 LocalDateTime.now().format(DATETIME_FORMATTER),
-                "https://lmp-services.ca",
+                appBaseUrl,
                 appointment.getId()
             );
             
@@ -938,9 +942,9 @@ public class AppointmentService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
-            message.setTo(TEAM_EMAIL);
-            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
-                message.setCc(ADMIN_EMAIL);
+            message.setTo(teamEmail);
+            if (!adminEmail.equals(teamEmail)) {
+                message.setCc(adminEmail);
             }
             message.setSubject("❌ Annulation RDV #" + appointment.getId() + " - LMP Admin");
             
@@ -985,9 +989,9 @@ public class AppointmentService {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(mailAddressConfig.getSupport()); // Notification interne = support@
-            message.setTo(TEAM_EMAIL);
-            if (!ADMIN_EMAIL.equals(TEAM_EMAIL)) {
-                message.setCc(ADMIN_EMAIL);
+            message.setTo(teamEmail);
+            if (!adminEmail.equals(teamEmail)) {
+                message.setCc(adminEmail);
             }
             message.setSubject("🗑️ Suppression définitive RDV #" + appointment.getId() + " - LMP Admin");
             

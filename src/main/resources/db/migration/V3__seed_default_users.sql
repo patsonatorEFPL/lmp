@@ -1,9 +1,8 @@
 -- =============================================
 -- V3: Seed default roles and admin user
 -- =============================================
--- Password: Admin123! → BCrypt hash
--- Generated with: new BCryptPasswordEncoder().encode("Admin123!")
-
+-- The default admin password hash is seeded below.
+-- IMPORTANT: Please change the admin password immediately after your first login!
 -- Insert default roles
 INSERT INTO roles (name) VALUES ('USER') ON CONFLICT (name) DO NOTHING;
 INSERT INTO roles (name) VALUES ('ADMIN') ON CONFLICT (name) DO NOTHING;

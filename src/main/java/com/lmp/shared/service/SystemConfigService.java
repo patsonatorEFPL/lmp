@@ -43,17 +43,17 @@ public class SystemConfigService {
             
             // Configuration Entreprise
             settings.setCompanyName(environment.getProperty("company.name", "LMP Digital Services"));
-            settings.setCompanyEmail(environment.getProperty("company.email", "lmp.assistance@gmail.com"));
+            settings.setCompanyEmail(environment.getProperty("company.email", "support@localhost"));
             settings.setCompanyPhone(environment.getProperty("company.phone", "+1 (555) 123-4567"));
             settings.setCompanyAddress(environment.getProperty("company.address", "123 Rue Principale"));
-            settings.setCompanyWebsite(environment.getProperty("company.website", "https://lmp-services.ca"));
+            settings.setCompanyWebsite(environment.getProperty("company.website", "http://localhost:8080"));
             
             // Configuration Stripe
             settings.setStripePublishableKey(environment.getProperty("stripe.publishable.key", ""));
             settings.setStripeTestMode(environment.getProperty("stripe.secret.key", "").contains("test"));
             
             // Configuration Email
-            settings.setMailHost(environment.getProperty("spring.mail.host", "smtp.gmail.com"));
+            settings.setMailHost(environment.getProperty("spring.mail.host", "localhost"));
             settings.setMailPort(environment.getProperty("spring.mail.port", "587"));
             settings.setMailUsername(environment.getProperty("spring.mail.username", ""));
             settings.setMailAuthEnabled(Boolean.parseBoolean(
@@ -185,15 +185,15 @@ public class SystemConfigService {
             SystemSettingsDto defaults = new SystemSettingsDto();
             
             // Valeurs par défaut
-            defaults.setAppName("LMP Digital Services");
-            defaults.setAppVersion("1.0.0");
-            defaults.setAppBaseUrl("http://localhost:8080");
-            defaults.setCompanyName("LMP Digital Services");
-            defaults.setCompanyEmail("lmp.assistance@gmail.com");
-            defaults.setCompanyPhone("+1 (555) 123-4567");
-            defaults.setCompanyAddress("123 Rue Principale, Ville, Province, Code Postal");
-            defaults.setCompanyWebsite("https://lmp-services.ca");
-            defaults.setMailHost("smtp.gmail.com");
+            defaults.setAppName(environment.getProperty("app.name", "LMP Digital Services"));
+            defaults.setAppVersion(environment.getProperty("app.version", "1.0.0"));
+            defaults.setAppBaseUrl(environment.getProperty("app.base.url", "http://localhost:8080"));
+            defaults.setCompanyName(environment.getProperty("company.name", "LMP Digital Services"));
+            defaults.setCompanyEmail(environment.getProperty("company.email", "support@localhost"));
+            defaults.setCompanyPhone(environment.getProperty("company.phone", "+1 (555) 123-4567"));
+            defaults.setCompanyAddress(environment.getProperty("company.address", "123 Rue Principale, Ville, Province, Code Postal"));
+            defaults.setCompanyWebsite(environment.getProperty("company.website", "http://localhost:8080"));
+            defaults.setMailHost(environment.getProperty("spring.mail.host", "localhost"));
             defaults.setMailPort("587");
             defaults.setMailUsername("");
             defaults.setMailAuthEnabled(true);
