@@ -154,9 +154,9 @@ export class AdminSettingsComponent {
   readonly saving = signal(false);
 
   settings = {
-    companyName: 'LMP Services',
-    supportEmail: 'lmp.assistance@gmail.com',
-    siteUrl: 'https://lmp-services.ca',
+    companyName: '',
+    supportEmail: '',
+    siteUrl: '',
     maxLoginAttempts: 5,
     sessionTimeout: 30,
   };

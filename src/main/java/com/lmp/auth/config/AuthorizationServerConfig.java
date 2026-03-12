@@ -58,6 +58,18 @@ public class AuthorizationServerConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthorizationServerConfig.class);
 
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.external ERP.client-id:external ERP-client}")
+    private String external ERPClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.external ERP.client-secret:}")
+    private String external ERPClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.external ERP.redirect-uri:http://localhost:8069/api/method/external CRM.integrations.oauth2_logins.login_via_oauth2}")
+    private String external ERPRedirectUri;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
+    private String issuerUri;
+
     @Bean
     @Order(0) // Avant les autres SecurityFilterChains
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -86,16 +98,15 @@ public class AuthorizationServerConfig {
         JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
         // Enregistrer le client external ERP si absent
-        if (repository.findByClientId("external ERP-client") == null) {
+        if (repository.findByClientId(external ERPClientId) == null) {
             RegisteredClient external ERPClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                    .clientId("external ERP-client")
-                    .clientSecret(passwordEncoder.encode("external ERP-secret-change-me"))
+                    .clientId(external ERPClientId)
+                    .clientSecret(passwordEncoder.encode(external ERPClientSecret))
                     .clientName("external ERP Back-Office")
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                    .redirectUri("https://erp.lmp-services.be/api/method/external CRM.integrations.oauth2_logins.login_via_oauth2")
-                    .redirectUri("http://localhost:8069/api/method/external CRM.integrations.oauth2_logins.login_via_oauth2")
+                    .redirectUri(external ERPRedirectUri)
                     .scope(OidcScopes.OPENID)
                     .scope(OidcScopes.PROFILE)
                     .scope(OidcScopes.EMAIL)
@@ -130,7 +141,7 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:8080") // Overridden in prod via env var
+                .issuer(issuerUri)
                 .build();
     }
 

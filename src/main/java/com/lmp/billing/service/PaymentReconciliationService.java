@@ -328,7 +328,6 @@ public class PaymentReconciliationService {
         body.append("Si vous avez des questions, n'hésitez pas à nous contacter.\n\n");
         body.append("Cordialement,\n");
         body.append("L'équipe LMP\n");
-        body.append("support@lmp-services.ca\n");
 
         return body.toString();
     }

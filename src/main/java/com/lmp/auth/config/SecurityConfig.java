@@ -61,6 +61,9 @@ public class SecurityConfig {
     @Autowired(required = false)
     private CustomOidcUserService customOidcUserService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000,http://localhost:8080}")
+    private String corsAllowedOrigins;
+
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                            PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler) {
@@ -295,11 +298,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "https://lmp-services.be",
-                "https://*.lmp-services.be",
-                "https://lmp-services.ca"));
+        // Origins dynamiques depuis la propriété app.cors.allowed-origins
+        List<String> origins = java.util.Arrays.stream(corsAllowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("X-XSRF-TOKEN"));
