@@ -199,8 +199,11 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
       if (this.pollCount >= this.maxPolls) {
         this.stopPolling();
         this.polling.set(false);
-        this.confirmed.set(true); // Show success anyway after timeout
-        this.orderStatus.set('CONFIRMED');
+        this.error.set(
+          'La confirmation de votre paiement prend plus de temps que prévu. ' +
+          'Votre paiement a bien été reçu par Stripe, mais la confirmation automatique n\'a pas encore été traitée. ' +
+          'Veuillez vérifier votre tableau de bord ou contacter le support si le problème persiste.'
+        );
         return;
       }
       this.checkPaymentStatus(orderId);
@@ -231,11 +234,6 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
         },
         error: () => {
           // Don't stop polling on error, might be temporary
-          if (this.pollCount >= this.maxPolls) {
-            this.stopPolling();
-            this.polling.set(false);
-            this.confirmed.set(true); // Show success anyway
-          }
         },
       });
   }

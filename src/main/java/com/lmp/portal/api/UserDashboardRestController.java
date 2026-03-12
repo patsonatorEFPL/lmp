@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/dashboard")
+@Transactional(readOnly = true)
 @Tag(name = "User Dashboard", description = "Statistiques et gestion du tableau de bord utilisateur")
 public class UserDashboardRestController {
 
@@ -139,6 +141,7 @@ public class UserDashboardRestController {
     }
 
     @PutMapping("/profile")
+    @Transactional
     @Operation(summary = "Mettre à jour le profil", description = "Met à jour les informations du profil utilisateur")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             @Valid @RequestBody UpdateProfileRequest request,
@@ -166,6 +169,7 @@ public class UserDashboardRestController {
     }
 
     @PutMapping("/password")
+    @Transactional
     @Operation(summary = "Changer le mot de passe", description = "Change le mot de passe de l'utilisateur authentifié")
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
