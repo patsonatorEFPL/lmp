@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import org.springframework.core.env.Environment;
+
 import jakarta.annotation.PostConstruct;
 
 /**
@@ -19,14 +21,20 @@ public class StripeConfig {
     
     private static final Logger logger = LoggerFactory.getLogger(StripeConfig.class);
     
-    @Value("${stripe.secret.key}")
+    private final Environment environment;
+    
+    @Value("${stripe.secret.key:}")
     private String stripeSecretKey;
     
-    @Value("${stripe.publishable.key}")
+    @Value("${stripe.publishable.key:}")
     private String stripePublishableKey;
     
-    @Value("${stripe.webhook.secret}")
+    @Value("${stripe.webhook.secret:}")
     private String webhookSecret;
+    
+    public StripeConfig(Environment environment) {
+        this.environment = environment;
+    }
     
     @Value("${stripe.api.version:2023-10-16}")
     private String apiVersion;
@@ -52,6 +60,14 @@ public class StripeConfig {
     @PostConstruct
     public void initStripe() {
         try {
+            // En dev, si les clés Stripe sont absentes, on skip l'initialisation
+            boolean isDevProfile = java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev");
+            if (isDevProfile && (stripeSecretKey == null || stripeSecretKey.trim().isEmpty())) {
+                logger.warn("Stripe keys not configured — Stripe is DISABLED in dev mode. "
+                        + "Set stripe.secret.key and stripe.publishable.key in application-secrets.properties to enable.");
+                return;
+            }
+            
             // Validation des clés requises
             validateStripeKeys();
             
@@ -83,9 +99,9 @@ public class StripeConfig {
     @Bean
     public StripeProperties stripeProperties() {
         StripeProperties properties = new StripeProperties();
-        properties.setSecretKey(stripeSecretKey);
-        properties.setPublishableKey(stripePublishableKey);
-        properties.setWebhookSecret(webhookSecret);
+        properties.setSecretKey(stripeSecretKey != null ? stripeSecretKey : "");
+        properties.setPublishableKey(stripePublishableKey != null ? stripePublishableKey : "");
+        properties.setWebhookSecret(webhookSecret != null ? webhookSecret : "");
         properties.setApiVersion(apiVersion);
         properties.setConnectClientId(connectClientId);
         properties.setMaxNetworkRetries(maxNetworkRetries);

@@ -20,6 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * selon le type d'exception rencontré.
  */
 @ControllerAdvice
+@org.springframework.core.annotation.Order(10)
 public class GlobalExceptionHandler {
 
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")

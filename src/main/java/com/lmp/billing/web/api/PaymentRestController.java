@@ -82,7 +82,8 @@ public class PaymentRestController {
             UUID orderId,
             String status,
             String paymentStatus,
-            boolean ready
+            boolean ready,
+            boolean paymentConfirmed
     ) {}
 
     // =========================================================================
@@ -205,9 +206,14 @@ public class PaymentRestController {
                 .map(order -> {
                     String status = order.getStatus().name();
                     String paymentStatus = order.getPaymentStatus() != null ? order.getPaymentStatus() : "pending";
-                    boolean ready = !"PAYMENT_PENDING".equals(status) && !"PENDING".equals(status);
+                    // ready = webhook has been processed (status changed from initial)
+                    boolean ready = !"PAYMENT_PENDING".equals(status);
+                    // paymentConfirmed = payment was actually successful (not cancelled/refunded/failed)
+                    boolean paymentConfirmed = ready && !Set.of(
+                            "CANCELLED", "REFUNDED", "PENDING"
+                    ).contains(status);
 
-                    var statusResponse = new PaymentStatusResponse(orderId, status, paymentStatus, ready);
+                    var statusResponse = new PaymentStatusResponse(orderId, status, paymentStatus, ready, paymentConfirmed);
                     return ResponseEntity.ok(ApiResponse.ok(statusResponse));
                 })
                 .orElse(ResponseEntity.notFound().build());
