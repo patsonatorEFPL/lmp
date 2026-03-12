@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/admin")
 @PreAuthorize("hasRole('ADMIN')")
+@Transactional(readOnly = true)
 @Tag(name = "Admin", description = "Endpoints d'administration (ADMIN only)")
 public class AdminRestController {
 
@@ -118,6 +120,7 @@ public class AdminRestController {
     // ========== User Management ==========
 
     @PutMapping("/users/{id}")
+    @Transactional
     @Operation(summary = "Modifier un utilisateur", description = "Met à jour le statut, verrouillage ou rôle d'un utilisateur")
     public ResponseEntity<ApiResponse<Void>> updateUser(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
@@ -183,6 +186,7 @@ public class AdminRestController {
     }
 
     @PutMapping("/orders/{id}")
+    @Transactional
     @Operation(summary = "Modifier une commande", description = "Met à jour le statut, la progression et les notes d'une commande")
     public ResponseEntity<ApiResponse<Void>> updateOrder(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {

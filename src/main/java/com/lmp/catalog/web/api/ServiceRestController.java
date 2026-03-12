@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/services")
+@Transactional(readOnly = true)
 @Tag(name = "Services", description = "Catalogue de services et offres")
 public class ServiceRestController {
 
