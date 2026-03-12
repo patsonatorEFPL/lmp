@@ -73,7 +73,7 @@ ${project.build.directory}/
 ### Tool Documentation & Scripts ###
 docs/
 /scripts/
-LMP/
+/LMP/
 
 ### Temporary/Debug Files ###
 git_status.txt
