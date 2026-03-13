@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Download,
   RotateCcw,
+  CreditCard,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
@@ -707,6 +708,15 @@ const USER_ORDER_STEPS = [
               }
 
               <div class="border-t border-(--border) px-6 py-4 flex gap-2">
+                @if (selectedOrder()!.status === 'PAYMENT_PENDING') {
+                  <button
+                    hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+                    (click)="payOrder(selectedOrder()!)"
+                  >
+                    <lucide-icon [img]="CreditCardIcon" [size]="14"></lucide-icon>
+                    Payer maintenant
+                  </button>
+                }
                 @if (isInvoiceEligible(selectedOrder()!.status)) {
                   <button
                     hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
@@ -757,6 +767,7 @@ export class DashboardComponent implements OnInit {
   readonly MessageSquareIcon = MessageSquare;
   readonly DownloadIcon = Download;
   readonly RotateCcwIcon = RotateCcw;
+  readonly CreditCardIcon = CreditCard;
 
   readonly stats = signal<DashboardStats | null>(null);
   readonly loading = signal(true);
@@ -925,6 +936,25 @@ export class DashboardComponent implements OnInit {
 
   isInvoiceEligible(status: string): boolean {
     return ['CONFIRMED', 'COMPLETED', 'DELIVERED', 'PROCESSING', 'IN_PROGRESS'].includes(status);
+  }
+
+  payOrder(order: any): void {
+    this.http
+      .post<any>(
+        `${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}`,
+        {},
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.data?.redirectUrl) {
+            window.location.href = res.data.redirectUrl;
+          }
+        },
+        error: () => {
+          alert('Erreur lors de la création de la session de paiement.');
+        },
+      });
   }
 
   downloadInvoice(orderId: string): void {

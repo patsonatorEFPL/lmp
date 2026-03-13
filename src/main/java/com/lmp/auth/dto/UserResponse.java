@@ -22,6 +22,7 @@ public record UserResponse(
         String companyName,
         String status,
         boolean emailVerified,
+        boolean accountLocked,
         Set<String> roles,
         LocalDateTime registrationDate,
         LocalDateTime lastLoginDate
@@ -43,6 +44,7 @@ public record UserResponse(
                 user.getCompanyName(),
                 user.getStatus() != null ? user.getStatus().name() : "ACTIVE",
                 Boolean.TRUE.equals(user.getEmailVerified()),
+                Boolean.TRUE.equals(user.getAccountLocked()),
                 roleNames,
                 user.getRegistrationDate(),
                 user.getLastLoginDate());

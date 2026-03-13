@@ -33,6 +33,7 @@ interface UserItem {
   displayName: string;
   roles: string[];
   emailVerified: boolean;
+  accountLocked: boolean;
   status: string;
   registrationDate: string;
   lastLoginDate: string | null;
@@ -167,12 +168,19 @@ interface ApiResponse<T> {
                   }
                 </td>
                 <td class="px-4 py-3">
-                  <span
-                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                    [ngClass]="getStatusClass(user.status)"
-                  >
-                    {{ getStatusLabel(user.status) }}
-                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <span
+                      class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                      [ngClass]="getStatusClass(user.status)"
+                    >
+                      {{ getStatusLabel(user.status) }}
+                    </span>
+                    @if (user.accountLocked) {
+                      <span class="inline-flex rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500">
+                        🔒
+                      </span>
+                    }
+                  </div>
                 </td>
                 <td class="px-4 py-3 text-(--muted-foreground)">
                   {{ user.registrationDate | date:'dd/MM/yyyy' }}
@@ -289,6 +297,21 @@ interface ApiResponse<T> {
             </div>
 
             <div class="h-px bg-(--border)"></div>
+
+            <!-- Email -->
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-(--foreground)">Email</label>
+              <input
+                [(ngModel)]="editForm.email"
+                type="email"
+                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+              />
+              @if (editForm.email !== editingUser?.email) {
+                <p class="mt-1 text-xs text-amber-500">
+                  ⚠️ Un email de notification sera envoyé à l'ancien et au nouvel email.
+                </p>
+              }
+            </div>
 
             <!-- Status -->
             <div>
@@ -424,7 +447,7 @@ export class AdminUsersComponent implements OnInit {
   searchQuery = '';
   statusFilter = '';
   editingUser: UserItem | null = null;
-  editForm = { status: 'ACTIVE', locked: false };
+  editForm = { status: 'ACTIVE', locked: false, email: '' };
 
   ngOnInit(): void {
     this.loadUsers();
@@ -509,7 +532,8 @@ export class AdminUsersComponent implements OnInit {
     this.editingUser = user;
     this.editForm = {
       status: user.status,
-      locked: user.status === 'LOCKED',
+      locked: user.accountLocked ?? false,
+      email: user.email,
     };
     this.showEditModal.set(true);
   }
@@ -527,6 +551,11 @@ export class AdminUsersComponent implements OnInit {
       status: this.editForm.status,
       locked: this.editForm.locked,
     };
+
+    // Include email only if changed
+    if (this.editForm.email && this.editForm.email !== this.editingUser.email) {
+      payload['email'] = this.editForm.email;
+    }
 
     this.http
       .put<ApiResponse<void>>(
