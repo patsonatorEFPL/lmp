@@ -25,6 +25,7 @@ import com.lmp.integration.domain.StripeWebhookEventType;
 import com.lmp.integration.domain.WebhookEventLog;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.PaymentTransactionRepository;
+import com.lmp.billing.repository.RefundRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.integration.repository.WebhookEventLogRepository;
 import com.lmp.notification.service.EmailService;
@@ -69,6 +70,8 @@ public class StripeWebhookHandler {
 
         private final TemplateEngine templateEngine;
 
+        private final RefundRepository refundRepository;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -78,7 +81,8 @@ public class StripeWebhookHandler {
                            EmailService emailService,
                            InvoicePdfService invoicePdfService,
                            WebhookEventLogRepository webhookEventLogRepository,
-                           TemplateEngine templateEngine) {
+                           TemplateEngine templateEngine,
+                           RefundRepository refundRepository) {
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -86,6 +90,7 @@ public class StripeWebhookHandler {
         this.invoicePdfService = invoicePdfService;
         this.webhookEventLogRepository = webhookEventLogRepository;
         this.templateEngine = templateEngine;
+        this.refundRepository = refundRepository;
     }
 
     /**
@@ -398,24 +403,84 @@ public class StripeWebhookHandler {
      * Gère la création de remboursements en utilisant l'enum
      */
     private void handleRefundCreated(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
-        Refund refund = (Refund) event.getDataObjectDeserializer().getObject().orElse(null);
+        Refund stripeRefund = (Refund) event.getDataObjectDeserializer().getObject().orElse(null);
 
-        if (refund != null) {
-            webhookEvent.setProviderTransactionId(refund.getPaymentIntent());
+        if (stripeRefund != null) {
+            webhookEvent.setProviderTransactionId(stripeRefund.getPaymentIntent());
             webhookEvent.setStatus("refund_created");
 
             logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
+            // 🆕 PERSIST REFUND: Save the refund entity linked to the order
+            persistRefundFromStripe(stripeRefund);
+
             // Ajouter les données de l'événement
             Map<String, Object> eventData = new HashMap<>();
-            eventData.put("refund_id", refund.getId());
-            eventData.put("amount", refund.getAmount());
-            eventData.put("currency", refund.getCurrency());
-            eventData.put("reason", refund.getReason());
+            eventData.put("refund_id", stripeRefund.getId());
+            eventData.put("amount", stripeRefund.getAmount());
+            eventData.put("currency", stripeRefund.getCurrency());
+            eventData.put("reason", stripeRefund.getReason());
             webhookEvent.setEventData(eventData);
 
             logger.info("Refund created - Refund: {}, Amount: {} {}",
-                    refund.getId(), refund.getAmount(), refund.getCurrency());
+                    stripeRefund.getId(), stripeRefund.getAmount(), stripeRefund.getCurrency());
+        }
+    }
+
+    /**
+     * 🆕 NOUVEAUTÉ : Persiste un remboursement Stripe en base de données.
+     * Recherche la commande associée et crée un enregistrement Refund.
+     */
+    private void persistRefundFromStripe(Refund stripeRefund) {
+        try {
+            // Check idempotency — avoid duplicates
+            Optional<com.lmp.billing.domain.Refund> existing = refundRepository.findByStripeRefundId(stripeRefund.getId());
+            if (existing.isPresent()) {
+                logger.info("⏭️ Refund already persisted: {}", stripeRefund.getId());
+                return;
+            }
+
+            // Find the order by PaymentIntent ID
+            Optional<Order> orderOpt = Optional.empty();
+            if (stripeRefund.getPaymentIntent() != null) {
+                orderOpt = orderRepository.findByStripePaymentIntentId(stripeRefund.getPaymentIntent());
+            }
+
+            if (orderOpt.isEmpty()) {
+                logger.warn("❌ REFUND PERSIST - Commande non trouvée pour PaymentIntent: {}", stripeRefund.getPaymentIntent());
+                return;
+            }
+
+            Order order = orderOpt.get();
+
+            com.lmp.billing.domain.Refund refundEntity = new com.lmp.billing.domain.Refund();
+            refundEntity.setOrder(order);
+            refundEntity.setStripeRefundId(stripeRefund.getId());
+            refundEntity.setAmount(BigDecimal.valueOf(stripeRefund.getAmount()).divide(BigDecimal.valueOf(100)));
+            refundEntity.setCurrency(stripeRefund.getCurrency());
+            refundEntity.setReason(stripeRefund.getReason());
+            refundEntity.setStatus(stripeRefund.getStatus() != null ? stripeRefund.getStatus() : "pending");
+            refundEntity.setCreatedAt(LocalDateTime.now());
+            refundEntity.setProcessedBy("stripe_webhook");
+
+            refundRepository.save(refundEntity);
+
+            logger.info("✅ REFUND PERSISTED - ID: {}, Stripe: {}, Montant: {} {}, Commande: {}",
+                    refundEntity.getId(), stripeRefund.getId(),
+                    refundEntity.getAmount(), refundEntity.getCurrency(), order.getId());
+
+            // Update order status if full refund
+            BigDecimal totalRefunded = refundRepository.getTotalRefundedAmountByOrderId(order.getId());
+            if (totalRefunded.compareTo(order.getTotalAmount()) >= 0) {
+                order.setStatus(OrderStatus.REFUNDED);
+                order.setUpdatedAt(LocalDateTime.now());
+                orderRepository.save(order);
+                logger.info("🔄 REFUND - Commande {} marquée comme REFUNDED (remboursement total)", order.getId());
+            }
+
+        } catch (Exception e) {
+            logger.error("❌ REFUND PERSIST ERROR - Erreur lors de la persistance du remboursement {}: {}",
+                    stripeRefund.getId(), e.getMessage(), e);
         }
     }
 
@@ -423,20 +488,35 @@ public class StripeWebhookHandler {
      * Gère la mise à jour de remboursements en utilisant l'enum
      */
     private void handleRefundUpdated(Event event, WebhookEventDto webhookEvent, StripeWebhookEventType eventType) {
-        Refund refund = (Refund) event.getDataObjectDeserializer().getObject().orElse(null);
+        Refund stripeRefund = (Refund) event.getDataObjectDeserializer().getObject().orElse(null);
 
-        if (refund != null) {
-            webhookEvent.setProviderTransactionId(refund.getPaymentIntent());
+        if (stripeRefund != null) {
+            webhookEvent.setProviderTransactionId(stripeRefund.getPaymentIntent());
             webhookEvent.setStatus("refund_updated");
 
             logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
-            // Mettre à jour le statut si le remboursement est réussi
-            if ("succeeded".equals(refund.getStatus()) && eventType.shouldUpdatePaymentStatus()) {
-                updatePaymentTransactionStatus(refund.getPaymentIntent(), eventType.getTargetPaymentStatus());
+            // Update persisted refund status
+            Optional<com.lmp.billing.domain.Refund> refundOpt = refundRepository.findByStripeRefundId(stripeRefund.getId());
+            if (refundOpt.isPresent()) {
+                com.lmp.billing.domain.Refund refundEntity = refundOpt.get();
+                refundEntity.setStatus(stripeRefund.getStatus());
+                if ("succeeded".equals(stripeRefund.getStatus())) {
+                    refundEntity.setProcessedAt(LocalDateTime.now());
+                } else if ("failed".equals(stripeRefund.getStatus())) {
+                    refundEntity.setFailureReason(stripeRefund.getFailureReason() != null
+                            ? stripeRefund.getFailureReason().toString() : "Unknown");
+                }
+                refundRepository.save(refundEntity);
+                logger.info("✅ REFUND UPDATED - Stripe: {}, Status: {}", stripeRefund.getId(), stripeRefund.getStatus());
             }
 
-            logger.info("Refund updated - Refund: {}, Status: {}", refund.getId(), refund.getStatus());
+            // Mettre à jour le statut si le remboursement est réussi
+            if ("succeeded".equals(stripeRefund.getStatus()) && eventType.shouldUpdatePaymentStatus()) {
+                updatePaymentTransactionStatus(stripeRefund.getPaymentIntent(), eventType.getTargetPaymentStatus());
+            }
+
+            logger.info("Refund updated - Refund: {}, Status: {}", stripeRefund.getId(), stripeRefund.getStatus());
         }
     }
 
@@ -731,6 +811,15 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
+                        // Progress tracking
+                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
+                            order.setProgressPercentage(10);
+                            order.setProgressStatus("Paiement confirmé");
+                        }
+                        // Auto-verify user
+                        if (order.getUser() != null) {
+                            autoVerifyUserOnPayment(order.getUser());
+                        }
                     }
 
                     orderRepository.save(order);
@@ -789,6 +878,15 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
+                        // Progress tracking
+                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
+                            order.setProgressPercentage(10);
+                            order.setProgressStatus("Paiement confirmé");
+                        }
+                        // Auto-verify user
+                        if (order.getUser() != null) {
+                            autoVerifyUserOnPayment(order.getUser());
+                        }
                     }
 
                     orderRepository.save(order);
@@ -1242,6 +1340,18 @@ public class StripeWebhookHandler {
             if (newStatus == OrderStatus.CONFIRMED) {
                 order.setPaidAt(LocalDateTime.now());
                 order.setPaymentStatus("succeeded");
+
+                // 🆕 PROGRESS TRACKING: Set initial progress on payment confirmation
+                if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
+                    order.setProgressPercentage(10);
+                    order.setProgressStatus("Paiement confirmé");
+                    logger.info("📊 PROGRESS - Commande {} progression initialisée à 10%", order.getId());
+                }
+
+                // 🆕 AUTO-VERIFY: Mark user's email as verified upon confirmed payment
+                if (order.getUser() != null) {
+                    autoVerifyUserOnPayment(order.getUser());
+                }
             }
 
             orderRepository.save(order);
@@ -1256,6 +1366,25 @@ public class StripeWebhookHandler {
         } else {
             logger.warn("❌ TRANSITION INVALIDE - Mise à jour de statut bloquée pour commande {}: {} -> {}",
                     order.getId(), oldStatus, newStatus);
+        }
+    }
+
+    /**
+     * 🆕 NOUVEAUTÉ : Auto-vérifie l'email de l'utilisateur après un paiement confirmé.
+     * Si un utilisateur paie, on peut considérer que son email est valide.
+     */
+    private void autoVerifyUserOnPayment(User user) {
+        try {
+            if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+                user.setEmailVerified(true);
+                userRepository.save(user);
+                logger.info("✅ AUTO-VERIFY - Email vérifié automatiquement pour l'utilisateur {} suite au paiement",
+                        user.getEmail());
+                securityLogger.info("User email auto-verified on payment - User: {}", user.getEmail());
+            }
+        } catch (Exception e) {
+            logger.error("❌ AUTO-VERIFY - Erreur lors de la vérification automatique pour {}: {}",
+                    user.getEmail(), e.getMessage());
         }
     }
 

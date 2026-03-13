@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, computed, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'lmp-appointment-modal',
@@ -340,22 +342,52 @@ import { HlmButton } from '@spartan-ng/helm/button';
             </div>
           </div>
 
+          <!-- Success message -->
+          @if (submitSuccess()) {
+            <div class="mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400">
+              <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Votre rendez-vous a été enregistré avec succès ! Nous vous contacterons sous peu.</span>
+            </div>
+          }
+
+          <!-- API error message -->
+          @if (submitError()) {
+            <div class="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+              <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <span>{{ submitError() }}</span>
+            </div>
+          }
+
           <!-- Actions -->
           <div class="mt-6 flex gap-3">
             <button
               class="flex-1 rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:text-(--foreground) cursor-pointer"
               (click)="close()"
             >
-              Annuler
+              {{ submitSuccess() ? 'Fermer' : 'Annuler' }}
             </button>
-            <button
-              hlmBtn
-              variant="default"
-              class="flex-1 cursor-pointer justify-center"
-              (click)="submit()"
-            >
-              Confirmer le rendez-vous
-            </button>
+            @if (!submitSuccess()) {
+              <button
+                hlmBtn
+                variant="default"
+                class="flex-1 cursor-pointer justify-center"
+                [disabled]="submitting()"
+                (click)="submit()"
+              >
+                @if (submitting()) {
+                  <svg class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16 8 8 0 010-16z" />
+                  </svg>
+                  Envoi en cours...
+                } @else {
+                  Confirmer le rendez-vous
+                }
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -363,12 +395,17 @@ import { HlmButton } from '@spartan-ng/helm/button';
   `,
 })
 export class AppointmentModalComponent implements OnChanges {
+  private readonly http = inject(HttpClient);
+
   @Input() isOpen = false;
   @Output() closed = new EventEmitter<void>();
 
   readonly visible  = signal(false);
   readonly closing  = signal(false);
   readonly submitted = signal(false);
+  readonly submitting = signal(false);
+  readonly submitSuccess = signal(false);
+  readonly submitError = signal<string | null>(null);
 
   /** Fields that have failed validation after a submit attempt */
   private readonly errors = signal<Set<string>>(new Set());
@@ -480,8 +517,43 @@ export class AppointmentModalComponent implements OnChanges {
       return; // stop — errors displayed in template
     }
 
-    // ✅ All valid — proceed (emit / call API here)
-    this.animateClose();
+    // ✅ All valid — call the API
+    this.submitting.set(true);
+    this.submitError.set(null);
+
+    const year = this.currentYear();
+    const month = String(this.currentMonth() + 1).padStart(2, '0');
+    const day = String(this.selectedDay()!).padStart(2, '0');
+
+    const payload = {
+      name: this.fullName.trim(),
+      email: this.email.trim(),
+      phone: this.phone.trim(),
+      service: this.selectedService,
+      date: `${year}-${month}-${day}`,
+      time: this.selectedTime(),
+      message: this.message.trim() || null,
+    };
+
+    this.http
+      .post<{ success: boolean; message?: string }>(
+        `${environment.apiUrl}/api/v1/appointments`,
+        payload,
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.submitSuccess.set(true);
+          // Auto-close after 3 seconds
+          setTimeout(() => this.animateClose(), 3000);
+        },
+        error: (err) => {
+          this.submitting.set(false);
+          const msg = err.error?.message || 'Une erreur est survenue. Veuillez réessayer.';
+          this.submitError.set(msg);
+        },
+      });
   }
 
   animateClose(): void {
@@ -498,6 +570,9 @@ export class AppointmentModalComponent implements OnChanges {
 
   private _reset(): void {
     this.submitted.set(false);
+    this.submitting.set(false);
+    this.submitSuccess.set(false);
+    this.submitError.set(null);
     this.errors.set(new Set());
     this.fullName        = '';
     this.email           = '';

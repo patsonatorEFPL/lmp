@@ -89,7 +89,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/resend-verification",
                                 "/api/v1/services/**",
                                 "/api/v1/contact",
-                                "/api/v1/appointments/available-slots")
+                                "/api/v1/appointments/**")
                         .permitAll()
 
                         // Webhooks Stripe (pas d'auth)
@@ -122,7 +122,8 @@ public class SecurityConfig {
                                 "/api/webhooks/**",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
-                                "/api/v1/contact"))
+                                "/api/v1/contact",
+                                "/api/v1/appointments"))
 
                 // CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
