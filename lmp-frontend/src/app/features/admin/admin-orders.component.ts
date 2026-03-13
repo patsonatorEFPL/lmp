@@ -20,6 +20,7 @@ import {
   FileText,
   Plus,
   Download,
+  RefreshCcw,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -452,13 +453,27 @@ const ORDER_STEPS = [
 
             <!-- Modal Footer -->
             <div class="flex items-center justify-between border-t border-(--border) px-6 py-4">
-              <button
-                hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
-                (click)="downloadInvoice(orderDetail()!.id)"
-              >
-                <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
-                Facture PDF
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
+                  (click)="downloadInvoice(orderDetail()!.id)"
+                >
+                  <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+                  Facture PDF
+                </button>
+                <button
+                  hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
+                  [disabled]="syncing()"
+                  (click)="syncWithStripe(orderDetail()!.id)"
+                >
+                  @if (syncing()) {
+                    <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                  } @else {
+                    <lucide-icon [img]="RefreshCcwIcon" [size]="14"></lucide-icon>
+                  }
+                  Sync Stripe
+                </button>
+              </div>
               <div class="flex items-center gap-2">
               <button
                 hlmBtn variant="outline" size="sm" class="cursor-pointer"
@@ -620,6 +635,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly FileTextIcon = FileText;
   readonly PlusIcon = Plus;
   readonly DownloadIcon = Download;
+  readonly RefreshCcwIcon = RefreshCcw;
 
   readonly loading = signal(false);
   readonly loadingDetail = signal(false);
@@ -633,6 +649,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly toast = signal<{ type: 'success' | 'error'; message: string } | null>(null);
   readonly showCreateOrderModal = signal(false);
   readonly creatingOrder = signal(false);
+  readonly syncing = signal(false);
 
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
@@ -897,6 +914,33 @@ export class AdminOrdersComponent implements OnInit {
         error: () => {
           this.showToast('error', 'Impossible de rechercher l\'utilisateur');
           this.creatingOrder.set(false);
+        },
+      });
+  }
+
+  syncWithStripe(orderId: string): void {
+    this.syncing.set(true);
+    this.http
+      .post<ApiResponse<any>>(
+        `${environment.apiUrl}/api/v1/admin/orders/${orderId}/stripe-sync`,
+        {},
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          const data = res.data;
+          if (data?.synced) {
+            this.showToast('success', `Synchronisé: ${data.updatedPaymentStatus} / ${data.updatedStatus}`);
+            // Refresh the detail modal
+            this.viewOrderDetail(orderId);
+          } else {
+            this.showToast('error', data?.message || 'Impossible de synchroniser');
+          }
+          this.syncing.set(false);
+        },
+        error: (err) => {
+          this.showToast('error', err.error?.message || 'Erreur de synchronisation Stripe');
+          this.syncing.set(false);
         },
       });
   }

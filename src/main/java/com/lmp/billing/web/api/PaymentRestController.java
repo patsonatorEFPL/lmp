@@ -189,6 +189,86 @@ public class PaymentRestController {
         }
     }
 
+    @PostMapping("/checkout-order/{orderId}")
+    @Operation(summary = "Payer une commande existante",
+               description = "Crée une session Stripe Checkout pour une commande en attente de paiement (ex: commande créée par admin)")
+    public ResponseEntity<ApiResponse<CheckoutResponse>> checkoutExistingOrder(
+            @PathVariable UUID orderId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .filter(o -> o.getUser() != null && o.getUser().getId().equals(user.getId()))
+                .orElse(null);
+
+        if (order == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Cette commande n'est pas en attente de paiement"));
+        }
+
+        try {
+            String currency = order.getCurrency() != null ? order.getCurrency() : "EUR";
+
+            PaymentRequestDto paymentRequest = new PaymentRequestDto();
+            paymentRequest.setAmount(order.getTotalAmount());
+            paymentRequest.setCurrency(currency);
+            paymentRequest.setPaymentProvider("stripe");
+            paymentRequest.setPaymentMethod("checkout_session");
+
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("serviceName", order.getServiceName());
+            metadata.put("amount", String.valueOf(order.getTotalAmount().multiply(new BigDecimal("100")).longValue()));
+            metadata.put("currency", currency);
+            metadata.put("userId", String.valueOf(user.getId()));
+            metadata.put("userEmail", user.getEmail());
+            metadata.put("orderId", String.valueOf(order.getId()));
+            metadata.put("webhook_version", "v3");
+            metadata.put("creation_mode", "admin_order_checkout");
+            metadata.put("order_creation", "persistent");
+            metadata.put("customer_ip", getClientIp(httpRequest));
+            paymentRequest.setMetadata(metadata);
+
+            PaymentResponseDto response = stripeCheckoutProcessor.processPayment(order, paymentRequest);
+
+            if ((response.isSuccessful() || response.isPending()) && response.isRequiresRedirect()) {
+                order.setStripeSessionId(response.getProviderTransactionId());
+                if (response.getPaymentIntentId() != null) {
+                    order.setStripePaymentIntentId(response.getPaymentIntentId());
+                }
+                order.setUpdatedAt(LocalDateTime.now());
+                orderRepository.save(order);
+
+                var checkoutResponse = new CheckoutResponse(
+                        true,
+                        response.getRedirectUrl(),
+                        response.getProviderTransactionId(),
+                        order.getId()
+                );
+                return ResponseEntity.ok(ApiResponse.ok(checkoutResponse));
+            } else {
+                return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                        .body(ApiResponse.error(
+                                response.getErrorMessage() != null
+                                        ? response.getErrorMessage()
+                                        : "Failed to create checkout session"));
+            }
+        } catch (Exception e) {
+            logger.error("Checkout error for existing order {}: {}", orderId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("An unexpected error occurred"));
+        }
+    }
+
     @GetMapping("/status/{orderId}")
     @Operation(summary = "Statut de paiement", description = "Vérifie si le webhook Stripe a confirmé le paiement")
     public ResponseEntity<ApiResponse<PaymentStatusResponse>> getPaymentStatus(

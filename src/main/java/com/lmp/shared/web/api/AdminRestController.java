@@ -17,6 +17,10 @@ import com.lmp.crm.dto.AppointmentResponse;
 import com.lmp.crm.repository.AppointmentRepository;
 import com.lmp.shared.dto.ApiResponse;
 
+import com.lmp.notification.service.EmailService;
+import com.stripe.Stripe;
+import com.stripe.model.PaymentIntent;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -27,7 +31,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +42,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -48,21 +55,27 @@ import java.util.UUID;
 @Tag(name = "Admin", description = "Endpoints d'administration (ADMIN only)")
 public class AdminRestController {
 
+    @Value("${stripe.secret.key:${STRIPE_SECRET_KEY:}}")
+    private String stripeSecretKey;
+
     private final UserService userService;
     private final OrderRepository orderRepository;
     private final AppointmentRepository appointmentRepository;
     private final RefundRepository refundRepository;
     private final InvoicePdfService invoicePdfService;
+    private final EmailService emailService;
 
     public AdminRestController(UserService userService, OrderRepository orderRepository,
                                AppointmentRepository appointmentRepository,
                                RefundRepository refundRepository,
-                               InvoicePdfService invoicePdfService) {
+                               InvoicePdfService invoicePdfService,
+                               EmailService emailService) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.appointmentRepository = appointmentRepository;
         this.refundRepository = refundRepository;
         this.invoicePdfService = invoicePdfService;
+        this.emailService = emailService;
     }
 
     @GetMapping("/stats")
@@ -138,7 +151,7 @@ public class AdminRestController {
 
     @PutMapping("/users/{id}")
     @Transactional
-    @Operation(summary = "Modifier un utilisateur", description = "Met à jour le statut, verrouillage ou rôle d'un utilisateur")
+    @Operation(summary = "Modifier un utilisateur", description = "Met à jour le statut, verrouillage, email ou rôle d'un utilisateur")
     public ResponseEntity<ApiResponse<Void>> updateUser(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         try {
             User user = userService.findById(id)
@@ -153,6 +166,51 @@ public class AdminRestController {
             if (data.containsKey("locked")) {
                 boolean locked = Boolean.TRUE.equals(data.get("locked"));
                 userService.setUserLocked(id, locked);
+            }
+
+            // Admin email change: initiate verification flow
+            if (data.containsKey("email")) {
+                String newEmail = ((String) data.get("email")).trim().toLowerCase();
+                if (!newEmail.equals(user.getEmail())) {
+                    // Check if email already taken
+                    Optional<User> existingUser = userService.findByEmail(newEmail);
+                    if (existingUser.isPresent()) {
+                        return ResponseEntity.badRequest().body(ApiResponse.error("Cet email est déjà utilisé par un autre compte"));
+                    }
+
+                    String oldEmail = user.getEmail();
+                    // Generate a verification token
+                    String token = UUID.randomUUID().toString();
+                    user.setVerificationToken(token);
+                    user.setEmailVerified(false);
+                    user.setEmail(newEmail);
+                    userService.save(user);
+
+                    // Send notification to old email
+                    try {
+                        emailService.sendSimpleEmail(oldEmail,
+                                "LMP — Changement d'email de votre compte",
+                                "Bonjour,\n\nL'administrateur a modifié l'email de votre compte LMP.\n"
+                                + "Ancien email : " + oldEmail + "\n"
+                                + "Nouvel email : " + newEmail + "\n\n"
+                                + "Si ce changement n'est pas de votre fait, veuillez contacter l'administrateur immédiatement.\n\n"
+                                + "Cordialement,\nL'équipe LMP");
+                    } catch (Exception e) {
+                        // Non-blocking
+                    }
+
+                    // Send verification to new email
+                    try {
+                        emailService.sendSimpleEmail(newEmail,
+                                "LMP — Vérifiez votre nouvel email",
+                                "Bonjour,\n\nVotre email a été modifié par l'administrateur.\n"
+                                + "Veuillez vérifier votre compte en cliquant sur ce lien :\n"
+                                + "Un email de confirmation vous a été envoyé.\n\n"
+                                + "Cordialement,\nL'équipe LMP");
+                    } catch (Exception e) {
+                        // Non-blocking
+                    }
+                }
             }
 
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur mis à jour", null));
@@ -435,6 +493,159 @@ public class AdminRestController {
     }
 
     // ========== Order Refunds (read) ==========
+
+    // ========== Stripe Sync ==========
+
+    @PostMapping("/orders/{orderId}/stripe-sync")
+    @Transactional
+    @Operation(summary = "Synchroniser avec Stripe", description = "Récupère le statut actuel du paiement depuis Stripe")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> syncWithStripe(@PathVariable UUID orderId) {
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
+
+            Map<String, Object> syncResult = new LinkedHashMap<>();
+            syncResult.put("orderId", order.getId());
+            syncResult.put("currentStatus", order.getStatus() != null ? order.getStatus().name() : null);
+            syncResult.put("currentPaymentStatus", order.getPaymentStatus());
+
+            if (order.getStripePaymentIntentId() != null && !order.getStripePaymentIntentId().isEmpty()) {
+                Stripe.apiKey = stripeSecretKey;
+                PaymentIntent pi = PaymentIntent.retrieve(order.getStripePaymentIntentId());
+
+                syncResult.put("stripeStatus", pi.getStatus());
+                syncResult.put("stripeAmount", pi.getAmount());
+                syncResult.put("stripeCurrency", pi.getCurrency());
+
+                // Update local payment status from Stripe
+                String stripeStatus = pi.getStatus();
+                if ("succeeded".equals(stripeStatus)) {
+                    order.setPaymentStatus("succeeded");
+                    if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+                        order.setStatus(OrderStatus.CONFIRMED);
+                        order.setPaidAt(LocalDateTime.now());
+                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
+                            order.setProgressPercentage(10);
+                            order.setProgressStatus("Paiement confirmé");
+                        }
+                    }
+                } else if ("canceled".equals(stripeStatus)) {
+                    order.setPaymentStatus("cancelled");
+                } else if ("requires_payment_method".equals(stripeStatus)) {
+                    order.setPaymentStatus("requires_payment_method");
+                } else {
+                    order.setPaymentStatus(stripeStatus);
+                }
+
+                order.setUpdatedAt(LocalDateTime.now());
+                orderRepository.save(order);
+
+                syncResult.put("updatedStatus", order.getStatus() != null ? order.getStatus().name() : null);
+                syncResult.put("updatedPaymentStatus", order.getPaymentStatus());
+                syncResult.put("synced", true);
+            } else if (order.getStripeSessionId() != null && !order.getStripeSessionId().isEmpty()) {
+                Stripe.apiKey = stripeSecretKey;
+                com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(order.getStripeSessionId());
+
+                syncResult.put("stripePaymentStatus", session.getPaymentStatus());
+                syncResult.put("stripeSessionStatus", session.getStatus());
+
+                if ("paid".equals(session.getPaymentStatus())) {
+                    order.setPaymentStatus("succeeded");
+                    if (session.getPaymentIntent() != null) {
+                        order.setStripePaymentIntentId(session.getPaymentIntent());
+                    }
+                    if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+                        order.setStatus(OrderStatus.CONFIRMED);
+                        order.setPaidAt(LocalDateTime.now());
+                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
+                            order.setProgressPercentage(10);
+                            order.setProgressStatus("Paiement confirmé");
+                        }
+                    }
+                } else if ("expired".equals(session.getStatus())) {
+                    order.setPaymentStatus("expired");
+                    if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+                        order.setStatus(OrderStatus.CANCELLED);
+                        order.setCancelledAt(LocalDateTime.now());
+                        order.setCancellationReason("Session Stripe expirée");
+                    }
+                }
+
+                order.setUpdatedAt(LocalDateTime.now());
+                orderRepository.save(order);
+
+                syncResult.put("updatedStatus", order.getStatus() != null ? order.getStatus().name() : null);
+                syncResult.put("updatedPaymentStatus", order.getPaymentStatus());
+                syncResult.put("synced", true);
+            } else {
+                syncResult.put("synced", false);
+                syncResult.put("message", "Aucun identifiant Stripe associé à cette commande");
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(syncResult));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Erreur Stripe: " + e.getMessage()));
+        }
+    }
+
+    // ========== Admin Own Email Change ==========
+
+    @PostMapping("/change-email")
+    @Transactional
+    @Operation(summary = "Changer l'email admin", description = "L'admin change son propre email. Un email de confirmation est envoyé à l'ancien email.")
+    public ResponseEntity<ApiResponse<Void>> changeAdminEmail(@RequestBody Map<String, String> data, Authentication authentication) {
+        try {
+            String newEmail = data.get("newEmail");
+            if (newEmail == null || newEmail.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Le nouvel email est requis"));
+            }
+            newEmail = newEmail.trim().toLowerCase();
+
+            // Get current admin user
+            String currentEmail = authentication.getName();
+            User admin = userService.findByEmail(currentEmail)
+                    .orElseThrow(() -> new RuntimeException("Admin non trouvé"));
+
+            if (newEmail.equals(admin.getEmail())) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Le nouvel email est identique à l'ancien"));
+            }
+
+            // Check if new email is available
+            if (userService.findByEmail(newEmail).isPresent()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Cet email est déjà utilisé"));
+            }
+
+            // Generate confirmation token
+            String token = UUID.randomUUID().toString();
+            admin.setVerificationToken(token);
+            // Store new email temporarily in resetToken field (reuse for this purpose)
+            admin.setResetToken(newEmail);
+            admin.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
+            userService.save(admin);
+
+            // Send confirmation email to CURRENT email
+            try {
+                emailService.sendSimpleEmail(currentEmail,
+                        "LMP — Confirmer le changement d'email",
+                        "Bonjour,\n\n"
+                        + "Vous avez demandé à changer votre email de :\n"
+                        + currentEmail + "\n"
+                        + "vers :\n"
+                        + newEmail + "\n\n"
+                        + "Pour confirmer ce changement, cliquez sur le lien ci-dessous :\n"
+                        + "Ce changement sera effectif après confirmation.\n\n"
+                        + "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.\n\n"
+                        + "Cordialement,\nL'équipe LMP");
+            } catch (Exception e) {
+                // Non-blocking
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok("Un email de confirmation a été envoyé à " + currentEmail, null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 
     @GetMapping("/orders/{orderId}/refunds")
     @Operation(summary = "Remboursements d'une commande", description = "Retourne la liste des remboursements liés à une commande")
