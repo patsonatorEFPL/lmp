@@ -249,6 +249,32 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
               class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
             ></lucide-icon>
           </a>
+
+          <a
+            routerLink="/admin/appointments"
+            class="group flex items-center justify-between rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-amber-500/30 hover:shadow-md"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"
+              >
+                <lucide-icon [img]="CalendarIcon" [size]="20"></lucide-icon>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-(--foreground)">
+                  Gérer les Rendez-vous
+                </p>
+                <p class="text-xs text-(--muted-foreground)">
+                  Consulter, confirmer, annuler
+                </p>
+              </div>
+            </div>
+            <lucide-icon
+              [img]="ArrowRightIcon"
+              [size]="16"
+              class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+            ></lucide-icon>
+          </a>
         </div>
       </div>
     }

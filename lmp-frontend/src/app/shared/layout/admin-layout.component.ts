@@ -6,6 +6,7 @@ import {
   Package,
   Users,
   ShoppingCart,
+  Calendar,
   Settings,
   LogOut,
   ChevronLeft,
@@ -86,6 +87,14 @@ import { ThemeService } from '../../core/services/theme.service';
           >
             <lucide-icon [img]="OrdersIcon" [size]="18"></lucide-icon>
             Commandes
+          </a>
+          <a
+            routerLink="/admin/appointments"
+            routerLinkActive="bg-(--primary)/10 text-(--primary)"
+            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+          >
+            <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
+            Rendez-vous
           </a>
           <a
             routerLink="/admin/settings"
@@ -174,6 +183,7 @@ export class AdminLayoutComponent {
   readonly PackageIcon = Package;
   readonly UsersIcon = Users;
   readonly OrdersIcon = ShoppingCart;
+  readonly CalendarIcon = Calendar;
   readonly SettingsIcon = Settings;
   readonly LogOutIcon = LogOut;
   readonly BackIcon = ChevronLeft;

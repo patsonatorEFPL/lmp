@@ -17,6 +17,8 @@ import {
   Check,
   Save,
   User,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -105,7 +107,7 @@ interface ApiResponse<T> {
         <option value="">Tous les statuts</option>
         <option value="ACTIVE">Actifs</option>
         <option value="INACTIVE">Inactifs</option>
-        <option value="LOCKED">Verrouillés</option>
+        <option value="DELETED">Supprimés (soft)</option>
       </select>
     </div>
 
@@ -186,6 +188,14 @@ interface ApiResponse<T> {
                     title="Modifier"
                   >
                     <lucide-icon [img]="PencilIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
+                  </button>
+                  <button
+                    hlmBtn variant="ghost" size="icon"
+                    class="h-8 w-8 cursor-pointer"
+                    (click)="softDeleteUser(user)"
+                    title="Désactiver"
+                  >
+                    <lucide-icon [img]="Trash2Icon" [size]="14" class="text-amber-500"></lucide-icon>
                   </button>
                 </td>
               </tr>
@@ -328,7 +338,15 @@ interface ApiResponse<T> {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex items-center justify-end gap-2 border-t border-(--border) px-6 py-4">
+          <div class="flex items-center justify-between border-t border-(--border) px-6 py-4">
+            <button
+              hlmBtn variant="destructive" size="sm" class="cursor-pointer gap-1.5"
+              (click)="hardDeleteUser()"
+            >
+              <lucide-icon [img]="AlertTriangleIcon" [size]="14"></lucide-icon>
+              Supprimer définitivement
+            </button>
+            <div class="flex items-center gap-2">
             <button
               hlmBtn variant="outline" size="sm" class="cursor-pointer"
               (click)="closeEditModal()"
@@ -347,6 +365,7 @@ interface ApiResponse<T> {
               }
               Enregistrer
             </button>
+            </div>
           </div>
         </div>
       </div>
@@ -389,6 +408,8 @@ export class AdminUsersComponent implements OnInit {
   readonly CheckIcon = Check;
   readonly SaveIcon = Save;
   readonly UserIcon = User;
+  readonly Trash2Icon = Trash2;
+  readonly AlertTriangleIcon = AlertTriangle;
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -468,7 +489,7 @@ export class AdminUsersComponent implements OnInit {
     switch (status) {
       case 'ACTIVE': return 'bg-green-500/10 text-green-500';
       case 'INACTIVE': return 'bg-gray-500/10 text-gray-400';
-      case 'LOCKED': return 'bg-red-500/10 text-red-500';
+      case 'DELETED': return 'bg-red-500/10 text-red-500';
       default: return 'bg-gray-500/10 text-gray-400';
     }
   }
@@ -477,7 +498,7 @@ export class AdminUsersComponent implements OnInit {
     switch (status) {
       case 'ACTIVE': return 'Actif';
       case 'INACTIVE': return 'Inactif';
-      case 'LOCKED': return 'Verrouillé';
+      case 'DELETED': return 'Supprimé';
       default: return status;
     }
   }
@@ -524,6 +545,44 @@ export class AdminUsersComponent implements OnInit {
           this.showToast('error', 'Erreur lors de la mise à jour');
           this.saving.set(false);
         },
+      });
+  }
+
+  softDeleteUser(user: UserItem): void {
+    if (!confirm(`Désactiver le compte de ${user.email} ? (soft delete)`)) return;
+
+    this.http
+      .put<ApiResponse<void>>(
+        `${environment.apiUrl}/api/v1/admin/users/${user.id}/soft-delete`,
+        {},
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          this.showToast('success', 'Utilisateur désactivé');
+          this.loadUsers();
+        },
+        error: () => this.showToast('error', 'Erreur lors de la désactivation'),
+      });
+  }
+
+  hardDeleteUser(): void {
+    if (!this.editingUser) return;
+    const confirmMsg = `⚠️ SUPPRESSION DÉFINITIVE de ${this.editingUser.email}\n\nCette action est IRRÉVERSIBLE.\nLes commandes et avis seront anonymisés.\n\nÊtes-vous sûr ?`;
+    if (!confirm(confirmMsg)) return;
+
+    this.http
+      .delete<ApiResponse<void>>(
+        `${environment.apiUrl}/api/v1/admin/users/${this.editingUser.id}`,
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          this.showToast('success', 'Utilisateur supprimé définitivement');
+          this.closeEditModal();
+          this.loadUsers();
+        },
+        error: () => this.showToast('error', 'Erreur lors de la suppression'),
       });
   }
 
