@@ -23,6 +23,8 @@ import {
   Eye,
   X,
   MessageSquare,
+  Download,
+  RotateCcw,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
@@ -45,6 +47,16 @@ interface OrderDetailResponse {
   progressPercentage: number;
   progressStatus: string | null;
   processingNotes: string | null;
+}
+
+interface RefundItem {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  reason: string | null;
+  createdAt: string;
+  processedAt: string | null;
 }
 
 const USER_ORDER_STEPS = [
@@ -661,9 +673,51 @@ const USER_ORDER_STEPS = [
                 }
               </div>
 
-              <div class="border-t border-(--border) px-6 py-4">
+              <!-- Refunds Section -->
+              @if (orderRefunds().length > 0) {
+                <div class="px-6 pb-2">
+                  <div class="flex items-center gap-2 mb-3">
+                    <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-violet-500"></lucide-icon>
+                    <h4 class="text-sm font-semibold text-(--foreground)">Remboursements</h4>
+                  </div>
+                  <div class="space-y-2">
+                    @for (refund of orderRefunds(); track refund.id) {
+                      <div class="flex items-center justify-between rounded-lg border border-(--border) bg-(--background) p-3">
+                        <div>
+                          <p class="text-sm font-medium text-(--foreground)">
+                            {{ refund.amount | currency:(refund.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
+                          </p>
+                          <p class="text-xs text-(--muted-foreground)">
+                            {{ refund.createdAt | date:'dd/MM/yyyy' }}
+                            @if (refund.reason) { · {{ refund.reason }} }
+                          </p>
+                        </div>
+                        <span
+                          class="rounded-full px-2 py-0.5 text-xs font-medium"
+                          [ngClass]="refund.status === 'succeeded' ? 'bg-green-500/10 text-green-500' :
+                                     refund.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                                     'bg-red-500/10 text-red-500'"
+                        >
+                          {{ refund.status === 'succeeded' ? 'Remboursé' : refund.status === 'pending' ? 'En cours' : refund.status }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="border-t border-(--border) px-6 py-4 flex gap-2">
+                @if (isInvoiceEligible(selectedOrder()!.status)) {
+                  <button
+                    hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+                    (click)="downloadInvoice(selectedOrder()!.id)"
+                  >
+                    <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+                    Télécharger la facture
+                  </button>
+                }
                 <button
-                  hlmBtn variant="outline" size="sm" class="w-full cursor-pointer"
+                  hlmBtn variant="outline" size="sm" class="flex-1 cursor-pointer"
                   (click)="closeOrderDetail()"
                 >
                   Fermer
@@ -701,12 +755,15 @@ export class DashboardComponent implements OnInit {
   readonly XIcon = X;
   readonly TrendingUpIcon = TrendingUp;
   readonly MessageSquareIcon = MessageSquare;
+  readonly DownloadIcon = Download;
+  readonly RotateCcwIcon = RotateCcw;
 
   readonly stats = signal<DashboardStats | null>(null);
   readonly loading = signal(true);
   readonly showOrderDetail = signal(false);
   readonly loadingOrderDetail = signal(false);
   readonly selectedOrder = signal<OrderDetailResponse | null>(null);
+  readonly orderRefunds = signal<RefundItem[]>([]);
   readonly orderSteps = USER_ORDER_STEPS;
 
   readonly quickActions = [
@@ -831,6 +888,7 @@ export class DashboardComponent implements OnInit {
   viewOrderDetail(orderId: string): void {
     this.loadingOrderDetail.set(true);
     this.showOrderDetail.set(true);
+    this.orderRefunds.set([]);
 
     this.http
       .get<{ success: boolean; data?: OrderDetailResponse }>(
@@ -841,6 +899,16 @@ export class DashboardComponent implements OnInit {
         next: (res) => {
           this.selectedOrder.set(res.data ?? null);
           this.loadingOrderDetail.set(false);
+
+          // Load refunds for this order
+          this.http
+            .get<{ success: boolean; data?: RefundItem[] }>(
+              `${environment.apiUrl}/api/v1/orders/${orderId}/refunds`,
+              { withCredentials: true },
+            )
+            .subscribe({
+              next: (refRes) => this.orderRefunds.set(refRes.data ?? []),
+            });
         },
         error: () => {
           this.loadingOrderDetail.set(false);
@@ -852,6 +920,29 @@ export class DashboardComponent implements OnInit {
   closeOrderDetail(): void {
     this.showOrderDetail.set(false);
     this.selectedOrder.set(null);
+    this.orderRefunds.set([]);
+  }
+
+  isInvoiceEligible(status: string): boolean {
+    return ['CONFIRMED', 'COMPLETED', 'DELIVERED', 'PROCESSING', 'IN_PROGRESS'].includes(status);
+  }
+
+  downloadInvoice(orderId: string): void {
+    this.http
+      .get(`${environment.apiUrl}/api/v1/orders/${orderId}/invoice`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Facture_${orderId}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+        },
+      });
   }
 
   getProgressColor(percentage: number): string {

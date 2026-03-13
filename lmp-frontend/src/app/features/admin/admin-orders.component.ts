@@ -18,6 +18,8 @@ import {
   TrendingUp,
   MessageSquare,
   FileText,
+  Plus,
+  Download,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -104,6 +106,14 @@ const ORDER_STEPS = [
           {{ totalOrders() }} commandes au total
         </p>
       </div>
+      <div class="flex items-center gap-2">
+        <button
+          hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+          (click)="showCreateOrderModal.set(true)"
+        >
+          <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
+          Créer une commande
+        </button>
       <button
         hlmBtn variant="ghost" size="icon" class="cursor-pointer"
         (click)="loadOrders()"
@@ -113,6 +123,7 @@ const ORDER_STEPS = [
           [ngClass]="{ 'animate-spin': loading() }"
         ></lucide-icon>
       </button>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -440,7 +451,15 @@ const ORDER_STEPS = [
             </div>
 
             <!-- Modal Footer -->
-            <div class="flex items-center justify-end gap-2 border-t border-(--border) px-6 py-4">
+            <div class="flex items-center justify-between border-t border-(--border) px-6 py-4">
+              <button
+                hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
+                (click)="downloadInvoice(orderDetail()!.id)"
+              >
+                <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+                Facture PDF
+              </button>
+              <div class="flex items-center gap-2">
               <button
                 hlmBtn variant="outline" size="sm" class="cursor-pointer"
                 (click)="closeDetailModal()"
@@ -459,8 +478,104 @@ const ORDER_STEPS = [
                 }
                 Enregistrer
               </button>
+              </div>
             </div>
           }
+        </div>
+      </div>
+    }
+
+    <!-- Create Order Modal -->
+    @if (showCreateOrderModal()) {
+      <div
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        (click)="showCreateOrderModal.set(false)"
+      >
+        <div
+          class="mx-4 w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
+            <h3 class="font-display text-lg font-bold text-(--foreground)">
+              Créer une commande
+            </h3>
+            <button
+              hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+              (click)="showCreateOrderModal.set(false)"
+            >
+              <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+            </button>
+          </div>
+
+          <div class="space-y-4 px-6 py-5">
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                Email de l'utilisateur *
+              </label>
+              <input
+                [(ngModel)]="newOrderForm.userEmail"
+                type="email"
+                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                placeholder="user@example.com"
+              />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                Nom du service *
+              </label>
+              <input
+                [(ngModel)]="newOrderForm.serviceName"
+                type="text"
+                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                placeholder="Consultation SEO..."
+              />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                Montant (EUR) *
+              </label>
+              <input
+                [(ngModel)]="newOrderForm.amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                placeholder="100.00"
+              />
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                Notes (optionnel)
+              </label>
+              <textarea
+                [(ngModel)]="newOrderForm.notes"
+                rows="2"
+                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                placeholder="Description..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 border-t border-(--border) px-6 py-4">
+            <button
+              hlmBtn variant="outline" size="sm" class="cursor-pointer"
+              (click)="showCreateOrderModal.set(false)"
+            >
+              Annuler
+            </button>
+            <button
+              hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+              [disabled]="creatingOrder()"
+              (click)="createOrder()"
+            >
+              @if (creatingOrder()) {
+                <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+              } @else {
+                <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+              }
+              Créer
+            </button>
+          </div>
         </div>
       </div>
     }
@@ -503,6 +618,8 @@ export class AdminOrdersComponent implements OnInit {
   readonly TrendingUpIcon = TrendingUp;
   readonly MessageSquareIcon = MessageSquare;
   readonly FileTextIcon = FileText;
+  readonly PlusIcon = Plus;
+  readonly DownloadIcon = Download;
 
   readonly loading = signal(false);
   readonly loadingDetail = signal(false);
@@ -514,9 +631,18 @@ export class AdminOrdersComponent implements OnInit {
   readonly showDetailModal = signal(false);
   readonly orderDetail = signal<OrderDetail | null>(null);
   readonly toast = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+  readonly showCreateOrderModal = signal(false);
+  readonly creatingOrder = signal(false);
 
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
+
+  newOrderForm = {
+    userEmail: '',
+    serviceName: '',
+    amount: 0,
+    notes: '',
+  };
 
   editProgressForm = {
     percentage: 0,
@@ -682,6 +808,116 @@ export class AdminOrdersComponent implements OnInit {
     if (percentage >= 60) return 'text-blue-500';
     if (percentage >= 30) return 'text-amber-500';
     return 'text-orange-500';
+  }
+
+  createOrder(): void {
+    if (!this.newOrderForm.userEmail || !this.newOrderForm.serviceName || !this.newOrderForm.amount) {
+      this.showToast('error', 'Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    this.creatingOrder.set(true);
+
+    // First find the user by email to get their ID
+    this.http
+      .get<ApiResponse<{ content: { id: string; email: string }[] }>>(
+        `${environment.apiUrl}/api/v1/admin/users`,
+        { params: { size: '1', page: '0' }, withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          // We need to search for the user - let's use a workaround by posting directly
+          // The backend resolves userId from the request
+          this.http
+            .post<ApiResponse<any>>(
+              `${environment.apiUrl}/api/v1/admin/orders`,
+              {
+                userId: '', // will be resolved below
+                serviceName: this.newOrderForm.serviceName,
+                amount: this.newOrderForm.amount,
+                notes: this.newOrderForm.notes,
+              },
+              { withCredentials: true },
+            )
+            .subscribe({
+              error: () => {
+                // Need to find user first by querying admin users
+                this.findUserAndCreateOrder();
+              },
+            });
+        },
+      });
+  }
+
+  private findUserAndCreateOrder(): void {
+    // Search for user by email through admin API
+    this.http
+      .get<ApiResponse<{ content: { id: string; email: string }[] }>>(
+        `${environment.apiUrl}/api/v1/admin/users`,
+        { params: { size: '100', page: '0' }, withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          const users = res.data?.content || [];
+          const found = users.find(
+            (u) => u.email.toLowerCase() === this.newOrderForm.userEmail.toLowerCase(),
+          );
+
+          if (!found) {
+            this.showToast('error', 'Utilisateur non trouvé: ' + this.newOrderForm.userEmail);
+            this.creatingOrder.set(false);
+            return;
+          }
+
+          this.http
+            .post<ApiResponse<any>>(
+              `${environment.apiUrl}/api/v1/admin/orders`,
+              {
+                userId: found.id,
+                serviceName: this.newOrderForm.serviceName,
+                amount: this.newOrderForm.amount,
+                notes: this.newOrderForm.notes,
+              },
+              { withCredentials: true },
+            )
+            .subscribe({
+              next: () => {
+                this.showToast('success', 'Commande créée pour ' + this.newOrderForm.userEmail);
+                this.showCreateOrderModal.set(false);
+                this.creatingOrder.set(false);
+                this.newOrderForm = { userEmail: '', serviceName: '', amount: 0, notes: '' };
+                this.loadOrders();
+              },
+              error: (err) => {
+                this.showToast('error', err.error?.message || 'Erreur lors de la création');
+                this.creatingOrder.set(false);
+              },
+            });
+        },
+        error: () => {
+          this.showToast('error', 'Impossible de rechercher l\'utilisateur');
+          this.creatingOrder.set(false);
+        },
+      });
+  }
+
+  downloadInvoice(orderId: string): void {
+    this.http
+      .get(`${environment.apiUrl}/api/v1/admin/orders/${orderId}/invoice`, {
+        withCredentials: true,
+        responseType: 'blob',
+      })
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Facture_${orderId}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: () => this.showToast('error', 'Impossible de télécharger la facture'),
+      });
   }
 
   private showToast(type: 'success' | 'error', message: string): void {
