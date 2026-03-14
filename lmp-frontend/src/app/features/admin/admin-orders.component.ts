@@ -835,41 +835,9 @@ export class AdminOrdersComponent implements OnInit {
 
     this.creatingOrder.set(true);
 
-    // First find the user by email to get their ID
+    // Find user by email then create order
     this.http
-      .get<ApiResponse<{ content: { id: string; email: string }[] }>>(
-        `${environment.apiUrl}/api/v1/admin/users`,
-        { params: { size: '1', page: '0' }, withCredentials: true },
-      )
-      .subscribe({
-        next: () => {
-          // We need to search for the user - let's use a workaround by posting directly
-          // The backend resolves userId from the request
-          this.http
-            .post<ApiResponse<any>>(
-              `${environment.apiUrl}/api/v1/admin/orders`,
-              {
-                userId: '', // will be resolved below
-                serviceName: this.newOrderForm.serviceName,
-                amount: this.newOrderForm.amount,
-                notes: this.newOrderForm.notes,
-              },
-              { withCredentials: true },
-            )
-            .subscribe({
-              error: () => {
-                // Need to find user first by querying admin users
-                this.findUserAndCreateOrder();
-              },
-            });
-        },
-      });
-  }
-
-  private findUserAndCreateOrder(): void {
-    // Search for user by email through admin API
-    this.http
-      .get<ApiResponse<{ content: { id: string; email: string }[] }>>(
+      .get<ApiResponse<PageResponse<{ id: string; email: string }>>>(
         `${environment.apiUrl}/api/v1/admin/users`,
         { params: { size: '100', page: '0' }, withCredentials: true },
       )

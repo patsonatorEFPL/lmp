@@ -105,8 +105,10 @@ public class InvoicePdfService {
      */
     public String generateInvoiceNumber(Order order) {
         LocalDateTime date = order.getPaidAt() != null ? order.getPaidAt() : order.getCreatedAt();
-        return String.format("LMP-%d-%02d-%02d-%05d",
-                date.getYear(), date.getMonthValue(), date.getDayOfMonth(), order.getId());
+        // Use first 8 chars of UUID as short identifier (UUID is not numeric)
+        String shortId = order.getId().toString().replace("-", "").substring(0, 8).toUpperCase();
+        return String.format("LMP-%d-%02d-%02d-%s",
+                date.getYear(), date.getMonthValue(), date.getDayOfMonth(), shortId);
     }
 
     // ═══════════════════════════════════════════════════════
