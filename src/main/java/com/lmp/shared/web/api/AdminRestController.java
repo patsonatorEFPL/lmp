@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -427,6 +428,24 @@ public class AdminRestController {
             order.setPriority(1); // High priority — admin-created
 
             order = orderRepository.save(order);
+
+            // Send notification email to user about the new order
+            try {
+                Map<String, Object> emailVars = new HashMap<>();
+                emailVars.put("customerName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
+                emailVars.put("order", order);
+                emailVars.put("companyName", "LMP Digital Services");
+                emailVars.put("frontendUrl", "https://lmp-services.ca");
+                emailVars.put("currentDate", LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
+
+                emailService.sendHtmlEmail(
+                        user.getEmail(),
+                        "LMP — Nouvelle commande créée pour votre compte",
+                        "emails/order-confirmation",
+                        emailVars);
+            } catch (Exception emailEx) {
+                // Non-blocking — order is already created
+            }
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Commande créée pour " + user.getEmail(), OrderResponse.from(order)));
