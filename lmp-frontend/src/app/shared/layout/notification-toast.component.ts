@@ -187,9 +187,9 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       this.notificationService.connect();
     }
 
-    this.lastNotificationCount =
-      this.notificationService.notifications().length;
-    this.pollForNewNotifications();
+    // Wait for initial API load before polling, so persisted notifications
+    // aren't treated as "new" and don't re-trigger toasts on page reload.
+    this.waitForLoadThenPoll();
 
     // Expose test function globally for QA/testing
     (window as any).__lmpTestNotification = (
@@ -221,6 +221,24 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
         amount: 100,
       });
     };
+  }
+
+  /**
+   * Wait until the initial API load completes, then snapshot the count
+   * so that only truly new (real-time) notifications trigger toasts.
+   */
+  private waitForLoadThenPoll(): void {
+    const waitCheck = () => {
+      if (this.notificationService.loaded()) {
+        // Snapshot current count — these are persisted, not new
+        this.lastNotificationCount =
+          this.notificationService.notifications().length;
+        this.pollForNewNotifications();
+      } else {
+        requestAnimationFrame(waitCheck);
+      }
+    };
+    requestAnimationFrame(waitCheck);
   }
 
   private pollForNewNotifications(): void {
