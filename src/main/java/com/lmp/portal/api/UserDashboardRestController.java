@@ -203,7 +203,7 @@ public class UserDashboardRestController {
 
     // ========== WebSocket Test Endpoint ==========
 
-    @PostMapping("/test-notification")
+    @GetMapping("/test-notification")
     @Operation(summary = "Test WebSocket notification", description = "Sends a test WebSocket notification to the authenticated user")
     public ResponseEntity<ApiResponse<String>> testNotification(Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
