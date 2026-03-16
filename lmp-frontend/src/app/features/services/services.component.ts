@@ -96,9 +96,18 @@ import { environment } from '../../../environments/environment';
             @for (service of services(); track service.id; let i = $index) {
               <div
                 [id]="service.slug"
-                class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
-                [ngClass]="getServiceAnimation(i) + (highlightedSlug() === service.slug ? ' service-highlight' : '')"
+                class="group relative flex flex-col rounded-xl border bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
+                [ngClass]="getServiceAnimation(i) + (highlightedSlug() === service.slug
+                  ? ' service-highlight border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/20 scale-[1.02] -translate-y-2'
+                  : ' border-(--border)')"
               >
+                <!-- Selected badge -->
+                @if (highlightedSlug() === service.slug) {
+                  <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-md whitespace-nowrap">
+                    ✨ Service sélectionné
+                  </div>
+                }
+
                 <!-- Icon + Category -->
                 <div class="mb-4 flex items-start justify-between">
                   <div
@@ -313,9 +322,9 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
         // Scroll with offset for navbar
         setTimeout(() => {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Add highlight effect
+          // Add highlight effect — keep visible for 6s so user clearly sees it
           this.highlightedSlug.set(slug);
-          setTimeout(() => this.highlightedSlug.set(null), 2500);
+          setTimeout(() => this.highlightedSlug.set(null), 6000);
         }, 100);
       } else if (retries < 10) {
         // Retry if services haven't rendered yet
