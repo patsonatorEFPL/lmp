@@ -37,18 +37,19 @@ import {
   standalone: true,
   imports: [RouterLink, LucideAngularModule, HlmButton, DatePipe],
   template: `
-    <!-- Backdrop -->
+    <!-- Backdrop (covers entire viewport) -->
     @if (isOpen()) {
       <div
-        class="fixed inset-0 z-[199]"
+        class="fixed inset-0 z-[199] cursor-default"
         (click)="close()"
+        (mousedown)="$event.stopPropagation()"
       ></div>
     }
 
-    <!-- Panel -->
+    <!-- Panel (positioned absolutely from parent) -->
     @if (isOpen()) {
       <div
-        class="fixed right-4 top-16 z-[200] w-[22rem] sm:w-96 rounded-2xl border border-(--border) bg-(--card) shadow-2xl shadow-black/20 notification-panel-enter overflow-hidden"
+        class="absolute right-0 top-2 z-[200] w-[22rem] sm:w-96 rounded-2xl border border-(--border) bg-(--card) shadow-2xl shadow-black/20 notification-panel-enter overflow-hidden"
       >
         <!-- Header -->
         <div
@@ -203,7 +204,8 @@ import {
   `,
   styles: `
     :host {
-      display: contents;
+      display: block;
+      position: relative;
     }
   `,
 })

@@ -112,28 +112,30 @@ const USER_ORDER_STEPS = [
           </div>
 
           <div class="flex items-center gap-3">
-            <button
-              hlmBtn
-              variant="ghost"
-              size="icon"
-              class="relative cursor-pointer"
-              (click)="toggleNotificationPanel()"
-            >
-              <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
-              @if (notificationService.unreadCount() > 0) {
-                <span
-                  class="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-(--card) bell-badge-pulse"
-                >
-                  {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
-                </span>
-              }
-            </button>
+            <div class="relative">
+              <button
+                hlmBtn
+                variant="ghost"
+                size="icon"
+                class="relative cursor-pointer"
+                (click)="toggleNotificationPanel()"
+              >
+                <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+                @if (notificationService.unreadCount() > 0) {
+                  <span
+                    class="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-(--card) bell-badge-pulse"
+                  >
+                    {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
+                  </span>
+                }
+              </button>
 
-            <!-- Notification Panel Dropdown -->
-            <lmp-notification-panel
-              [isOpen]="showNotificationPanel()"
-              (panelClosed)="showNotificationPanel.set(false)"
-            />
+              <!-- Notification Panel Dropdown -->
+              <lmp-notification-panel
+                [isOpen]="showNotificationPanel()"
+                (panelClosed)="showNotificationPanel.set(false)"
+              />
+            </div>
 
             <div
               class="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-1.5"
