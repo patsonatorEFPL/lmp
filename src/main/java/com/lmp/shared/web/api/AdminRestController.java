@@ -65,18 +65,21 @@ public class AdminRestController {
     private final RefundRepository refundRepository;
     private final InvoicePdfService invoicePdfService;
     private final EmailService emailService;
+    private final com.lmp.shared.service.WebSocketNotificationService webSocketNotificationService;
 
     public AdminRestController(UserService userService, OrderRepository orderRepository,
                                AppointmentRepository appointmentRepository,
                                RefundRepository refundRepository,
                                InvoicePdfService invoicePdfService,
-                               EmailService emailService) {
+                               EmailService emailService,
+                               com.lmp.shared.service.WebSocketNotificationService webSocketNotificationService) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.appointmentRepository = appointmentRepository;
         this.refundRepository = refundRepository;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
+        this.webSocketNotificationService = webSocketNotificationService;
     }
 
     @GetMapping("/stats")
@@ -447,6 +450,17 @@ public class AdminRestController {
                 // Non-blocking — order is already created
             }
 
+            // Send real-time WebSocket notification to the user
+            try {
+                webSocketNotificationService.notifyUserNewPendingOrder(
+                        user.getId().toString(),
+                        order.getId().toString(),
+                        serviceName,
+                        amount);
+            } catch (Exception wsEx) {
+                // Non-blocking
+            }
+
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Commande créée pour " + user.getEmail(), OrderResponse.from(order)));
         } catch (Exception e) {
@@ -486,11 +500,16 @@ public class AdminRestController {
     // ========== Invoice Download (API for Angular) ==========
 
     @GetMapping("/orders/{orderId}/invoice")
-    @Operation(summary = "Télécharger la facture PDF", description = "Génère et retourne la facture PDF pour une commande")
+    @Operation(summary = "Télécharger la facture PDF", description = "Génère et retourne la facture PDF pour une commande (minimum confirmée)")
     public ResponseEntity<byte[]> downloadInvoice(@PathVariable UUID orderId) {
         try {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
+
+            // Only allow invoice download for orders that have been at least confirmed
+            if (!isInvoiceEligible(order.getStatus())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
             User user = order.getUser();
             if (user == null) {
@@ -509,6 +528,14 @@ public class AdminRestController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private boolean isInvoiceEligible(OrderStatus status) {
+        if (status == null) return false;
+        return switch (status) {
+            case CONFIRMED, PROCESSING, IN_PROGRESS, SHIPPED, DELIVERED, COMPLETED, REFUNDED -> true;
+            default -> false;
+        };
     }
 
     // ========== Order Refunds (read) ==========
