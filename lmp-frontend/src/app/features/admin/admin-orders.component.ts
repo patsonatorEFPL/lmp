@@ -399,6 +399,7 @@ const ORDER_STEPS = [
                       max="100"
                       step="5"
                       [(ngModel)]="editProgressForm.percentage"
+                      (ngModelChange)="onProgressPercentageChange($event)"
                       class="w-full accent-(--primary) cursor-pointer"
                     />
                   </div>
@@ -409,6 +410,7 @@ const ORDER_STEPS = [
                     </label>
                     <select
                       [(ngModel)]="editProgressForm.status"
+                      (ngModelChange)="onStatusChange($event)"
                       class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
                     >
                       <option value="PAYMENT_PENDING">Paiement en attente</option>
@@ -839,6 +841,36 @@ export class AdminOrdersComponent implements OnInit {
           this.savingProgress.set(false);
         },
       });
+  }
+
+  // ========== Status ↔ Progress Sync ==========
+
+  /**
+   * When the slider moves, find the highest step threshold that the percentage
+   * has reached and update the status to match.
+   */
+  onProgressPercentageChange(percentage: number): void {
+    // Find the highest step whose threshold is <= the new percentage
+    let matchedStep = ORDER_STEPS[0];
+    for (const step of ORDER_STEPS) {
+      if (percentage >= step.threshold) {
+        matchedStep = step;
+      }
+    }
+    this.editProgressForm.status = matchedStep.status;
+  }
+
+  /**
+   * When the status dropdown changes, snap the progress bar to the
+   * corresponding step's threshold percentage.
+   */
+  onStatusChange(status: string): void {
+    const step = ORDER_STEPS.find((s) => s.status === status);
+    if (step) {
+      this.editProgressForm.percentage = step.threshold;
+    }
+    // For statuses not in ORDER_STEPS (PAYMENT_PENDING, DELIVERED, CANCELLED, REFUNDED),
+    // keep percentage unchanged.
   }
 
   // ========== Helpers ==========
