@@ -190,6 +190,37 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     this.lastNotificationCount =
       this.notificationService.notifications().length;
     this.pollForNewNotifications();
+
+    // Expose test function globally for QA/testing
+    (window as any).__lmpTestNotification = (
+      type?: string,
+      message?: string,
+    ) => {
+      const types = [
+        'PAYMENT_SUCCESS',
+        'NEW_PENDING_ORDER',
+        'STATUS_CHANGED',
+        'REFUND',
+      ];
+      const messages: Record<string, string> = {
+        PAYMENT_SUCCESS:
+          'Le paiement de 250,00€ pour "Création de site web" a été confirmé.',
+        NEW_PENDING_ORDER:
+          'Nouvelle commande #4521 reçue pour "SEO Local".',
+        STATUS_CHANGED:
+          'La commande "Audit technique" est en cours de traitement.',
+        REFUND:
+          'Remboursement de 75,00€ traité pour la commande #3210.',
+      };
+      const t = type || types[Math.floor(Math.random() * types.length)];
+      this.notificationService.addNotification({
+        type: t,
+        message: message || messages[t] || 'Notification de test',
+        orderId: 'test-' + Date.now(),
+        serviceName: 'Service Test',
+        amount: 100,
+      });
+    };
   }
 
   private pollForNewNotifications(): void {
