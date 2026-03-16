@@ -21,6 +21,8 @@ import {
   Plus,
   Download,
   RefreshCcw,
+  RotateCcw,
+  CreditCard,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -451,16 +453,61 @@ const ORDER_STEPS = [
               </div>
             </div>
 
+            <!-- Refunds Section -->
+            @if (orderRefunds().length > 0) {
+              <div class="px-6 pb-4">
+                <div class="flex items-center gap-2 mb-3">
+                  <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-violet-500"></lucide-icon>
+                  <h4 class="text-sm font-semibold text-(--foreground)">Remboursements</h4>
+                </div>
+                <div class="space-y-2">
+                  @for (refund of orderRefunds(); track refund.id) {
+                    <div class="flex items-center justify-between rounded-lg border border-(--border) bg-(--background) p-3">
+                      <div>
+                        <p class="text-sm font-medium text-(--foreground)">
+                          {{ refund.amount | currency:(refund.currency || 'EUR'):'symbol':'1.2-2' }}
+                        </p>
+                        <p class="text-xs text-(--muted-foreground)">
+                          {{ refund.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                          @if (refund.reason) { · {{ refund.reason }} }
+                        </p>
+                        @if (refund.stripeRefundId) {
+                          <p class="text-xs font-mono text-(--muted-foreground)">{{ refund.stripeRefundId }}</p>
+                        }
+                      </div>
+                      <span
+                        class="rounded-full px-2 py-0.5 text-xs font-medium"
+                        [ngClass]="refund.status === 'succeeded' ? 'bg-green-500/10 text-green-500' :
+                                   refund.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                                   refund.status === 'failed' ? 'bg-red-500/10 text-red-500' :
+                                   'bg-gray-500/10 text-gray-400'"
+                      >
+                        {{ refund.status === 'succeeded' ? 'Remboursé' :
+                           refund.status === 'pending' ? 'En cours' :
+                           refund.status === 'failed' ? 'Échoué' : refund.status }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <!-- Modal Footer -->
             <div class="flex items-center justify-between border-t border-(--border) px-6 py-4">
               <div class="flex items-center gap-2">
-                <button
-                  hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
-                  (click)="downloadInvoice(orderDetail()!.id)"
-                >
-                  <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
-                  Facture PDF
-                </button>
+                @if (isInvoiceEligible(orderDetail()!.status)) {
+                  <button
+                    hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
+                    (click)="downloadInvoice(orderDetail()!.id)"
+                  >
+                    <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+                    Facture PDF
+                  </button>
+                } @else {
+                  <span class="text-xs text-(--muted-foreground) italic">
+                    Facture disponible après confirmation
+                  </span>
+                }
                 <button
                   hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
                   [disabled]="syncing()"
@@ -636,6 +683,8 @@ export class AdminOrdersComponent implements OnInit {
   readonly PlusIcon = Plus;
   readonly DownloadIcon = Download;
   readonly RefreshCcwIcon = RefreshCcw;
+  readonly RotateCcwIcon = RotateCcw;
+  readonly CreditCardIcon = CreditCard;
 
   readonly loading = signal(false);
   readonly loadingDetail = signal(false);
@@ -650,6 +699,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly showCreateOrderModal = signal(false);
   readonly creatingOrder = signal(false);
   readonly syncing = signal(false);
+  readonly orderRefunds = signal<any[]>([]);
 
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
@@ -714,6 +764,7 @@ export class AdminOrdersComponent implements OnInit {
   viewOrderDetail(orderId: string): void {
     this.loadingDetail.set(true);
     this.showDetailModal.set(true);
+    this.orderRefunds.set([]);
 
     this.http
       .get<ApiResponse<OrderDetail>>(
@@ -731,6 +782,16 @@ export class AdminOrdersComponent implements OnInit {
             adminNotes: detail.adminNotes || '',
           };
           this.loadingDetail.set(false);
+
+          // Load refunds for this order
+          this.http
+            .get<ApiResponse<any[]>>(
+              `${environment.apiUrl}/api/v1/admin/orders/${orderId}/refunds`,
+              { withCredentials: true },
+            )
+            .subscribe({
+              next: (refRes) => this.orderRefunds.set(refRes.data ?? []),
+            });
         },
         error: () => {
           this.loadingDetail.set(false);
@@ -743,6 +804,7 @@ export class AdminOrdersComponent implements OnInit {
   closeDetailModal(): void {
     this.showDetailModal.set(false);
     this.orderDetail.set(null);
+    this.orderRefunds.set([]);
   }
 
   saveOrderProgress(): void {
@@ -911,6 +973,10 @@ export class AdminOrdersComponent implements OnInit {
           this.syncing.set(false);
         },
       });
+  }
+
+  isInvoiceEligible(status: string): boolean {
+    return ['CONFIRMED', 'PROCESSING', 'IN_PROGRESS', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'REFUNDED'].includes(status);
   }
 
   downloadInvoice(orderId: string): void {

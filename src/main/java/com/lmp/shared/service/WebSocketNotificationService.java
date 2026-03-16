@@ -103,6 +103,25 @@ public class WebSocketNotificationService {
     }
 
     /**
+     * Notifie un utilisateur spécifique d'une nouvelle commande en attente de paiement
+     */
+    public void notifyUserNewPendingOrder(String userId, String orderId, String serviceName, Double amount) {
+        Map<String, Object> notification = Map.of(
+            "type", "NEW_PENDING_ORDER",
+            "orderId", orderId,
+            "serviceName", serviceName,
+            "amount", amount,
+            "timestamp", LocalDateTime.now(),
+            "message", String.format("Nouvelle commande en attente : %s (%.2f€)", serviceName, amount)
+        );
+
+        // Send to specific user queue
+        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", notification);
+        // Also broadcast to topic for the user (fallback)
+        messagingTemplate.convertAndSend("/topic/user/" + userId + "/notifications", notification);
+    }
+
+    /**
      * Envoie les statistiques mises à jour en temps réel
      */
     public void notifyStatsUpdate(Map<String, Object> stats) {

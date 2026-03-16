@@ -1,6 +1,7 @@
 package com.lmp.billing.web.api;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.domain.Refund;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.repository.OrderRepository;
@@ -111,7 +112,7 @@ public class OrderRestController {
     }
 
     @GetMapping("/{id}/invoice")
-    @Operation(summary = "Télécharger la facture PDF", description = "Génère la facture PDF pour une commande de l'utilisateur")
+    @Operation(summary = "Télécharger la facture PDF", description = "Génère la facture PDF pour une commande de l'utilisateur (minimum confirmée)")
     public ResponseEntity<byte[]> downloadInvoice(@PathVariable UUID id, Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         if (user == null) {
@@ -123,6 +124,11 @@ public class OrderRestController {
                 .orElse(null);
         if (order == null) {
             return ResponseEntity.notFound().build();
+        }
+
+        // Only allow invoice download for orders that have been at least confirmed
+        if (!isInvoiceEligible(order.getStatus())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         try {
@@ -138,6 +144,18 @@ public class OrderRestController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /**
+     * Checks if an order status is eligible for invoice download.
+     * Only orders that have been at least CONFIRMED can have invoices.
+     */
+    private boolean isInvoiceEligible(OrderStatus status) {
+        if (status == null) return false;
+        return switch (status) {
+            case CONFIRMED, PROCESSING, IN_PROGRESS, SHIPPED, DELIVERED, COMPLETED, REFUNDED -> true;
+            default -> false;
+        };
     }
 
     private User getAuthenticatedUser(Authentication authentication) {
