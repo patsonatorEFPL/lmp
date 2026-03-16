@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.lmp.auth.domain.User;
@@ -36,7 +37,9 @@ public class InAppNotificationService {
 
     /**
      * Crée et persiste une notification in-app pour un utilisateur.
+     * Uses REQUIRES_NEW to guarantee commit even when called from a read-only transaction context.
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public InAppNotification createNotification(String userId, String type, String message,
                                                   String orderId, String serviceName, Double amount) {
         UUID userUuid = UUID.fromString(userId);
