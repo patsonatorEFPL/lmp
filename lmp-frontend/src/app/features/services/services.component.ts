@@ -12,7 +12,8 @@ import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
 import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import {
   CatalogService,
   ServiceItem,
@@ -94,8 +95,9 @@ import { environment } from '../../../environments/environment';
           >
             @for (service of services(); track service.id; let i = $index) {
               <div
+                [id]="service.slug"
                 class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
-                [ngClass]="getServiceAnimation(i)"
+                [ngClass]="getServiceAnimation(i) + (highlightedSlug() === service.slug ? ' service-highlight' : '')"
               >
                 <!-- Icon + Category -->
                 <div class="mb-4 flex items-start justify-between">
@@ -253,14 +255,17 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly catalogService = inject(CatalogService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
 
   readonly services = signal<ServiceItem[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly checkoutLoading = signal<string | null>(null);
+  readonly highlightedSlug = signal<string | null>(null);
 
   private scrollObserver?: IntersectionObserver;
+  private fragmentSub?: Subscription;
   private isBrowser: boolean;
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
@@ -289,6 +294,35 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadServices();
+
+    // Listen to URL fragment changes for scroll-to-service navigation
+    if (this.isBrowser) {
+      this.fragmentSub = this.route.fragment.subscribe((fragment) => {
+        if (fragment) {
+          this.scrollToService(fragment);
+        }
+      });
+    }
+  }
+
+  private scrollToService(slug: string): void {
+    // Wait for services to be loaded before scrolling
+    const tryScroll = (retries = 0) => {
+      const element = document.getElementById(slug);
+      if (element) {
+        // Scroll with offset for navbar
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add highlight effect
+          this.highlightedSlug.set(slug);
+          setTimeout(() => this.highlightedSlug.set(null), 2500);
+        }, 100);
+      } else if (retries < 10) {
+        // Retry if services haven't rendered yet
+        setTimeout(() => tryScroll(retries + 1), 200);
+      }
+    };
+    tryScroll();
   }
 
   loadServices(): void {
@@ -343,6 +377,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.scrollObserver?.disconnect();
+    this.fragmentSub?.unsubscribe();
   }
 
   onCheckout(service: ServiceItem): void {
