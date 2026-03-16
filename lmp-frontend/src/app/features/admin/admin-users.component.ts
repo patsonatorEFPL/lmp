@@ -531,8 +531,8 @@ export class AdminUsersComponent implements OnInit {
   openEditUser(user: UserItem): void {
     this.editingUser = user;
     this.editForm = {
-      status: user.status,
-      locked: user.accountLocked ?? false,
+      status: user.status || 'ACTIVE',
+      locked: user.accountLocked === true,
       email: user.email,
     };
     this.showEditModal.set(true);

@@ -180,6 +180,12 @@
 			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
 		</dependency>
 
+		<!-- Spring Session JDBC — persist sessions in PostgreSQL to survive deployments -->
+		<dependency>
+			<groupId>org.springframework.session</groupId>
+			<artifactId>spring-session-jdbc</artifactId>
+		</dependency>
+
 		<!-- WebSocket pour les mises à jour temps réel (legacy — sera remplacé par SSE) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
