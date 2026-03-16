@@ -284,7 +284,8 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
 
   dismissToast(id: string): void {
     this.visibleToasts.update((list) => list.filter((t) => t.id !== id));
-    this.notificationService.markAsRead(id);
+    // Do NOT mark as read when toast auto-dismisses or is closed.
+    // The notification stays unread in the panel until the user explicitly clicks it.
 
     const timeout = this.toastTimeouts.get(id);
     if (timeout) {
@@ -306,7 +307,7 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     if (unread.length > 0) {
       this.showToast(unread[0]);
     }
-    this.notificationService.markAllRead();
+    // Don't mark all as read just from clicking the FAB — let user read them in the panel
   }
 
   getNotificationTitle(type: string): string {

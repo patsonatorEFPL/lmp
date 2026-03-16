@@ -247,12 +247,7 @@ export class NotificationPanelComponent {
 
   dismissNotification(event: Event, id: string): void {
     event.stopPropagation();
-    this.notificationService.notifications.update((list) =>
-      list.filter((n) => n.id !== id),
-    );
-    if (!this.notificationService.notifications().find((n) => n.id === id && !n.read)) {
-      // was unread
-    }
+    this.notificationService.dismissNotification(id);
   }
 
   getTypeIcon(type: string) {

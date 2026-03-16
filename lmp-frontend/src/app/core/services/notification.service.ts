@@ -7,6 +7,7 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { AuthService } from './auth.service';
@@ -23,9 +24,16 @@ export interface AppNotification {
   read: boolean;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+}
+
 @Injectable({ providedIn: 'root' })
 export class NotificationService implements OnDestroy {
   private readonly authService = inject(AuthService);
+  private readonly http = inject(HttpClient);
   private client: Client | null = null;
   private isBrowser: boolean;
 
@@ -35,13 +43,17 @@ export class NotificationService implements OnDestroy {
   readonly unreadCount = signal(0);
   /** Whether the WebSocket connection is active */
   readonly connected = signal(false);
+  /** Whether initial load from API is done */
+  readonly loaded = signal(false);
+
+  private readonly apiUrl = `${environment.apiUrl}/api/v1/notifications`;
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
   /**
-   * Connect to WebSocket and start listening for user notifications.
+   * Connect to WebSocket and load persisted notifications from backend.
    * Should be called once the user is authenticated.
    */
   connect(): void {
@@ -50,13 +62,15 @@ export class NotificationService implements OnDestroy {
     const user = this.authService.user();
     if (!user) return;
 
+    // Load persisted notifications from API
+    this.loadNotificationsFromApi();
+
     // Avoid duplicate connections
     if (this.client?.active) return;
 
     const wsBaseUrl = environment.apiUrl || window.location.origin;
 
     this.client = new Client({
-      // Use SockJS as the transport for compatibility
       webSocketFactory: () => new SockJS(`${wsBaseUrl}/ws/notifications`),
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
@@ -103,33 +117,119 @@ export class NotificationService implements OnDestroy {
   }
 
   /**
-   * Mark all notifications as read.
+   * Load persisted notifications from backend API.
+   */
+  private loadNotificationsFromApi(): void {
+    this.http
+      .get<ApiResponse<AppNotification[]>>(this.apiUrl, {
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.notifications.set(response.data);
+            this.unreadCount.set(
+              response.data.filter((n) => !n.read).length,
+            );
+          }
+          this.loaded.set(true);
+        },
+        error: (err) => {
+          console.error('Failed to load notifications from API:', err);
+          this.loaded.set(true);
+        },
+      });
+  }
+
+  /**
+   * Mark all notifications as read (persisted to backend).
    */
   markAllRead(): void {
+    // Optimistic UI update
     this.notifications.update((list) =>
       list.map((n) => ({ ...n, read: true })),
     );
     this.unreadCount.set(0);
+
+    // Persist to backend
+    this.http
+      .patch<ApiResponse<void>>(`${this.apiUrl}/read-all`, {}, {
+        withCredentials: true,
+      })
+      .subscribe({
+        error: (err) =>
+          console.error('Failed to mark all as read:', err),
+      });
   }
 
   /**
-   * Mark a specific notification as read.
+   * Mark a specific notification as read (persisted to backend).
    */
   markAsRead(notificationId: string): void {
+    // Optimistic UI update
     this.notifications.update((list) =>
       list.map((n) =>
         n.id === notificationId ? { ...n, read: true } : n,
       ),
     );
     this.unreadCount.update((c) => Math.max(0, c - 1));
+
+    // Persist to backend
+    this.http
+      .patch<ApiResponse<void>>(`${this.apiUrl}/${notificationId}/read`, {}, {
+        withCredentials: true,
+      })
+      .subscribe({
+        error: (err) =>
+          console.error('Failed to mark notification as read:', err),
+      });
   }
 
   /**
-   * Clear all notifications.
+   * Clear all notifications (persisted to backend).
    */
   clearAll(): void {
+    // Optimistic UI update
     this.notifications.set([]);
     this.unreadCount.set(0);
+
+    // Persist to backend
+    this.http
+      .delete<ApiResponse<void>>(`${this.apiUrl}/all`, {
+        withCredentials: true,
+      })
+      .subscribe({
+        error: (err) =>
+          console.error('Failed to clear all notifications:', err),
+      });
+  }
+
+  /**
+   * Dismiss a single notification (persisted to backend).
+   */
+  dismissNotification(notificationId: string): void {
+    const notification = this.notifications().find(
+      (n) => n.id === notificationId,
+    );
+    const wasUnread = notification && !notification.read;
+
+    // Optimistic UI update
+    this.notifications.update((list) =>
+      list.filter((n) => n.id !== notificationId),
+    );
+    if (wasUnread) {
+      this.unreadCount.update((c) => Math.max(0, c - 1));
+    }
+
+    // Persist to backend
+    this.http
+      .delete<ApiResponse<void>>(`${this.apiUrl}/${notificationId}`, {
+        withCredentials: true,
+      })
+      .subscribe({
+        error: (err) =>
+          console.error('Failed to dismiss notification:', err),
+      });
   }
 
   /**
@@ -164,7 +264,8 @@ export class NotificationService implements OnDestroy {
       const payload = JSON.parse(message.body);
 
       const notification: AppNotification = {
-        id: crypto.randomUUID(),
+        // Use persisted ID from backend if available, otherwise generate one
+        id: payload.id || crypto.randomUUID(),
         type: payload.type || 'INFO',
         message: payload.message || 'Nouvelle notification',
         orderId: payload.orderId,
@@ -173,6 +274,12 @@ export class NotificationService implements OnDestroy {
         timestamp: payload.timestamp || new Date().toISOString(),
         read: false,
       };
+
+      // Avoid duplicates (check if this ID already exists from initial load)
+      const existing = this.notifications().find(
+        (n) => n.id === notification.id,
+      );
+      if (existing) return;
 
       // Prepend to the list (most recent first), max 50 notifications
       this.notifications.update((list) =>
