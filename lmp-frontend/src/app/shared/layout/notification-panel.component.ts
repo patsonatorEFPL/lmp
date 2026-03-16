@@ -4,9 +4,8 @@ import {
   signal,
   input,
   output,
-  OnInit,
-  OnDestroy,
   ElementRef,
+  HostListener,
   Inject,
   PLATFORM_ID,
 } from '@angular/core';
@@ -37,15 +36,6 @@ import {
   standalone: true,
   imports: [RouterLink, LucideAngularModule, HlmButton, DatePipe],
   template: `
-    <!-- Backdrop (covers entire viewport) -->
-    @if (isOpen()) {
-      <div
-        class="fixed inset-0 z-[199] cursor-default"
-        (click)="close()"
-        (mousedown)="$event.stopPropagation()"
-      ></div>
-    }
-
     <!-- Panel (positioned absolutely from parent) -->
     @if (isOpen()) {
       <div
@@ -211,9 +201,21 @@ import {
 })
 export class NotificationPanelComponent {
   readonly notificationService = inject(NotificationService);
+  private readonly elementRef = inject(ElementRef);
 
   readonly isOpen = input<boolean>(false);
   readonly panelClosed = output<void>();
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isOpen()) return;
+    const clickedInside = this.elementRef.nativeElement.contains(
+      event.target as Node,
+    );
+    if (!clickedInside) {
+      this.close();
+    }
+  }
 
   readonly BellIcon = Bell;
   readonly BellOffIcon = BellOff;

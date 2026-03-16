@@ -112,7 +112,7 @@ const USER_ORDER_STEPS = [
           </div>
 
           <div class="flex items-center gap-3">
-            <div class="relative">
+            <div class="relative" (click)="$event.stopPropagation()">
               <button
                 hlmBtn
                 variant="ghost"
