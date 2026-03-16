@@ -5,10 +5,12 @@ import {
   ElementRef,
   ViewChild,
   OnDestroy,
+  OnInit,
   Inject,
   PLATFORM_ID,
+  inject,
 } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
@@ -19,13 +21,15 @@ import {
   Clock,
   Award,
   Calendar,
+  ShoppingCart,
 } from 'lucide-angular';
 import { AppointmentModalComponent } from '../../shared/modals/appointment-modal.component';
+import { CatalogService, ServiceItem } from '../../core/services/catalog.service';
 
 @Component({
   selector: 'lmp-home',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, AppointmentModalComponent],
+  imports: [RouterLink, LucideAngularModule, AppointmentModalComponent, CurrencyPipe],
   template: `
     <!-- ===== HERO SECTION ===== -->
     <section
@@ -199,47 +203,90 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
         </div>
 
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          @for (service of homeServices; track service.subtitle; let i = $index) {
-            <div
-              class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 scroll-animate anim-fade-up"
-              [class]="'group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 scroll-animate anim-fade-up delay-' + ((i % 3) + 1) + '00'"
+          @for (service of featuredServices(); track service.id; let i = $index) {
+            <a
+              routerLink="/services"
+              [fragment]="service.slug"
+              class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 scroll-animate anim-fade-up cursor-pointer"
+              [class]="'group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 scroll-animate anim-fade-up cursor-pointer delay-' + ((i % 3) + 1) + '00'"
             >
               <div class="flex items-start justify-between mb-4">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-xl">
-                  {{ service.emoji }}
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-xl transition-transform duration-300 group-hover:scale-110">
+                  {{ service.icon }}
                 </div>
                 <span class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-400">
-                  {{ service.category }}
+                  {{ service.categoryName }}
                 </span>
               </div>
               <h3 class="font-display text-base font-semibold text-(--foreground)">
-                {{ service.subtitle }}
+                {{ service.title }}
               </h3>
               <p class="mt-2 flex-1 text-sm leading-relaxed text-(--muted-foreground)">
                 {{ service.description }}
               </p>
               <ul class="mt-4 space-y-1.5">
-                @for (feat of service.features; track feat) {
+                @for (benefit of service.benefits; track benefit) {
                   <li class="flex items-start gap-2 text-xs text-(--muted-foreground)">
                     <lucide-icon [img]="CheckIcon" [size]="12" class="mt-0.5 text-emerald-500 shrink-0"></lucide-icon>
-                    {{ feat }}
+                    {{ benefit }}
                   </li>
                 }
               </ul>
               <div class="mt-5 flex items-end justify-between border-t border-(--border) pt-4">
                 <div>
-                  <span class="font-display text-xl font-bold text-(--primary)">{{ service.price }}</span>
-                  <div class="text-xs text-(--muted-foreground)">Paiement unique</div>
+                  @if (service.currentOffer) {
+                    <span class="font-display text-xl font-bold text-(--primary)">
+                      {{ service.currentOffer.price | currency:'EUR':'symbol':'1.2-2':'fr' }}
+                    </span>
+                    <div class="text-xs text-(--muted-foreground)">
+                      {{ service.currentOffer.durationType === 'ONE_TIME' ? 'Paiement unique' :
+                         service.currentOffer.durationType === 'MONTHLY' ? '/ mois' :
+                         service.currentOffer.durationType === 'YEARLY' ? '/ an' : 'Paiement unique' }}
+                    </div>
+                  } @else {
+                    <span class="font-display text-lg font-bold text-(--primary)">Sur devis</span>
+                  }
                 </div>
-                <button class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary) transition-colors hover:bg-(--primary)/20 cursor-pointer">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary) transition-colors group-hover:bg-(--primary)/20">
+                  <lucide-icon [img]="ShoppingCartIcon" [size]="14"></lucide-icon>
+                </div>
               </div>
-            </div>
+            </a>
           }
         </div>
+
+        <!-- Fallback: show hardcoded if API hasn't loaded yet -->
+        @if (featuredServices().length === 0 && !loadingFeatured()) {
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            @for (service of fallbackServices; track service.subtitle; let i = $index) {
+              <a
+                routerLink="/services"
+                class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1 scroll-animate anim-fade-up cursor-pointer"
+              >
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-xl">
+                    {{ service.emoji }}
+                  </div>
+                  <span class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-400">
+                    {{ service.category }}
+                  </span>
+                </div>
+                <h3 class="font-display text-base font-semibold text-(--foreground)">
+                  {{ service.subtitle }}
+                </h3>
+                <p class="mt-2 flex-1 text-sm leading-relaxed text-(--muted-foreground)">
+                  {{ service.description }}
+                </p>
+                <div class="mt-5 flex items-end justify-between border-t border-(--border) pt-4">
+                  <span class="font-display text-xl font-bold text-(--primary)">{{ service.price }}</span>
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
+                    <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+                  </div>
+                </div>
+              </a>
+            }
+          </div>
+        }
 
         <div class="mt-10 text-center scroll-animate anim-fade-up">
           <a
@@ -380,11 +427,13 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
     />
   `,
 })
-export class HomeComponent implements AfterViewInit, OnDestroy {
+export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('heroSection') heroSectionRef!: ElementRef<HTMLElement>;
   @ViewChild('heroGlow') heroGlowRef!: ElementRef<HTMLElement>;
   @ViewChild('typeSpan1') typeSpan1Ref!: ElementRef<HTMLElement>;
   @ViewChild('typeSpan2') typeSpan2Ref!: ElementRef<HTMLElement>;
+
+  private readonly catalogService = inject(CatalogService);
 
   readonly ArrowRightIcon = ArrowRight;
   readonly CheckIcon = Check;
@@ -393,8 +442,11 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   readonly ClockIcon = Clock;
   readonly AwardIcon = Award;
   readonly CalendarIcon = Calendar;
+  readonly ShoppingCartIcon = ShoppingCart;
 
   readonly showAppointment = signal(false);
+  readonly featuredServices = signal<ServiceItem[]>([]);
+  readonly loadingFeatured = signal(true);
 
   private scrollObserver?: IntersectionObserver;
   private mouseMoveHandler?: (e: MouseEvent) => void;
@@ -420,7 +472,34 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     { value: '9+', label: "Années d'expérience", sub: 'Certifié Google', icon: '👤', iconBg: 'rgba(99,102,241,0.15)' },
   ];
 
-  readonly homeServices = [
+  ngOnInit(): void {
+    this.loadFeaturedServices();
+  }
+
+  private loadFeaturedServices(): void {
+    this.loadingFeatured.set(true);
+    this.catalogService.getFeaturedServices().subscribe({
+      next: (services) => {
+        // Take up to 6 featured services for the homepage
+        this.featuredServices.set(services.filter(s => s.active).slice(0, 6));
+        this.loadingFeatured.set(false);
+        // Re-observe for scroll animations after data loads
+        if (this.isBrowser) {
+          setTimeout(() => {
+            document.querySelectorAll('.scroll-animate:not(.animate-visible)').forEach((el) => {
+              this.scrollObserver?.observe(el);
+            });
+          }, 50);
+        }
+      },
+      error: () => {
+        this.loadingFeatured.set(false);
+      },
+    });
+  }
+
+  // Fallback static services (used if API returns empty)
+  readonly fallbackServices = [
     {
       emoji: '📍',
       category: 'Référencement Local',
@@ -508,7 +587,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       ],
       price: '1 000,00 €',
     },
-  ];
+  ] as const;
 
   readonly expertise = [
     {
