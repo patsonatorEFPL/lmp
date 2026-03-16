@@ -236,12 +236,59 @@
 
 /* === Notification Toast Animation === */
 @keyframes notification-toast-slide-in {
-  0% { transform: translateX(120%); opacity: 0; }
-  100% { transform: translateX(0); opacity: 1; }
+  0% { transform: translateX(120%) scale(0.95); opacity: 0; }
+  60% { transform: translateX(-3%) scale(1.02); opacity: 1; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
 .notification-toast-enter {
-  animation: notification-toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: notification-toast-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* === Notification Panel Animation === */
+@keyframes notification-panel-scale-in {
+  0% { transform: translateY(-8px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.notification-panel-enter {
+  animation: notification-panel-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* === Notification Icon Pulse === */
+@keyframes notification-icon-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.notification-icon-pulse {
+  animation: notification-icon-pulse 2s ease-in-out infinite;
+}
+
+/* === Notification Bell Ring === */
+@keyframes notification-bell-ring {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-12deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-8deg); }
+  50% { transform: rotate(0); }
+  100% { transform: rotate(0); }
+}
+
+.notification-bell-ring svg {
+  animation: notification-bell-ring 2s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* === Bell Badge Pulse === */
+@keyframes bell-badge-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.bell-badge-pulse {
+  animation: bell-badge-pulse 2s ease-in-out infinite;
 }
 
 /* === Reduced motion === */
@@ -258,4 +305,8 @@
   .hero-stat-chip { animation: none; }
   .service-highlight { animation: none; }
   .notification-toast-enter { animation: none; }
+  .notification-panel-enter { animation: none; }
+  .notification-icon-pulse { animation: none; }
+  .notification-bell-ring { animation: none; }
+  .bell-badge-pulse { animation: none; }
 }

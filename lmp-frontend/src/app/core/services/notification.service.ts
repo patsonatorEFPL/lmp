@@ -132,6 +132,33 @@ export class NotificationService implements OnDestroy {
     this.unreadCount.set(0);
   }
 
+  /**
+   * Add a notification programmatically (for testing or HTTP-based notifications).
+   */
+  addNotification(payload: {
+    type?: string;
+    message?: string;
+    orderId?: string;
+    serviceName?: string;
+    amount?: number;
+  }): void {
+    const notification: AppNotification = {
+      id: crypto.randomUUID(),
+      type: payload.type || 'INFO',
+      message: payload.message || 'Nouvelle notification',
+      orderId: payload.orderId,
+      serviceName: payload.serviceName,
+      amount: payload.amount,
+      timestamp: new Date().toISOString(),
+      read: false,
+    };
+
+    this.notifications.update((list) =>
+      [notification, ...list].slice(0, 50),
+    );
+    this.unreadCount.update((c) => c + 1);
+  }
+
   private handleMessage(message: IMessage): void {
     try {
       const payload = JSON.parse(message.body);

@@ -29,6 +29,7 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
 import {
   DashboardService,
   DashboardStats,
@@ -36,6 +37,7 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
+import { NotificationPanelComponent } from '../../shared/layout/notification-panel.component';
 
 interface OrderDetailResponse {
   id: string;
@@ -80,6 +82,7 @@ const USER_ORDER_STEPS = [
     CurrencyPipe,
     NgClass,
     FormsModule,
+    NotificationPanelComponent,
   ],
   template: `
     <div class="min-h-screen bg-(--background)">
@@ -114,12 +117,23 @@ const USER_ORDER_STEPS = [
               variant="ghost"
               size="icon"
               class="relative cursor-pointer"
+              (click)="toggleNotificationPanel()"
             >
               <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
-              <span
-                class="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-(--primary)"
-              ></span>
+              @if (notificationService.unreadCount() > 0) {
+                <span
+                  class="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-(--card) bell-badge-pulse"
+                >
+                  {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
+                </span>
+              }
             </button>
+
+            <!-- Notification Panel Dropdown -->
+            <lmp-notification-panel
+              [isOpen]="showNotificationPanel()"
+              (panelClosed)="showNotificationPanel.set(false)"
+            />
 
             <div
               class="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-1.5"
@@ -742,6 +756,7 @@ const USER_ORDER_STEPS = [
 })
 export class DashboardComponent implements OnInit {
   readonly authService = inject(AuthService);
+  readonly notificationService = inject(NotificationService);
   private readonly dashboardService = inject(DashboardService);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
@@ -771,6 +786,7 @@ export class DashboardComponent implements OnInit {
 
   readonly stats = signal<DashboardStats | null>(null);
   readonly loading = signal(true);
+  readonly showNotificationPanel = signal(false);
   readonly showOrderDetail = signal(false);
   readonly loadingOrderDetail = signal(false);
   readonly selectedOrder = signal<OrderDetailResponse | null>(null);
@@ -800,6 +816,10 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadStats();
+  }
+
+  toggleNotificationPanel(): void {
+    this.showNotificationPanel.update((v) => !v);
   }
 
   loadStats(): void {
