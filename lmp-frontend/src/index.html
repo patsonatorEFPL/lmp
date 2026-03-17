@@ -10,6 +10,8 @@
       content="LMP Digital Services — Plateforme SaaS B2B de services numériques intégrés"
     />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!-- Polyfill: sockjs-client requires `global` (Node.js) in browser -->
+    <script>window.global = window;</script>
   </head>
   <body class="min-h-screen bg-(--background) text-(--foreground) antialiased">
     <lmp-root></lmp-root>

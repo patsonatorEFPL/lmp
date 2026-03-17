@@ -17,6 +17,7 @@ import com.lmp.portal.dto.DashboardStatsResponse.RecentReviewDto;
 import com.lmp.portal.dto.DashboardStatsResponse.UpcomingAppointmentDto;
 import com.lmp.portal.dto.UpdateProfileRequest;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.service.WebSocketNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,15 +57,18 @@ public class UserDashboardRestController {
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
     private final AppointmentRepository appointmentRepository;
+    private final WebSocketNotificationService webSocketNotificationService;
 
     public UserDashboardRestController(UserService userService,
                                         OrderRepository orderRepository,
                                         ReviewRepository reviewRepository,
-                                        AppointmentRepository appointmentRepository) {
+                                        AppointmentRepository appointmentRepository,
+                                        WebSocketNotificationService webSocketNotificationService) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.reviewRepository = reviewRepository;
         this.appointmentRepository = appointmentRepository;
+        this.webSocketNotificationService = webSocketNotificationService;
     }
 
     @GetMapping("/stats")
@@ -194,6 +198,31 @@ public class UserDashboardRestController {
             return ResponseEntity.ok(ApiResponse.ok("Mot de passe modifié avec succès", null));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // ========== WebSocket Test Endpoint ==========
+
+    @GetMapping("/test-notification")
+    @Operation(summary = "Test WebSocket notification", description = "Sends a test WebSocket notification to the authenticated user")
+    public ResponseEntity<ApiResponse<String>> testNotification(Authentication authentication) {
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Not authenticated"));
+        }
+
+        try {
+            webSocketNotificationService.notifyUserNewPendingOrder(
+                    user.getId().toString(),
+                    "test-" + System.currentTimeMillis(),
+                    "Test Notification Service",
+                    99.99);
+            logger.info("Test WebSocket notification sent to user: {}", user.getEmail());
+            return ResponseEntity.ok(ApiResponse.ok("Notification WebSocket envoyée", "OK"));
+        } catch (Exception e) {
+            logger.error("Failed to send test WebSocket notification: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed: " + e.getMessage()));
         }
     }
 
