@@ -1,23 +1,33 @@
 package com.lmp.shared.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import com.lmp.billing.dto.admin.OrderDto;
+import com.lmp.notification.service.InAppNotificationService;
+import com.lmp.notification.domain.InAppNotification;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Service pour les notifications WebSocket temps réel
- * Envoie des notifications aux administrateurs pour les changements de commandes
+ * Envoie des notifications aux administrateurs pour les changements de commandes.
+ * Persiste aussi les notifications in-app pour les utilisateurs.
  */
 @Service
 public class WebSocketNotificationService {
 
-        private final SimpMessagingTemplate messagingTemplate;
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketNotificationService.class);
 
+    private final SimpMessagingTemplate messagingTemplate;
+    private final InAppNotificationService inAppNotificationService;
 
-    public WebSocketNotificationService(SimpMessagingTemplate messagingTemplate) {
+    public WebSocketNotificationService(SimpMessagingTemplate messagingTemplate,
+                                         InAppNotificationService inAppNotificationService) {
         this.messagingTemplate = messagingTemplate;
+        this.inAppNotificationService = inAppNotificationService;
     }
 
     /**
@@ -103,17 +113,34 @@ public class WebSocketNotificationService {
     }
 
     /**
-     * Notifie un utilisateur spécifique d'une nouvelle commande en attente de paiement
+     * Notifie un utilisateur spécifique d'une nouvelle commande en attente de paiement.
+     * Persiste la notification en base de données pour la retrouver après rechargement.
      */
     public void notifyUserNewPendingOrder(String userId, String orderId, String serviceName, Double amount) {
-        Map<String, Object> notification = Map.of(
-            "type", "NEW_PENDING_ORDER",
-            "orderId", orderId,
-            "serviceName", serviceName,
-            "amount", amount,
-            "timestamp", LocalDateTime.now(),
-            "message", String.format("Nouvelle commande en attente : %s (%.2f€)", serviceName, amount)
-        );
+        String type = "NEW_PENDING_ORDER";
+        String message = String.format("Nouvelle commande en attente : %s (%.2f€)", serviceName, amount);
+
+        // 1. Persist notification in DB
+        String persistedId = null;
+        try {
+            InAppNotification persisted = inAppNotificationService.createNotification(
+                    userId, type, message, orderId, serviceName, amount);
+            persistedId = persisted.getId().toString();
+        } catch (Exception e) {
+            logger.error("Failed to persist in-app notification for user {}: {}", userId, e.getMessage());
+        }
+
+        // 2. Send via WebSocket with the persisted ID (so frontend uses DB id)
+        Map<String, Object> notification = new HashMap<>();
+        notification.put("type", type);
+        notification.put("orderId", orderId);
+        notification.put("serviceName", serviceName);
+        notification.put("amount", amount);
+        notification.put("timestamp", LocalDateTime.now().toString());
+        notification.put("message", message);
+        if (persistedId != null) {
+            notification.put("id", persistedId);
+        }
 
         // Send to specific user queue
         messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", notification);

@@ -12,7 +12,8 @@ import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
 import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import {
   CatalogService,
   ServiceItem,
@@ -94,9 +95,19 @@ import { environment } from '../../../environments/environment';
           >
             @for (service of services(); track service.id; let i = $index) {
               <div
-                class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
-                [ngClass]="getServiceAnimation(i)"
+                [id]="service.slug"
+                class="group relative flex flex-col rounded-xl border bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
+                [ngClass]="getServiceAnimation(i) + (highlightedSlug() === service.slug
+                  ? ' service-highlight border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/20 scale-[1.02] -translate-y-2'
+                  : ' border-(--border)')"
               >
+                <!-- Selected badge -->
+                @if (highlightedSlug() === service.slug) {
+                  <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-md whitespace-nowrap">
+                    ✨ Service sélectionné
+                  </div>
+                }
+
                 <!-- Icon + Category -->
                 <div class="mb-4 flex items-start justify-between">
                   <div
@@ -253,14 +264,17 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly catalogService = inject(CatalogService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
 
   readonly services = signal<ServiceItem[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly checkoutLoading = signal<string | null>(null);
+  readonly highlightedSlug = signal<string | null>(null);
 
   private scrollObserver?: IntersectionObserver;
+  private fragmentSub?: Subscription;
   private isBrowser: boolean;
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
@@ -289,6 +303,35 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadServices();
+
+    // Listen to URL fragment changes for scroll-to-service navigation
+    if (this.isBrowser) {
+      this.fragmentSub = this.route.fragment.subscribe((fragment) => {
+        if (fragment) {
+          this.scrollToService(fragment);
+        }
+      });
+    }
+  }
+
+  private scrollToService(slug: string): void {
+    // Wait for services to be loaded before scrolling
+    const tryScroll = (retries = 0) => {
+      const element = document.getElementById(slug);
+      if (element) {
+        // Scroll with offset for navbar
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Add highlight effect — keep visible for 6s so user clearly sees it
+          this.highlightedSlug.set(slug);
+          setTimeout(() => this.highlightedSlug.set(null), 6000);
+        }, 100);
+      } else if (retries < 10) {
+        // Retry if services haven't rendered yet
+        setTimeout(() => tryScroll(retries + 1), 200);
+      }
+    };
+    tryScroll();
   }
 
   loadServices(): void {
@@ -343,6 +386,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.scrollObserver?.disconnect();
+    this.fragmentSub?.unsubscribe();
   }
 
   onCheckout(service: ServiceItem): void {

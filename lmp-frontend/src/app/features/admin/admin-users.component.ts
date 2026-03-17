@@ -19,6 +19,7 @@ import {
   User,
   Trash2,
   AlertTriangle,
+  Info,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -168,18 +169,24 @@ interface ApiResponse<T> {
                   }
                 </td>
                 <td class="px-4 py-3">
-                  <div class="flex items-center gap-1.5">
-                    <span
-                      class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
-                      [ngClass]="getStatusClass(user.status)"
-                    >
-                      {{ getStatusLabel(user.status) }}
-                    </span>
-                    @if (user.accountLocked) {
-                      <span class="inline-flex rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500">
-                        🔒
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-1.5">
+                      <span
+                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                        [ngClass]="getStatusClass(user.status)"
+                      >
+                        {{ getStatusLabel(user.status) }}
                       </span>
-                    }
+                      @if (user.accountLocked) {
+                        <span
+                          class="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500"
+                          title="Compte verrouillé pour raisons de sécurité — la connexion est bloquée"
+                        >
+                          <lucide-icon [img]="LockIcon" [size]="10"></lucide-icon>
+                          Verrouillé
+                        </span>
+                      }
+                    </div>
                   </div>
                 </td>
                 <td class="px-4 py-3 text-(--muted-foreground)">
@@ -313,9 +320,15 @@ interface ApiResponse<T> {
               }
             </div>
 
-            <!-- Status -->
-            <div>
-              <label class="mb-1.5 block text-sm font-medium text-(--foreground)">Statut du compte</label>
+            <!-- Status (administrative control) -->
+            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+              <div class="flex items-center gap-2 mb-1">
+                <lucide-icon [img]="UserIcon" [size]="14" class="text-(--primary)"></lucide-icon>
+                <label class="text-sm font-semibold text-(--foreground)">Statut du compte</label>
+              </div>
+              <p class="mb-3 text-xs text-(--muted-foreground)">
+                Contrôle administratif de l'existence du compte. Un compte inactif est désactivé (soft-delete) et l'utilisateur ne peut plus se connecter.
+              </p>
               <div class="flex gap-2">
                 <button
                   hlmBtn size="sm" class="cursor-pointer gap-1.5"
@@ -334,11 +347,26 @@ interface ApiResponse<T> {
                   Inactif
                 </button>
               </div>
+              @if (editForm.status === 'ACTIVE') {
+                <p class="mt-2 text-xs text-emerald-500">
+                  ✅ Le compte est fonctionnel — l'utilisateur peut se connecter (sauf si verrouillé).
+                </p>
+              } @else {
+                <p class="mt-2 text-xs text-amber-500">
+                  ❌ Le compte est désactivé — l'utilisateur ne peut plus se connecter, quel que soit le verrouillage.
+                </p>
+              }
             </div>
 
-            <!-- Lock -->
-            <div>
-              <label class="mb-1.5 block text-sm font-medium text-(--foreground)">Verrouillage</label>
+            <!-- Lock (security control) -->
+            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+              <div class="flex items-center gap-2 mb-1">
+                <lucide-icon [img]="ShieldIcon" [size]="14" class="text-amber-500"></lucide-icon>
+                <label class="text-sm font-semibold text-(--foreground)">Verrouillage de sécurité</label>
+              </div>
+              <p class="mb-3 text-xs text-(--muted-foreground)">
+                Contrôle de sécurité indépendant du statut. Utilisé en cas de trop de tentatives échouées, suspicion de fraude ou action manuelle de sécurité.
+              </p>
               <div class="flex gap-2">
                 <button
                   hlmBtn size="sm" class="cursor-pointer gap-1.5"
@@ -357,6 +385,26 @@ interface ApiResponse<T> {
                   Verrouillé
                 </button>
               </div>
+              @if (editForm.locked) {
+                <p class="mt-2 text-xs text-red-500">
+                  🔒 La connexion est bloquée pour des raisons de sécurité, même si le compte est actif.
+                </p>
+              } @else {
+                <p class="mt-2 text-xs text-emerald-500">
+                  🔓 Accès normal — l'utilisateur peut se connecter si le compte est actif.
+                </p>
+              }
+            </div>
+
+            <!-- Combined state summary -->
+            <div class="rounded-lg border border-dashed border-(--border) bg-(--muted)/30 p-3">
+              <div class="flex items-center gap-2 mb-1">
+                <lucide-icon [img]="InfoIcon" [size]="12" class="text-(--muted-foreground)"></lucide-icon>
+                <span class="text-xs font-medium text-(--muted-foreground)">État résultant</span>
+              </div>
+              <p class="text-sm font-medium" [ngClass]="getCombinedStateClass()">
+                {{ getCombinedStateLabel() }}
+              </p>
             </div>
           </div>
 
@@ -433,6 +481,7 @@ export class AdminUsersComponent implements OnInit {
   readonly UserIcon = User;
   readonly Trash2Icon = Trash2;
   readonly AlertTriangleIcon = AlertTriangle;
+  readonly InfoIcon = Info;
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -613,6 +662,26 @@ export class AdminUsersComponent implements OnInit {
         },
         error: () => this.showToast('error', 'Erreur lors de la suppression'),
       });
+  }
+
+  getCombinedStateLabel(): string {
+    if (this.editForm.status === 'INACTIVE') {
+      return '❌ Connexion impossible — Compte désactivé';
+    }
+    if (this.editForm.locked) {
+      return '🔒 Connexion bloquée — Compte verrouillé (sécurité)';
+    }
+    return '✅ Connexion autorisée — Compte actif et déverrouillé';
+  }
+
+  getCombinedStateClass(): string {
+    if (this.editForm.status === 'INACTIVE') {
+      return 'text-red-500';
+    }
+    if (this.editForm.locked) {
+      return 'text-amber-500';
+    }
+    return 'text-emerald-500';
   }
 
   private showToast(type: 'success' | 'error', message: string): void {
