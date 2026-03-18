@@ -24,9 +24,12 @@ import {
   AppNotification,
 } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
+import { environment } from '../../../environments/environment';
 
 interface ToastWithProgress extends AppNotification {
   progressPercent: number;
+  paused: boolean;
+  exiting: boolean;
 }
 
 @Component({
@@ -37,12 +40,16 @@ interface ToastWithProgress extends AppNotification {
     <!-- Floating toasts for new notifications -->
     @for (toast of visibleToasts(); track toast.id; let i = $index) {
       <div
-        class="fixed right-4 z-[250] w-[21rem] sm:w-[22rem] overflow-hidden rounded-xl border bg-(--card) shadow-2xl backdrop-blur-sm notification-toast-enter"
-        [class]="getToastBorderClass(toast.type)"
-        [style.bottom.px]="80 + i * 90"
+        class="fixed right-4 z-[250] w-[21rem] sm:w-[22rem] overflow-hidden rounded-xl border bg-(--card)/95 backdrop-blur-md shadow-2xl"
+        [class]="getToastClasses(toast)"
+        [style.bottom.px]="96 + i * 94"
+        (mouseenter)="pauseToast(toast.id)"
+        (mouseleave)="resumeToast(toast.id)"
+        role="alert"
+        aria-live="assertive"
       >
         <!-- Color accent bar at top -->
-        <div class="h-0.5" [class]="getToastAccentBg(toast.type)"></div>
+        <div class="h-1" [class]="getToastAccentBg(toast.type)"></div>
 
         <div class="flex items-start gap-3 p-4">
           <!-- Animated icon -->
@@ -106,6 +113,7 @@ interface ToastWithProgress extends AppNotification {
           <button
             class="shrink-0 mt-0.5 cursor-pointer rounded-md p-1 text-(--muted-foreground) hover:bg-(--muted) hover:text-(--foreground) transition-colors"
             (click)="dismissToast(toast.id)"
+            aria-label="Fermer la notification"
           >
             <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
           </button>
@@ -114,26 +122,27 @@ interface ToastWithProgress extends AppNotification {
         <!-- Progress bar for auto-dismiss countdown -->
         <div class="h-1 w-full bg-(--muted)/30">
           <div
-            class="h-full transition-all duration-100 ease-linear rounded-r-full"
-            [class]="getToastAccentBg(toast.type)"
+            class="h-full rounded-r-full"
+            [class]="getProgressBarClasses(toast)"
             [style.width.%]="toast.progressPercent"
           ></div>
         </div>
       </div>
     }
 
-    <!-- Notification bell FAB (when there are unread and no toasts visible) -->
+    <!-- Notification bell FAB (positioned above contact FAB) -->
     @if (
       notificationService.unreadCount() > 0 &&
       visibleToasts().length === 0
     ) {
       <button
-        class="fixed right-4 bottom-4 z-[200] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-(--primary) text-white shadow-lg shadow-(--primary)/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-(--primary)/40 notification-bell-ring"
+        class="fixed right-8 bottom-[100px] z-[999] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-(--primary) text-white shadow-lg shadow-(--primary)/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-(--primary)/40 notification-bell-ring"
         (click)="showLatestNotification()"
+        aria-label="Voir les notifications non lues"
       >
         <lucide-icon [img]="BellIcon" [size]="20"></lucide-icon>
         <span
-          class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white ring-2 ring-(--card)"
+          class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white ring-2 ring-(--card) bell-badge-pulse"
         >
           {{
             notificationService.unreadCount() > 9
@@ -191,36 +200,38 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     // aren't treated as "new" and don't re-trigger toasts on page reload.
     this.waitForLoadThenPoll();
 
-    // Expose test function globally for QA/testing
-    (window as any).__lmpTestNotification = (
-      type?: string,
-      message?: string,
-    ) => {
-      const types = [
-        'PAYMENT_SUCCESS',
-        'NEW_PENDING_ORDER',
-        'STATUS_CHANGED',
-        'REFUND',
-      ];
-      const messages: Record<string, string> = {
-        PAYMENT_SUCCESS:
-          'Le paiement de 250,00€ pour "Création de site web" a été confirmé.',
-        NEW_PENDING_ORDER:
-          'Nouvelle commande #4521 reçue pour "SEO Local".',
-        STATUS_CHANGED:
-          'La commande "Audit technique" est en cours de traitement.',
-        REFUND:
-          'Remboursement de 75,00€ traité pour la commande #3210.',
+    // Expose test function globally only in non-production
+    if (!environment.production) {
+      (window as any).__lmpTestNotification = (
+        type?: string,
+        message?: string,
+      ) => {
+        const types = [
+          'PAYMENT_SUCCESS',
+          'NEW_PENDING_ORDER',
+          'STATUS_CHANGED',
+          'REFUND',
+        ];
+        const messages: Record<string, string> = {
+          PAYMENT_SUCCESS:
+            'Le paiement de 250,00€ pour "Création de site web" a été confirmé.',
+          NEW_PENDING_ORDER:
+            'Nouvelle commande #4521 reçue pour "SEO Local".',
+          STATUS_CHANGED:
+            'La commande "Audit technique" est en cours de traitement.',
+          REFUND:
+            'Remboursement de 75,00€ traité pour la commande #3210.',
+        };
+        const t = type || types[Math.floor(Math.random() * types.length)];
+        this.notificationService.addNotification({
+          type: t,
+          message: message || messages[t] || 'Notification de test',
+          orderId: 'test-' + Date.now(),
+          serviceName: 'Service Test',
+          amount: 100,
+        });
       };
-      const t = type || types[Math.floor(Math.random() * types.length)];
-      this.notificationService.addNotification({
-        type: t,
-        message: message || messages[t] || 'Notification de test',
-        orderId: 'test-' + Date.now(),
-        serviceName: 'Service Test',
-        amount: 100,
-      });
-    };
+    }
   }
 
   /**
@@ -266,6 +277,8 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     const toastWithProgress: ToastWithProgress = {
       ...notification,
       progressPercent: 100,
+      paused: false,
+      exiting: false,
     };
 
     this.visibleToasts.update((list) => {
@@ -273,9 +286,14 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     });
 
     // Start progress countdown
-    const startTime = Date.now();
+    let startTime = Date.now();
+    let elapsedBeforePause = 0;
+
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
+      const toast = this.visibleToasts().find((t) => t.id === notification.id);
+      if (toast?.paused) return;
+
+      const elapsed = elapsedBeforePause + (Date.now() - startTime);
       const remaining = Math.max(
         0,
         ((this.TOAST_DURATION - elapsed) / this.TOAST_DURATION) * 100,
@@ -293,17 +311,81 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     }, this.PROGRESS_INTERVAL);
     this.progressIntervals.set(notification.id, interval);
 
+    // Store pause tracking data
+    (this as any)[`_pauseData_${notification.id}`] = {
+      startTime,
+      elapsedBeforePause: 0,
+      get elapsed() {
+        return this.elapsedBeforePause + (Date.now() - this.startTime);
+      },
+    };
+
     // Auto-dismiss after duration
     const timeout = setTimeout(() => {
-      this.dismissToast(notification.id);
+      this.startExitAnimation(notification.id);
     }, this.TOAST_DURATION);
     this.toastTimeouts.set(notification.id, timeout);
   }
 
+  /** Pause toast countdown on hover */
+  pauseToast(id: string): void {
+    const pauseData = (this as any)[`_pauseData_${id}`];
+    if (pauseData) {
+      pauseData.elapsedBeforePause += Date.now() - pauseData.startTime;
+    }
+
+    this.visibleToasts.update((list) =>
+      list.map((t) => (t.id === id ? { ...t, paused: true } : t)),
+    );
+
+    // Clear the auto-dismiss timeout
+    const timeout = this.toastTimeouts.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.toastTimeouts.delete(id);
+    }
+  }
+
+  /** Resume toast countdown when mouse leaves */
+  resumeToast(id: string): void {
+    const pauseData = (this as any)[`_pauseData_${id}`];
+    if (pauseData) {
+      pauseData.startTime = Date.now();
+    }
+
+    this.visibleToasts.update((list) =>
+      list.map((t) => (t.id === id ? { ...t, paused: false } : t)),
+    );
+
+    // Restart timeout for remaining time
+    const toast = this.visibleToasts().find((t) => t.id === id);
+    if (toast) {
+      const remainingMs = (toast.progressPercent / 100) * this.TOAST_DURATION;
+      const timeout = setTimeout(() => {
+        this.startExitAnimation(id);
+      }, remainingMs);
+      this.toastTimeouts.set(id, timeout);
+    }
+  }
+
+  /** Start exit animation before removing */
+  private startExitAnimation(id: string): void {
+    this.visibleToasts.update((list) =>
+      list.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
+    );
+
+    // Remove after animation completes
+    setTimeout(() => {
+      this.removeToast(id);
+    }, 350);
+  }
+
   dismissToast(id: string): void {
+    this.startExitAnimation(id);
+  }
+
+  private removeToast(id: string): void {
     this.visibleToasts.update((list) => list.filter((t) => t.id !== id));
-    // Do NOT mark as read when toast auto-dismisses or is closed.
-    // The notification stays unread in the panel until the user explicitly clicks it.
 
     const timeout = this.toastTimeouts.get(id);
     if (timeout) {
@@ -316,6 +398,8 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       clearInterval(interval);
       this.progressIntervals.delete(id);
     }
+
+    delete (this as any)[`_pauseData_${id}`];
   }
 
   showLatestNotification(): void {
@@ -325,7 +409,6 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     if (unread.length > 0) {
       this.showToast(unread[0]);
     }
-    // Don't mark all as read just from clicking the FAB — let user read them in the panel
   }
 
   getNotificationTitle(type: string): string {
@@ -341,6 +424,14 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       default:
         return '🔔 Notification';
     }
+  }
+
+  getToastClasses(toast: ToastWithProgress): string {
+    const border = this.getToastBorderClass(toast.type);
+    const anim = toast.exiting
+      ? 'notification-toast-exit'
+      : 'notification-toast-enter';
+    return `${border} ${anim}`;
   }
 
   getToastBorderClass(type: string): string {
@@ -388,12 +479,19 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     }
   }
 
+  getProgressBarClasses(toast: ToastWithProgress): string {
+    const bg = this.getToastAccentBg(toast.type);
+    const transition = toast.paused
+      ? ''
+      : 'transition-all duration-100 ease-linear';
+    return `${bg} ${transition}`;
+  }
+
   private playNotificationSound(): void {
     if (!this.isBrowser) return;
     try {
       const audioCtx = new (window.AudioContext ||
         (window as any).webkitAudioContext)();
-      // Play a pleasant two-tone chime
       const playTone = (freq: number, startTime: number, duration: number) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -429,5 +527,10 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       clearInterval(interval);
     }
     this.notificationService.disconnect();
+
+    // Cleanup global test function
+    if (!environment.production && this.isBrowser) {
+      delete (window as any).__lmpTestNotification;
+    }
   }
 }
