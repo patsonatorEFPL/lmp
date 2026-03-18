@@ -2,6 +2,8 @@ package com.lmp.notification.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -125,6 +127,11 @@ public class InAppNotificationService {
     }
 
     private InAppNotificationDto toDto(InAppNotification notification) {
+        // Format timestamp as ISO-8601 with UTC 'Z' suffix for correct frontend parsing
+        String timestamp = notification.getCreatedAt()
+                .atOffset(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ISO_INSTANT);
+
         return new InAppNotificationDto(
                 notification.getId().toString(),
                 notification.getType(),
@@ -133,7 +140,7 @@ public class InAppNotificationService {
                 notification.getServiceName(),
                 notification.getAmount() != null ? notification.getAmount().doubleValue() : null,
                 notification.isRead(),
-                notification.getCreatedAt().toString()
+                timestamp
         );
     }
 }

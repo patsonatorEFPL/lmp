@@ -4,10 +4,16 @@ import {
   input,
   output,
   computed,
+  signal,
   ElementRef,
   HostListener,
+  OnInit,
+  OnDestroy,
+  Inject,
+  PLATFORM_ID,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
   Bell,
@@ -179,7 +185,7 @@ interface NotificationGroup {
                       {{ notification.message }}
                     </p>
                     <p class="mt-1 text-[10px] text-(--muted-foreground)/60">
-                      {{ formatTimeAgo(notification.timestamp) }}
+                      {{ formatTimeAgo(notification.timestamp, timeRefreshTick()) }}
                     </p>
                   </div>
 
@@ -244,9 +250,34 @@ interface NotificationGroup {
     }
   `,
 })
-export class NotificationPanelComponent {
+export class NotificationPanelComponent implements OnInit, OnDestroy {
   readonly notificationService = inject(NotificationService);
   private readonly elementRef = inject(ElementRef);
+  private readonly router = inject(Router);
+  private isBrowser: boolean;
+  private timeRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+  /** Incremented every 30s to force re-render of timestamps */
+  readonly timeRefreshTick = signal(0);
+
+  constructor(@Inject(PLATFORM_ID) platformId: object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit(): void {
+    if (this.isBrowser) {
+      // Refresh relative timestamps every 30 seconds
+      this.timeRefreshInterval = setInterval(() => {
+        this.timeRefreshTick.update((v) => v + 1);
+      }, 30_000);
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.timeRefreshInterval) {
+      clearInterval(this.timeRefreshInterval);
+    }
+  }
 
   readonly isOpen = input<boolean>(false);
   readonly panelClosed = output<void>();
@@ -339,6 +370,14 @@ export class NotificationPanelComponent {
 
   onNotificationClick(notification: AppNotification): void {
     this.notificationService.markAsRead(notification.id);
+
+    // Navigate to order detail if orderId is present
+    if (notification.orderId) {
+      this.router.navigate(['/dashboard/orders'], {
+        queryParams: { open: notification.orderId },
+      });
+      this.close();
+    }
   }
 
   dismissNotification(event: Event, id: string): void {
@@ -414,7 +453,10 @@ export class NotificationPanelComponent {
     }
   }
 
-  formatTimeAgo(timestamp: string): string {
+  /**
+   * @param _tick — unused, but forces Angular to recalculate on signal change
+   */
+  formatTimeAgo(timestamp: string, _tick?: number): string {
     const now = new Date();
     const date = new Date(timestamp);
     const diffMs = now.getTime() - date.getTime();

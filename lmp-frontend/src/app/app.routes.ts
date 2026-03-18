@@ -86,14 +86,37 @@ export const routes: Routes = [
       ),
   },
 
-  // Protected pages (user dashboard — standalone layout)
+  // Protected pages (user dashboard with sidebar layout)
   {
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then(
-        (m) => m.DashboardComponent,
+      import('./features/dashboard/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
       ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard-overview.component').then(
+            (m) => m.DashboardOverviewComponent,
+          ),
+      },
+      {
+        path: 'orders',
+        loadComponent: () =>
+          import('./features/dashboard/user-orders.component').then(
+            (m) => m.UserOrdersComponent,
+          ),
+      },
+      {
+        path: 'appointments',
+        loadComponent: () =>
+          import('./features/dashboard/user-appointments.component').then(
+            (m) => m.UserAppointmentsComponent,
+          ),
+      },
+    ],
   },
   {
     path: 'settings',
