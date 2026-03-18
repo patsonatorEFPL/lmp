@@ -2,10 +2,12 @@ import {
   Component,
   inject,
   signal,
+  effect,
   OnInit,
   OnDestroy,
   Inject,
   PLATFORM_ID,
+  DestroyRef,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -165,19 +167,26 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
+
+    // Reactively connect/disconnect when auth state changes.
+    // This fixes the bug where logging in after app bootstrap would never
+    // trigger connect() because ngOnInit had already run with isAuthenticated=false.
+    if (this.isBrowser) {
+      effect(() => {
+        const authenticated = this.authService.isAuthenticated();
+        if (authenticated) {
+          this.notificationService.connect();
+          this.waitForLoadThenPoll();
+        } else {
+          this.notificationService.disconnect();
+          this.stopPolling();
+        }
+      });
+    }
   }
 
   ngOnInit(): void {
     if (!this.isBrowser) return;
-
-    // Connect to WebSocket if user is authenticated
-    if (this.authService.isAuthenticated()) {
-      this.notificationService.connect();
-    }
-
-    // Wait for initial API load before polling, so persisted notifications
-    // aren't treated as "new" and don't re-trigger toasts on page reload.
-    this.waitForLoadThenPoll();
 
     // Expose test function globally only in non-production
     if (!environment.production) {
@@ -495,10 +504,16 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
+  private stopPolling(): void {
     if (this._rafId) {
       cancelAnimationFrame(this._rafId);
+      this._rafId = 0;
     }
+    this.lastNotificationCount = 0;
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
     for (const timeout of this.toastTimeouts.values()) {
       clearTimeout(timeout);
     }
