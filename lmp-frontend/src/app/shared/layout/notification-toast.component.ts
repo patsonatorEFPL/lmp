@@ -130,28 +130,7 @@ interface ToastWithProgress extends AppNotification {
       </div>
     }
 
-    <!-- Notification bell FAB (positioned above contact FAB) -->
-    @if (
-      notificationService.unreadCount() > 0 &&
-      visibleToasts().length === 0
-    ) {
-      <button
-        class="fixed right-8 bottom-[100px] z-[999] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-(--primary) text-white shadow-lg shadow-(--primary)/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-(--primary)/40 notification-bell-ring"
-        (click)="showLatestNotification()"
-        aria-label="Voir les notifications non lues"
-      >
-        <lucide-icon [img]="BellIcon" [size]="20"></lucide-icon>
-        <span
-          class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white ring-2 ring-(--card) bell-badge-pulse"
-        >
-          {{
-            notificationService.unreadCount() > 9
-              ? '9+'
-              : notificationService.unreadCount()
-          }}
-        </span>
-      </button>
-    }
+    <!-- FAB bell removed — notifications are accessed via the navbar bell icon -->
   `,
   styles: `
     :host {
