@@ -234,15 +234,24 @@
   animation: service-highlight-pulse 1.5s ease-in-out infinite;
 }
 
-/* === Notification Toast Animation === */
+/* === Notification Toast Animations === */
 @keyframes notification-toast-slide-in {
   0% { transform: translateX(120%) scale(0.95); opacity: 0; }
   60% { transform: translateX(-3%) scale(1.02); opacity: 1; }
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
 
+@keyframes notification-toast-slide-out {
+  0% { transform: translateX(0) scale(1); opacity: 1; }
+  100% { transform: translateX(120%) scale(0.95); opacity: 0; }
+}
+
 .notification-toast-enter {
   animation: notification-toast-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notification-toast-exit {
+  animation: notification-toast-slide-out 0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }
 
 /* === Notification Panel Animation === */
@@ -305,6 +314,7 @@
   .hero-stat-chip { animation: none; }
   .service-highlight { animation: none; }
   .notification-toast-enter { animation: none; }
+  .notification-toast-exit { animation: none; }
   .notification-panel-enter { animation: none; }
   .notification-icon-pulse { animation: none; }
   .notification-bell-ring { animation: none; }

@@ -62,8 +62,10 @@ export class NotificationService implements OnDestroy {
     const user = this.authService.user();
     if (!user) return;
 
-    // Load persisted notifications from API
-    this.loadNotificationsFromApi();
+    // Load persisted notifications from API (guard against duplicate calls)
+    if (!this.loaded()) {
+      this.loadNotificationsFromApi();
+    }
 
     // Avoid duplicate connections
     if (this.client?.active) return;
@@ -114,6 +116,17 @@ export class NotificationService implements OnDestroy {
     }
     this.client = null;
     this.connected.set(false);
+  }
+
+  /**
+   * Full teardown: disconnect WebSocket and purge all notification state.
+   * Must be called on logout to prevent stale data leaking to the public UI.
+   */
+  reset(): void {
+    this.disconnect();
+    this.notifications.set([]);
+    this.unreadCount.set(0);
+    this.loaded.set(false);
   }
 
   /**
