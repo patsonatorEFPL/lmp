@@ -136,7 +136,7 @@ public class WebSocketNotificationService {
         notification.put("orderId", orderId);
         notification.put("serviceName", serviceName);
         notification.put("amount", amount);
-        notification.put("timestamp", LocalDateTime.now().toString());
+        notification.put("timestamp", java.time.Instant.now().toString());
         notification.put("message", message);
         if (persistedId != null) {
             notification.put("id", persistedId);
