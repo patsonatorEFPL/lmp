@@ -254,10 +254,14 @@ export class NotificationPanelComponent {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!this.isOpen()) return;
-    const clickedInside = this.elementRef.nativeElement.contains(
-      event.target as Node,
-    );
-    if (!clickedInside) {
+    // Check if click was inside the panel OR its parent container
+    // (the parent holds both the bell button and the panel)
+    const hostEl = this.elementRef.nativeElement as HTMLElement;
+    const parentContainer = hostEl.parentElement;
+    const target = event.target as Node;
+    const clickedInsidePanel = hostEl.contains(target);
+    const clickedInsideParent = parentContainer?.contains(target) ?? false;
+    if (!clickedInsidePanel && !clickedInsideParent) {
       this.close();
     }
   }
