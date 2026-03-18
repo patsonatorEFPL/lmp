@@ -251,11 +251,19 @@ export class NotificationPanelComponent {
   readonly isOpen = input<boolean>(false);
   readonly panelClosed = output<void>();
 
+  private wasOpenBeforeClick = false;
+
+  @HostListener('document:mousedown')
+  onDocumentMouseDown(): void {
+    // Capture the panel open state BEFORE the click handler changes it
+    this.wasOpenBeforeClick = this.isOpen();
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (!this.isOpen()) return;
-    // Check if click was inside the panel OR its parent container
-    // (the parent holds both the bell button and the panel)
+    // Only process if the panel was already open before this click cycle
+    if (!this.wasOpenBeforeClick || !this.isOpen()) return;
+
     const hostEl = this.elementRef.nativeElement as HTMLElement;
     const parentContainer = hostEl.parentElement;
     const target = event.target as Node;
