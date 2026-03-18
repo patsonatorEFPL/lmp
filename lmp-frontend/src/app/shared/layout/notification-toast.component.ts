@@ -178,8 +178,10 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
           this.notificationService.connect();
           this.waitForLoadThenPoll();
         } else {
-          this.notificationService.disconnect();
+          // Full teardown: purge all notification state + dismiss in-flight toasts
+          this.notificationService.reset();
           this.stopPolling();
+          this.clearAllToasts();
         }
       });
     }
@@ -510,6 +512,22 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       this._rafId = 0;
     }
     this.lastNotificationCount = 0;
+  }
+
+  /**
+   * Immediately dismiss all visible toasts and cancel their timers.
+   * Called on logout to prevent stale notifications from being shown.
+   */
+  private clearAllToasts(): void {
+    for (const timeout of this.toastTimeouts.values()) {
+      clearTimeout(timeout);
+    }
+    this.toastTimeouts.clear();
+    for (const interval of this.progressIntervals.values()) {
+      clearInterval(interval);
+    }
+    this.progressIntervals.clear();
+    this.visibleToasts.set([]);
   }
 
   ngOnDestroy(): void {

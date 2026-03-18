@@ -108,7 +108,10 @@ public class AuthRestController {
         try {
             authService.validateRegistrationData(registerDto);
             User user = authService.registerUser(registerDto);
+
+            // Send emails asynchronously via Spring proxy (@Async) — non-blocking
             authService.sendVerificationEmail(user);
+            authService.sendWelcomeEmail(user);
 
             logger.info("API registration successful for: {}", user.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED)

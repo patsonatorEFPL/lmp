@@ -119,6 +119,17 @@ export class NotificationService implements OnDestroy {
   }
 
   /**
+   * Full teardown: disconnect WebSocket and purge all notification state.
+   * Must be called on logout to prevent stale data leaking to the public UI.
+   */
+  reset(): void {
+    this.disconnect();
+    this.notifications.set([]);
+    this.unreadCount.set(0);
+    this.loaded.set(false);
+  }
+
+  /**
    * Load persisted notifications from backend API.
    */
   private loadNotificationsFromApi(): void {

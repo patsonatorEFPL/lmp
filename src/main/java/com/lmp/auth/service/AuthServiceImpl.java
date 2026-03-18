@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
@@ -135,20 +136,9 @@ public class AuthServiceImpl implements AuthService {
         User savedUser = userRepository.save(user);
         logger.info("Utilisateur inscrit : {}", savedUser.getEmail());
 
-        // Envoyer l'email de vérification
-        try {
-            sendVerificationEmail(savedUser);
-            logger.info("Email de vérification envoyé à {}", savedUser.getEmail());
-        } catch (Exception e) {
-            logger.error("Erreur envoi email de vérification : {}", e.getMessage(), e);
-        }
-
-        // Envoyer l'email de bienvenue
-        try {
-            sendWelcomeEmail(savedUser);
-        } catch (Exception e) {
-            logger.error("Erreur envoi email de bienvenue : {}", e.getMessage(), e);
-        }
+        // NOTE: Email sending (verification + welcome) is handled by the caller
+        // via @Async proxy methods to avoid blocking the HTTP thread.
+        // Self-invocation (this.sendXxx()) bypasses Spring's async proxy.
 
         return savedUser;
     }
@@ -181,6 +171,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Async
     @Override
     public void sendWelcomeEmail(User user) {
         try {
@@ -260,6 +251,7 @@ public class AuthServiceImpl implements AuthService {
         return true;
     }
 
+    @Async
     @Override
     public void sendVerificationEmail(User user) {
         try {
