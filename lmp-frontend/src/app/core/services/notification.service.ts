@@ -62,8 +62,10 @@ export class NotificationService implements OnDestroy {
     const user = this.authService.user();
     if (!user) return;
 
-    // Load persisted notifications from API
-    this.loadNotificationsFromApi();
+    // Load persisted notifications from API (guard against duplicate calls)
+    if (!this.loaded()) {
+      this.loadNotificationsFromApi();
+    }
 
     // Avoid duplicate connections
     if (this.client?.active) return;
