@@ -1,5 +1,6 @@
-import { Component, AfterViewInit, OnDestroy, signal } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { SeoService } from '../../core/services/seo.service';
 
 declare const L: any;
 
@@ -48,10 +49,21 @@ declare const L: any;
     </section>
   `,
 })
-export class MapComponent implements AfterViewInit, OnDestroy {
+export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly seo = inject(SeoService);
+
   searchQuery = signal('');
   selectedCategory = signal('');
   private map: any;
+
+  ngOnInit(): void {
+    this.seo.updateMeta({
+      title: 'Carte Interactive — Solutions Locales',
+      description: 'Explorez notre carte interactive pour découvrir les solutions locales et services de marketing digital près de chez vous. LMP Digital Services à Uccle, Bruxelles.',
+      url: '/map',
+      keywords: 'carte interactive, solutions locales, marketing digital Bruxelles, services locaux Uccle',
+    });
+  }
 
   ngAfterViewInit(): void {
     this.initMap();

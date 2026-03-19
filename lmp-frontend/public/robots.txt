@@ -1,0 +1,16 @@
+# LMP Digital Services — robots.txt
+User-agent: *
+Allow: /
+
+# Disallow private/admin areas
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /settings
+Disallow: /login
+Disallow: /register
+Disallow: /payment/
+
+# Sitemap
+Sitemap: https://lmp-services.ca/sitemap.xml
