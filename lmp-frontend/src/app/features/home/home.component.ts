@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Title, Meta } from '@angular/platform-browser';
+import { SeoService } from '../../core/services/seo.service';
 import {
   LucideAngularModule,
   ArrowRight,
@@ -374,6 +374,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             <button
               class="flex h-10 w-10 items-center justify-center rounded-full border border-(--border) text-(--muted-foreground) transition-colors hover:text-(--foreground) cursor-pointer"
               (click)="prevTestimonial()"
+              aria-label="Témoignage précédent"
             >
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -382,6 +383,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             <button
               class="flex h-10 w-10 items-center justify-center rounded-full bg-(--primary) text-white transition-colors hover:bg-(--primary)/90 cursor-pointer"
               (click)="nextTestimonial()"
+              aria-label="Témoignage suivant"
             >
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -465,8 +467,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('typeSpan2') typeSpan2Ref!: ElementRef<HTMLElement>;
 
   private readonly catalogService = inject(CatalogService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
+  private readonly seo = inject(SeoService);
 
   readonly ArrowRightIcon = ArrowRight;
   readonly CheckIcon = Check;
@@ -507,10 +508,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   ngOnInit(): void {
-    this.titleService.setTitle('LMP Digital Services — Marketing Digital & Référencement Local');
-    this.metaService.updateTag({
-      name: 'description',
-      content: 'Propulsez votre visibilité au sommet. Expertise en marketing digital, référencement SEO, Google My Business et création de sites web.',
+    this.seo.updateMeta({
+      title: 'LMP Digital Services — Marketing Digital & Référencement Local',
+      description: 'Propulsez votre visibilité au sommet. Expertise en marketing digital, référencement SEO, Google My Business et création de sites web. 500+ clients satisfaits.',
+      url: '/',
+      keywords: 'marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, LMP, référencement local, Belgique, Bruxelles',
     });
     this.loadFeaturedServices();
   }

@@ -1,6 +1,5 @@
 import {
   ApplicationConfig,
-  provideBrowserGlobalErrorListeners,
   APP_INITIALIZER,
   LOCALE_ID,
   inject,
@@ -32,7 +31,6 @@ function initializeAuth(): () => Promise<void> {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
       withFetch(),

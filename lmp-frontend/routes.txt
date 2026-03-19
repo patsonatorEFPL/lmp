@@ -1,0 +1,9 @@
+/
+/services
+/about
+/contact
+/map
+/privacy
+/terms
+/login
+/register

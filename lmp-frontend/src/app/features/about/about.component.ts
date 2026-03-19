@@ -1,7 +1,8 @@
-import { Component, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LucideAngularModule, Lightbulb, Target, Users, Award, TrendingUp } from 'lucide-angular';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'lmp-about',
@@ -101,7 +102,9 @@ import { LucideAngularModule, Lightbulb, Target, Users, Award, TrendingUp } from
     </section>
   `,
 })
-export class AboutComponent implements AfterViewInit, OnDestroy {
+export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly seo = inject(SeoService);
+
   readonly LightbulbIcon = Lightbulb;
   readonly TargetIcon = Target;
   readonly UsersIcon = Users;
@@ -121,6 +124,15 @@ export class AboutComponent implements AfterViewInit, OnDestroy {
     { icon: Users, title: 'Approche Humaine', description: 'Un expert dédié à votre projet, disponible et réactif. Nous construisons des relations de confiance durables.' },
     { icon: Award, title: 'Excellence Certifiée', description: 'Partenaire certifié Google et des principales plateformes digitales. Notre expertise est reconnue et validée.' },
   ];
+
+  ngOnInit(): void {
+    this.seo.updateMeta({
+      title: 'À Propos — Expertise Marketing Local depuis 10 ans',
+      description: 'Découvrez LMP Digital Services : notre mission, notre vision et notre équipe d\'experts en marketing digital et référencement local. 500+ clients satisfaits en Europe.',
+      url: '/about',
+      keywords: 'à propos LMP, marketing local, expertise SEO, équipe marketing digital, référencement local Belgique',
+    });
+  }
 
   readonly aboutStats = [
     { value: '500+', label: 'Clients', sub: 'en Europe' },

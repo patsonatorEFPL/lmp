@@ -1,4 +1,5 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -25,6 +26,7 @@ interface ApiResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly currentUser = signal<UserInfo | null>(null);
   private readonly _loading = signal(true);
 
@@ -37,6 +39,12 @@ export class AuthService {
    * Returns a Promise so APP_INITIALIZER waits for completion.
    */
   checkSession(): Promise<void> {
+    // During SSR/prerender, skip session check — no cookies available
+    if (!isPlatformBrowser(this.platformId)) {
+      this._loading.set(false);
+      return Promise.resolve();
+    }
+
     this._loading.set(true);
     return new Promise<void>((resolve) => {
       this.http

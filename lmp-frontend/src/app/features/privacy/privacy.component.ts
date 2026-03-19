@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'lmp-privacy',
@@ -79,4 +80,14 @@ import { Component } from '@angular/core';
     </section>
   `,
 })
-export class PrivacyComponent {}
+export class PrivacyComponent implements OnInit {
+  private readonly seo = inject(SeoService);
+
+  ngOnInit(): void {
+    this.seo.updateMeta({
+      title: 'Politique de Confidentialité',
+      description: 'Politique de confidentialité de LMP Digital Services. Découvrez comment nous protégeons et utilisons vos données personnelles conformément au RGPD.',
+      url: '/privacy',
+    });
+  }
+}
