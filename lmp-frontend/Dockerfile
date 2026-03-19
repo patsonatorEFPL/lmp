@@ -17,7 +17,11 @@ RUN npm ci --legacy-peer-deps
 # Copier le code source
 COPY . .
 
-# Build de production Angular
+# Override angular.json to enable prerendering in Docker build
+# (UNC paths on Windows prevent local prerendering)
+RUN sed -i 's/"prerender": false/"prerender": { "discoverRoutes": false, "routesFile": "routes.txt" }/' angular.json
+
+# Build de production Angular (with prerendering)
 RUN npx ng build --configuration=production
 
 # ========================================
