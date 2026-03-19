@@ -45,5 +45,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:4000/ || exit 1
 
-# Démarrer le serveur SSR
-CMD ["node", "server/server.mjs"]
+# Démarrer le serveur SSR (with debug output)
+CMD ["sh", "-c", "echo '=== FILES IN /app ===' && ls -la /app/ && echo '=== SERVER DIR ===' && ls -la /app/server/ 2>/dev/null || echo 'No server dir' && echo '=== Trying to start ===' && node server/server.mjs"]
