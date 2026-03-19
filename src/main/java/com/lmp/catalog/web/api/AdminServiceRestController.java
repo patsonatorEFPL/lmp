@@ -274,6 +274,33 @@ public class AdminServiceRestController {
         }
     }
 
+    // ========== Bulk Reorder ==========
+
+    @PutMapping("/reorder")
+    @Transactional
+    @Operation(summary = "Réordonner les services", description = "Accepte une liste ordonnée d'IDs de services et attribue des displayOrder séquentiels")
+    public ResponseEntity<ApiResponse<Void>> reorderServices(@RequestBody Map<String, Object> data) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> serviceIds = (List<String>) data.get("serviceIds");
+            if (serviceIds == null || serviceIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Liste d'IDs requise"));
+            }
+            for (int i = 0; i < serviceIds.size(); i++) {
+                UUID id = UUID.fromString(serviceIds.get(i));
+                Service service = serviceRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Service non trouvé: " + id));
+                service.setDisplayOrder(i + 1);
+                service.setUpdatedAt(LocalDateTime.now());
+                serviceRepository.save(service);
+            }
+            return ResponseEntity.ok(ApiResponse.ok("Ordre mis à jour", null));
+        } catch (Exception e) {
+            logger.error("Error reordering services: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     // ========== Offers ==========
 
     @PostMapping("/{serviceId}/offers")

@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Title, Meta } from '@angular/platform-browser';
 import {
   LucideAngularModule,
   ArrowRight,
@@ -202,6 +203,33 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
           </p>
         </div>
 
+        <!-- Skeleton loading state -->
+        @if (loadingFeatured()) {
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            @for (skeleton of [1,2,3,4,5,6]; track skeleton) {
+              <div class="flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 animate-pulse">
+                <div class="flex items-start justify-between mb-4">
+                  <div class="h-12 w-12 rounded-xl bg-(--muted)"></div>
+                  <div class="h-5 w-20 rounded-full bg-(--muted)"></div>
+                </div>
+                <div class="h-5 w-3/4 rounded bg-(--muted)"></div>
+                <div class="mt-3 space-y-2">
+                  <div class="h-3 w-full rounded bg-(--muted)"></div>
+                  <div class="h-3 w-5/6 rounded bg-(--muted)"></div>
+                </div>
+                <div class="mt-4 space-y-1.5">
+                  <div class="h-3 w-2/3 rounded bg-(--muted)"></div>
+                  <div class="h-3 w-1/2 rounded bg-(--muted)"></div>
+                </div>
+                <div class="mt-5 flex items-end justify-between border-t border-(--border) pt-4">
+                  <div class="h-6 w-24 rounded bg-(--muted)"></div>
+                  <div class="h-8 w-8 rounded-lg bg-(--muted)"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           @for (service of featuredServices(); track service.id; let i = $index) {
             <a
@@ -294,6 +322,9 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             class="inline-flex items-center gap-2 rounded-xl border border-(--border) bg-(--card) px-6 py-3 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
           >
             Voir tous les services
+            @if (totalFeaturedCount() > 6) {
+              <span class="text-xs text-(--muted-foreground)">(+{{ totalFeaturedCount() - 6 }} autres)</span>
+            }
             <lucide-icon [img]="ArrowRightIcon" [size]="16"></lucide-icon>
           </a>
         </div>
@@ -434,6 +465,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('typeSpan2') typeSpan2Ref!: ElementRef<HTMLElement>;
 
   private readonly catalogService = inject(CatalogService);
+  private readonly titleService = inject(Title);
+  private readonly metaService = inject(Meta);
 
   readonly ArrowRightIcon = ArrowRight;
   readonly CheckIcon = Check;
@@ -447,6 +480,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly showAppointment = signal(false);
   readonly featuredServices = signal<ServiceItem[]>([]);
   readonly loadingFeatured = signal(true);
+  readonly totalFeaturedCount = signal(0);
 
   private scrollObserver?: IntersectionObserver;
   private mouseMoveHandler?: (e: MouseEvent) => void;
@@ -473,6 +507,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   ngOnInit(): void {
+    this.titleService.setTitle('LMP Digital Services — Marketing Digital & Référencement Local');
+    this.metaService.updateTag({
+      name: 'description',
+      content: 'Propulsez votre visibilité au sommet. Expertise en marketing digital, référencement SEO, Google My Business et création de sites web.',
+    });
     this.loadFeaturedServices();
   }
 
@@ -480,8 +519,10 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadingFeatured.set(true);
     this.catalogService.getFeaturedServices().subscribe({
       next: (services) => {
+        const activeServices = services.filter(s => s.active);
+        this.totalFeaturedCount.set(activeServices.length);
         // Take up to 6 featured services for the homepage
-        this.featuredServices.set(services.filter(s => s.active).slice(0, 6));
+        this.featuredServices.set(activeServices.slice(0, 6));
         this.loadingFeatured.set(false);
         // Re-observe for scroll animations after data loads
         if (this.isBrowser) {

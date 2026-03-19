@@ -46,6 +46,22 @@ export class CatalogService {
       .pipe(map((res) => res.data ?? []));
   }
 
+  getCategories(): Observable<{ name: string; slug: string }[]> {
+    return this.getServices().pipe(
+      map((services) => {
+        const seen = new Set<string>();
+        const cats: { name: string; slug: string }[] = [];
+        for (const s of services) {
+          if (!seen.has(s.categorySlug)) {
+            seen.add(s.categorySlug);
+            cats.push({ name: s.categoryName, slug: s.categorySlug });
+          }
+        }
+        return cats;
+      }),
+    );
+  }
+
   getFeaturedServices(): Observable<ServiceItem[]> {
     return this.http
       .get<ApiResponse<ServiceItem[]>>(

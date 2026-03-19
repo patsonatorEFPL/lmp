@@ -7,12 +7,14 @@ import {
   PLATFORM_ID,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
-import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart } from 'lucide-angular';
+import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Title, Meta } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import {
   CatalogService,
@@ -56,6 +58,34 @@ import { environment } from '../../../environments/environment';
           </p>
         </div>
 
+        <!-- Category Filter Tabs -->
+        @if (!loading() && !error() && categories().length > 0) {
+          <div class="mt-10 flex flex-wrap items-center justify-center gap-2 scroll-animate anim-fade-up">
+            <button
+              class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer"
+              [ngClass]="selectedCategory() === null
+                ? 'bg-(--primary) text-white shadow-md shadow-(--primary)/25'
+                : 'bg-(--card) text-(--muted-foreground) border border-(--border) hover:border-(--primary)/30 hover:text-(--foreground)'"
+              (click)="selectedCategory.set(null)"
+            >
+              Tous
+              <span class="ml-1 text-xs opacity-70">({{ services().length }})</span>
+            </button>
+            @for (cat of categories(); track cat.slug) {
+              <button
+                class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer"
+                [ngClass]="selectedCategory() === cat.slug
+                  ? 'bg-(--primary) text-white shadow-md shadow-(--primary)/25'
+                  : 'bg-(--card) text-(--muted-foreground) border border-(--border) hover:border-(--primary)/30 hover:text-(--foreground)'"
+                (click)="selectedCategory.set(cat.slug)"
+              >
+                {{ cat.name }}
+                <span class="ml-1 text-xs opacity-70">({{ getCategoryCount(cat.slug) }})</span>
+              </button>
+            }
+          </div>
+        }
+
         <!-- Loading state -->
         @if (loading()) {
           <div class="mt-16 flex flex-col items-center justify-center py-16">
@@ -90,10 +120,30 @@ import { environment } from '../../../environments/environment';
 
         <!-- Services Grid with staggered animations -->
         @if (!loading() && !error()) {
+          <!-- Empty state for filtered category -->
+          @if (filteredServices().length === 0) {
+            <div class="mt-16 py-16 text-center">
+              <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-(--primary)/10">
+                <lucide-icon [img]="FilterIcon" [size]="24" class="text-(--primary)"></lucide-icon>
+              </div>
+              <h3 class="font-display text-lg font-semibold text-(--foreground)">Aucun service trouvé</h3>
+              <p class="mt-2 text-sm text-(--muted-foreground)">Aucun service disponible dans cette catégorie.</p>
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                class="mt-4 cursor-pointer"
+                (click)="selectedCategory.set(null)"
+              >
+                Voir tous les services
+              </button>
+            </div>
+          }
+
           <div
             class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
-            @for (service of services(); track service.id; let i = $index) {
+            @for (service of filteredServices(); track service.id; let i = $index) {
               <div
                 [id]="service.slug"
                 class="group relative flex flex-col rounded-xl border bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
@@ -260,18 +310,44 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly ArrowRightIcon = ArrowRight;
   readonly Loader2Icon = Loader2;
   readonly ShoppingCartIcon = ShoppingCart;
+  readonly FilterIcon = Filter;
 
   private readonly catalogService = inject(CatalogService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly titleService = inject(Title);
+  private readonly metaService = inject(Meta);
 
   readonly services = signal<ServiceItem[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly checkoutLoading = signal<string | null>(null);
   readonly highlightedSlug = signal<string | null>(null);
+  readonly selectedCategory = signal<string | null>(null);
+
+  readonly categories = computed(() => {
+    const seen = new Set<string>();
+    const cats: { name: string; slug: string }[] = [];
+    for (const s of this.services()) {
+      if (!seen.has(s.categorySlug)) {
+        seen.add(s.categorySlug);
+        cats.push({ name: s.categoryName, slug: s.categorySlug });
+      }
+    }
+    return cats;
+  });
+
+  readonly filteredServices = computed(() => {
+    const cat = this.selectedCategory();
+    if (!cat) return this.services();
+    return this.services().filter((s) => s.categorySlug === cat);
+  });
+
+  getCategoryCount(slug: string): number {
+    return this.services().filter((s) => s.categorySlug === slug).length;
+  }
 
   private scrollObserver?: IntersectionObserver;
   private fragmentSub?: Subscription;
@@ -302,6 +378,12 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.titleService.setTitle('Nos Services — LMP Digital Services');
+    this.metaService.updateTag({
+      name: 'description',
+      content: 'Découvrez notre gamme complète de services de marketing digital : référencement SEO, gestion Google My Business, création de sites web, publicité en ligne et plus.',
+    });
+
     this.loadServices();
 
     // Listen to URL fragment changes for scroll-to-service navigation

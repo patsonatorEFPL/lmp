@@ -188,15 +188,30 @@ type ModalMode = 'create' | 'edit';
         </div>
       </div>
 
+      <!-- Duplicate order warning -->
+      @if (hasDuplicateOrders()) {
+        <div class="mt-6 flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+          <span class="text-lg">⚠️</span>
+          <div>
+            <p class="text-sm font-medium text-amber-500">Ordres d'affichage en doublon détectés</p>
+            <p class="text-xs text-(--muted-foreground)">Plusieurs services partagent la même valeur d'ordre. Utilisez les flèches pour réordonner.</p>
+          </div>
+        </div>
+      }
+
       <!-- Services list -->
       <div class="mt-8">
-        <h2 class="font-display text-lg font-semibold text-(--foreground)">
-          Services ({{ services().length }})
-        </h2>
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-lg font-semibold text-(--foreground)">
+            Services ({{ services().length }})
+          </h2>
+          <span class="text-xs text-(--muted-foreground)">Triés par ordre d'affichage</span>
+        </div>
         <div class="mt-3 space-y-3">
-          @for (service of services(); track service.id) {
+          @for (service of services(); track service.id; let i = $index; let first = $first; let last = $last) {
             <div
-              class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:border-(--primary)/20"
+              class="rounded-xl border bg-(--card) p-5 transition-all hover:border-(--primary)/20"
+              [ngClass]="isDuplicateOrder(service) ? 'border-amber-500/40' : 'border-(--border)'"
             >
               <div class="flex items-start justify-between">
                 <div class="flex items-start gap-4">
@@ -207,6 +222,14 @@ type ModalMode = 'create' | 'edit';
                   </div>
                   <div>
                     <div class="flex items-center gap-2">
+                      <span
+                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold"
+                        [ngClass]="isDuplicateOrder(service)
+                          ? 'bg-amber-500/20 text-amber-500'
+                          : 'bg-(--primary)/10 text-(--primary)'"
+                      >
+                        {{ service.displayOrder }}
+                      </span>
                       <h3
                         class="font-display text-base font-bold text-(--foreground)"
                       >
@@ -261,6 +284,39 @@ type ModalMode = 'create' | 'edit';
                   </div>
                 </div>
                 <div class="flex shrink-0 items-center gap-1">
+                  <!-- Move up -->
+                  <button
+                    hlmBtn
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 cursor-pointer"
+                    title="Monter"
+                    [disabled]="first"
+                    (click)="moveService(i, 'up')"
+                  >
+                    <lucide-icon
+                      [img]="ChevronUpIcon"
+                      [size]="16"
+                      class="text-(--muted-foreground)"
+                    ></lucide-icon>
+                  </button>
+                  <!-- Move down -->
+                  <button
+                    hlmBtn
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 cursor-pointer"
+                    title="Descendre"
+                    [disabled]="last"
+                    (click)="moveService(i, 'down')"
+                  >
+                    <lucide-icon
+                      [img]="ChevronDownIcon"
+                      [size]="16"
+                      class="text-(--muted-foreground)"
+                    ></lucide-icon>
+                  </button>
+                  <div class="mx-1 h-5 w-px bg-(--border)"></div>
                   <button
                     hlmBtn
                     variant="ghost"
@@ -1089,6 +1145,40 @@ export class AdminServicesComponent implements OnInit {
       },
       error: () =>
         this.showToast('error', 'Impossible de supprimer (services liés ?)'),
+    });
+  }
+
+  // ========== Reorder ==========
+
+  hasDuplicateOrders(): boolean {
+    const orders = this.services().map((s) => s.displayOrder);
+    return new Set(orders).size !== orders.length;
+  }
+
+  isDuplicateOrder(service: ServiceItem): boolean {
+    return (
+      this.services().filter((s) => s.displayOrder === service.displayOrder)
+        .length > 1
+    );
+  }
+
+  moveService(index: number, direction: 'up' | 'down'): void {
+    const list = [...this.services()];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+
+    // Swap
+    [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
+    this.services.set(list);
+
+    // Persist new order via bulk reorder API
+    const serviceIds = list.map((s) => s.id);
+    this.adminService.reorderServices(serviceIds).subscribe({
+      next: () => {
+        this.showToast('success', 'Ordre mis à jour');
+        this.loadData();
+      },
+      error: () => this.showToast('error', "Erreur lors de la mise à jour de l'ordre"),
     });
   }
 

@@ -97,6 +97,16 @@ export class AdminService {
     );
   }
 
+  // ========== Reorder ==========
+
+  reorderServices(serviceIds: string[]): Observable<ApiResponse<void>> {
+    return this.http.put<ApiResponse<void>>(
+      `${this.baseUrl}/services/reorder`,
+      { serviceIds },
+      { withCredentials: true },
+    );
+  }
+
   // ========== Services ==========
 
   getServices(): Observable<ServiceItem[]> {
