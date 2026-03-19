@@ -1,6 +1,6 @@
 # ========================================
 # Dockerfile pour Dokploy Deployment
-# Application Angular LMP Frontend (SSR)
+# Application Angular LMP Frontend
 # ========================================
 
 # Étape 1: Build de l'application Angular
@@ -17,33 +17,30 @@ RUN npm ci --legacy-peer-deps
 # Copier le code source
 COPY . .
 
-# Build de production Angular (SSR)
+# Build de production Angular
 RUN npx ng build --configuration=production
 
 # ========================================
-# Étape 2: Servir avec Node.js (SSR)
-FROM node:20-alpine
+# Étape 2: Servir avec Nginx
+FROM nginx:alpine
 
 # Configuration du timezone (Suisse)
-RUN apk add --no-cache tzdata curl
+RUN apk add --no-cache tzdata
 ENV TZ=Europe/Zurich
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-WORKDIR /app
+# Copier la configuration Nginx personnalisée
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copier le build Angular SSR depuis l'étape précédente
-COPY --from=build /app/dist/lmp-frontend .
-
-# Backend URL (Dokploy Docker network)
-ENV BACKEND_URL=http://lmp-test-back:8080
-ENV PORT=4000
+# Copier le build Angular depuis l'étape précédente
+COPY --from=build /app/dist/lmp-frontend/browser /usr/share/nginx/html
 
 # Port exposé
-EXPOSE 4000
+EXPOSE 80
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:4000/ || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:80/ || exit 1
 
-# Démarrer le serveur SSR (with debug output)
-CMD ["sh", "-c", "echo '=== FILES IN /app ===' && ls -la /app/ && echo '=== SERVER DIR ===' && ls -la /app/server/ 2>/dev/null || echo 'No server dir' && echo '=== Trying to start ===' && node server/server.mjs"]
+# Démarrer Nginx
+CMD ["nginx", "-g", "daemon off;"]
