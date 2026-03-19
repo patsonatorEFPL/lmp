@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   computed,
+  effect,
 } from '@angular/core';
 import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
 import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter } from 'lucide-angular';
@@ -355,6 +356,16 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
+
+    // Re-observe scroll animations whenever the filtered list changes (category switch)
+    effect(() => {
+      // Read the signal to track it
+      this.filteredServices();
+      if (this.isBrowser) {
+        // Wait for Angular to render the new DOM elements
+        setTimeout(() => this.setupScrollObserver(), 0);
+      }
+    });
   }
 
   // Assign different animation classes to each service card
