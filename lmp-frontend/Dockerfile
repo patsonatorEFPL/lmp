@@ -20,6 +20,9 @@ COPY . .
 # Build de production Angular (SSR)
 RUN npx ng build --configuration=production
 
+# Debug: list the build output
+RUN echo "=== Build output ===" && ls -la dist/lmp-frontend/ && echo "=== Server dir ===" && ls -la dist/lmp-frontend/server/ 2>/dev/null || echo "NO SERVER DIRECTORY"
+
 # ========================================
 # Étape 2: Servir avec Node.js (SSR)
 FROM node:20-alpine
@@ -36,7 +39,10 @@ COPY --from=build /app/dist/lmp-frontend .
 
 # Copier package files and install only production dependencies needed at runtime
 COPY --from=build /app/package.json /app/package-lock.json ./
-RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts 2>/dev/null || true
+RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts
+
+# Debug: list the runtime files
+RUN echo "=== App dir ===" && ls -la /app/ && echo "=== Server dir ===" && ls -la /app/server/ 2>/dev/null || echo "NO SERVER DIR IN RUNTIME"
 
 # Backend URL (Dokploy Docker network)
 ENV BACKEND_URL=http://lmp-test-back:8080
