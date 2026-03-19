@@ -68,6 +68,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             size="icon"
             (click)="toggleTheme()"
             class="cursor-pointer"
+            [attr.aria-label]="themeService.isDark() ? 'Passer au thème clair' : 'Passer au thème sombre'"
           >
             @if (themeService.isDark()) {
               <lucide-icon [img]="SunIcon" [size]="18"></lucide-icon>
@@ -84,7 +85,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             >
               <img
                 src="https://flagcdn.com/w40/fr.png"
-                alt="FR"
+                alt="Drapeau français"
                 class="h-4 w-6 rounded-sm object-cover"
               />
               <span class="font-medium">FR</span>
@@ -160,6 +161,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
           size="icon"
           class="cursor-pointer md:hidden"
           (click)="mobileMenuOpen.set(!mobileMenuOpen())"
+          [attr.aria-label]="mobileMenuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
+          aria-controls="mobile-menu"
         >
           @if (mobileMenuOpen()) {
             <lucide-icon [img]="XIcon" [size]="20"></lucide-icon>

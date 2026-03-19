@@ -11,11 +11,15 @@
     />
     <meta
       name="keywords"
-      content="marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, réseaux sociaux, LMP"
+      content="marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, réseaux sociaux, LMP, référencement local, SEO local, marketing local, Belgique, Bruxelles, Uccle"
     />
     <meta name="author" content="LMP Digital Services" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <link rel="canonical" href="https://lmp-services.ca/" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="msapplication-TileColor" content="#0a0e1a" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -24,30 +28,140 @@
     <meta property="og:description" content="Propulsez votre visibilité au sommet. Technologie de pointe et expertise humaine pour dominer votre marché local." />
     <meta property="og:url" content="https://lmp-services.ca/" />
     <meta property="og:locale" content="fr_FR" />
+    <meta property="og:image" content="https://lmp-services.ca/images/logo-lmp.webp" />
+    <meta property="og:image:alt" content="LMP Digital Services — Logo" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LMP Digital Services — Marketing Digital & Référencement Local" />
     <meta name="twitter:description" content="Propulsez votre visibilité au sommet. Technologie de pointe et expertise humaine pour dominer votre marché local." />
+    <meta name="twitter:image" content="https://lmp-services.ca/images/logo-lmp.webp" />
 
+    <!-- Favicon & Manifest -->
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="/images/logo-lmp.webp" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
-    <!-- JSON-LD Structured Data: LocalBusiness -->
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- JSON-LD Structured Data: ProfessionalService (enriched) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "ProfessionalService",
       "name": "LMP Digital Services",
-      "description": "Expertise en marketing digital, référencement SEO, gestion Google My Business, création de sites web et publicité en ligne.",
+      "alternateName": "LMP Local Map Profil",
+      "description": "Expertise en marketing digital, référencement SEO, gestion Google My Business, création de sites web et publicité en ligne pour dominer votre marché local.",
       "url": "https://lmp-services.ca",
-      "areaServed": {
-        "@type": "GeoCircle",
-        "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 50.85, "longitude": 4.35 },
-        "geoRadius": "500"
+      "logo": "https://lmp-services.ca/images/logo-lmp.webp",
+      "image": "https://lmp-services.ca/images/logo-lmp.webp",
+      "email": "lmp.assistance@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Rue Gatti De Gamond 97",
+        "addressLocality": "Uccle",
+        "postalCode": "1180",
+        "addressCountry": "BE"
       },
-      "serviceType": ["Marketing Digital", "Référencement SEO", "Création Site Web", "Google My Business", "Publicité en Ligne"],
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 50.7989,
+        "longitude": 4.3397
+      },
+      "areaServed": [
+        {
+          "@type": "Country",
+          "name": "Belgique"
+        },
+        {
+          "@type": "AdministrativeArea",
+          "name": "Europe"
+        }
+      ],
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "opens": "09:00",
+        "closes": "18:00"
+      },
+      "serviceType": [
+        "Marketing Digital",
+        "Référencement SEO",
+        "Référencement Local",
+        "Création de Sites Web",
+        "Google My Business",
+        "Publicité en Ligne",
+        "Gestion des Avis",
+        "Présence Locale"
+      ],
       "priceRange": "€€",
-      "sameAs": []
+      "sameAs": [],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "bestRating": "5",
+        "ratingCount": "499"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD Structured Data: WebSite + SearchAction -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "LMP Digital Services",
+      "url": "https://lmp-services.ca",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://lmp-services.ca/services?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      },
+      "inLanguage": "fr"
+    }
+    </script>
+
+    <!-- JSON-LD Structured Data: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Accueil",
+          "item": "https://lmp-services.ca/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Services",
+          "item": "https://lmp-services.ca/services"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "À Propos",
+          "item": "https://lmp-services.ca/about"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Contact",
+          "item": "https://lmp-services.ca/contact"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Carte Interactive",
+          "item": "https://lmp-services.ca/map"
+        }
+      ]
     }
     </script>
 

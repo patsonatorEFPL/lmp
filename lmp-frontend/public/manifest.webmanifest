@@ -1,0 +1,22 @@
+{
+  "name": "LMP Digital Services — Marketing Digital & Référencement Local",
+  "short_name": "LMP Services",
+  "description": "Expertise en marketing digital, référencement SEO, Google My Business et création de sites web pour dominer votre marché local.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#2563eb",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/images/logo-lmp.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/images/logo-lmp.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
+}
