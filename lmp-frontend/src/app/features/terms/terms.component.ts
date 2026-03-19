@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'lmp-terms',
@@ -81,4 +82,14 @@ import { Component } from '@angular/core';
     </section>
   `,
 })
-export class TermsComponent {}
+export class TermsComponent implements OnInit {
+  private readonly seo = inject(SeoService);
+
+  ngOnInit(): void {
+    this.seo.updateMeta({
+      title: "Conditions d'Utilisation",
+      description: "Conditions d'utilisation du site LMP Digital Services. Règles et réglementations pour l'utilisation de notre plateforme de marketing digital.",
+      url: '/terms',
+    });
+  }
+}

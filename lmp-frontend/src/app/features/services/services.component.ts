@@ -15,8 +15,8 @@ import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter }
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Title, Meta } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
+import { SeoService } from '../../core/services/seo.service';
 import {
   CatalogService,
   ServiceItem,
@@ -318,8 +318,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
-  private readonly titleService = inject(Title);
-  private readonly metaService = inject(Meta);
+  private readonly seo = inject(SeoService);
 
   readonly services = signal<ServiceItem[]>([]);
   readonly loading = signal(true);
@@ -389,10 +388,11 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.titleService.setTitle('Nos Services — LMP Digital Services');
-    this.metaService.updateTag({
-      name: 'description',
-      content: 'Découvrez notre gamme complète de services de marketing digital : référencement SEO, gestion Google My Business, création de sites web, publicité en ligne et plus.',
+    this.seo.updateMeta({
+      title: 'Nos Services — Expertise Digitale 360°',
+      description: 'Découvrez notre gamme complète de services de marketing digital : référencement SEO, gestion Google My Business, création de sites web, publicité en ligne et gestion des avis.',
+      url: '/services',
+      keywords: 'services marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, gestion avis, présence locale',
     });
 
     this.loadServices();
