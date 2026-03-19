@@ -21,7 +21,7 @@ COPY . .
 RUN npx ng build --configuration=production
 
 # Debug: show the complete build output structure
-RUN echo "=== Full dist tree ===" && find dist/ -type f -name "*.mjs" -o -name "*.js" | head -30
+RUN echo "=== Full dist tree ===" && find dist/ -type f | sort
 
 # ========================================
 # Étape 2: Servir avec Node.js (SSR)
@@ -37,12 +37,12 @@ WORKDIR /app
 # Copier le build Angular SSR depuis l'étape précédente
 COPY --from=build /app/dist/lmp-frontend .
 
-# Debug: show what's in /app
-RUN echo "=== /app contents ===" && find /app -maxdepth 3 -type f -name "*.mjs" -o -name "*.js" | head -30
-
 # Copier package files and install only production dependencies needed at runtime
 COPY --from=build /app/package.json /app/package-lock.json ./
 RUN npm ci --legacy-peer-deps --omit=dev --ignore-scripts
+
+# Debug: show what's in /app
+RUN echo "=== /app contents ===" && find /app -maxdepth 3 -type f -name "*.mjs" -o -name "*.js" | sort
 
 # Backend URL (Dokploy Docker network)
 ENV BACKEND_URL=http://lmp-test-back:8080
@@ -55,5 +55,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:4000/ || exit 1
 
-# Démarrer le serveur SSR — will be updated after we see the build output
-CMD ["node", "server/server.mjs"]
+# Try to start: look for server entry in either location
+CMD ["sh", "-c", "if [ -f /app/server/server.mjs ]; then node /app/server/server.mjs; elif [ -f /app/server.mjs ]; then node /app/server.mjs; else echo 'ERROR: No server.mjs found!' && find /app -name '*.mjs' -o -name '*.js' | head -20 && exit 1; fi"]
