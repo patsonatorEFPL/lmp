@@ -1,10 +1,18 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 /**
  * CSRF interceptor: reads XSRF-TOKEN cookie set by Spring Security
  * and sends it back as X-XSRF-TOKEN header.
  */
 export const csrfInterceptor: HttpInterceptorFn = (req, next) => {
+  const platformId = inject(PLATFORM_ID);
+
+  if (!isPlatformBrowser(platformId)) {
+    return next(req);
+  }
+
   const csrfToken = getCookie('XSRF-TOKEN');
 
   if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {

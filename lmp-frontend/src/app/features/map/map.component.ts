@@ -1,4 +1,5 @@
-import { Component, AfterViewInit, OnDestroy, OnInit, signal, inject } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, OnInit, signal, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeoService } from '../../core/services/seo.service';
 
@@ -51,6 +52,7 @@ declare const L: any;
 })
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly seo = inject(SeoService);
+  private readonly platformId = inject(PLATFORM_ID);
 
   searchQuery = signal('');
   selectedCategory = signal('');
@@ -66,7 +68,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.initMap();
+    if (isPlatformBrowser(this.platformId)) {
+      this.initMap();
+    }
   }
 
   ngOnDestroy(): void {
