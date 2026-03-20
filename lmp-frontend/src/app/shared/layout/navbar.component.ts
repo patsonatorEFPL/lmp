@@ -131,7 +131,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                 hlmBtn
                 variant="ghost"
                 routerLink="/admin"
-                class="cursor-pointer gap-1 text-violet-500"
+                class="cursor-pointer gap-1 text-(--primary)"
               >
                 Admin
               </a>
