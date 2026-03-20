@@ -30,7 +30,7 @@ declare const L: any;
             type="text"
             placeholder="Rechercher une localisation..."
             [(ngModel)]="searchQuery"
-            class="w-full rounded-lg border border-(--border) bg-(--card)/95 px-4 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) backdrop-blur-sm outline-none focus:border-blue-500/50"
+            class="w-full rounded-lg border border-(--border) bg-(--card)/95 px-4 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) backdrop-blur-sm outline-none focus:border-(--primary)/50"
           />
           <select
             [(ngModel)]="selectedCategory"
@@ -115,7 +115,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         <div style="font-family: sans-serif; min-width: 200px;">
           <strong style="font-size: 14px;">LMP Digital Services</strong><br/>
           <span style="color: #666; font-size: 12px;">Rue Gatti De Gamond 97<br/>1180 Uccle, Belgique</span><br/>
-          <a href="mailto:lmp.assistance@gmail.com" style="color: #2563eb; font-size: 12px;">lmp.assistance@gmail.com</a>
+          <a href="mailto:lmp.assistance@gmail.com" style="color: #10b981; font-size: 12px;">lmp.assistance@gmail.com</a>
         </div>
       `);
   }

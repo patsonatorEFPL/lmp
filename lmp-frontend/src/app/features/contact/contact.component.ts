@@ -9,6 +9,8 @@ import {
   Clock,
   Send,
   ChevronDown,
+  ArrowRight,
+  Calendar,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
@@ -16,32 +18,36 @@ import { HlmLabel } from '@spartan-ng/helm/label';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { SeoService } from '../../core/services/seo.service';
+import { AppointmentModalComponent } from '../../shared/modals/appointment-modal.component';
 
 @Component({
   selector: 'lmp-contact',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, HlmButton, HlmInput, HlmLabel],
+  imports: [FormsModule, LucideAngularModule, HlmButton, HlmInput, HlmLabel, AppointmentModalComponent],
   template: `
     <section class="relative">
       <div class="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mx-auto max-w-2xl text-center scroll-animate anim-fade-up">
+          <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
+            Contactez-nous
+          </span>
           <h1 class="font-display text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
-            Contact Marketing Digital
-            <span class="hero-gradient-text block sm:inline">Professionnel</span>
+            Parlons de votre
+            <span class="italic font-light text-(--primary)">projet</span>
           </h1>
           <p class="mt-4 text-lg text-(--muted-foreground)">
             Prêt à transformer votre présence digitale ? Notre équipe d'experts est là pour vous
-            accompagner dans votre croissance en ligne. Contactez-nous pour une consultation gratuite.
+            accompagner dans votre croissance en ligne.
           </p>
         </div>
 
         <!-- Content: Info + Form -->
         <div class="mt-14 grid grid-cols-1 gap-10 lg:grid-cols-5">
           <!-- Left: Contact Info -->
-          <div class="flex flex-col gap-6 lg:col-span-2 scroll-animate anim-fade-left">
+          <div class="flex flex-col gap-6 lg:col-span-2 scroll-animate anim-fade-up delay-100">
             <h2 class="font-display text-xl font-bold text-(--foreground)">
-              Consultation SEO Gratuite
+              Consultation Gratuite
             </h2>
             <p class="text-sm text-(--muted-foreground) leading-relaxed">
               Que vous soyez une petite entreprise locale ou une grande organisation,
@@ -49,12 +55,12 @@ import { SeoService } from '../../core/services/seo.service';
             </p>
 
             <!-- Contact Email -->
-            <div class="flex items-start gap-4 scroll-animate anim-fade-up delay-100">
+            <div class="flex items-start gap-4">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
                 <lucide-icon [img]="MailIcon" [size]="18"></lucide-icon>
               </div>
               <div>
-                <p class="text-sm font-semibold text-(--foreground)">Contact Email</p>
+                <p class="text-sm font-semibold text-(--foreground)">Email</p>
                 <a href="mailto:lmp.assistance@gmail.com" class="text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
                   lmp.assistance&#64;gmail.com
                 </a>
@@ -62,20 +68,20 @@ import { SeoService } from '../../core/services/seo.service';
               </div>
             </div>
 
-            <!-- Bureau Marketing -->
-            <div class="flex items-start gap-4 scroll-animate anim-fade-up delay-200">
+            <!-- Bureau -->
+            <div class="flex items-start gap-4">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
                 <lucide-icon [img]="MapPinIcon" [size]="18"></lucide-icon>
               </div>
               <div>
-                <p class="text-sm font-semibold text-(--foreground)">Bureau Marketing</p>
+                <p class="text-sm font-semibold text-(--foreground)">Bureau</p>
                 <p class="text-sm text-(--muted-foreground)">Rue Gatti De Gamond 97</p>
                 <p class="text-sm text-(--muted-foreground)">1180 Uccle</p>
               </div>
             </div>
 
             <!-- Horaires -->
-            <div class="flex items-start gap-4 scroll-animate anim-fade-up delay-300">
+            <div class="flex items-start gap-4">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
                 <lucide-icon [img]="PhoneIcon" [size]="18"></lucide-icon>
               </div>
@@ -87,11 +93,10 @@ import { SeoService } from '../../core/services/seo.service';
               </div>
             </div>
 
-            <!-- Separator -->
-            <div class="border-t border-(--border) pt-4 scroll-animate anim-fade-up delay-400">
+            <!-- Social links -->
+            <div class="border-t border-(--border) pt-4">
               <h3 class="text-sm font-semibold text-(--foreground) mb-3">Suivez-nous</h3>
               <div class="flex items-center gap-3">
-                <!-- TODO: Remplacer les href par les vrais comptes réseaux sociaux quand créés -->
                 <a href="#" aria-label="LinkedIn — LMP Digital Services"
                   class="flex h-10 w-10 items-center justify-center rounded-full border border-(--border) text-(--muted-foreground) transition-colors hover:border-(--primary)/30 hover:text-(--primary)">
                   <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -118,12 +123,22 @@ import { SeoService } from '../../core/services/seo.service';
                 </a>
               </div>
             </div>
+
+            <!-- Quick CTA -->
+            <button
+              (click)="showAppointment.set(true)"
+              class="mt-2 inline-flex items-center gap-2 rounded-full bg-(--primary) px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-emerald-600 cursor-pointer w-fit"
+            >
+              <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
+              Réserver un créneau
+              <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+            </button>
           </div>
 
           <!-- Right: Form -->
-          <div class="rounded-xl border border-(--border) bg-(--card) p-6 sm:p-8 lg:col-span-3 scroll-animate anim-fade-right">
+          <div class="rounded-xl border border-(--border) bg-(--card) p-6 sm:p-8 lg:col-span-3 scroll-animate anim-fade-up delay-200">
             <h2 class="font-display text-lg font-bold text-(--foreground) mb-6">
-              Formulaire Contact SEO
+              Formulaire de Contact
             </h2>
             <form (ngSubmit)="onSubmit()" class="space-y-5">
               <div class="space-y-2">
@@ -198,7 +213,7 @@ import { SeoService } from '../../core/services/seo.service';
                 ></textarea>
               </div>
 
-              <!-- Consent checkbox -->
+              <!-- Consent -->
               <div class="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -243,48 +258,61 @@ import { SeoService } from '../../core/services/seo.service';
         </div>
 
         <!-- FAQ Section -->
-        <div class="mt-20 scroll-animate anim-blur-in">
-          <div class="mx-auto max-w-3xl text-center mb-10">
-            <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl">
-              FAQ Services Marketing Digital
-            </h2>
-            <p class="mt-4 text-(--muted-foreground)">
-              Trouvez rapidement les réponses aux questions les plus courantes sur nos services.
-            </p>
-          </div>
+        <div class="mt-20 scroll-animate anim-fade-up">
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
+            <!-- Left: Title -->
+            <div class="lg:col-span-2">
+              <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-3 block">
+                Questions Fréquentes
+              </span>
+              <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl leading-snug">
+                Tout ce que vous devez
+                <span class="italic font-light text-(--primary)">savoir</span>
+              </h2>
+              <p class="mt-4 text-sm text-(--muted-foreground)">
+                Vous ne trouvez pas votre réponse ?
+                <a href="mailto:lmp.assistance@gmail.com" class="text-(--primary) hover:underline">Écrivez-nous</a>
+              </p>
+            </div>
 
-          <div class="mx-auto max-w-3xl space-y-3">
-            @for (faq of faqs; track faq.question; let i = $index) {
-              <div
-                class="rounded-xl border border-(--border) bg-(--card) overflow-hidden scroll-animate anim-fade-up"
-                [class]="'rounded-xl border border-(--border) bg-(--card) overflow-hidden scroll-animate anim-fade-up delay-' + (i + 1) + '00'"
-              >
-                <button
-                  class="flex w-full items-center justify-between p-5 text-left cursor-pointer"
-                  (click)="toggleFaq(i)"
+            <!-- Right: Accordion -->
+            <div class="lg:col-span-3 space-y-3">
+              @for (faq of faqs; track faq.question; let i = $index) {
+                <div
+                  class="rounded-xl border border-(--border) bg-(--card) overflow-hidden transition-colors"
+                  [class.border-emerald-500/20]="openFaqIndex() === i"
                 >
-                  <span class="text-sm font-medium text-(--foreground)">{{ faq.question }}</span>
-                  <lucide-icon
-                    [img]="ChevronDownIcon"
-                    [size]="18"
-                    class="text-(--muted-foreground) transition-transform duration-200 shrink-0 ml-4"
-                    [class.rotate-180]="openFaqIndex() === i"
-                  ></lucide-icon>
-                </button>
-                @if (openFaqIndex() === i) {
-                  <div class="px-5 pb-5 text-sm text-(--muted-foreground) leading-relaxed border-t border-(--border) pt-4">
-                    {{ faq.answer }}
-                  </div>
-                }
-              </div>
-            }
+                  <button
+                    class="flex w-full items-center justify-between px-6 py-4 text-left cursor-pointer"
+                    (click)="toggleFaq(i)"
+                  >
+                    <span class="text-sm font-semibold text-(--foreground) pr-4">{{ faq.question }}</span>
+                    <lucide-icon
+                      [img]="ChevronDownIcon"
+                      [size]="16"
+                      class="text-(--muted-foreground) transition-transform duration-300 shrink-0"
+                      [class.rotate-180]="openFaqIndex() === i"
+                    ></lucide-icon>
+                  </button>
+                  @if (openFaqIndex() === i) {
+                    <div class="px-6 pb-4">
+                      <p class="text-sm leading-relaxed text-(--muted-foreground)">{{ faq.answer }}</p>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
           </div>
         </div>
 
         <!-- CTA Section -->
-        <section class="mt-20 rounded-2xl border border-(--border) bg-(--card) p-10 sm:p-16 text-center scroll-animate anim-slide-up">
+        <section class="mt-20 scroll-animate anim-fade-up rounded-2xl border border-(--border) bg-(--card) p-10 sm:p-16 text-center">
+          <span class="text-xs font-semibold uppercase tracking-[0.2em] text-(--primary) block mb-3">
+            Prêt ?
+          </span>
           <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl">
-            Démarrer Votre Projet SEO
+            Démarrer votre projet
+            <span class="italic font-light text-(--primary)">SEO</span>
           </h2>
           <p class="mt-4 mx-auto max-w-xl text-(--muted-foreground)">
             Rejoignez des centaines d'entreprises qui ont déjà transformé leur présence en ligne avec LMP.
@@ -292,7 +320,7 @@ import { SeoService } from '../../core/services/seo.service';
           <div class="mt-8">
             <a
               href="mailto:lmp.assistance@gmail.com"
-              class="inline-flex items-center gap-2 rounded-xl bg-(--primary) px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 cursor-pointer"
+              class="inline-flex items-center gap-2 rounded-full bg-(--primary) px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 cursor-pointer"
             >
               <lucide-icon [img]="MailIcon" [size]="16"></lucide-icon>
               Nous contacter par email
@@ -301,6 +329,12 @@ import { SeoService } from '../../core/services/seo.service';
         </section>
       </div>
     </section>
+
+    <!-- Appointment Modal -->
+    <lmp-appointment-modal
+      [isOpen]="showAppointment()"
+      (closed)="showAppointment.set(false)"
+    />
   `,
 })
 export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -328,11 +362,14 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly PhoneIcon = Phone;
   readonly ClockIcon = Clock;
   readonly ChevronDownIcon = ChevronDown;
+  readonly ArrowRightIcon = ArrowRight;
+  readonly CalendarIcon = Calendar;
 
   readonly submitting = signal(false);
   readonly successMessage = signal('');
   readonly errorMessage = signal('');
   readonly openFaqIndex = signal<number | null>(null);
+  readonly showAppointment = signal(false);
 
   readonly form: {
     name: string;
@@ -354,11 +391,11 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
   readonly faqs = [
     {
-      question: 'Délais Résultats SEO',
+      question: 'Combien de temps faut-il pour voir des résultats SEO ?',
       answer: 'Les premiers résultats de référencement sont généralement visibles entre 3 et 6 mois selon la compétitivité de votre secteur. Nous fournissons des rapports mensuels pour suivre l\'évolution de vos performances.',
     },
     {
-      question: 'Consultation Gratuite Marketing',
+      question: 'La consultation initiale est-elle vraiment gratuite ?',
       answer: 'Oui, nous proposons une consultation initiale gratuite et sans engagement. Lors de cet audit, nous analysons votre présence en ligne actuelle et identifions les opportunités d\'amélioration.',
     },
     {

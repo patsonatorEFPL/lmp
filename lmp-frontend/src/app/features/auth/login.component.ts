@@ -32,7 +32,7 @@ import { environment } from '../../../environments/environment';
           alt="Modern corporate office with glass walls"
           class="absolute inset-0 h-full w-full object-cover"
         />
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0a0e1a]/80 via-[#0f1629]/70 to-[#1a1040]/60"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-[#0a0e1a]/80 via-[#0a1a14]/70 to-[#0d1f17]/60"></div>
 
         <!-- Logo + Title -->
         <div class="relative z-10 p-8">
@@ -44,7 +44,7 @@ import { environment } from '../../../environments/environment';
 
         <!-- Testimonial -->
         <div class="relative z-10 p-8">
-          <div class="text-blue-400 text-4xl font-bold mb-3">99</div>
+          <div class="text-emerald-400 text-4xl font-bold mb-3">99</div>
           <blockquote class="text-lg leading-relaxed text-white font-medium max-w-md">
             "Une plateforme robuste et un accompagnement de haute qualité.
             Nous nous sentons écoutés et conseillés à chaque étape."
