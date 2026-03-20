@@ -44,7 +44,8 @@ import { environment } from '../../../environments/environment';
 
         <!-- Testimonial -->
         <div class="relative z-10 p-8">
-          <div class="text-emerald-400 text-4xl font-bold mb-3">99</div>
+          <div class="text-emerald-400 text-4xl font-bold mb-3">99%</div>
+          <div class="text-xs text-gray-400 uppercase tracking-wider mb-2">Taux de satisfaction client</div>
           <blockquote class="text-lg leading-relaxed text-white font-medium max-w-md">
             "Une plateforme robuste et un accompagnement de haute qualité.
             Nous nous sentons écoutés et conseillés à chaque étape."
@@ -77,7 +78,7 @@ import { environment } from '../../../environments/environment';
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Home
+            Retour à l'accueil
           </a>
         </div>
 
@@ -94,7 +95,7 @@ import { environment } from '../../../environments/environment';
 
             <form (ngSubmit)="onSubmit()" class="mt-8 space-y-5">
               <div class="space-y-2">
-                <label hlmLabel class="font-semibold">Email Address</label>
+                <label hlmLabel class="font-semibold">Adresse email</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted-foreground)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -114,12 +115,12 @@ import { environment } from '../../../environments/environment';
 
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                  <label hlmLabel class="font-semibold">Password</label>
+                  <label hlmLabel class="font-semibold">Mot de passe</label>
                   <a
                     routerLink="/forgot-password"
                     class="text-xs text-(--primary) hover:underline"
                   >
-                    Forgot password?
+                    Mot de passe oublié ?
                   </a>
                 </div>
                 <div class="relative">
@@ -158,7 +159,7 @@ import { environment } from '../../../environments/environment';
                   class="h-4 w-4 rounded border-gray-600 bg-transparent accent-(--primary) cursor-pointer"
                 />
                 <label for="remember" class="text-sm text-(--muted-foreground) cursor-pointer">
-                  Remember me for 30 days
+                  Se souvenir de moi pendant 30 jours
                 </label>
               </div>
 
@@ -175,14 +176,14 @@ import { environment } from '../../../environments/environment';
                 class="w-full cursor-pointer"
                 [disabled]="submitting()"
               >
-                {{ submitting() ? 'Connexion...' : 'Sign in' }}
+                {{ submitting() ? 'Connexion...' : 'Se connecter' }}
               </button>
             </form>
 
             <!-- Divider -->
             <div class="relative my-6 flex items-center">
               <hlm-separator class="flex-1" />
-              <span class="px-3 text-xs text-(--muted-foreground) uppercase tracking-wider">Or continue with</span>
+              <span class="px-3 text-xs text-(--muted-foreground) uppercase tracking-wider">Ou continuer avec</span>
               <hlm-separator class="flex-1" />
             </div>
 
@@ -220,9 +221,9 @@ import { environment } from '../../../environments/environment';
 
             <!-- Register link -->
             <p class="mt-6 text-center text-sm text-(--muted-foreground)">
-              Don't have an account?
+              Pas encore de compte ?
               <a routerLink="/register" class="font-medium text-(--primary) hover:underline">
-                Sign up
+                S'inscrire
               </a>
             </p>
           </div>
