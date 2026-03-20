@@ -31,27 +31,14 @@ import { environment } from '../../../environments/environment';
   template: `
     <section class="relative">
       <div class="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <!-- Header with anim-fade-up -->
-        <div
-          class="mx-auto max-w-3xl text-center scroll-animate anim-fade-up"
-        >
-          <div
-            class="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-blue-400"
-          >
-            <span
-              class="inline-block h-1.5 w-1.5 rounded-full bg-blue-400"
-            ></span>
+        <!-- Header -->
+        <div class="mx-auto max-w-3xl text-center scroll-animate anim-fade-up">
+          <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
             Nos Solutions
-          </div>
-          <h1
-            class="font-display text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl lg:text-6xl"
-          >
+          </span>
+          <h1 class="font-display text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl lg:text-6xl">
             Expertise Digitale
-            <span
-              class="bg-gradient-to-r from-violet-400 to-fuchsia-500 bg-clip-text text-transparent"
-            >
-              360°
-            </span>
+            <span class="italic font-light text-(--primary)">360°</span>
           </h1>
           <p class="mt-6 text-lg text-(--muted-foreground)">
             Une gamme complète d'outils et de services pour dominer votre
@@ -61,7 +48,7 @@ import { environment } from '../../../environments/environment';
 
         <!-- Category Filter Tabs -->
         @if (!loading() && !error() && categories().length > 0) {
-          <div class="mt-10 flex flex-wrap items-center justify-center gap-2 scroll-animate anim-fade-up">
+          <div class="mt-10 flex flex-wrap items-center justify-center gap-2 scroll-animate anim-fade-up delay-100">
             <button
               class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer"
               [ngClass]="selectedCategory() === null
@@ -119,7 +106,7 @@ import { environment } from '../../../environments/environment';
           </div>
         }
 
-        <!-- Services Grid with staggered animations -->
+        <!-- Services Grid -->
         @if (!loading() && !error()) {
           <!-- Empty state for filtered category -->
           @if (filteredServices().length === 0) {
@@ -141,62 +128,52 @@ import { environment } from '../../../environments/environment';
             </div>
           }
 
-          <div
-            class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
-          >
+          <div class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             @for (service of filteredServices(); track service.id; let i = $index) {
               <div
                 [id]="service.slug"
-                class="group relative flex flex-col rounded-xl border bg-(--card) p-6 transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-1"
-                [ngClass]="getServiceAnimation(i) + (highlightedSlug() === service.slug
-                  ? ' service-highlight border-blue-500 ring-2 ring-blue-500/40 shadow-lg shadow-blue-500/20 scale-[1.02] -translate-y-2'
-                  : ' border-(--border)')"
+                class="group relative flex flex-col rounded-xl border bg-(--card) p-6 transition-all duration-300 hover:border-(--primary)/30 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-1 scroll-animate anim-fade-up"
+                [ngClass]="{
+                  'service-highlight border-(--primary) ring-2 ring-(--primary)/40 shadow-lg shadow-emerald-500/20 scale-[1.02] -translate-y-2': highlightedSlug() === service.slug,
+                  'border-(--border)': highlightedSlug() !== service.slug
+                }"
+                [style.transition-delay.ms]="(i % 3) * 100"
               >
                 <!-- Selected badge -->
                 @if (highlightedSlug() === service.slug) {
-                  <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white shadow-md whitespace-nowrap">
+                  <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-(--primary) px-3 py-1 text-xs font-semibold text-white shadow-md whitespace-nowrap">
                     ✨ Service sélectionné
                   </div>
                 }
 
-                <!-- Icon + Category -->
+                <!-- Number + Category -->
                 <div class="mb-4 flex items-start justify-between">
-                  <div
-                    class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-xl transition-transform duration-300 group-hover:scale-110"
-                  >
-                    {{ service.icon }}
-                  </div>
-                  <span
-                    class="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400"
-                  >
+                  <span class="font-mono text-xs font-semibold text-(--muted-foreground)/40">
+                    /{{ (i + 1).toString().padStart(2, '0') }}
+                  </span>
+                  <span class="rounded-full bg-(--primary)/10 px-3 py-1 text-xs font-medium text-(--primary)">
                     {{ service.categoryName }}
                   </span>
                 </div>
 
                 <!-- Title -->
-                <h3
-                  class="font-display text-lg font-bold leading-snug text-(--foreground)"
-                >
+                <h3 class="font-display text-lg font-bold leading-snug text-(--foreground) group-hover:text-(--primary) transition-colors">
                   {{ service.title }}
                 </h3>
 
                 <!-- Description -->
-                <p
-                  class="mt-3 text-sm leading-relaxed text-(--muted-foreground)"
-                >
+                <p class="mt-3 text-sm leading-relaxed text-(--muted-foreground)">
                   {{ service.description }}
                 </p>
 
                 <!-- Features / Benefits -->
                 <ul class="mt-4 flex-1 space-y-2">
                   @for (benefit of service.benefits; track benefit) {
-                    <li
-                      class="flex items-start gap-2 text-sm text-(--muted-foreground)"
-                    >
+                    <li class="flex items-start gap-2 text-sm text-(--muted-foreground)">
                       <lucide-icon
                         [img]="CheckIcon"
                         [size]="14"
-                        class="mt-0.5 shrink-0 text-emerald-500"
+                        class="mt-0.5 shrink-0 text-(--primary)"
                       ></lucide-icon>
                       {{ benefit }}
                     </li>
@@ -204,49 +181,27 @@ import { environment } from '../../../environments/environment';
                 </ul>
 
                 <!-- Price + Add button -->
-                <div
-                  class="mt-6 flex items-end justify-between border-t border-(--border) pt-4"
-                >
+                <div class="mt-6 flex items-end justify-between border-t border-(--border) pt-4">
                   <div>
                     @if (service.currentOffer) {
-                      <span
-                        class="font-display text-2xl font-bold text-(--primary)"
-                      >
-                        {{
-                          service.currentOffer.price
-                            | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr'
-                        }}
+                      <span class="font-display text-2xl font-bold text-(--primary)">
+                        {{ service.currentOffer.price | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
                       </span>
                       @if (
                         service.currentOffer.originalPrice &&
-                        service.currentOffer.originalPrice >
-                          service.currentOffer.price
+                        service.currentOffer.originalPrice > service.currentOffer.price
                       ) {
-                        <span
-                          class="ml-2 text-sm text-(--muted-foreground) line-through"
-                        >
-                          {{
-                            service.currentOffer.originalPrice
-                              | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr'
-                          }}
+                        <span class="ml-2 text-sm text-(--muted-foreground) line-through">
+                          {{ service.currentOffer.originalPrice | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
                         </span>
                       }
                       <div class="text-xs text-(--muted-foreground)">
-                        {{
-                          service.currentOffer.durationType === 'ONE_TIME'
-                            ? 'Paiement unique'
-                            : service.currentOffer.durationType === 'MONTHLY'
-                              ? '/ mois'
-                              : service.currentOffer.durationType === 'YEARLY'
-                                ? '/ an'
-                                : 'Paiement unique'
-                        }}
+                        {{ service.currentOffer.durationType === 'ONE_TIME' ? 'Paiement unique' :
+                           service.currentOffer.durationType === 'MONTHLY' ? '/ mois' :
+                           service.currentOffer.durationType === 'YEARLY' ? '/ an' : 'Paiement unique' }}
                       </div>
                     } @else {
-                      <span
-                        class="font-display text-lg font-bold text-(--primary)"
-                        >Sur devis</span
-                      >
+                      <span class="font-display text-lg font-bold text-(--primary)">Sur devis</span>
                     }
                   </div>
                   <button
@@ -267,28 +222,20 @@ import { environment } from '../../../environments/environment';
           </div>
         }
 
-        <!-- CTA Section with anim-slide-up -->
-        <section
-          class="mt-20 scroll-animate anim-slide-up rounded-2xl border border-(--border) bg-(--card) p-10 text-center sm:p-16"
-        >
-          <span
-            class="text-xs font-semibold uppercase tracking-wider text-(--muted-foreground)"
-            >Parlons Business</span
-          >
-          <h2
-            class="mt-3 font-display text-3xl font-bold text-(--foreground) sm:text-4xl"
-          >
-            Prêt à dominer votre marché ?
+        <!-- CTA Section -->
+        <section class="mt-20 scroll-animate anim-fade-up rounded-2xl border border-(--border) bg-(--card) p-10 text-center sm:p-16">
+          <span class="text-xs font-semibold uppercase tracking-[0.2em] text-(--primary) block mb-3">
+            Parlons Business
+          </span>
+          <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl">
+            Prêt à dominer
+            <span class="italic font-light text-(--primary)">votre marché ?</span>
           </h2>
-          <p
-            class="mx-auto mt-4 max-w-xl text-(--muted-foreground)"
-          >
+          <p class="mx-auto mt-4 max-w-xl text-(--muted-foreground)">
             Ne laissez pas vos concurrents prendre l'avantage. Nos experts
             vous accompagnent vers le sommet.
           </p>
-          <div
-            class="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
-          >
+          <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <a
               hlmBtn
               variant="default"
@@ -356,35 +303,12 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
 
-    // Re-observe scroll animations whenever the filtered list changes (category switch)
     effect(() => {
-      // Read the signal to track it
       this.filteredServices();
       if (this.isBrowser) {
-        // Wait for Angular to render the new DOM elements
         setTimeout(() => this.setupScrollObserver(), 0);
       }
     });
-  }
-
-  // Assign different animation classes to each service card
-  private readonly animationClasses = [
-    'scroll-animate anim-fade-up',
-    'scroll-animate anim-scale-in',
-    'scroll-animate anim-fade-left',
-    'scroll-animate anim-flip-y',
-    'scroll-animate anim-blur-in',
-    'scroll-animate anim-fade-right',
-    'scroll-animate anim-slide-up',
-    'scroll-animate anim-clip-reveal',
-    'scroll-animate anim-slide-rotate',
-  ];
-
-  getServiceAnimation(index: number): string {
-    const baseClass =
-      this.animationClasses[index % this.animationClasses.length];
-    const delay = `delay-${((index % 3) + 1)}00`;
-    return `${baseClass} ${delay}`;
   }
 
   ngOnInit(): void {
@@ -397,7 +321,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.loadServices();
 
-    // Listen to URL fragment changes for scroll-to-service navigation
     if (this.isBrowser) {
       this.fragmentSub = this.route.fragment.subscribe((fragment) => {
         if (fragment) {
@@ -408,19 +331,15 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private scrollToService(slug: string): void {
-    // Wait for services to be loaded before scrolling
     const tryScroll = (retries = 0) => {
       const element = document.getElementById(slug);
       if (element) {
-        // Scroll with offset for navbar
         setTimeout(() => {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Add highlight effect — keep visible for 6s so user clearly sees it
           this.highlightedSlug.set(slug);
           setTimeout(() => this.highlightedSlug.set(null), 6000);
         }, 100);
       } else if (retries < 10) {
-        // Retry if services haven't rendered yet
         setTimeout(() => tryScroll(retries + 1), 200);
       }
     };
@@ -433,13 +352,11 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.catalogService.getServices().subscribe({
       next: (data) => {
-        // Filter only active services and sort by displayOrder to avoid grid gaps
         const sorted = data
           .filter((s) => s.active)
           .sort((a, b) => a.displayOrder - b.displayOrder);
         this.services.set(sorted);
         this.loading.set(false);
-        // Re-observe after data loads
         if (this.isBrowser) {
           setTimeout(() => this.setupScrollObserver(), 50);
         }
@@ -483,7 +400,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onCheckout(service: ServiceItem): void {
-    // Check if user is logged in
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
@@ -510,7 +426,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
         next: (res) => {
           this.checkoutLoading.set(null);
           if (res.success && res.data?.redirectUrl) {
-            // Redirect to Stripe Checkout
             window.location.href = res.data.redirectUrl;
           } else {
             alert(res.message || 'Erreur lors de la création du paiement');
