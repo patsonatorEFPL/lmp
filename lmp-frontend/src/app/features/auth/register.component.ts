@@ -8,6 +8,8 @@ import { HlmLabel } from '@spartan-ng/helm/label';
 import { HlmSeparator } from '@spartan-ng/helm/separator';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../core/services/auth.service';
+import { switchMap } from 'rxjs';
 
 @Component({
   selector: 'lmp-register',
@@ -236,6 +238,7 @@ import { environment } from '../../../environments/environment';
 export class RegisterComponent {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
@@ -311,16 +314,46 @@ export class RegisterComponent {
         confirmPassword: this.form.confirmPassword,
         acceptTerms: this.form.acceptTerms,
       }, { withCredentials: true })
+      .pipe(
+        switchMap(() =>
+          this.http.post<any>(
+            `${environment.apiUrl}/api/v1/auth/login`,
+            { email: this.form.email, password: this.form.password },
+            { withCredentials: true },
+          ),
+        ),
+      )
       .subscribe({
-        next: () => {
-          this.successMessage.set('Compte créé ! Vérifiez votre e-mail pour activer votre compte.');
+        next: (response: any) => {
+          const user = response.data ?? response;
+          this.authService.setUser({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            displayName: user.displayName ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+            roles: Array.isArray(user.roles) ? user.roles : [],
+            emailVerified: user.emailVerified ?? false,
+            companyName: user.companyName,
+            phone: user.phone,
+            city: user.city,
+            country: user.country,
+          });
           this.submitting.set(false);
+          this.router.navigate(['/dashboard']);
         },
         error: (err) => {
-          this.errorMessage.set(
-            err.error?.message || 'Une erreur est survenue. Veuillez réessayer.',
-          );
-          this.submitting.set(false);
+          // Registration may have succeeded but auto-login failed
+          if (err.url?.includes('/login')) {
+            this.successMessage.set('Compte créé ! Connectez-vous pour accéder à votre espace.');
+            this.submitting.set(false);
+            this.router.navigate(['/login']);
+          } else {
+            this.errorMessage.set(
+              err.error?.message || 'Une erreur est survenue. Veuillez réessayer.',
+            );
+            this.submitting.set(false);
+          }
         },
       });
   }
