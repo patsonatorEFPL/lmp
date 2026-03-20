@@ -32,9 +32,9 @@ import { environment } from '../../../environments/environment';
       100% { transform: scale(1); opacity: 1; }
     }
     @keyframes pulse-ring {
-      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-      70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
     @keyframes shake-error {
       0%, 100% { transform: translateX(0); }
