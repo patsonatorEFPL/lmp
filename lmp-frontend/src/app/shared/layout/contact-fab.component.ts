@@ -16,6 +16,17 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
       0%   { box-shadow: 0 10px 40px rgba(16,185,129,.4), 0 0 0 0   rgba(16,185,129,.4); }
       50%  { box-shadow: 0 10px 40px rgba(16,185,129,.6), 0 0 0 20px rgba(16,185,129,0);  }
       100% { box-shadow: 0 10px 40px rgba(16,185,129,.4), 0 0 0 0   rgba(16,185,129,0);  }
+<<<<<<< Updated upstream
+=======
+    }
+
+    @keyframes shake {
+      0%,50%,100% { transform: rotate(0deg);   }
+      10%          { transform: rotate(-10deg); }
+      20%          { transform: rotate(10deg);  }
+      30%          { transform: rotate(-10deg); }
+      40%          { transform: rotate(10deg);  }
+>>>>>>> Stashed changes
     }
 
     @keyframes shine {
@@ -35,7 +46,11 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
       border:        none;
       border-radius: 42px;
       background:    linear-gradient(135deg, #059669 0%, #10B981 100%);
+<<<<<<< Updated upstream
       box-shadow:    0 10px 40px rgba(16,185,129,.4);
+=======
+      box-shadow:    0 10px 40px rgba(16,185,129,.41);
+>>>>>>> Stashed changes
       color:         #fff;
       font-family:   var(--font-sans), sans-serif;
       font-size:     11px;
@@ -66,7 +81,11 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
     }
 
     .fab-btn:hover {
+<<<<<<< Updated upstream
       transform:  translateY(-4px) scale(1.05);
+=======
+      transform:  translateY(-6px) scale(1.05);
+>>>>>>> Stashed changes
       box-shadow: 0 14px 42px rgba(16,185,129,.5);
       background: linear-gradient(135deg, #047857 0%, #059669 100%);
     }
