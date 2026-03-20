@@ -12,9 +12,9 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
     }
 
     @keyframes pulse-glow {
-      0%   { box-shadow: 0 10px 40px rgba(26,60,255,.4), 0 0 0 0   rgba(26,60,255,.4); }
-      50%  { box-shadow: 0 10px 40px rgba(26,60,255,.6), 0 0 0 20px rgba(26,60,255,0);  }
-      100% { box-shadow: 0 10px 40px rgba(26,60,255,.4), 0 0 0 0   rgba(26,60,255,0);  }
+      0%   { box-shadow: 0 10px 40px rgba(16,185,129,.4), 0 0 0 0   rgba(16,185,129,.4); }
+      50%  { box-shadow: 0 10px 40px rgba(16,185,129,.6), 0 0 0 20px rgba(16,185,129,0);  }
+      100% { box-shadow: 0 10px 40px rgba(16,185,129,.4), 0 0 0 0   rgba(16,185,129,0);  }
     }
 
     @keyframes shake {
@@ -41,8 +41,8 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
       padding:       13px 21px;
       border:        none;
       border-radius: 42px;
-      background:    linear-gradient(135deg, #1a3cff 0%, #4c63ff 100%);
-      box-shadow:    0 10px 40px rgba(26,60,255,.41);
+      background:    linear-gradient(135deg, #059669 0%, #10B981 100%);
+      box-shadow:    0 10px 40px rgba(16,185,129,.41);
       color:         #fff;
       font-family:   'Poppins', 'Inter', sans-serif;
       font-size:     11px;
@@ -93,8 +93,8 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
 
     .fab-btn:hover {
       transform:  translateY(-6px) scale(1.05);
-      box-shadow: 0 14px 42px rgba(26,60,255,.5);
-      background: linear-gradient(135deg, #1533cc 0%, #3d52ff 100%);
+      box-shadow: 0 14px 42px rgba(16,185,129,.5);
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
     }
 
     .fab-btn:active {
