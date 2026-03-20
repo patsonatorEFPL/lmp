@@ -1,10 +1,11 @@
 import { Component, signal } from '@angular/core';
+import { LucideAngularModule, MessageCircle } from 'lucide-angular';
 import { AppointmentModalComponent } from '../modals/appointment-modal.component';
 
 @Component({
   selector: 'lmp-contact-fab',
   standalone: true,
-  imports: [AppointmentModalComponent],
+  imports: [AppointmentModalComponent, LucideAngularModule],
   styles: [`
     @keyframes slideInRight {
       from { transform: translateX(200%); opacity: 0; }
@@ -12,17 +13,9 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
     }
 
     @keyframes pulse-glow {
-      0%   { box-shadow: 0 10px 40px rgba(26,60,255,.4), 0 0 0 0   rgba(26,60,255,.4); }
-      50%  { box-shadow: 0 10px 40px rgba(26,60,255,.6), 0 0 0 20px rgba(26,60,255,0);  }
-      100% { box-shadow: 0 10px 40px rgba(26,60,255,.4), 0 0 0 0   rgba(26,60,255,0);  }
-    }
-
-    @keyframes shake {
-      0%,50%,100% { transform: rotate(0deg);   }
-      10%          { transform: rotate(-10deg); }
-      20%          { transform: rotate(10deg);  }
-      30%          { transform: rotate(-10deg); }
-      40%          { transform: rotate(10deg);  }
+      0%   { box-shadow: 0 10px 40px rgba(16,185,129,.4), 0 0 0 0   rgba(16,185,129,.4); }
+      50%  { box-shadow: 0 10px 40px rgba(16,185,129,.6), 0 0 0 20px rgba(16,185,129,0);  }
+      100% { box-shadow: 0 10px 40px rgba(16,185,129,.4), 0 0 0 0   rgba(16,185,129,0);  }
     }
 
     @keyframes shine {
@@ -41,10 +34,10 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
       padding:       13px 21px;
       border:        none;
       border-radius: 42px;
-      background:    linear-gradient(135deg, #1a3cff 0%, #4c63ff 100%);
-      box-shadow:    0 10px 40px rgba(26,60,255,.41);
+      background:    linear-gradient(135deg, #059669 0%, #10B981 100%);
+      box-shadow:    0 10px 40px rgba(16,185,129,.4);
       color:         #fff;
-      font-family:   'Poppins', 'Inter', sans-serif;
+      font-family:   var(--font-sans), sans-serif;
       font-size:     11px;
       font-weight:   700;
       letter-spacing: 0.5px;
@@ -56,25 +49,6 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
                      pulse-glow   2s ease    infinite;
     }
 
-    /* Ripple layer */
-    .fab-btn::before {
-      content:          '';
-      position:         absolute;
-      top:              50%;
-      left:             50%;
-      width:            0;
-      height:           0;
-      border-radius:    50%;
-      background:       rgba(255,255,255,.3);
-      transform:        translate(-50%, -50%);
-      transition:       width .6s, height .6s;
-    }
-    .fab-btn:hover::before {
-      width:  300px;
-      height: 300px;
-    }
-
-    /* Shine sweep */
     .fab-btn::after {
       content:    '';
       position:   absolute;
@@ -92,23 +66,13 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
     }
 
     .fab-btn:hover {
-      transform:  translateY(-6px) scale(1.05);
-      box-shadow: 0 14px 42px rgba(26,60,255,.5);
-      background: linear-gradient(135deg, #1533cc 0%, #3d52ff 100%);
+      transform:  translateY(-4px) scale(1.05);
+      box-shadow: 0 14px 42px rgba(16,185,129,.5);
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
     }
 
     .fab-btn:active {
-      transform: translateY(-3px) scale(1.02);
-    }
-
-    .contact-icon {
-      font-size:   17px;
-      display:     inline-flex;
-      align-items: center;
-      position:    relative;
-      z-index:     2;
-      animation:   shake 2s infinite;
-      animation-delay: 0.5s;
+      transform: translateY(-2px) scale(1.02);
     }
 
     .contact-text {
@@ -117,8 +81,7 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
     }
 
     @media (max-width: 768px) {
-      .fab-btn         { bottom: 20px; right: 20px; padding: 10px 17px; font-size: 10px; }
-      .contact-icon    { font-size: 14px; }
+      .fab-btn { bottom: 20px; right: 20px; padding: 10px 17px; font-size: 10px; }
     }
 
     @media (max-width: 480px) {
@@ -136,7 +99,7 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
   `],
   template: `
     <button class="fab-btn" (click)="openModal()">
-      <span class="contact-icon">💬</span>
+      <lucide-icon [img]="MessageCircleIcon" [size]="17" class="relative z-[2]"></lucide-icon>
       <span class="contact-text">CONTACTEZ-NOUS</span>
     </button>
 
@@ -147,6 +110,7 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
   `,
 })
 export class ContactFabComponent {
+  readonly MessageCircleIcon = MessageCircle;
   readonly isModalOpen = signal(false);
 
   openModal(): void {
