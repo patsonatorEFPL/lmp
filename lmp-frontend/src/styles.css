@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 /* === Google Fonts: Playfair Display (display) + Raleway (body) === */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Raleway:wght@300;400;500;600;700&display=swap');
+=======
+/* === Google Fonts: Inter (body) + Playfair Display (editorial display) === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
 
 /* === Tailwind CSS v4 === */
 @import "tailwindcss";
@@ -10,12 +15,22 @@
 /* === LMP Theme Configuration === */
 
 @theme inline {
+<<<<<<< HEAD
   --font-sans: 'Raleway', system-ui, -apple-system, sans-serif;
   --font-display: 'Playfair Display', Georgia, serif;
   --radius: 0.625rem;
   --color-emerald-accent: oklch(0.596 0.145 163.2);
   --color-emerald-hover: oklch(0.527 0.135 163.2);
   --color-emerald-subtle: oklch(0.356 0.079 163);
+=======
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --radius: 0.625rem;
+  --color-emerald-accent: oklch(0.596 0.145 163.2);
+  --color-emerald-hover: oklch(0.527 0.135 163.2);
+  --color-emerald-subtle: oklch(0.356 0.1 163);
+  --color-emerald-glow: oklch(0.7 0.17 163);
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
 }
 
 :root {
@@ -26,7 +41,11 @@
   --card-foreground: oklch(0.141 0.005 285.82);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.82);
+<<<<<<< HEAD
   --primary: oklch(0.596 0.145 163.2);
+=======
+  --primary: oklch(0.527 0.135 163.2);
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.967 0.001 286.38);
   --secondary-foreground: oklch(0.141 0.005 285.82);
@@ -52,6 +71,7 @@
 
 .dark {
   color-scheme: dark;
+<<<<<<< HEAD
   --background: oklch(0.10 0.01 260);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.14 0.015 260);
@@ -65,16 +85,39 @@
   --muted: oklch(0.20 0.012 260);
   --muted-foreground: oklch(0.60 0.015 260);
   --accent: oklch(0.20 0.012 260);
+=======
+  --background: oklch(0.1 0.015 260);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0.018 260);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0.018 260);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.596 0.145 163.2);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.22 0.015 260);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0.015 260);
+  --muted-foreground: oklch(0.65 0.015 260);
+  --accent: oklch(0.22 0.015 260);
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.596 0.145 163.2);
+<<<<<<< HEAD
   --sidebar: oklch(0.14 0.015 260);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.596 0.145 163.2);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.20 0.012 260);
+=======
+  --sidebar: oklch(0.145 0.018 260);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.596 0.145 163.2);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.22 0.015 260);
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.596 0.145 163.2);
@@ -97,7 +140,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
+    font-family: var(--font-sans);
+    font-weight: 700;
   }
 }
 
@@ -136,6 +180,7 @@
 .delay-500 { transition-delay: 0.5s; }
 .delay-600 { transition-delay: 0.6s; }
 
+<<<<<<< HEAD
 /* === Partner Marquee === */
 @keyframes marquee-scroll {
   0% { transform: translateX(0); }
@@ -152,11 +197,83 @@
   animation-play-state: paused;
 }
 
+=======
+/* === Editorial Display Font Styling === */
+.font-editorial {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-editorial-italic {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+}
+
+/* === Hero Gradient Text (Emerald) === */
+@keyframes shimmer-text {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.hero-gradient-text {
+  background: linear-gradient(135deg, #10B981 0%, #059669 35%, #34D399 65%, #10B981 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text 4s ease-in-out infinite;
+}
+
+/* === Partner Ticker / Marquee === */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  animation: ticker-scroll 30s linear infinite;
+  width: max-content;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* === Hero Particles === */
+@keyframes particle-float {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.6; }
+  33% { transform: translateY(-15px) translateX(8px); opacity: 1; }
+  66% { transform: translateY(-5px) translateX(-5px); opacity: 0.4; }
+}
+
+.hero-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.5));
+  box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.4);
+  pointer-events: none;
+  animation: particle-float 6s ease-in-out infinite;
+}
+
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
 /* === Contact FAB pulse === */
 @keyframes fab-pulse {
   0% { box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0.4); }
   50% { box-shadow: 0 10px 40px rgba(16, 185, 129, 0.6), 0 0 0 20px rgba(16, 185, 129, 0); }
   100% { box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4), 0 0 0 0 rgba(16, 185, 129, 0); }
+<<<<<<< HEAD
+=======
+}
+
+/* === Service Highlight Animation === */
+@keyframes service-highlight-pulse {
+  0%, 100% { box-shadow: 0 0 15px 2px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 25px 6px rgba(16, 185, 129, 0.5); }
+}
+
+.service-highlight {
+  animation: service-highlight-pulse 1.5s ease-in-out infinite;
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
 }
 
 /* === Notification Toast Animations === */
@@ -225,6 +342,22 @@
   animation: bell-badge-pulse 2s ease-in-out infinite;
 }
 
+/* === Typewriter cursor === */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 0.9em;
+  background: var(--primary);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink-cursor 0.8s step-end infinite;
+}
+
 /* === Reduced motion === */
 @media (prefers-reduced-motion: reduce) {
   .scroll-animate {
@@ -232,7 +365,14 @@
     opacity: 1;
     transform: none !important;
   }
+<<<<<<< HEAD
   .marquee-track { animation: none; }
+=======
+  .hero-gradient-text { animation: none; }
+  .hero-particle { animation: none; }
+  .ticker-track { animation: none; }
+  .service-highlight { animation: none; }
+>>>>>>> ba3a7a58384d392171b1b7060ad4c5cdc460252a
   .notification-toast-enter { animation: none; }
   .notification-toast-exit { animation: none; }
   .notification-panel-enter { animation: none; }
