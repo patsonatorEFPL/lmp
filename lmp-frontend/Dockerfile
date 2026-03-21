@@ -48,15 +48,15 @@ RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 USER angular
 
 # Variables d'environnement
-ENV PORT=4000
+ENV PORT=80
 ENV BACKEND_URL=http://lmp-spring-app:8080
 
 # Port exposé
-EXPOSE 4000
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:4000/ || exit 1
+    CMD curl -f http://localhost:80/ || exit 1
 
 # Démarrer le serveur SSR Node.js
 CMD ["node", "dist/lmp-frontend/server/server.mjs"]
