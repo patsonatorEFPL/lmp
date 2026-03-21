@@ -95,7 +95,7 @@ export function app(): ReturnType<typeof express> {
 const server = app();
 
 if (isMainModule(import.meta.url)) {
-  const port = process.env['PORT'] || 4000;
+  const port = process.env['PORT'] || 80;
   server.listen(port, () => {
     console.log(`Node Express SSR server listening on http://localhost:${port}`);
   });
