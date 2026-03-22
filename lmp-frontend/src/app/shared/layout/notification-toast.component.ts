@@ -457,13 +457,13 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
   getToastIconBg(type: string): string {
     switch (type) {
       case 'NEW_PENDING_ORDER':
-        return 'bg-blue-500/10 text-blue-500';
+        return 'bg-(--muted) text-(--foreground)';
       case 'PAYMENT_SUCCESS':
-        return 'bg-emerald-500/10 text-emerald-500';
+        return 'bg-(--muted) text-(--foreground)';
       case 'STATUS_CHANGED':
-        return 'bg-amber-500/10 text-amber-500';
+        return 'bg-(--muted) text-(--foreground)';
       case 'REFUND':
-        return 'bg-violet-500/10 text-violet-500';
+        return 'bg-(--muted) text-(--primary)';
       default:
         return 'bg-(--primary)/10 text-(--primary)';
     }

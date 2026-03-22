@@ -153,7 +153,7 @@ import { environment } from '../../../environments/environment';
               </div>
 
               @if (errorMessage()) {
-                <div class="rounded-lg bg-(--destructive)/10 px-4 py-3 text-sm text-(--destructive)">
+              <div class="rounded-sm bg-(--destructive)/10 px-3 py-2 text-sm text-(--destructive)">
                   {{ errorMessage() }}
                 </div>
               }
@@ -172,7 +172,7 @@ import { environment } from '../../../environments/environment';
             <!-- Divider -->
             <div class="relative my-6 flex items-center">
               <hlm-separator class="flex-1" />
-              <span class="px-3 text-xs text-(--muted-foreground) uppercase tracking-wider">Ou continuer avec</span>
+              <span class="px-3 text-xs text-(--muted-foreground)">ou continuer avec</span>
               <hlm-separator class="flex-1" />
             </div>
 

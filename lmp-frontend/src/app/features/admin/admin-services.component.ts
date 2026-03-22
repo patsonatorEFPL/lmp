@@ -78,7 +78,7 @@ type ModalMode = 'create' | 'edit';
     @if (stats()) {
       <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div
-          class="rounded-lg border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
         >
           <p class="text-2xl font-bold text-(--foreground)">
             {{ stats()!.totalCategories }}
@@ -86,7 +86,7 @@ type ModalMode = 'create' | 'edit';
           <p class="text-xs text-(--muted-foreground)">Catégories</p>
         </div>
         <div
-          class="rounded-lg border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
         >
           <p class="text-2xl font-bold text-(--foreground)">
             {{ stats()!.totalServices }}
@@ -94,17 +94,17 @@ type ModalMode = 'create' | 'edit';
           <p class="text-xs text-(--muted-foreground)">Services</p>
         </div>
         <div
-          class="rounded-lg border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
         >
-          <p class="text-2xl font-bold text-emerald-500">
+          <p class="text-2xl font-bold text-(--foreground)">
             {{ stats()!.activeServices }}
           </p>
           <p class="text-xs text-(--muted-foreground)">Actifs</p>
         </div>
         <div
-          class="rounded-lg border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
         >
-          <p class="text-2xl font-bold text-amber-500">
+          <p class="text-2xl font-bold text-(--foreground)">
             {{ stats()!.featuredServices }}
           </p>
           <p class="text-xs text-(--muted-foreground)">En vedette</p>
@@ -147,7 +147,7 @@ type ModalMode = 'create' | 'edit';
         >
           @for (cat of categories(); track cat.id) {
             <div
-              class="flex items-center justify-between rounded-lg border border-(--border) bg-(--card) px-4 py-3"
+              class="flex items-center justify-between rounded-sm border border-(--border) bg-(--card) px-4 py-3"
             >
               <div class="flex items-center gap-2">
                 <span class="text-lg">{{ cat.icon }}</span>
@@ -190,10 +190,10 @@ type ModalMode = 'create' | 'edit';
 
       <!-- Duplicate order warning -->
       @if (hasDuplicateOrders()) {
-        <div class="mt-6 flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+        <div class="mt-6 flex items-center gap-3 rounded-sm border border-amber-500/30 bg-amber-500/5 px-4 py-3">
           <span class="text-lg">⚠️</span>
           <div>
-            <p class="text-sm font-medium text-amber-500">Ordres d'affichage en doublon détectés</p>
+            <p class="text-sm font-medium text-(--foreground)">Ordres d'affichage en doublon détectés</p>
             <p class="text-xs text-(--muted-foreground)">Plusieurs services partagent la même valeur d'ordre. Utilisez les flèches pour réordonner.</p>
           </div>
         </div>
@@ -225,7 +225,7 @@ type ModalMode = 'create' | 'edit';
                       <span
                         class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10px] font-bold"
                         [ngClass]="isDuplicateOrder(service)
-                          ? 'bg-amber-500/20 text-amber-500'
+                          ? 'bg-amber-500/20 text-(--foreground)'
                           : 'bg-(--primary)/10 text-(--primary)'"
                       >
                         {{ service.displayOrder }}
@@ -237,7 +237,7 @@ type ModalMode = 'create' | 'edit';
                       </h3>
                       @if (service.featured) {
                         <span
-                          class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-500"
+                          class="inline-flex items-center gap-1 rounded-full bg-(--muted) px-2 py-0.5 text-[10px] font-semibold text-(--foreground)"
                         >
                           <lucide-icon
                             [img]="StarIcon"
@@ -248,7 +248,7 @@ type ModalMode = 'create' | 'edit';
                       }
                       @if (service.active) {
                         <span
-                          class="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500"
+                          class="rounded-full bg-(--muted) px-2 py-0.5 text-[10px] font-semibold text-(--foreground)"
                           >Actif</span
                         >
                       } @else {
@@ -328,7 +328,7 @@ type ModalMode = 'create' | 'edit';
                     <lucide-icon
                       [img]="EyeIcon"
                       [size]="16"
-                      class="text-emerald-500"
+                      class="text-(--foreground)"
                     ></lucide-icon>
                   </button>
                   <button
@@ -343,7 +343,7 @@ type ModalMode = 'create' | 'edit';
                       <lucide-icon
                         [img]="ToggleRightIcon"
                         [size]="16"
-                        class="text-emerald-500"
+                        class="text-(--foreground)"
                       ></lucide-icon>
                     } @else {
                       <lucide-icon
@@ -396,7 +396,7 @@ type ModalMode = 'create' | 'edit';
         (click)="closeServiceModal()"
       >
         <div
-          class="mx-4 w-full max-w-lg rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-lg rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           <!-- Modal Header -->
@@ -432,7 +432,7 @@ type ModalMode = 'create' | 'edit';
               <input
                 type="text"
                 [(ngModel)]="serviceForm.title"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                 placeholder="Nom du service"
               />
             </div>
@@ -445,7 +445,7 @@ type ModalMode = 'create' | 'edit';
               >
               <select
                 [(ngModel)]="serviceForm.categoryId"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
               >
                 <option value="">Sélectionner...</option>
                 @for (cat of categories(); track cat.id) {
@@ -463,7 +463,7 @@ type ModalMode = 'create' | 'edit';
               <textarea
                 [(ngModel)]="serviceForm.description"
                 rows="3"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                 placeholder="Description du service..."
               ></textarea>
             </div>
@@ -478,7 +478,7 @@ type ModalMode = 'create' | 'edit';
                 <input
                   type="text"
                   [(ngModel)]="serviceForm.icon"
-                  class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                   placeholder="📦"
                 />
               </div>
@@ -490,7 +490,7 @@ type ModalMode = 'create' | 'edit';
                 <input
                   type="number"
                   [(ngModel)]="serviceForm.displayOrder"
-                  class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 />
               </div>
             </div>
@@ -524,7 +524,7 @@ type ModalMode = 'create' | 'edit';
               <textarea
                 [(ngModel)]="serviceForm.benefitsText"
                 rows="4"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                 placeholder="Un avantage par ligne..."
               ></textarea>
             </div>
@@ -574,7 +574,7 @@ type ModalMode = 'create' | 'edit';
         (click)="closeCategoryModal()"
       >
         <div
-          class="mx-4 w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-md rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           <div
@@ -606,7 +606,7 @@ type ModalMode = 'create' | 'edit';
               <input
                 type="text"
                 [(ngModel)]="categoryForm.name"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 placeholder="Nom de la catégorie"
               />
             </div>
@@ -618,7 +618,7 @@ type ModalMode = 'create' | 'edit';
               <input
                 type="text"
                 [(ngModel)]="categoryForm.description"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 placeholder="Description"
               />
             </div>
@@ -631,7 +631,7 @@ type ModalMode = 'create' | 'edit';
                 <input
                   type="text"
                   [(ngModel)]="categoryForm.icon"
-                  class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                   placeholder="📁"
                 />
               </div>
@@ -643,7 +643,7 @@ type ModalMode = 'create' | 'edit';
                 <input
                   type="number"
                   [(ngModel)]="categoryForm.displayOrder"
-                  class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 />
               </div>
             </div>
@@ -713,12 +713,12 @@ type ModalMode = 'create' | 'edit';
               <!-- Icon + Category -->
               <div class="mb-4 flex items-start justify-between">
                 <div
-                  class="flex h-12 w-12 items-center justify-center rounded-sm bg-blue-500/10 text-xl"
+                  class="flex h-12 w-12 items-center justify-center rounded-sm bg-(--muted) text-xl"
                 >
                   {{ previewService()!.icon }}
                 </div>
                 <span
-                  class="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400"
+                  class="rounded-full bg-(--muted) px-3 py-1 text-xs font-medium text-blue-400"
                 >
                   {{ previewService()!.categoryName }}
                 </span>
@@ -750,7 +750,7 @@ type ModalMode = 'create' | 'edit';
                     <lucide-icon
                       [img]="CheckIcon"
                       [size]="14"
-                      class="mt-0.5 shrink-0 text-emerald-500"
+                      class="mt-0.5 shrink-0 text-(--foreground)"
                     ></lucide-icon>
                     {{ benefit }}
                   </li>
@@ -807,7 +807,7 @@ type ModalMode = 'create' | 'edit';
                   }
                 </div>
                 <div
-                  class="flex h-9 items-center gap-1.5 rounded-lg bg-(--primary)/10 px-3 text-sm font-medium text-(--primary)"
+                  class="flex h-9 items-center gap-1.5 rounded-sm bg-(--primary)/10 px-3 text-sm font-medium text-(--primary)"
                 >
                   Commander
                   <lucide-icon
@@ -832,9 +832,9 @@ type ModalMode = 'create' | 'edit';
     <!-- Toast -->
     @if (toast()) {
       <div
-        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg"
+        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-sm border px-4 py-3 shadow-xs"
         [ngClass]="{
-          'border-emerald-500/30 bg-emerald-500/10 text-emerald-500':
+          'border-emerald-500/30 bg-(--muted) text-(--foreground)':
             toast()!.type === 'success',
           'border-red-500/30 bg-red-500/10 text-red-500':
             toast()!.type === 'error',

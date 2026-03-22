@@ -107,7 +107,7 @@ interface ApiResponse<T> {
       <select
         [(ngModel)]="statusFilter"
         (change)="currentPage.set(0); loadAppointments()"
-        class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
+        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
       >
         <option value="">Tous les statuts</option>
         <option value="PENDING">En attente</option>
@@ -154,7 +154,7 @@ interface ApiResponse<T> {
                 <td class="px-4 py-3 text-(--muted-foreground)">{{ appt.durationMinutes }} min</td>
                 <td class="px-4 py-3">
                   <span
-                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                     [ngClass]="getStatusClass(appt.status)"
                   >
                     {{ getStatusLabel(appt.status) }}
@@ -220,7 +220,7 @@ interface ApiResponse<T> {
         (click)="closeDetailModal()"
       >
         <div
-          class="mx-4 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           @if (loadingDetail()) {
@@ -246,13 +246,13 @@ interface ApiResponse<T> {
 
             <div class="px-6 py-5 space-y-5">
               <!-- Client info -->
-              <div class="rounded-lg border border-(--border) bg-(--background) p-4 space-y-2">
-                <p class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Client</p>
+              <div class="rounded-sm border border-(--border) bg-(--background) p-4 space-y-2">
+                <p class="text-xs font-medium text-(--muted-foreground)">Client</p>
                 <div class="flex items-center gap-2">
                   <lucide-icon [img]="UserIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
                   <span class="text-sm font-medium text-(--foreground)">{{ detail()!.clientName || '—' }}</span>
                   @if (detail()!.isAnonymous) {
-                    <span class="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-500">Anonyme</span>
+                    <span class="rounded-full bg-(--muted) px-2 py-0.5 text-[10px] font-medium text-(--foreground)">Anonyme</span>
                   }
                 </div>
                 <div class="flex items-center gap-2">
@@ -267,13 +267,13 @@ interface ApiResponse<T> {
 
               <!-- Date + Status -->
               <div class="grid grid-cols-2 gap-3">
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Date & Heure</p>
                   <p class="mt-1 text-sm font-medium text-(--foreground)">
                     {{ detail()!.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
                   </p>
                 </div>
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Durée</p>
                   <p class="mt-1 text-sm font-medium text-(--foreground)">{{ detail()!.durationMinutes }} min</p>
                 </div>
@@ -282,7 +282,7 @@ interface ApiResponse<T> {
               @if (detail()!.description) {
                 <div>
                   <p class="text-xs font-medium text-(--muted-foreground) mb-1">Message du client</p>
-                  <p class="text-sm text-(--foreground) rounded-lg border border-(--border) bg-(--background) p-3">
+                  <p class="text-sm text-(--foreground) rounded-sm border border-(--border) bg-(--background) p-3">
                     {{ detail()!.description }}
                   </p>
                 </div>
@@ -296,7 +296,7 @@ interface ApiResponse<T> {
                   <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Statut</label>
                   <select
                     [(ngModel)]="editForm.status"
-                    class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
+                    class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
                   >
                     <option value="PENDING">En attente</option>
                     <option value="CONFIRMED">Confirmé</option>
@@ -315,7 +315,7 @@ interface ApiResponse<T> {
                   <textarea
                     [(ngModel)]="editForm.adminNotes"
                     rows="3"
-                    class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                    class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                     placeholder="Notes internes..."
                   ></textarea>
                 </div>
@@ -326,7 +326,7 @@ interface ApiResponse<T> {
                     <input
                       [(ngModel)]="editForm.cancellationReason"
                       type="text"
-                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                      class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                       placeholder="Raison..."
                     />
                   </div>
@@ -372,9 +372,9 @@ interface ApiResponse<T> {
     <!-- Toast -->
     @if (toast()) {
       <div
-        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg"
+        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-sm border px-4 py-3 shadow-xs"
         [ngClass]="{
-          'border-emerald-500/30 bg-emerald-500/10 text-emerald-500': toast()!.type === 'success',
+          'border-emerald-500/30 bg-(--muted) text-(--foreground)': toast()!.type === 'success',
           'border-red-500/30 bg-red-500/10 text-red-500': toast()!.type === 'error',
         }"
       >
@@ -546,9 +546,9 @@ export class AdminAppointmentsComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status) {
-      case 'CONFIRMED': return 'bg-blue-500/10 text-blue-500';
+      case 'CONFIRMED': return 'bg-(--muted) text-(--foreground)';
       case 'COMPLETED': return 'bg-green-500/10 text-green-500';
-      case 'IN_PROGRESS': return 'bg-amber-500/10 text-amber-500';
+      case 'IN_PROGRESS': return 'bg-(--muted) text-(--foreground)';
       case 'PENDING': return 'bg-yellow-500/10 text-yellow-500';
       case 'CANCELLED': return 'bg-red-500/10 text-red-500';
       case 'NO_SHOW': return 'bg-gray-500/10 text-gray-400';

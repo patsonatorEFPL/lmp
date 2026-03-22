@@ -116,7 +116,7 @@ import { switchMap } from 'rxjs';
                 <div class="flex gap-1">
                   @for (i of [0, 1, 2, 3]; track i) {
                     <div
-                      class="h-1 flex-1 rounded-full transition-colors duration-200"
+                    class="h-1 flex-1 rounded-xs transition-colors duration-200"
                       [class]="i < passwordStrength() ? strengthColor() : 'bg-(--border)'"
                     ></div>
                   }
@@ -160,13 +160,13 @@ import { switchMap } from 'rxjs';
             </div>
 
             @if (errorMessage()) {
-              <div class="rounded-lg bg-(--destructive)/10 px-4 py-3 text-sm text-(--destructive)">
+              <div class="rounded-sm bg-(--destructive)/10 px-3 py-2 text-sm text-(--destructive)">
                 {{ errorMessage() }}
               </div>
             }
 
             @if (successMessage()) {
-              <div class="rounded-lg bg-(--success)/10 px-4 py-3 text-sm text-(--success)">
+              <div class="rounded-sm bg-(--success)/10 px-3 py-2 text-sm text-(--success)">
                 {{ successMessage() }}
               </div>
             }

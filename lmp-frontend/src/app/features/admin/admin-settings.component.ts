@@ -29,8 +29,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
       <!-- General Settings -->
       <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10">
-            <lucide-icon [img]="GlobeIcon" [size]="18" class="text-blue-500"></lucide-icon>
+          <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+            <lucide-icon [img]="GlobeIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
           </div>
           <div>
             <h2 class="text-sm font-semibold text-(--foreground)">Général</h2>
@@ -44,7 +44,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
               <input
                 type="text"
                 [(ngModel)]="settings.companyName"
-                class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
               />
             </div>
             <div>
@@ -52,7 +52,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
               <input
                 type="email"
                 [(ngModel)]="settings.supportEmail"
-                class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
               />
             </div>
           </div>
@@ -61,7 +61,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             <input
               type="url"
               [(ngModel)]="settings.siteUrl"
-              class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+              class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
             />
           </div>
         </div>
@@ -70,8 +70,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
       <!-- Notification Settings -->
       <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
-            <lucide-icon [img]="BellIcon" [size]="18" class="text-amber-500"></lucide-icon>
+          <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+            <lucide-icon [img]="BellIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
           </div>
           <div>
             <h2 class="text-sm font-semibold text-(--foreground)">Notifications</h2>
@@ -80,7 +80,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
         </div>
         <div class="space-y-3">
           @for (notif of notificationOptions; track notif.key) {
-            <div class="flex items-center justify-between rounded-lg border border-(--border) px-4 py-3">
+            <div class="flex items-center justify-between rounded-sm border border-(--border) px-4 py-3">
               <div>
                 <p class="text-sm font-medium text-(--foreground)">{{ notif.label }}</p>
                 <p class="text-xs text-(--muted-foreground)">{{ notif.description }}</p>
@@ -101,7 +101,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
       <!-- Security Settings -->
       <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
-          <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10">
+          <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-red-500/10">
             <lucide-icon [img]="ShieldIcon" [size]="18" class="text-red-500"></lucide-icon>
           </div>
           <div>
@@ -116,7 +116,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
               <input
                 type="number"
                 [(ngModel)]="settings.maxLoginAttempts"
-                class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
               />
             </div>
             <div>
@@ -124,7 +124,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
               <input
                 type="number"
                 [(ngModel)]="settings.sessionTimeout"
-                class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
               />
             </div>
           </div>

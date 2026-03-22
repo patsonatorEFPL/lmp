@@ -52,7 +52,7 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
               [routerLink]="item.route"
               routerLinkActive="bg-(--primary)/10 text-(--primary)"
               [routerLinkActiveOptions]="{ exact: item.exact }"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
             >
               <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
               {{ item.label }}
@@ -114,7 +114,7 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
                 [routerLink]="item.route"
                 routerLinkActive="bg-(--primary)/10 text-(--primary)"
                 [routerLinkActiveOptions]="{ exact: item.exact }"
-                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+                class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
                 (click)="mobileMenuOpen.set(false)"
               >
                 <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
@@ -146,7 +146,7 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
               @if (authService.isAdmin()) {
                 <a
                   routerLink="/admin"
-                  class="inline-flex items-center gap-1.5 rounded-md bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-500 transition-colors hover:bg-violet-500/20"
+                  class="inline-flex items-center gap-1.5 rounded-xs border border-(--border) px-2 py-0.5 text-xs font-medium text-(--primary) transition-colors hover:bg-(--accent)"
                 >
                   🛡️ Admin
                 </a>
@@ -164,7 +164,7 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
                   <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
                   @if (notificationService.unreadCount() > 0) {
                     <span
-                      class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
+                      class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-sm bg-red-500 text-[10px] font-bold text-white"
                     >
                       {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
                     </span>
@@ -177,8 +177,8 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
               </div>
 
               <!-- User chip -->
-              <div class="hidden items-center gap-2 rounded-lg border border-(--border) px-3 py-1.5 sm:flex">
-                <div class="flex h-7 w-7 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">
+              <div class="hidden items-center gap-2 rounded-sm border border-(--border) px-3 py-1.5 sm:flex">
+                <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
                   <lucide-icon [img]="UserIcon" [size]="14"></lucide-icon>
                 </div>
                 <span class="text-sm font-medium text-(--foreground)">

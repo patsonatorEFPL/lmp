@@ -134,7 +134,7 @@ const ORDER_STEPS = [
       <select
         [(ngModel)]="statusFilter"
         (change)="currentPage.set(0); loadOrders()"
-        class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
+        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
       >
         <option value="">Tous les statuts</option>
         <option value="PAYMENT_PENDING">Paiement en attente</option>
@@ -187,7 +187,7 @@ const ORDER_STEPS = [
                 </td>
                 <td class="px-4 py-3">
                   <span
-                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                     [ngClass]="getStatusClass(order.status)"
                   >
                     {{ getStatusLabel(order.status) }}
@@ -263,7 +263,7 @@ const ORDER_STEPS = [
         (click)="closeDetailModal()"
       >
         <div
-          class="mx-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           @if (loadingDetail()) {
@@ -291,28 +291,28 @@ const ORDER_STEPS = [
             <div class="px-6 py-5 space-y-6">
               <!-- Summary Cards -->
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Montant</p>
                   <p class="mt-1 text-lg font-bold text-(--foreground)">
                     {{ orderDetail()!.totalAmount | currency:(orderDetail()!.currency || 'EUR'):'symbol':'1.2-2' }}
                   </p>
                 </div>
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Statut</p>
                   <span
-                    class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    class="mt-1 inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                     [ngClass]="getStatusClass(orderDetail()!.status)"
                   >
                     {{ getStatusLabel(orderDetail()!.status) }}
                   </span>
                 </div>
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Paiement</p>
                   <p class="mt-1 text-sm font-medium text-(--foreground)">
                     {{ orderDetail()!.paymentStatus || '—' }}
                   </p>
                 </div>
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Date</p>
                   <p class="mt-1 text-sm text-(--foreground)">
                     {{ orderDetail()!.createdAt | date:'dd/MM/yy' }}
@@ -322,8 +322,8 @@ const ORDER_STEPS = [
 
               <!-- Client Info -->
               <div>
-                <p class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Client</p>
-                <div class="mt-2 flex items-center gap-3 rounded-lg border border-(--border) bg-(--background) p-3">
+                <p class="text-xs font-medium text-(--muted-foreground)">Client</p>
+                <div class="mt-2 flex items-center gap-3 rounded-sm border border-(--border) bg-(--background) p-3">
                   <div class="flex h-9 w-9 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">
                     <lucide-icon [img]="ShoppingCartIcon" [size]="16"></lucide-icon>
                   </div>
@@ -365,7 +365,7 @@ const ORDER_STEPS = [
                 <div class="space-y-2 mb-4">
                   @for (step of orderSteps; track step.threshold) {
                     <div
-                      class="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
+                      class="flex items-center gap-3 rounded-sm px-3 py-2 transition-colors"
                       [ngClass]="editProgressForm.percentage >= step.threshold
                         ? 'bg-(--primary)/5'
                         : 'opacity-40'"
@@ -388,7 +388,7 @@ const ORDER_STEPS = [
                 </div>
 
                 <!-- Editable Fields -->
-                <div class="space-y-3 rounded-lg border border-(--border) bg-(--background) p-4">
+                <div class="space-y-3 rounded-sm border border-(--border) bg-(--background) p-4">
                   <div>
                     <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
                       Progression (%)
@@ -411,7 +411,7 @@ const ORDER_STEPS = [
                     <select
                       [(ngModel)]="editProgressForm.status"
                       (ngModelChange)="onStatusChange($event)"
-                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
+                      class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
                     >
                       <option value="PAYMENT_PENDING">Paiement en attente</option>
                       <option value="PENDING">En attente</option>
@@ -434,7 +434,7 @@ const ORDER_STEPS = [
                     <textarea
                       [(ngModel)]="editProgressForm.progressMessage"
                       rows="2"
-                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                      class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                       placeholder="Ex: Votre projet est en cours de réalisation..."
                     ></textarea>
                   </div>
@@ -447,7 +447,7 @@ const ORDER_STEPS = [
                     <textarea
                       [(ngModel)]="editProgressForm.adminNotes"
                       rows="2"
-                      class="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                      class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
                       placeholder="Notes internes..."
                     ></textarea>
                   </div>
@@ -459,12 +459,12 @@ const ORDER_STEPS = [
             @if (orderRefunds().length > 0) {
               <div class="px-6 pb-4">
                 <div class="flex items-center gap-2 mb-3">
-                  <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-violet-500"></lucide-icon>
+                  <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-(--primary)"></lucide-icon>
                   <h4 class="text-sm font-semibold text-(--foreground)">Remboursements</h4>
                 </div>
                 <div class="space-y-2">
                   @for (refund of orderRefunds(); track refund.id) {
-                    <div class="flex items-center justify-between rounded-lg border border-(--border) bg-(--background) p-3">
+                    <div class="flex items-center justify-between rounded-sm border border-(--border) bg-(--background) p-3">
                       <div>
                         <p class="text-sm font-medium text-(--foreground)">
                           {{ refund.amount | currency:(refund.currency || 'EUR'):'symbol':'1.2-2' }}
@@ -478,9 +478,9 @@ const ORDER_STEPS = [
                         }
                       </div>
                       <span
-                        class="rounded-full px-2 py-0.5 text-xs font-medium"
+                        class="rounded-xs px-2 py-0.5 text-xs font-medium"
                         [ngClass]="refund.status === 'succeeded' ? 'bg-green-500/10 text-green-500' :
-                                   refund.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                                   refund.status === 'pending' ? 'bg-(--muted) text-(--foreground)' :
                                    refund.status === 'failed' ? 'bg-red-500/10 text-red-500' :
                                    'bg-gray-500/10 text-gray-400'"
                       >
@@ -556,7 +556,7 @@ const ORDER_STEPS = [
         (click)="showCreateOrderModal.set(false)"
       >
         <div
-          class="mx-4 w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-md rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
@@ -579,7 +579,7 @@ const ORDER_STEPS = [
               <input
                 [(ngModel)]="newOrderForm.userEmail"
                 type="email"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 placeholder="user@example.com"
               />
             </div>
@@ -590,7 +590,7 @@ const ORDER_STEPS = [
               <input
                 [(ngModel)]="newOrderForm.serviceName"
                 type="text"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 placeholder="Consultation SEO..."
               />
             </div>
@@ -603,7 +603,7 @@ const ORDER_STEPS = [
                 type="number"
                 min="0.01"
                 step="0.01"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 placeholder="100.00"
               />
             </div>
@@ -614,7 +614,7 @@ const ORDER_STEPS = [
               <textarea
                 [(ngModel)]="newOrderForm.notes"
                 rows="2"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
                 placeholder="Description..."
               ></textarea>
             </div>
@@ -647,9 +647,9 @@ const ORDER_STEPS = [
     <!-- Toast -->
     @if (toast()) {
       <div
-        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg"
+        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-sm border px-4 py-3 shadow-xs"
         [ngClass]="{
-          'border-emerald-500/30 bg-emerald-500/10 text-emerald-500': toast()!.type === 'success',
+          'border-emerald-500/30 bg-(--muted) text-(--foreground)': toast()!.type === 'success',
           'border-red-500/30 bg-red-500/10 text-red-500': toast()!.type === 'error',
         }"
       >
@@ -879,14 +879,14 @@ export class AdminOrdersComponent implements OnInit {
     switch (status) {
       case 'COMPLETED': return 'bg-green-500/10 text-green-500';
       case 'DELIVERED': return 'bg-green-500/10 text-green-500';
-      case 'CONFIRMED': return 'bg-blue-500/10 text-blue-500';
-      case 'PROCESSING': return 'bg-amber-500/10 text-amber-500';
-      case 'IN_PROGRESS': return 'bg-amber-500/10 text-amber-500';
+      case 'CONFIRMED': return 'bg-(--muted) text-(--foreground)';
+      case 'PROCESSING': return 'bg-(--muted) text-(--foreground)';
+      case 'IN_PROGRESS': return 'bg-(--muted) text-(--foreground)';
       case 'SHIPPED': return 'bg-indigo-500/10 text-indigo-500';
       case 'PENDING': return 'bg-yellow-500/10 text-yellow-500';
       case 'PAYMENT_PENDING': return 'bg-orange-500/10 text-orange-500';
       case 'CANCELLED': return 'bg-red-500/10 text-red-500';
-      case 'REFUNDED': return 'bg-violet-500/10 text-violet-500';
+      case 'REFUNDED': return 'bg-(--muted) text-(--primary)';
       default: return 'bg-gray-500/10 text-gray-400';
     }
   }
@@ -915,9 +915,9 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   getProgressTextClass(percentage: number): string {
-    if (percentage >= 100) return 'text-emerald-500';
-    if (percentage >= 60) return 'text-blue-500';
-    if (percentage >= 30) return 'text-amber-500';
+    if (percentage >= 100) return 'text-(--foreground)';
+    if (percentage >= 60) return 'text-(--foreground)';
+    if (percentage >= 30) return 'text-(--foreground)';
     return 'text-orange-500';
   }
 

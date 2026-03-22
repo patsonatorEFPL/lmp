@@ -61,7 +61,7 @@ import { ProfileService } from '../../core/services/profile.service';
         <!-- Success / Error Messages -->
         @if (profileSuccess()) {
           <div
-            class="mt-4 flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500"
+            class="mt-4 flex items-center gap-2 rounded-sm border border-emerald-500/20 bg-(--muted) p-3 text-sm text-(--foreground)"
           >
             <lucide-icon [img]="CheckIcon" [size]="16"></lucide-icon>
             {{ profileSuccess() }}
@@ -69,7 +69,7 @@ import { ProfileService } from '../../core/services/profile.service';
         }
         @if (profileError()) {
           <div
-            class="mt-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+            class="mt-4 flex items-center gap-2 rounded-sm border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
           >
             <lucide-icon [img]="AlertCircleIcon" [size]="16"></lucide-icon>
             {{ profileError() }}
@@ -80,7 +80,7 @@ import { ProfileService } from '../../core/services/profile.service';
         <div class="mt-8 rounded-sm border border-(--border) bg-(--card) p-6">
           <div class="mb-6 flex items-center gap-3">
             <div
-              class="flex h-9 w-9 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)"
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary)"
             >
               <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
             </div>
@@ -186,7 +186,7 @@ import { ProfileService } from '../../core/services/profile.service';
         <div class="mt-6 rounded-sm border border-(--border) bg-(--card) p-6">
           <div class="mb-4 flex items-center gap-3">
             <div
-              class="flex h-9 w-9 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)"
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary)"
             >
               <lucide-icon [img]="ShieldIcon" [size]="18"></lucide-icon>
             </div>
@@ -198,7 +198,7 @@ import { ProfileService } from '../../core/services/profile.service';
           <div class="space-y-4">
             <!-- Email verified status -->
             <div
-              class="flex items-center justify-between rounded-lg border border-(--border) p-4"
+              class="flex items-center justify-between rounded-sm border border-(--border) p-4"
             >
               <div>
                 <p class="text-sm font-medium text-(--foreground)">
@@ -210,19 +210,19 @@ import { ProfileService } from '../../core/services/profile.service';
               </div>
               @if (authService.user()?.emailVerified) {
                 <span
-                  class="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-500"
+                  class="rounded-full bg-(--muted) px-3 py-1 text-xs font-medium text-(--foreground)"
                   >Vérifié ✓</span
                 >
               } @else {
                 <span
-                  class="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-500"
+                  class="rounded-full bg-(--muted) px-3 py-1 text-xs font-medium text-(--foreground)"
                   >Non vérifié</span
                 >
               }
             </div>
 
             <!-- Password change -->
-            <div class="rounded-lg border border-(--border) p-4">
+            <div class="rounded-sm border border-(--border) p-4">
               <p class="text-sm font-medium text-(--foreground)">
                 Changer le mot de passe
               </p>
@@ -232,7 +232,7 @@ import { ProfileService } from '../../core/services/profile.service';
 
               @if (passwordSuccess()) {
                 <div
-                  class="mb-4 flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-500"
+                  class="mb-4 flex items-center gap-2 rounded-sm border border-emerald-500/20 bg-(--muted) p-3 text-sm text-(--foreground)"
                 >
                   <lucide-icon [img]="CheckIcon" [size]="16"></lucide-icon>
                   {{ passwordSuccess() }}
@@ -240,7 +240,7 @@ import { ProfileService } from '../../core/services/profile.service';
               }
               @if (passwordError()) {
                 <div
-                  class="mb-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+                  class="mb-4 flex items-center gap-2 rounded-sm border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
                 >
                   <lucide-icon
                     [img]="AlertCircleIcon"

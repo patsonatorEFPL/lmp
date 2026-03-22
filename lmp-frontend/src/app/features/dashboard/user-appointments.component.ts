@@ -78,17 +78,17 @@ interface ApiResponse<T> {
           </h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (appt of upcomingAppointments(); track appt.id) {
-              <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md hover:border-(--primary)/20">
+              <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-colors hover:border-(--primary)/20">
                 <div class="flex items-start justify-between">
-                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-violet-500/10 text-violet-500">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
                     <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
                   </div>
                   <div class="flex items-center gap-2">
-                    <span class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-500">
+                    <span class="rounded-full bg-(--muted) px-2.5 py-0.5 text-xs font-medium text-(--foreground)">
                       {{ appt.durationMinutes }} min
                     </span>
                     <span
-                      class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      class="rounded-xs px-2.5 py-0.5 text-xs font-medium"
                       [ngClass]="getStatusClass(appt.status)"
                     >
                       {{ getStatusLabel(appt.status) }}
@@ -126,7 +126,7 @@ interface ApiResponse<T> {
                     <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
                   </div>
                   <span
-                    class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    class="rounded-xs px-2.5 py-0.5 text-xs font-medium"
                     [ngClass]="getStatusClass(appt.status)"
                   >
                     {{ getStatusLabel(appt.status) }}
@@ -220,9 +220,9 @@ export class UserAppointmentsComponent implements OnInit {
 
   getStatusClass(status: string): string {
     const classes: Record<string, string> = {
-      PENDING: 'bg-amber-500/10 text-amber-500',
-      CONFIRMED: 'bg-blue-500/10 text-blue-500',
-      COMPLETED: 'bg-emerald-500/10 text-emerald-500',
+      PENDING: 'bg-(--muted) text-(--foreground)',
+      CONFIRMED: 'bg-(--muted) text-(--foreground)',
+      COMPLETED: 'bg-(--muted) text-(--foreground)',
       CANCELLED: 'bg-red-500/10 text-red-500',
       NO_SHOW: 'bg-slate-500/10 text-slate-500',
     };

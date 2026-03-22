@@ -138,7 +138,7 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-1.5"
+              class="flex items-center gap-2 rounded-sm border border-(--border) px-3 py-1.5"
             >
               <div
                 class="flex h-7 w-7 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)"
@@ -169,7 +169,7 @@ const USER_ORDER_STEPS = [
       <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <!-- Welcome banner -->
         <div
-          class="rounded-2xl border border-(--border) bg-gradient-to-br from-(--primary)/5 to-transparent p-6 sm:p-8"
+          class="rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8"
         >
           <div class="flex items-center justify-between">
             <div>
@@ -186,7 +186,7 @@ const USER_ORDER_STEPS = [
               @if (authService.isAdmin()) {
                 <a
                   routerLink="/admin"
-                  class="mt-3 inline-flex items-center gap-2 rounded-lg bg-violet-500/10 px-4 py-2 text-sm font-medium text-violet-500 transition-colors hover:bg-violet-500/20"
+                  class="mt-3 inline-flex items-center gap-2 rounded-sm bg-(--muted) px-4 py-2 text-sm font-medium text-(--primary) transition-colors hover:bg-violet-500/20"
                 >
                   🛡️ Accéder au panneau d'administration
                 </a>
@@ -225,15 +225,15 @@ const USER_ORDER_STEPS = [
             class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
             <div
-              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-colors"
             >
               <div class="flex items-center justify-between">
                 <span
-                  class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)"
+                  class="text-xs font-medium text-(--muted-foreground)"
                   >Commandes</span
                 >
                 <div
-                  class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)"
+                  class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary)"
                 >
                   <lucide-icon [img]="ShoppingCartIcon" [size]="16"></lucide-icon>
                 </div>
@@ -250,15 +250,15 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-colors"
             >
               <div class="flex items-center justify-between">
                 <span
-                  class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)"
+                  class="text-xs font-medium text-(--muted-foreground)"
                   >En cours</span
                 >
                 <div
-                  class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"
+                  class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--foreground)"
                 >
                   <lucide-icon [img]="ClockIcon" [size]="16"></lucide-icon>
                 </div>
@@ -275,15 +275,15 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-colors"
             >
               <div class="flex items-center justify-between">
                 <span
-                  class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)"
+                  class="text-xs font-medium text-(--muted-foreground)"
                   >Rendez-vous</span
                 >
                 <div
-                  class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500"
+                  class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--primary)"
                 >
                   <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
                 </div>
@@ -298,15 +298,15 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-colors"
             >
               <div class="flex items-center justify-between">
                 <span
-                  class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)"
+                  class="text-xs font-medium text-(--muted-foreground)"
                   >Avis</span
                 >
                 <div
-                  class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"
+                  class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--foreground)"
                 >
                   <lucide-icon [img]="StarIcon" [size]="16"></lucide-icon>
                 </div>
@@ -371,7 +371,7 @@ const USER_ORDER_STEPS = [
                       >
                         <div class="flex items-center gap-3">
                           <div
-                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm"
                             [ngClass]="getStatusBgClass(order.status)"
                           >
                             <lucide-icon
@@ -403,7 +403,7 @@ const USER_ORDER_STEPS = [
                               }}
                             </p>
                             <span
-                              class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+                              class="inline-block rounded-xs px-2 py-0.5 text-xs font-medium"
                               [ngClass]="getStatusBadgeClass(order.status)"
                             >
                               {{ getStatusLabel(order.status) }}
@@ -436,7 +436,7 @@ const USER_ORDER_STEPS = [
                 @for (action of quickActions; track action.label) {
                   <a
                     [routerLink]="action.route"
-                    class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5"
+                    class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30  hover:-translate-y-0.5"
                   >
                     <div
                       class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary) transition-transform 110"
@@ -457,7 +457,7 @@ const USER_ORDER_STEPS = [
                     <lucide-icon
                       [img]="ChevronRightIcon"
                       [size]="16"
-                      class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+                      class="text-(--muted-foreground) transition-transform "
                     ></lucide-icon>
                   </a>
                 }
@@ -485,7 +485,7 @@ const USER_ORDER_STEPS = [
                   >
                     <div class="flex items-start justify-between">
                       <div
-                        class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500"
+                        class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted) text-(--primary)"
                       >
                         <lucide-icon
                           [img]="CalendarIcon"
@@ -493,7 +493,7 @@ const USER_ORDER_STEPS = [
                         ></lucide-icon>
                       </div>
                       <span
-                        class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-500"
+                        class="rounded-full bg-(--muted) px-2.5 py-0.5 text-xs font-medium text-(--foreground)"
                       >
                         {{ appt.durationMinutes }} min
                       </span>
@@ -546,12 +546,12 @@ const USER_ORDER_STEPS = [
                       </div>
                       @if (review.approved) {
                         <span
-                          class="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500"
+                          class="rounded-full bg-(--muted) px-2.5 py-0.5 text-xs font-medium text-(--foreground)"
                           >Approuvé</span
                         >
                       } @else {
                         <span
-                          class="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-500"
+                          class="rounded-full bg-(--muted) px-2.5 py-0.5 text-xs font-medium text-(--foreground)"
                           >En attente</span
                         >
                       }
@@ -581,7 +581,7 @@ const USER_ORDER_STEPS = [
           (click)="closeOrderDetail()"
         >
           <div
-            class="mx-4 w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+            class="mx-4 w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) shadow-2xl"
             (click)="$event.stopPropagation()"
           >
             @if (loadingOrderDetail()) {
@@ -608,22 +608,22 @@ const USER_ORDER_STEPS = [
               <div class="px-6 py-5 space-y-5">
                 <!-- Summary -->
                 <div class="grid grid-cols-3 gap-3">
-                  <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                     <p class="text-xs text-(--muted-foreground)">Montant</p>
                     <p class="mt-1 text-lg font-bold text-(--foreground)">
                       {{ selectedOrder()!.totalAmount | currency:(selectedOrder()!.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
                     </p>
                   </div>
-                  <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                     <p class="text-xs text-(--muted-foreground)">Statut</p>
                     <span
-                      class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                      class="mt-1 inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                       [ngClass]="getStatusBadgeClass(selectedOrder()!.status)"
                     >
                       {{ getStatusLabel(selectedOrder()!.status) }}
                     </span>
                   </div>
-                  <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                  <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                     <p class="text-xs text-(--muted-foreground)">Date</p>
                     <p class="mt-1 text-sm text-(--foreground)">
                       {{ selectedOrder()!.createdAt | date:'dd/MM/yyyy' }}
@@ -655,7 +655,7 @@ const USER_ORDER_STEPS = [
                   <div class="space-y-2">
                     @for (step of orderSteps; track step.threshold) {
                       <div
-                        class="flex items-center gap-3 rounded-lg px-3 py-2"
+                        class="flex items-center gap-3 rounded-sm px-3 py-2"
                         [ngClass]="(selectedOrder()!.progressPercentage || 0) >= step.threshold
                           ? 'bg-(--primary)/5'
                           : 'opacity-40'"
@@ -680,7 +680,7 @@ const USER_ORDER_STEPS = [
 
                 <!-- Progress Message -->
                 @if (selectedOrder()!.processingNotes) {
-                  <div class="rounded-lg border border-(--border) bg-(--primary)/5 p-4">
+                  <div class="rounded-sm border border-(--border) bg-(--primary)/5 p-4">
                     <div class="flex items-center gap-2 mb-1.5">
                       <lucide-icon [img]="MessageSquareIcon" [size]="14" class="text-(--primary)"></lucide-icon>
                       <span class="text-xs font-medium text-(--primary)">Message de l'équipe</span>
@@ -694,12 +694,12 @@ const USER_ORDER_STEPS = [
               @if (orderRefunds().length > 0) {
                 <div class="px-6 pb-2">
                   <div class="flex items-center gap-2 mb-3">
-                    <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-violet-500"></lucide-icon>
+                    <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-(--primary)"></lucide-icon>
                     <h4 class="text-sm font-semibold text-(--foreground)">Remboursements</h4>
                   </div>
                   <div class="space-y-2">
                     @for (refund of orderRefunds(); track refund.id) {
-                      <div class="flex items-center justify-between rounded-lg border border-(--border) bg-(--background) p-3">
+                      <div class="flex items-center justify-between rounded-sm border border-(--border) bg-(--background) p-3">
                         <div>
                           <p class="text-sm font-medium text-(--foreground)">
                             {{ refund.amount | currency:(refund.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
@@ -710,9 +710,9 @@ const USER_ORDER_STEPS = [
                           </p>
                         </div>
                         <span
-                          class="rounded-full px-2 py-0.5 text-xs font-medium"
+                          class="rounded-xs px-2 py-0.5 text-xs font-medium"
                           [ngClass]="refund.status === 'succeeded' ? 'bg-green-500/10 text-green-500' :
-                                     refund.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                                     refund.status === 'pending' ? 'bg-(--muted) text-(--foreground)' :
                                      'bg-red-500/10 text-red-500'"
                         >
                           {{ refund.status === 'succeeded' ? 'Remboursé' : refund.status === 'pending' ? 'En cours' : refund.status }}
@@ -872,30 +872,30 @@ export class DashboardComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
-      COMPLETED: 'bg-emerald-500/10 text-emerald-500',
-      DELIVERED: 'bg-emerald-500/10 text-emerald-500',
-      CONFIRMED: 'bg-blue-500/10 text-blue-500',
-      IN_PROGRESS: 'bg-amber-500/10 text-amber-500',
-      PROCESSING: 'bg-amber-500/10 text-amber-500',
+      COMPLETED: 'bg-(--muted) text-(--foreground)',
+      DELIVERED: 'bg-(--muted) text-(--foreground)',
+      CONFIRMED: 'bg-(--muted) text-(--foreground)',
+      IN_PROGRESS: 'bg-(--muted) text-(--foreground)',
+      PROCESSING: 'bg-(--muted) text-(--foreground)',
       PENDING: 'bg-slate-500/10 text-slate-500',
       PAYMENT_PENDING: 'bg-orange-500/10 text-orange-500',
       CANCELLED: 'bg-red-500/10 text-red-500',
-      REFUNDED: 'bg-violet-500/10 text-violet-500',
+      REFUNDED: 'bg-(--muted) text-(--primary)',
     };
     return classes[status] || 'bg-slate-500/10 text-slate-500';
   }
 
   getStatusBgClass(status: string): string {
     const classes: Record<string, string> = {
-      COMPLETED: 'bg-emerald-500/10 text-emerald-500',
-      DELIVERED: 'bg-emerald-500/10 text-emerald-500',
-      CONFIRMED: 'bg-blue-500/10 text-blue-500',
-      IN_PROGRESS: 'bg-amber-500/10 text-amber-500',
-      PROCESSING: 'bg-amber-500/10 text-amber-500',
+      COMPLETED: 'bg-(--muted) text-(--foreground)',
+      DELIVERED: 'bg-(--muted) text-(--foreground)',
+      CONFIRMED: 'bg-(--muted) text-(--foreground)',
+      IN_PROGRESS: 'bg-(--muted) text-(--foreground)',
+      PROCESSING: 'bg-(--muted) text-(--foreground)',
       PENDING: 'bg-slate-500/10 text-slate-500',
       PAYMENT_PENDING: 'bg-orange-500/10 text-orange-500',
       CANCELLED: 'bg-red-500/10 text-red-500',
-      REFUNDED: 'bg-violet-500/10 text-violet-500',
+      REFUNDED: 'bg-(--muted) text-(--primary)',
     };
     return classes[status] || 'bg-slate-500/10 text-slate-500';
   }
@@ -1005,9 +1005,9 @@ export class DashboardComponent implements OnInit {
   }
 
   getProgressTextColor(percentage: number): string {
-    if (percentage >= 100) return 'text-emerald-500';
-    if (percentage >= 60) return 'text-blue-500';
-    if (percentage >= 30) return 'text-amber-500';
+    if (percentage >= 100) return 'text-(--foreground)';
+    if (percentage >= 60) return 'text-(--foreground)';
+    if (percentage >= 30) return 'text-(--foreground)';
     return 'text-orange-500';
   }
 }
