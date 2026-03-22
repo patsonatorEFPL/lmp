@@ -48,14 +48,14 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
 
       <div class="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 w-full">
         <div class="max-w-2xl">
-          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight scroll-animate">
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
             Propulsez votre visibilité digitale
           </h1>
-          <p class="mt-4 text-base sm:text-lg text-white/60 leading-relaxed max-w-lg scroll-animate">
+          <p class="mt-4 text-base sm:text-lg text-white/60 leading-relaxed max-w-lg">
             Nous bâtissons des stratégies digitales, sites web et expériences
             numériques avec précision, clarté et engagement.
           </p>
-          <div class="mt-8 flex items-center gap-4 scroll-animate">
+          <div class="mt-8 flex items-center gap-4">
             <button
               (click)="showAppointment.set(true)"
               class="inline-flex items-center gap-2 rounded-sm bg-white px-5 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-100 cursor-pointer"
