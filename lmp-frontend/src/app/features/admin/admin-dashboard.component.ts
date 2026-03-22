@@ -22,7 +22,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
   template: `
     <!-- Welcome Banner -->
     <div
-      class="rounded-2xl border border-(--border) bg-gradient-to-br from-violet-500/10 to-transparent p-6 sm:p-8"
+      class="rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8"
     >
       <div class="flex items-center justify-between">
         <div>
@@ -70,14 +70,14 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
           class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Utilisateurs</span>
+            <span class="text-xs font-medium text-(--muted-foreground)">Utilisateurs</span>
             <div
-              class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10"
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)"
             >
               <lucide-icon
                 [img]="UsersIcon"
                 [size]="18"
-                class="text-blue-500"
+                class="text-(--foreground)"
               ></lucide-icon>
             </div>
           </div>
@@ -96,14 +96,14 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
           class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Commandes</span>
+            <span class="text-xs font-medium text-(--muted-foreground)">Commandes</span>
             <div
-              class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10"
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)"
             >
               <lucide-icon
                 [img]="OrdersIcon"
                 [size]="18"
-                class="text-emerald-500"
+                class="text-(--foreground)"
               ></lucide-icon>
             </div>
           </div>
@@ -119,14 +119,14 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
           class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Services</span>
+            <span class="text-xs font-medium text-(--muted-foreground)">Services</span>
             <div
-              class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10"
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)"
             >
               <lucide-icon
                 [img]="PackageIcon"
                 [size]="18"
-                class="text-violet-500"
+                class="text-(--primary)"
               ></lucide-icon>
             </div>
           </div>
@@ -145,14 +145,14 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
           class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Rendez-vous</span>
+            <span class="text-xs font-medium text-(--muted-foreground)">Rendez-vous</span>
             <div
-              class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10"
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)"
             >
               <lucide-icon
                 [img]="CalendarIcon"
                 [size]="18"
-                class="text-amber-500"
+                class="text-(--foreground)"
               ></lucide-icon>
             </div>
           </div>
@@ -174,11 +174,11 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
         <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <a
             routerLink="/admin/services"
-            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-violet-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:bg-(--accent)"
           >
             <div class="flex items-center gap-3">
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500"
+                class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-(--primary)"
               >
                 <lucide-icon [img]="PackageIcon" [size]="20"></lucide-icon>
               </div>
@@ -194,17 +194,17 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
             <lucide-icon
               [img]="ArrowRightIcon"
               [size]="16"
-              class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+              class="text-(--muted-foreground) transition-transform "
             ></lucide-icon>
           </a>
 
           <a
             routerLink="/admin/users"
-            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-blue-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:bg-(--accent)"
           >
             <div class="flex items-center gap-3">
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500"
+                class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-(--foreground)"
               >
                 <lucide-icon [img]="UsersIcon" [size]="20"></lucide-icon>
               </div>
@@ -220,17 +220,17 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
             <lucide-icon
               [img]="ArrowRightIcon"
               [size]="16"
-              class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+              class="text-(--muted-foreground) transition-transform "
             ></lucide-icon>
           </a>
 
           <a
             routerLink="/admin/orders"
-            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-emerald-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:bg-(--accent)"
           >
             <div class="flex items-center gap-3">
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"
+                class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-(--foreground)"
               >
                 <lucide-icon [img]="OrdersIcon" [size]="20"></lucide-icon>
               </div>
@@ -246,17 +246,17 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
             <lucide-icon
               [img]="ArrowRightIcon"
               [size]="16"
-              class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+              class="text-(--muted-foreground) transition-transform "
             ></lucide-icon>
           </a>
 
           <a
             routerLink="/admin/appointments"
-            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-amber-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:bg-(--accent)"
           >
             <div class="flex items-center gap-3">
               <div
-                class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"
+                class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-(--foreground)"
               >
                 <lucide-icon [img]="CalendarIcon" [size]="20"></lucide-icon>
               </div>
@@ -272,7 +272,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
             <lucide-icon
               [img]="ArrowRightIcon"
               [size]="16"
-              class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+              class="text-(--muted-foreground) transition-transform "
             ></lucide-icon>
           </a>
         </div>

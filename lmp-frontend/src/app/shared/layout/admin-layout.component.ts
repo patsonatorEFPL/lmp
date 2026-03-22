@@ -59,7 +59,7 @@ import { ThemeService } from '../../core/services/theme.service';
             routerLink="/admin"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
             [routerLinkActiveOptions]="{ exact: true }"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="DashboardIcon" [size]="18"></lucide-icon>
             Tableau de bord
@@ -67,7 +67,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <a
             routerLink="/admin/services"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="PackageIcon" [size]="18"></lucide-icon>
             Services
@@ -75,7 +75,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <a
             routerLink="/admin/users"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
             Utilisateurs
@@ -83,7 +83,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <a
             routerLink="/admin/orders"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="OrdersIcon" [size]="18"></lucide-icon>
             Commandes
@@ -91,7 +91,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <a
             routerLink="/admin/appointments"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
             Rendez-vous
@@ -99,7 +99,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <a
             routerLink="/admin/settings"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="SettingsIcon" [size]="18"></lucide-icon>
             Paramètres
@@ -153,10 +153,10 @@ import { ThemeService } from '../../core/services/theme.service';
             </a>
           </div>
           <div
-            class="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-1.5"
+            class="flex items-center gap-2 rounded-sm border border-(--border) px-3 py-1.5"
           >
             <div
-              class="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/10 text-violet-500"
+              class="flex h-7 w-7 items-center justify-center rounded-full bg-(--muted) text-(--primary)"
             >
               <lucide-icon [img]="UsersIcon" [size]="14"></lucide-icon>
             </div>

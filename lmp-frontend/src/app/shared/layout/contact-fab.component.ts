@@ -7,6 +7,17 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
   standalone: true,
   imports: [AppointmentModalComponent, LucideAngularModule],
   styles: [`
+    @keyframes fab-slide-in {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
     .fab-btn {
       position: fixed;
       bottom: 24px;
@@ -26,6 +37,8 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
       cursor: pointer;
       transition: background-color 0.15s ease, border-color 0.15s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      animation: fab-slide-in 0.4s ease-out both;
+      animation-delay: 1s;
     }
 
     .fab-btn:hover {
@@ -43,6 +56,13 @@ import { AppointmentModalComponent } from '../modals/appointment-modal.component
         justify-content: center;
       }
       .contact-text { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fab-btn {
+        animation: none;
+        opacity: 1;
+      }
     }
   `],
   template: `

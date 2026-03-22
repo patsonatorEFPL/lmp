@@ -30,11 +30,11 @@ declare const L: any;
             type="text"
             placeholder="Rechercher une localisation..."
             [(ngModel)]="searchQuery"
-            class="w-full rounded-lg border border-(--border) bg-(--card)/95 px-4 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) backdrop-blur-sm outline-none focus:border-(--primary)/50"
+            class="w-full rounded-sm border border-(--border) bg-(--card)/95 px-4 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) backdrop-blur-sm outline-none focus:border-(--primary)/50"
           />
           <select
             [(ngModel)]="selectedCategory"
-            class="w-full rounded-lg border border-(--border) bg-(--card)/95 px-4 py-2.5 text-sm text-(--foreground) backdrop-blur-sm outline-none cursor-pointer"
+            class="w-full rounded-sm border border-(--border) bg-(--card)/95 px-4 py-2.5 text-sm text-(--foreground) backdrop-blur-sm outline-none cursor-pointer"
           >
             <option value="">Toutes les catégories</option>
             <option value="restaurant">Restaurants</option>
@@ -42,7 +42,7 @@ declare const L: any;
             <option value="service">Services</option>
             <option value="sante">Santé</option>
           </select>
-          <p class="rounded-lg bg-(--card)/95 px-3 py-2 text-xs text-(--muted-foreground) backdrop-blur-sm border border-(--border)">
+          <p class="rounded-sm bg-(--card)/95 px-3 py-2 text-xs text-(--muted-foreground) backdrop-blur-sm border border-(--border)">
             ℹ️ Cliquez sur un marqueur pour plus d'informations
           </p>
         </div>

@@ -36,7 +36,7 @@ interface ApiResponse<T> {
       <div class="w-full max-w-md text-center">
         <!-- Loading / Polling state -->
         @if (polling()) {
-          <div class="flex flex-col items-center gap-6 rounded-2xl border border-(--border) bg-(--card) p-10 shadow-lg">
+          <div class="flex flex-col items-center gap-6 rounded-sm border border-(--border) bg-(--card) p-10 shadow-xs">
             <div class="flex h-16 w-16 items-center justify-center rounded-full bg-(--primary)/10">
               <lucide-icon
                 [img]="Loader2Icon"
@@ -60,12 +60,12 @@ interface ApiResponse<T> {
 
         <!-- Success state -->
         @if (confirmed()) {
-          <div class="flex flex-col items-center gap-6 rounded-2xl border border-emerald-500/20 bg-(--card) p-10 shadow-lg">
-            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+          <div class="flex flex-col items-center gap-6 rounded-sm border border-emerald-500/20 bg-(--card) p-10 shadow-xs">
+            <div class="flex h-20 w-20 items-center justify-center rounded-full bg-(--muted)">
               <lucide-icon
                 [img]="CheckCircleIcon"
                 [size]="40"
-                class="text-emerald-500"
+                class="text-(--foreground)"
               ></lucide-icon>
             </div>
             <div>
@@ -78,10 +78,10 @@ interface ApiResponse<T> {
             </div>
 
             @if (orderStatus()) {
-              <div class="w-full rounded-lg border border-(--border) bg-(--background) p-4 text-left">
+              <div class="w-full rounded-sm border border-(--border) bg-(--background) p-4 text-left">
                 <div class="flex items-center gap-3 text-sm">
                   <span class="text-(--muted-foreground)">Statut :</span>
-                  <span class="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-500">
+                  <span class="inline-flex rounded-full bg-(--muted) px-2.5 py-0.5 text-xs font-semibold text-(--foreground)">
                     Paiement confirmé
                   </span>
                 </div>
@@ -119,7 +119,7 @@ interface ApiResponse<T> {
 
         <!-- Error state -->
         @if (error()) {
-          <div class="flex flex-col items-center gap-6 rounded-2xl border border-red-500/20 bg-(--card) p-10 shadow-lg">
+          <div class="flex flex-col items-center gap-6 rounded-sm border border-red-500/20 bg-(--card) p-10 shadow-xs">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
               <lucide-icon
                 [img]="XCircleIcon"

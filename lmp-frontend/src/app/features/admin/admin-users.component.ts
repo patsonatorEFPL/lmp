@@ -98,13 +98,13 @@ interface ApiResponse<T> {
           [(ngModel)]="searchQuery"
           (input)="filterUsers()"
           placeholder="Rechercher par nom ou email..."
-          class="w-full rounded-lg border border-(--border) bg-(--background) py-2.5 pr-4 pl-10 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+          class="w-full rounded-sm border border-(--border) bg-(--background) py-2.5 pr-4 pl-10 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
         />
       </div>
       <select
         [(ngModel)]="statusFilter"
         (change)="loadUsers()"
-        class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
+        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
       >
         <option value="">Tous les statuts</option>
         <option value="ACTIVE">Actifs</option>
@@ -159,10 +159,10 @@ interface ApiResponse<T> {
                 <td class="px-4 py-3">
                   @for (role of user.roles; track role) {
                     <span
-                      class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                      class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                       [ngClass]="role === 'ADMIN'
-                        ? 'bg-violet-500/10 text-violet-500'
-                        : 'bg-blue-500/10 text-blue-500'"
+                        ? 'bg-(--muted) text-(--primary)'
+                        : 'bg-(--muted) text-(--foreground)'"
                     >
                       {{ role }}
                     </span>
@@ -172,7 +172,7 @@ interface ApiResponse<T> {
                   <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-1.5">
                       <span
-                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                        class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                         [ngClass]="getStatusClass(user.status)"
                       >
                         {{ getStatusLabel(user.status) }}
@@ -210,7 +210,7 @@ interface ApiResponse<T> {
                     (click)="softDeleteUser(user)"
                     title="Désactiver"
                   >
-                    <lucide-icon [img]="Trash2Icon" [size]="14" class="text-amber-500"></lucide-icon>
+                    <lucide-icon [img]="Trash2Icon" [size]="14" class="text-(--foreground)"></lucide-icon>
                   </button>
                 </td>
               </tr>
@@ -258,7 +258,7 @@ interface ApiResponse<T> {
         (click)="closeEditModal()"
       >
         <div
-          class="mx-4 w-full max-w-lg rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-lg rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           <!-- Modal Header -->
@@ -311,17 +311,17 @@ interface ApiResponse<T> {
               <input
                 [(ngModel)]="editForm.email"
                 type="email"
-                class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
               />
               @if (editForm.email !== editingUser?.email) {
-                <p class="mt-1 text-xs text-amber-500">
+                <p class="mt-1 text-xs text-(--foreground)">
                   ⚠️ Un email de notification sera envoyé à l'ancien et au nouvel email.
                 </p>
               }
             </div>
 
             <!-- Status (administrative control) -->
-            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+            <div class="rounded-sm border border-(--border) bg-(--background) p-4">
               <div class="flex items-center gap-2 mb-1">
                 <lucide-icon [img]="UserIcon" [size]="14" class="text-(--primary)"></lucide-icon>
                 <label class="text-sm font-semibold text-(--foreground)">Statut du compte</label>
@@ -348,20 +348,20 @@ interface ApiResponse<T> {
                 </button>
               </div>
               @if (editForm.status === 'ACTIVE') {
-                <p class="mt-2 text-xs text-emerald-500">
+                <p class="mt-2 text-xs text-(--foreground)">
                   ✅ Le compte est fonctionnel — l'utilisateur peut se connecter (sauf si verrouillé).
                 </p>
               } @else {
-                <p class="mt-2 text-xs text-amber-500">
+                <p class="mt-2 text-xs text-(--foreground)">
                   ❌ Le compte est désactivé — l'utilisateur ne peut plus se connecter, quel que soit le verrouillage.
                 </p>
               }
             </div>
 
             <!-- Lock (security control) -->
-            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+            <div class="rounded-sm border border-(--border) bg-(--background) p-4">
               <div class="flex items-center gap-2 mb-1">
-                <lucide-icon [img]="ShieldIcon" [size]="14" class="text-amber-500"></lucide-icon>
+                <lucide-icon [img]="ShieldIcon" [size]="14" class="text-(--foreground)"></lucide-icon>
                 <label class="text-sm font-semibold text-(--foreground)">Verrouillage de sécurité</label>
               </div>
               <p class="mb-3 text-xs text-(--muted-foreground)">
@@ -390,14 +390,14 @@ interface ApiResponse<T> {
                   🔒 La connexion est bloquée pour des raisons de sécurité, même si le compte est actif.
                 </p>
               } @else {
-                <p class="mt-2 text-xs text-emerald-500">
+                <p class="mt-2 text-xs text-(--foreground)">
                   🔓 Accès normal — l'utilisateur peut se connecter si le compte est actif.
                 </p>
               }
             </div>
 
             <!-- Combined state summary -->
-            <div class="rounded-lg border border-dashed border-(--border) bg-(--muted)/30 p-3">
+            <div class="rounded-sm border border-dashed border-(--border) bg-(--muted)/30 p-3">
               <div class="flex items-center gap-2 mb-1">
                 <lucide-icon [img]="InfoIcon" [size]="12" class="text-(--muted-foreground)"></lucide-icon>
                 <span class="text-xs font-medium text-(--muted-foreground)">État résultant</span>
@@ -445,9 +445,9 @@ interface ApiResponse<T> {
     <!-- Toast -->
     @if (toast()) {
       <div
-        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg"
+        class="fixed right-4 bottom-4 z-[200] flex items-center gap-2 rounded-sm border px-4 py-3 shadow-xs"
         [ngClass]="{
-          'border-emerald-500/30 bg-emerald-500/10 text-emerald-500': toast()!.type === 'success',
+          'border-emerald-500/30 bg-(--muted) text-(--foreground)': toast()!.type === 'success',
           'border-red-500/30 bg-red-500/10 text-red-500': toast()!.type === 'error',
         }"
       >
@@ -679,9 +679,9 @@ export class AdminUsersComponent implements OnInit {
       return 'text-red-500';
     }
     if (this.editForm.locked) {
-      return 'text-amber-500';
+      return 'text-(--foreground)';
     }
-    return 'text-emerald-500';
+    return 'text-(--foreground)';
   }
 
   private showToast(type: 'success' | 'error', message: string): void {

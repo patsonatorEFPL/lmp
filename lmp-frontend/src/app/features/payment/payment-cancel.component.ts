@@ -16,12 +16,12 @@ import { HlmButton } from '@spartan-ng/helm/button';
   template: `
     <section class="flex min-h-screen items-center justify-center bg-(--background) px-4">
       <div class="w-full max-w-md text-center">
-        <div class="flex flex-col items-center gap-6 rounded-2xl border border-amber-500/20 bg-(--card) p-10 shadow-lg">
-          <div class="flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
+        <div class="flex flex-col items-center gap-6 rounded-sm border border-amber-500/20 bg-(--card) p-10 shadow-xs">
+          <div class="flex h-20 w-20 items-center justify-center rounded-full bg-(--muted)">
             <lucide-icon
               [img]="XCircleIcon"
               [size]="40"
-              class="text-amber-500"
+              class="text-(--foreground)"
             ></lucide-icon>
           </div>
           <div>

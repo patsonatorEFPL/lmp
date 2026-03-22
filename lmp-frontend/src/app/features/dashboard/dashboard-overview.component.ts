@@ -71,10 +71,10 @@ import {
     @if (!loading() && stats()) {
       <!-- Quick stats -->
       <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Commandes</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
+            <span class="text-xs font-medium text-(--muted-foreground)">Commandes</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
               <lucide-icon [img]="ShoppingCartIcon" [size]="16"></lucide-icon>
             </div>
           </div>
@@ -84,10 +84,10 @@ import {
           <p class="mt-1 text-xs text-(--muted-foreground)">{{ stats()!.completedOrders }} terminée(s)</p>
         </div>
 
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">En cours</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+            <span class="text-xs font-medium text-(--muted-foreground)">En cours</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-amber-600">
               <lucide-icon [img]="ClockIcon" [size]="16"></lucide-icon>
             </div>
           </div>
@@ -97,10 +97,10 @@ import {
           <p class="mt-1 text-xs text-(--muted-foreground)">Commandes actives</p>
         </div>
 
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Rendez-vous</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
+            <span class="text-xs font-medium text-(--muted-foreground)">Rendez-vous</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
               <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
             </div>
           </div>
@@ -110,10 +110,10 @@ import {
           <p class="mt-1 text-xs text-(--muted-foreground)">À venir</p>
         </div>
 
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Avis</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+            <span class="text-xs font-medium text-(--muted-foreground)">Avis</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-emerald-600">
               <lucide-icon [img]="StarIcon" [size]="16"></lucide-icon>
             </div>
           </div>
@@ -159,7 +159,7 @@ import {
                   >
                     <div class="flex items-center gap-3">
                       <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm"
                         [ngClass]="getStatusBgClass(order.status)"
                       >
                         <lucide-icon [img]="getStatusIcon(order.status)" [size]="16"></lucide-icon>
@@ -175,7 +175,7 @@ import {
                           {{ order.totalAmount | currency:(order.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
                         </p>
                         <span
-                          class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+                          class="inline-block rounded-xs px-2 py-0.5 text-xs font-medium"
                           [ngClass]="getStatusBadgeClass(order.status)"
                         >
                           {{ getStatusLabel(order.status) }}
@@ -197,9 +197,9 @@ import {
             @for (action of quickActions; track action.label) {
               <a
                 [routerLink]="action.route"
-                class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5"
+                class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-colors hover:bg-(--accent)"
               >
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary) transition-transform 110">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
                   <lucide-icon [img]="action.icon" [size]="18"></lucide-icon>
                 </div>
                 <div class="flex-1">
@@ -208,7 +208,7 @@ import {
                 </div>
                 <lucide-icon
                   [img]="ChevronRightIcon" [size]="16"
-                  class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+                  class="text-(--muted-foreground)"
                 ></lucide-icon>
               </a>
             }
@@ -232,10 +232,10 @@ import {
             @for (appt of stats()!.upcomingAppointmentsList; track appt.id) {
               <div class="rounded-sm border border-(--border) bg-(--card) p-5">
                 <div class="flex items-start justify-between">
-                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
                     <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
                   </div>
-                  <span class="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-500">
+                  <span class="rounded-xs bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                     {{ appt.durationMinutes }} min
                   </span>
                 </div>
@@ -266,9 +266,9 @@ import {
                     }
                   </div>
                   @if (review.approved) {
-                    <span class="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500">Approuvé</span>
+                    <span class="rounded-xs bg-(--muted) px-2 py-0.5 text-xs font-medium text-emerald-600">Approuvé</span>
                   } @else {
-                    <span class="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-500">En attente</span>
+                    <span class="rounded-xs bg-(--muted) px-2 py-0.5 text-xs font-medium text-amber-600">En attente</span>
                   }
                 </div>
                 @if (review.comment) {
@@ -345,15 +345,15 @@ export class DashboardOverviewComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
-      COMPLETED: 'bg-emerald-500/10 text-emerald-500',
-      DELIVERED: 'bg-emerald-500/10 text-emerald-500',
-      CONFIRMED: 'bg-blue-500/10 text-blue-500',
-      IN_PROGRESS: 'bg-amber-500/10 text-amber-500',
-      PROCESSING: 'bg-amber-500/10 text-amber-500',
+      COMPLETED: 'bg-(--muted) text-(--foreground)',
+      DELIVERED: 'bg-(--muted) text-(--foreground)',
+      CONFIRMED: 'bg-(--muted) text-(--foreground)',
+      IN_PROGRESS: 'bg-(--muted) text-(--foreground)',
+      PROCESSING: 'bg-(--muted) text-(--foreground)',
       PENDING: 'bg-slate-500/10 text-slate-500',
       PAYMENT_PENDING: 'bg-orange-500/10 text-orange-500',
       CANCELLED: 'bg-red-500/10 text-red-500',
-      REFUNDED: 'bg-violet-500/10 text-violet-500',
+      REFUNDED: 'bg-(--muted) text-(--primary)',
     };
     return classes[status] || 'bg-slate-500/10 text-slate-500';
   }

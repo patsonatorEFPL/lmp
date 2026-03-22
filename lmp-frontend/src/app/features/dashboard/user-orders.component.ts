@@ -93,7 +93,7 @@ const ORDER_STEPS = [
       <select
         [(ngModel)]="statusFilter"
         (change)="applyFilter()"
-        class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
+        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
       >
         <option value="">Tous les statuts</option>
         <option value="PAYMENT_PENDING">Paiement en attente</option>
@@ -130,7 +130,7 @@ const ORDER_STEPS = [
       } @else {
         @for (order of paginatedOrders(); track order.id) {
           <div
-            class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md hover:border-(--primary)/20 cursor-pointer"
+            class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-sm border border-(--border) bg-(--card) p-5 transition-colors hover:border-(--primary)/20 cursor-pointer"
             (click)="viewOrderDetail(order.id)"
           >
             <div class="flex items-center gap-4 flex-1 min-w-0">
@@ -146,7 +146,7 @@ const ORDER_STEPS = [
                 <div class="flex items-center gap-2 flex-wrap">
                   <p class="text-sm font-semibold text-(--foreground) truncate">{{ order.serviceName }}</p>
                   <span
-                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium shrink-0"
+                    class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium shrink-0"
                     [ngClass]="getStatusBadgeClass(order.status)"
                   >
                     {{ getStatusLabel(order.status) }}
@@ -177,7 +177,7 @@ const ORDER_STEPS = [
               </p>
               <lucide-icon
                 [img]="ChevronRightIcon" [size]="16"
-                class="text-(--muted-foreground) transition-transform group-hover:translate-x-1"
+                class="text-(--muted-foreground) transition-transform "
               ></lucide-icon>
             </div>
           </div>
@@ -217,7 +217,7 @@ const ORDER_STEPS = [
         (click)="closeDetail()"
       >
         <div
-          class="mx-4 w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) shadow-2xl"
+          class="mx-4 w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) shadow-2xl"
           (click)="$event.stopPropagation()"
         >
           @if (loadingDetail()) {
@@ -242,22 +242,22 @@ const ORDER_STEPS = [
             <div class="px-6 py-5 space-y-5">
               <!-- Summary -->
               <div class="grid grid-cols-3 gap-3">
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Montant</p>
                   <p class="mt-1 text-lg font-bold text-(--foreground)">
                     {{ selectedOrder()!.totalAmount | currency:(selectedOrder()!.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
                   </p>
                 </div>
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Statut</p>
                   <span
-                    class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    class="mt-1 inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
                     [ngClass]="getStatusBadgeClass(selectedOrder()!.status)"
                   >
                     {{ getStatusLabel(selectedOrder()!.status) }}
                   </span>
                 </div>
-                <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Date</p>
                   <p class="mt-1 text-sm text-(--foreground)">
                     {{ selectedOrder()!.createdAt | date:'dd/MM/yyyy' }}
@@ -286,7 +286,7 @@ const ORDER_STEPS = [
                 <div class="space-y-2">
                   @for (step of orderSteps; track step.threshold) {
                     <div
-                      class="flex items-center gap-3 rounded-lg px-3 py-2"
+                      class="flex items-center gap-3 rounded-sm px-3 py-2"
                       [ngClass]="(selectedOrder()!.progressPercentage || 0) >= step.threshold ? 'bg-(--primary)/5' : 'opacity-40'"
                     >
                       <div
@@ -307,7 +307,7 @@ const ORDER_STEPS = [
 
               <!-- Processing Notes -->
               @if (selectedOrder()!.processingNotes) {
-                <div class="rounded-lg border border-(--border) bg-(--primary)/5 p-4">
+                <div class="rounded-sm border border-(--border) bg-(--primary)/5 p-4">
                   <div class="flex items-center gap-2 mb-1.5">
                     <lucide-icon [img]="MessageSquareIcon" [size]="14" class="text-(--primary)"></lucide-icon>
                     <span class="text-xs font-medium text-(--primary)">Message de l'équipe</span>
@@ -321,12 +321,12 @@ const ORDER_STEPS = [
             @if (orderRefunds().length > 0) {
               <div class="px-6 pb-2">
                 <div class="flex items-center gap-2 mb-3">
-                  <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-violet-500"></lucide-icon>
+                  <lucide-icon [img]="RotateCcwIcon" [size]="16" class="text-(--primary)"></lucide-icon>
                   <h4 class="text-sm font-semibold text-(--foreground)">Remboursements</h4>
                 </div>
                 <div class="space-y-2">
                   @for (refund of orderRefunds(); track refund.id) {
-                    <div class="flex items-center justify-between rounded-lg border border-(--border) bg-(--background) p-3">
+                    <div class="flex items-center justify-between rounded-sm border border-(--border) bg-(--background) p-3">
                       <div>
                         <p class="text-sm font-medium text-(--foreground)">
                           {{ refund.amount | currency:(refund.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
@@ -337,9 +337,9 @@ const ORDER_STEPS = [
                         </p>
                       </div>
                       <span
-                        class="rounded-full px-2 py-0.5 text-xs font-medium"
+                        class="rounded-xs px-2 py-0.5 text-xs font-medium"
                         [ngClass]="refund.status === 'succeeded' ? 'bg-green-500/10 text-green-500' :
-                                   refund.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                                   refund.status === 'pending' ? 'bg-(--muted) text-(--foreground)' :
                                    'bg-red-500/10 text-red-500'"
                       >
                         {{ refund.status === 'succeeded' ? 'Remboursé' : refund.status === 'pending' ? 'En cours' : refund.status }}
@@ -544,15 +544,15 @@ export class UserOrdersComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
-      COMPLETED: 'bg-emerald-500/10 text-emerald-500',
-      DELIVERED: 'bg-emerald-500/10 text-emerald-500',
-      CONFIRMED: 'bg-blue-500/10 text-blue-500',
-      IN_PROGRESS: 'bg-amber-500/10 text-amber-500',
-      PROCESSING: 'bg-amber-500/10 text-amber-500',
+      COMPLETED: 'bg-(--muted) text-(--foreground)',
+      DELIVERED: 'bg-(--muted) text-(--foreground)',
+      CONFIRMED: 'bg-(--muted) text-(--foreground)',
+      IN_PROGRESS: 'bg-(--muted) text-(--foreground)',
+      PROCESSING: 'bg-(--muted) text-(--foreground)',
       PENDING: 'bg-slate-500/10 text-slate-500',
       PAYMENT_PENDING: 'bg-orange-500/10 text-orange-500',
       CANCELLED: 'bg-red-500/10 text-red-500',
-      REFUNDED: 'bg-violet-500/10 text-violet-500',
+      REFUNDED: 'bg-(--muted) text-(--primary)',
     };
     return classes[status] || 'bg-slate-500/10 text-slate-500';
   }
@@ -578,9 +578,9 @@ export class UserOrdersComponent implements OnInit {
   }
 
   getProgressTextColor(pct: number): string {
-    if (pct >= 100) return 'text-emerald-500';
-    if (pct >= 60) return 'text-blue-500';
-    if (pct >= 30) return 'text-amber-500';
+    if (pct >= 100) return 'text-(--foreground)';
+    if (pct >= 60) return 'text-(--foreground)';
+    if (pct >= 30) return 'text-(--foreground)';
     return 'text-orange-500';
   }
 }

@@ -90,7 +90,7 @@ import { environment } from '../../../environments/environment';
 
           <!-- Global error banner -->
           @if (submitted() && hasErrors()) {
-            <div class="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400 field-error">
+            <div class="mt-4 flex items-center gap-2 rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400 field-error">
               <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
@@ -114,7 +114,7 @@ import { environment } from '../../../environments/environment';
                     type="text"
                     [(ngModel)]="fullName"
                     (ngModelChange)="clearError('fullName')"
-                    class="mt-1 w-full rounded-lg border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none transition-colors"
+                    class="mt-1 w-full rounded-sm border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none transition-colors"
                     [class]="fieldError('fullName')
                       ? 'border-red-400 focus:border-red-500'
                       : 'border-(--border) focus:border-blue-500/50'"
@@ -132,7 +132,7 @@ import { environment } from '../../../environments/environment';
                     type="email"
                     [(ngModel)]="email"
                     (ngModelChange)="clearError('email')"
-                    class="mt-1 w-full rounded-lg border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none transition-colors"
+                    class="mt-1 w-full rounded-sm border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none transition-colors"
                     [class]="fieldError('email')
                       ? 'border-red-400 focus:border-red-500'
                       : 'border-(--border) focus:border-blue-500/50'"
@@ -152,7 +152,7 @@ import { environment } from '../../../environments/environment';
                     type="tel"
                     [(ngModel)]="phone"
                     (ngModelChange)="clearError('phone')"
-                    class="mt-1 w-full rounded-lg border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none transition-colors"
+                    class="mt-1 w-full rounded-sm border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none transition-colors"
                     [class]="fieldError('phone')
                       ? 'border-red-400 focus:border-red-500'
                       : 'border-(--border) focus:border-blue-500/50'"
@@ -169,7 +169,7 @@ import { environment } from '../../../environments/environment';
                   <select
                     [(ngModel)]="selectedService"
                     (ngModelChange)="clearError('service')"
-                    class="mt-1 w-full rounded-lg border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none cursor-pointer transition-colors"
+                    class="mt-1 w-full rounded-sm border px-3 py-2.5 text-sm text-(--foreground) bg-(--background) outline-none cursor-pointer transition-colors"
                     [class]="fieldError('service')
                       ? 'border-red-400 focus:border-red-500'
                       : 'border-(--border) focus:border-blue-500/50'"
@@ -195,7 +195,7 @@ import { environment } from '../../../environments/environment';
                   <textarea
                     [(ngModel)]="message"
                     rows="3"
-                    class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none resize-none focus:border-blue-500/50"
+                    class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none resize-none focus:border-blue-500/50"
                   ></textarea>
                 </div>
               </div>
@@ -239,13 +239,13 @@ import { environment } from '../../../environments/environment';
                     <div></div>
                   } @else {
                     <button
-                      class="rounded-lg py-1.5 transition-colors cursor-pointer"
+                      class="rounded-sm py-1.5 transition-colors cursor-pointer"
                       [class]="
                         selectedDay() === day
                           ? 'bg-(--primary) text-(--primary-foreground) font-semibold'
                           : isPastDay(day)
                             ? 'text-(--muted-foreground)/40 cursor-not-allowed'
-                            : 'text-(--foreground) hover:bg-blue-500/10'
+                            : 'text-(--foreground) hover:bg-(--muted)'
                       "
                       [disabled]="isPastDay(day)"
                       (click)="selectDay(day)"
@@ -275,11 +275,11 @@ import { environment } from '../../../environments/environment';
                 >
                   @if (selectedDay()) {
                     <!-- Morning -->
-                    <p class="text-[10px] font-medium text-(--muted-foreground) uppercase tracking-wider mb-1.5">🌅 Matin</p>
+                    <p class="text-[10px] font-medium text-(--muted-foreground) mb-1.5">🌅 Matin</p>
                     <div class="grid grid-cols-3 gap-1.5 mb-3">
                       @for (slot of morningSlots; track slot; let i = $index) {
                         <button
-                          class="slot-animate rounded-lg border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer [1.04] active:scale-95"
+                          class="slot-animate rounded-sm border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer [1.04] active:scale-95"
                           [style.animation-delay]="i * 40 + 'ms'"
                           [ngClass]="
                             selectedTime() === slot
@@ -293,11 +293,11 @@ import { environment } from '../../../environments/environment';
                       }
                     </div>
                     <!-- Afternoon -->
-                    <p class="text-[10px] font-medium text-(--muted-foreground) uppercase tracking-wider mb-1.5">☀️ Après-midi</p>
+                    <p class="text-[10px] font-medium text-(--muted-foreground) mb-1.5">☀️ Après-midi</p>
                     <div class="grid grid-cols-3 gap-1.5">
                       @for (slot of afternoonSlots; track slot; let i = $index) {
                         <button
-                          class="slot-animate rounded-lg border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer [1.04] active:scale-95"
+                          class="slot-animate rounded-sm border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer [1.04] active:scale-95"
                           [style.animation-delay]="(i + 6) * 40 + 'ms'"
                           [ngClass]="
                             selectedTime() === slot
@@ -329,7 +329,7 @@ import { environment } from '../../../environments/environment';
 
               <!-- Selection summary -->
               @if (selectedDay() && selectedTime()) {
-                <div class="mt-4 rounded-lg border border-(--primary)/20 bg-gradient-to-r from-(--primary)/5 to-transparent p-3 slot-animate">
+                <div class="mt-4 rounded-sm border border-(--border) bg-(--muted) p-3 slot-animate">
                   <div class="flex items-center gap-2 text-xs">
                     <span class="flex h-5 w-5 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">✓</span>
                     <span class="font-semibold text-(--foreground)">Votre sélection</span>
@@ -344,7 +344,7 @@ import { environment } from '../../../environments/environment';
 
           <!-- Success message -->
           @if (submitSuccess()) {
-            <div class="mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400">
+            <div class="mt-4 flex items-center gap-2 rounded-sm border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400">
               <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
@@ -354,7 +354,7 @@ import { environment } from '../../../environments/environment';
 
           <!-- API error message -->
           @if (submitError()) {
-            <div class="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+            <div class="mt-4 flex items-center gap-2 rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
               <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
@@ -365,7 +365,7 @@ import { environment } from '../../../environments/environment';
           <!-- Actions -->
           <div class="mt-6 flex gap-3">
             <button
-              class="flex-1 rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:text-(--foreground) cursor-pointer"
+              class="flex-1 rounded-sm border border-(--border) px-4 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:text-(--foreground) cursor-pointer"
               (click)="close()"
             >
               {{ submitSuccess() ? 'Fermer' : 'Annuler' }}

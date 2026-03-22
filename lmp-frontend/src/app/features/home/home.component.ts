@@ -80,7 +80,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         <div class="ticker-track">
           @for (i of [0,1]; track i) {
             <div class="flex items-center gap-10 px-5">
-              @for (partner of partners; track partner.name) {
+              @for (partner of partners; track $index) {
                 <span class="flex items-center gap-1.5 text-sm text-(--muted-foreground) whitespace-nowrap opacity-50 hover:opacity-100 transition-opacity">
                   <span class="text-base">{{ partner.icon }}</span>
                   {{ partner.name }}

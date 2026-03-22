@@ -45,7 +45,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                     type="email"
                     [(ngModel)]="email"
                     placeholder="votre@email.com"
-                    class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-blue-500/50"
+                    class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-blue-500/50"
                   />
                   <p class="mt-1 text-xs text-(--muted-foreground)">Votre identifiant de connexion</p>
                 </div>
@@ -56,7 +56,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                     type="tel"
                     [(ngModel)]="phone"
                     placeholder="+32 ..."
-                    class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-blue-500/50"
+                    class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-blue-500/50"
                   />
                   <p class="mt-1 text-xs text-(--muted-foreground)">Optionnel pour la commande</p>
                 </div>
@@ -76,7 +76,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                       <input
                         type="text"
                         [(ngModel)]="firstName"
-                        class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
+                        class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
                       />
                     </div>
                     <div>
@@ -84,7 +84,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                       <input
                         type="text"
                         [(ngModel)]="lastName"
-                        class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
+                        class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
                       />
                     </div>
                   </div>
@@ -101,7 +101,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                   <input
                     type="password"
                     [(ngModel)]="password"
-                    class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
+                    class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
                   />
                   <p class="mt-1 text-xs text-(--muted-foreground)">Minimum 6 caractères</p>
                 </div>
@@ -110,7 +110,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                   <input
                     type="password"
                     [(ngModel)]="confirmPassword"
-                    class="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
+                    class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-blue-500/50"
                   />
                 </div>
               </div>
@@ -131,12 +131,12 @@ import { HlmButton } from '@spartan-ng/helm/button';
 
               @if (showBilling()) {
                 <div class="mt-3 space-y-3">
-                  <input type="text" placeholder="Adresse" class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
+                  <input type="text" placeholder="Adresse" class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
                   <div class="grid grid-cols-2 gap-3">
-                    <input type="text" placeholder="Ville" class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
-                    <input type="text" placeholder="Code postal" class="rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
+                    <input type="text" placeholder="Ville" class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
+                    <input type="text" placeholder="Code postal" class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
                   </div>
-                  <select class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer">
+                  <select class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer">
                     <option value="">Sélectionner...</option>
                     <option value="BE">Belgique</option>
                     <option value="FR">France</option>
@@ -144,7 +144,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                     <option value="CH">Suisse</option>
                     <option value="NL">Pays-Bas</option>
                   </select>
-                  <input type="text" placeholder="Nom de l'entreprise (optionnel)" class="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
+                  <input type="text" placeholder="Nom de l'entreprise (optionnel)" class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none" />
                 </div>
               }
             </div>

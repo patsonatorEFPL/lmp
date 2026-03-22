@@ -47,7 +47,7 @@ interface NotificationGroup {
   template: `
     @if (isOpen()) {
       <div
-        class="absolute right-0 top-2 z-[200] w-[22rem] sm:w-96 rounded-2xl border border-(--border) bg-(--card) shadow-2xl shadow-black/20 notification-panel-enter overflow-hidden"
+        class="absolute right-0 top-2 z-[200] w-[22rem] sm:w-96 rounded-sm border border-(--border) bg-(--card) shadow-2xl shadow-black/20 notification-panel-enter overflow-hidden"
         role="dialog"
         aria-label="Panneau de notifications"
       >
@@ -114,7 +114,7 @@ interface NotificationGroup {
             <!-- Empty state -->
             <div class="flex flex-col items-center justify-center py-14 px-6">
               <div
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-(--muted) to-(--muted)/60"
+                class="flex h-16 w-16 items-center justify-center rounded-full bg-(--muted)"
               >
                 <lucide-icon
                   [img]="InboxIcon"
@@ -133,7 +133,7 @@ interface NotificationGroup {
             @for (group of groupedNotifications(); track group.label) {
               <!-- Date group header -->
               <div class="sticky top-0 z-10 bg-(--card)/95 backdrop-blur-sm px-5 py-2 border-b border-(--border)/50">
-                <span class="text-[10px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
+                <span class="text-[10px] font-semibold text-(--muted-foreground)">
                   {{ group.label }}
                 </span>
               </div>
@@ -154,7 +154,7 @@ interface NotificationGroup {
 
                   <!-- Type icon -->
                   <div
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform 105"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm transition-transform 105"
                     [class]="getTypeIconBg(notification.type)"
                   >
                     <lucide-icon
@@ -411,13 +411,13 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
   getTypeIconBg(type: string): string {
     switch (type) {
       case 'NEW_PENDING_ORDER':
-        return 'bg-blue-500/10 text-blue-500';
+        return 'bg-(--muted) text-(--foreground)';
       case 'PAYMENT_SUCCESS':
-        return 'bg-emerald-500/10 text-emerald-500';
+        return 'bg-(--muted) text-(--foreground)';
       case 'STATUS_CHANGED':
-        return 'bg-amber-500/10 text-amber-500';
+        return 'bg-(--muted) text-(--foreground)';
       case 'REFUND':
-        return 'bg-violet-500/10 text-violet-500';
+        return 'bg-(--muted) text-(--primary)';
       default:
         return 'bg-(--primary)/10 text-(--primary)';
     }
