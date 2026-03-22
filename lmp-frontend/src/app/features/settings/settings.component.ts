@@ -35,7 +35,7 @@ import { ProfileService } from '../../core/services/profile.service';
     <div class="min-h-screen bg-(--background)">
       <!-- Header -->
       <header
-        class="border-b border-(--border) bg-(--card)/80 backdrop-blur-xl"
+        class="border-b border-(--border) bg-(--card)"
       >
         <div
           class="mx-auto flex h-16 max-w-4xl items-center gap-4 px-4 sm:px-6"
@@ -51,7 +51,7 @@ import { ProfileService } from '../../core/services/profile.service';
       </header>
 
       <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <h1 class="font-display text-2xl font-bold text-(--foreground)">
+        <h1 class="text-2xl font-bold text-(--foreground)">
           Paramètres du compte
         </h1>
         <p class="mt-1 text-sm text-(--muted-foreground)">
@@ -77,14 +77,14 @@ import { ProfileService } from '../../core/services/profile.service';
         }
 
         <!-- Profile Section -->
-        <div class="mt-8 rounded-xl border border-(--border) bg-(--card) p-6">
+        <div class="mt-8 rounded-sm border border-(--border) bg-(--card) p-6">
           <div class="mb-6 flex items-center gap-3">
             <div
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)"
             >
               <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
             </div>
-            <h2 class="font-display text-lg font-bold text-(--foreground)">
+            <h2 class="text-lg font-bold text-(--foreground)">
               Profil
             </h2>
           </div>
@@ -183,14 +183,14 @@ import { ProfileService } from '../../core/services/profile.service';
         </div>
 
         <!-- Security Section -->
-        <div class="mt-6 rounded-xl border border-(--border) bg-(--card) p-6">
+        <div class="mt-6 rounded-sm border border-(--border) bg-(--card) p-6">
           <div class="mb-4 flex items-center gap-3">
             <div
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)"
             >
               <lucide-icon [img]="ShieldIcon" [size]="18"></lucide-icon>
             </div>
-            <h2 class="font-display text-lg font-bold text-(--foreground)">
+            <h2 class="text-lg font-bold text-(--foreground)">
               Sécurité
             </h2>
           </div>

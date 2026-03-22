@@ -15,7 +15,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
       >
         <!-- Modal -->
         <div
-          class="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) p-6 sm:p-8 shadow-2xl"
+          class="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8 shadow-sm"
           (click)="$event.stopPropagation()"
         >
           <!-- Close button -->
@@ -28,7 +28,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             </svg>
           </button>
 
-          <h2 class="font-display text-xl font-bold text-(--foreground)">Commander un service</h2>
+          <h2 class="text-lg font-bold text-(--foreground)">Commander un service</h2>
 
           <!-- Registration form -->
           <div class="mt-6 space-y-5">
@@ -150,7 +150,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             </div>
 
             <!-- Order summary -->
-            <div class="rounded-xl border border-(--border) bg-(--background) p-4">
+            <div class="rounded-sm border border-(--border) bg-(--background) p-4">
               <h3 class="text-sm font-semibold text-(--foreground) mb-3">Résumé de la commande</h3>
               <div class="flex items-center justify-between text-sm">
                 <span class="text-(--muted-foreground)">{{ serviceName || 'Service sélectionné' }}</span>

@@ -12,22 +12,13 @@ import { signal } from '@angular/core';
   imports: [RouterLink, LucideAngularModule, AppointmentModalComponent],
   template: `
     <!-- ===== HERO SECTION ===== -->
-    <section class="relative overflow-hidden border-b border-(--border)">
-      <div
-        class="pointer-events-none absolute inset-0 opacity-[0.03]"
-        style="background-image: radial-gradient(circle, currentColor 1px, transparent 1px); background-size: 32px 32px;"
-      ></div>
-
-      <div class="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 sm:py-32">
-        <div class="mx-auto max-w-3xl text-center scroll-animate anim-fade-up">
-          <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
-            Notre Histoire
-          </span>
-          <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-(--foreground) leading-tight">
-            L'excellence locale,
-            <span class="italic font-light text-(--primary)">depuis 2016</span>
+    <section class="border-b border-(--border)">
+      <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center scroll-animate">
+          <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-(--foreground) leading-tight">
+            L'excellence locale, depuis 2016
           </h1>
-          <p class="mt-6 text-lg text-(--muted-foreground) max-w-xl mx-auto leading-relaxed">
+          <p class="mt-4 text-base text-(--muted-foreground) max-w-xl mx-auto leading-relaxed">
             Découvrez la mission, la vision et l'équipe qui propulsent
             des centaines d'entreprises au sommet de leur marché.
           </p>
@@ -37,32 +28,23 @@ import { signal } from '@angular/core';
 
     <!-- ===== MISSION & VISION ===== -->
     <section class="border-b border-(--border)">
-      <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 items-start gap-16 lg:grid-cols-2">
-          <!-- Left: Mission & Vision -->
-          <div class="scroll-animate anim-fade-up">
-            <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-3 block">
-              /01 — Mission
-            </span>
-            <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl leading-snug">
-              Connecter les entreprises locales à
-              <span class="italic font-light text-(--primary)">leur audience</span>
+      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 items-start gap-12 lg:grid-cols-2">
+          <div class="scroll-animate">
+            <h2 class="text-2xl font-bold text-(--foreground) sm:text-3xl">
+              Connecter les entreprises locales à leur audience
             </h2>
-            <p class="mt-6 text-base leading-relaxed text-(--muted-foreground)">
+            <p class="mt-4 text-sm leading-relaxed text-(--muted-foreground)">
               <strong class="text-(--foreground)">LMP</strong> (Local Map Profil) est une plateforme innovante qui
               connecte les utilisateurs aux meilleures solutions locales. Notre mission est de faciliter
               la découverte et l'accès aux services, entreprises et opportunités qui vous entourent.
             </p>
 
-            <div class="mt-12">
-              <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-3 block">
-                /02 — Vision
-              </span>
-              <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl leading-snug">
-                Un monde où chaque entreprise
-                <span class="italic font-light text-(--primary)">rayonne</span>
+            <div class="mt-10">
+              <h2 class="text-2xl font-bold text-(--foreground) sm:text-3xl">
+                Un monde où chaque entreprise rayonne
               </h2>
-              <p class="mt-6 text-base leading-relaxed text-(--muted-foreground)">
+              <p class="mt-4 text-sm leading-relaxed text-(--muted-foreground)">
                 Nous imaginons un monde où chaque personne peut facilement trouver et accéder
                 aux ressources locales qui répondent à ses besoins, créant ainsi des communautés
                 plus connectées et prospères.
@@ -70,28 +52,19 @@ import { signal } from '@angular/core';
             </div>
           </div>
 
-          <!-- Right: Values cards -->
-          <div class="space-y-4 scroll-animate anim-fade-up delay-200">
-            <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
-              /03 — Nos Valeurs
-            </span>
+          <!-- Values cards -->
+          <div class="space-y-3 scroll-animate">
             @for (value of values; track value.title; let i = $index) {
               <div
-                class="flex items-start gap-4 rounded-xl border border-(--border) bg-(--card) p-5 transition-all duration-300 hover:border-(--primary)/30 hover:shadow-lg hover:shadow-emerald-500/5 scroll-animate anim-scale-in"
-                [class]="'flex items-start gap-4 rounded-xl border border-(--border) bg-(--card) p-5 transition-all duration-300 hover:border-(--primary)/30 hover:shadow-lg hover:shadow-emerald-500/5 scroll-animate anim-scale-in delay-' + (i + 1) + '00'"
+                class="flex items-start gap-3 rounded-sm border border-(--border) bg-(--card) p-4 scroll-animate"
+                [style.transition-delay.ms]="(i + 1) * 100"
               >
-                <!-- Number -->
-                <div class="flex flex-col items-center gap-2">
-                  <span class="font-mono text-xs font-semibold text-(--muted-foreground)/40">
-                    /{{ (i + 1).toString().padStart(2, '0') }}
-                  </span>
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-(--primary)/10">
-                    <lucide-icon [img]="value.icon" [size]="20" class="text-(--primary)"></lucide-icon>
-                  </div>
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-(--muted)">
+                  <lucide-icon [img]="value.icon" [size]="18" class="text-(--primary)"></lucide-icon>
                 </div>
                 <div>
-                  <h3 class="font-display text-base font-semibold text-(--foreground)">{{ value.title }}</h3>
-                  <p class="mt-1.5 text-sm text-(--muted-foreground) leading-relaxed">{{ value.description }}</p>
+                  <h3 class="text-sm font-semibold text-(--foreground)">{{ value.title }}</h3>
+                  <p class="mt-1 text-sm text-(--muted-foreground) leading-relaxed">{{ value.description }}</p>
                 </div>
               </div>
             }
@@ -101,25 +74,19 @@ import { signal } from '@angular/core';
     </section>
 
     <!-- ===== STATS BAR ===== -->
-    <section class="border-b border-(--border) bg-(--card)/30">
-      <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div class="scroll-animate anim-fade-up mb-12 text-center">
-          <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-3 block">
-            En Chiffres
-          </span>
-          <h2 class="font-display text-3xl sm:text-4xl font-bold text-(--foreground)">
-            Des résultats qui
-            <span class="italic font-light text-(--primary)">parlent</span>
+    <section class="border-b border-(--border)">
+      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div class="scroll-animate mb-10">
+          <h2 class="text-2xl font-bold text-(--foreground)">
+            En chiffres
           </h2>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 scroll-animate anim-scale-in delay-200">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 scroll-animate">
           @for (stat of aboutStats; track stat.label; let i = $index) {
-            <div
-              class="text-center rounded-xl border border-(--border) bg-(--card) p-6 transition-all duration-300 hover:border-(--primary)/30"
-            >
-              <div class="font-display text-3xl sm:text-4xl font-bold text-(--primary)">{{ stat.value }}</div>
-              <div class="mt-2 text-sm font-medium text-(--foreground)">{{ stat.label }}</div>
+            <div class="text-center rounded-sm border border-(--border) bg-(--card) p-5">
+              <div class="text-3xl font-bold text-(--primary)">{{ stat.value }}</div>
+              <div class="mt-1 text-sm font-medium text-(--foreground)">{{ stat.label }}</div>
               <div class="text-xs text-(--muted-foreground)">{{ stat.sub }}</div>
             </div>
           }
@@ -129,30 +96,23 @@ import { signal } from '@angular/core';
 
     <!-- ===== WHY LMP ===== -->
     <section class="border-b border-(--border)">
-      <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <div class="text-center mb-16 scroll-animate anim-fade-up">
-          <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-3 block">
-            Pourquoi LMP
-          </span>
-          <h2 class="font-display text-3xl sm:text-4xl font-bold text-(--foreground)">
-            Ce qui nous rend
-            <span class="italic font-light text-(--primary)">différents</span>
+      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div class="mb-10 scroll-animate">
+          <h2 class="text-2xl font-bold text-(--foreground)">
+            Ce qui nous rend différents
           </h2>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           @for (diff of differentiators; track diff.title; let i = $index) {
             <div
-              class="group rounded-xl border border-(--border) bg-(--card) p-7 transition-all duration-300 hover:border-(--primary)/30 hover:shadow-lg hover:shadow-emerald-500/5 scroll-animate anim-fade-up"
-              [class]="'group rounded-xl border border-(--border) bg-(--card) p-7 transition-all duration-300 hover:border-(--primary)/30 hover:shadow-lg hover:shadow-emerald-500/5 scroll-animate anim-fade-up delay-' + (i + 1) + '00'"
+              class="rounded-sm border border-(--border) bg-(--card) p-6 scroll-animate"
+              [style.transition-delay.ms]="(i + 1) * 100"
             >
-              <div class="font-mono text-5xl font-bold text-(--primary)/10 mb-4">
-                {{ (i + 1).toString().padStart(2, '0') }}
+              <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted) text-(--primary) mb-3">
+                <lucide-icon [img]="diff.icon" [size]="18"></lucide-icon>
               </div>
-              <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary) mb-4">
-                <lucide-icon [img]="diff.icon" [size]="20"></lucide-icon>
-              </div>
-              <h3 class="font-display text-lg font-semibold text-(--foreground) mb-2">{{ diff.title }}</h3>
+              <h3 class="text-sm font-semibold text-(--foreground) mb-1.5">{{ diff.title }}</h3>
               <p class="text-sm leading-relaxed text-(--muted-foreground)">{{ diff.description }}</p>
             </div>
           }
@@ -161,36 +121,29 @@ import { signal } from '@angular/core';
     </section>
 
     <!-- ===== CTA SECTION ===== -->
-    <section class="relative overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500"></div>
-      <div
-        class="pointer-events-none absolute inset-0 opacity-10"
-        style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 32px 32px;"
-      ></div>
-
-      <div class="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-2xl text-center scroll-animate anim-fade-up">
-          <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
-            Prêt à rejoindre nos<br />
-            <span class="italic font-light">clients satisfaits ?</span>
+    <section class="border-b border-(--border) bg-(--card)">
+      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center scroll-animate">
+          <h2 class="text-2xl sm:text-3xl font-bold text-(--foreground)">
+            Prêt à rejoindre nos clients satisfaits ?
           </h2>
-          <p class="mt-4 text-white/70 text-base">
+          <p class="mt-3 text-sm text-(--muted-foreground)">
             Contactez-nous pour une consultation gratuite et découvrez comment nous pouvons booster votre visibilité.
           </p>
-          <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <div class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <button
               (click)="showAppointment.set(true)"
-              class="group inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-emerald-700 transition-all duration-300 hover:bg-white/90 hover:shadow-lg cursor-pointer"
+              class="inline-flex items-center gap-2 rounded-sm bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) transition-colors hover:opacity-90 cursor-pointer"
             >
               <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
               Réserver un audit gratuit
-              <lucide-icon [img]="ArrowRightIcon" [size]="16" class="transition-transform group-hover:translate-x-0.5"></lucide-icon>
             </button>
             <a
               routerLink="/contact"
-              class="inline-flex items-center gap-2 rounded-full border border-white/30 px-7 py-3.5 text-sm font-medium text-white transition-colors hover:bg-white/10 cursor-pointer"
+              class="inline-flex items-center gap-1.5 rounded-sm border border-(--border) px-5 py-2.5 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
             >
-              Nous contacter →
+              Nous contacter
+              <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
             </a>
           </div>
         </div>

@@ -26,22 +26,22 @@ import { HlmButton } from '@spartan-ng/helm/button';
   ],
   template: `
     <header
-      class="fixed top-0 right-0 left-0 z-50 transition-all duration-300"
+      class="fixed top-0 right-0 left-0 z-50 transition-colors duration-200"
       [ngClass]="{
-        'bg-transparent border-b border-transparent': isAtTop(),
-        'bg-(--background)/80 backdrop-blur-xl border-b border-white/5':
+        'bg-transparent': isAtTop(),
+        'bg-(--background)/95 backdrop-blur-sm border-b border-(--border)':
           !isAtTop(),
       }"
     >
       <nav
-        class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+        class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
       >
         <!-- Logo -->
         <a routerLink="/" class="flex items-center">
           <img
             src="/images/logo-lmp.webp"
             alt="LMP Logo"
-            class="h-14 w-auto"
+            class="h-10 w-auto"
           />
         </a>
 
@@ -50,9 +50,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
           @for (link of navLinks; track link.path) {
             <a
               [routerLink]="link.path"
-              routerLinkActive="text-(--foreground) bg-white/10"
+              routerLinkActive="text-(--foreground)"
               [routerLinkActiveOptions]="{ exact: link.path === '/' }"
-              class="rounded-md px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground) hover:bg-white/5"
+              class="px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
             >
               {{ link.label }}
             </a>
@@ -60,7 +60,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
         </div>
 
         <!-- Desktop Actions -->
-        <div class="hidden items-center gap-3 md:flex">
+        <div class="hidden items-center gap-2 md:flex">
           <!-- Theme Toggle -->
           <button
             hlmBtn
@@ -71,24 +71,24 @@ import { HlmButton } from '@spartan-ng/helm/button';
             [attr.aria-label]="themeService.isDark() ? 'Passer au thème clair' : 'Passer au thème sombre'"
           >
             @if (themeService.isDark()) {
-              <lucide-icon [img]="SunIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
             } @else {
-              <lucide-icon [img]="MoonIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
             }
           </button>
 
           <!-- Language Selector -->
           <div class="relative">
             <button
-              class="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:text-(--foreground)"
+              class="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:text-(--foreground)"
               (click)="langMenuOpen.set(!langMenuOpen())"
             >
               <img
                 src="https://flagcdn.com/w40/fr.png"
                 alt="Drapeau français"
-                class="h-4 w-6 rounded-sm object-cover"
+                class="h-3.5 w-5 rounded-xs object-cover"
               />
-              <span class="font-medium">FR</span>
+              <span class="font-medium text-xs">FR</span>
               <svg
                 class="h-3 w-3"
                 fill="none"
@@ -105,17 +105,17 @@ import { HlmButton } from '@spartan-ng/helm/button';
             </button>
             @if (langMenuOpen()) {
               <div
-                class="absolute right-0 mt-1 w-44 rounded-lg border border-(--border) bg-(--card) py-1 shadow-xl"
+                class="absolute right-0 mt-1 w-40 rounded-sm border border-(--border) bg-(--card) py-1 shadow-sm"
               >
                 @for (lang of languages; track lang.code) {
                   <button
-                    class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-sm text-(--muted-foreground) transition-colors hover:bg-white/5 hover:text-(--foreground)"
+                    class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
                     (click)="langMenuOpen.set(false)"
                   >
                     <img
                       [src]="lang.flag"
                       [alt]="lang.label"
-                      class="h-4 w-6 rounded-sm object-cover"
+                      class="h-3.5 w-5 rounded-xs object-cover"
                     />
                     {{ lang.label }}
                   </button>
@@ -131,7 +131,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                 hlmBtn
                 variant="ghost"
                 routerLink="/admin"
-                class="cursor-pointer gap-1 text-(--primary)"
+                class="cursor-pointer gap-1 text-(--primary) text-sm"
               >
                 Admin
               </a>
@@ -140,14 +140,14 @@ import { HlmButton } from '@spartan-ng/helm/button';
               hlmBtn
               variant="ghost"
               routerLink="/dashboard"
-              class="cursor-pointer"
+              class="cursor-pointer text-sm"
             >
               Dashboard
             </a>
           } @else {
             <a
               routerLink="/login"
-              class="cursor-pointer rounded-lg border border-(--primary) px-4 py-1.5 text-sm font-medium text-(--primary) transition-colors hover:bg-(--primary)/10"
+              class="cursor-pointer rounded-sm border border-(--border) px-4 py-1.5 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent)"
             >
               Connexion
             </a>
@@ -165,9 +165,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
           aria-controls="mobile-menu"
         >
           @if (mobileMenuOpen()) {
-            <lucide-icon [img]="XIcon" [size]="20"></lucide-icon>
+            <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
           } @else {
-            <lucide-icon [img]="MenuIcon" [size]="20"></lucide-icon>
+            <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
           }
         </button>
       </nav>
@@ -181,9 +181,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
             @for (link of navLinks; track link.path) {
               <a
                 [routerLink]="link.path"
-                routerLinkActive="text-(--foreground) bg-white/10"
+                routerLinkActive="text-(--foreground)"
                 [routerLinkActiveOptions]="{ exact: link.path === '/' }"
-                class="rounded-md px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground) hover:bg-white/5"
+                class="px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
                 (click)="mobileMenuOpen.set(false)"
               >
                 {{ link.label }}
@@ -214,7 +214,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             @if (!authService.isAuthenticated()) {
               <a
                 routerLink="/login"
-                class="w-full cursor-pointer rounded-lg border border-(--primary) px-4 py-2 text-center text-sm font-medium text-(--primary) transition-colors hover:bg-(--primary)/10"
+                class="w-full cursor-pointer rounded-sm border border-(--border) px-4 py-2 text-center text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent)"
                 (click)="mobileMenuOpen.set(false)"
               >
                 Connexion
@@ -285,7 +285,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     };
 
     window.addEventListener('scroll', this.scrollHandler, { passive: true });
-    // Initialize state
     this.scrollHandler();
   }
 

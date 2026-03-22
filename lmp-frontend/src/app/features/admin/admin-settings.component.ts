@@ -17,7 +17,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
   imports: [FormsModule, LucideAngularModule, HlmButton],
   template: `
     <div>
-      <h1 class="font-display text-2xl font-bold text-(--foreground)">
+      <h1 class="text-2xl font-bold text-(--foreground)">
         Paramètres du système
       </h1>
       <p class="mt-1 text-sm text-(--muted-foreground)">
@@ -27,13 +27,13 @@ import { HlmButton } from '@spartan-ng/helm/button';
 
     <div class="mt-8 space-y-6">
       <!-- General Settings -->
-      <div class="rounded-xl border border-(--border) bg-(--card) p-6">
+      <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10">
             <lucide-icon [img]="GlobeIcon" [size]="18" class="text-blue-500"></lucide-icon>
           </div>
           <div>
-            <h2 class="font-display text-sm font-semibold text-(--foreground)">Général</h2>
+            <h2 class="text-sm font-semibold text-(--foreground)">Général</h2>
             <p class="text-xs text-(--muted-foreground)">Paramètres de base de la plateforme</p>
           </div>
         </div>
@@ -68,13 +68,13 @@ import { HlmButton } from '@spartan-ng/helm/button';
       </div>
 
       <!-- Notification Settings -->
-      <div class="rounded-xl border border-(--border) bg-(--card) p-6">
+      <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
             <lucide-icon [img]="BellIcon" [size]="18" class="text-amber-500"></lucide-icon>
           </div>
           <div>
-            <h2 class="font-display text-sm font-semibold text-(--foreground)">Notifications</h2>
+            <h2 class="text-sm font-semibold text-(--foreground)">Notifications</h2>
             <p class="text-xs text-(--muted-foreground)">Configurer les notifications email</p>
           </div>
         </div>
@@ -99,13 +99,13 @@ import { HlmButton } from '@spartan-ng/helm/button';
       </div>
 
       <!-- Security Settings -->
-      <div class="rounded-xl border border-(--border) bg-(--card) p-6">
+      <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10">
             <lucide-icon [img]="ShieldIcon" [size]="18" class="text-red-500"></lucide-icon>
           </div>
           <div>
-            <h2 class="font-display text-sm font-semibold text-(--foreground)">Sécurité</h2>
+            <h2 class="text-sm font-semibold text-(--foreground)">Sécurité</h2>
             <p class="text-xs text-(--muted-foreground)">Paramètres de sécurité et d'accès</p>
           </div>
         </div>

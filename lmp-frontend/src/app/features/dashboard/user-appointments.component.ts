@@ -38,7 +38,7 @@ interface ApiResponse<T> {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="font-display text-2xl font-bold text-(--foreground)">Mes rendez-vous</h1>
+        <h1 class="text-2xl font-bold text-(--foreground)">Mes rendez-vous</h1>
         <p class="mt-1 text-sm text-(--muted-foreground)">
           {{ appointments().length }} rendez-vous au total
         </p>
@@ -59,7 +59,7 @@ interface ApiResponse<T> {
         <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
       </div>
     } @else if (appointments().length === 0) {
-      <div class="mt-8 flex flex-col items-center justify-center py-16 text-center rounded-xl border border-(--border) bg-(--card)">
+      <div class="mt-8 flex flex-col items-center justify-center py-16 text-center rounded-sm border border-(--border) bg-(--card)">
         <div class="flex h-14 w-14 items-center justify-center rounded-full bg-(--muted)">
           <lucide-icon [img]="CalendarIcon" [size]="24" class="text-(--muted-foreground)"></lucide-icon>
         </div>
@@ -70,7 +70,7 @@ interface ApiResponse<T> {
       <!-- Upcoming -->
       @if (upcomingAppointments().length > 0) {
         <div class="mt-8">
-          <h2 class="font-display mb-4 text-lg font-bold text-(--foreground)">
+          <h2 class="mb-4 text-lg font-bold text-(--foreground)">
             Rendez-vous à venir
             <span class="ml-2 rounded-full bg-(--primary)/10 px-2 py-0.5 text-xs font-medium text-(--primary)">
               {{ upcomingAppointments().length }}
@@ -78,9 +78,9 @@ interface ApiResponse<T> {
           </h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (appt of upcomingAppointments(); track appt.id) {
-              <div class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md hover:border-(--primary)/20">
+              <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md hover:border-(--primary)/20">
                 <div class="flex items-start justify-between">
-                  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-violet-500/10 text-violet-500">
                     <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
                   </div>
                   <div class="flex items-center gap-2">
@@ -112,7 +112,7 @@ interface ApiResponse<T> {
       <!-- Past -->
       @if (pastAppointments().length > 0) {
         <div class="mt-8">
-          <h2 class="font-display mb-4 text-lg font-bold text-(--foreground)">
+          <h2 class="mb-4 text-lg font-bold text-(--foreground)">
             Rendez-vous passés
             <span class="ml-2 rounded-full bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
               {{ pastAppointments().length }}
@@ -120,9 +120,9 @@ interface ApiResponse<T> {
           </h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (appt of pastAppointments(); track appt.id) {
-              <div class="rounded-xl border border-(--border) bg-(--card) p-5 opacity-70">
+              <div class="rounded-sm border border-(--border) bg-(--card) p-5 opacity-70">
                 <div class="flex items-start justify-between">
-                  <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-(--muted) text-(--muted-foreground)">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-(--muted-foreground)">
                     <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
                   </div>
                   <span

@@ -45,7 +45,7 @@ interface ApiResponse<T> {
               ></lucide-icon>
             </div>
             <div>
-              <h2 class="font-display text-xl font-bold text-(--foreground)">
+              <h2 class="text-xl font-bold text-(--foreground)">
                 Confirmation en cours…
               </h2>
               <p class="mt-2 text-sm text-(--muted-foreground)">
@@ -69,7 +69,7 @@ interface ApiResponse<T> {
               ></lucide-icon>
             </div>
             <div>
-              <h2 class="font-display text-2xl font-bold text-(--foreground)">
+              <h2 class="text-2xl font-bold text-(--foreground)">
                 Paiement confirmé !
               </h2>
               <p class="mt-2 text-sm text-(--muted-foreground)">
@@ -128,7 +128,7 @@ interface ApiResponse<T> {
               ></lucide-icon>
             </div>
             <div>
-              <h2 class="font-display text-xl font-bold text-(--foreground)">
+              <h2 class="text-xl font-bold text-(--foreground)">
                 Erreur de vérification
               </h2>
               <p class="mt-2 text-sm text-(--muted-foreground)">

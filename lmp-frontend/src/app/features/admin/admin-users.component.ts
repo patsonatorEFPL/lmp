@@ -66,7 +66,7 @@ interface ApiResponse<T> {
     <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="font-display text-2xl font-bold text-(--foreground)">
+        <h1 class="text-2xl font-bold text-(--foreground)">
           Gestion des Utilisateurs
         </h1>
         <p class="mt-1 text-sm text-(--muted-foreground)">
@@ -114,7 +114,7 @@ interface ApiResponse<T> {
     </div>
 
     <!-- Users table -->
-    <div class="mt-6 overflow-x-auto rounded-xl border border-(--border) bg-(--card)">
+    <div class="mt-6 overflow-x-auto rounded-sm border border-(--border) bg-(--card)">
       @if (loading()) {
         <div class="flex items-center justify-center py-12">
           <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-(--muted-foreground)"></lucide-icon>
@@ -271,7 +271,7 @@ interface ApiResponse<T> {
                 {{ editingUser ? getInitials(editingUser) : '' }}
               </div>
               <div>
-                <h3 class="font-display text-lg font-bold text-(--foreground)">
+                <h3 class="text-lg font-bold text-(--foreground)">
                   Modifier l'utilisateur
                 </h3>
                 <p class="text-xs text-(--muted-foreground)">{{ editingUser?.email }}</p>

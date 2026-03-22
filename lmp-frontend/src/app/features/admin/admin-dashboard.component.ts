@@ -27,7 +27,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
       <div class="flex items-center justify-between">
         <div>
           <h1
-            class="font-display text-2xl font-bold text-(--foreground) sm:text-3xl"
+            class="text-2xl font-bold text-(--foreground) sm:text-3xl"
           >
             Administration 🛡️
           </h1>
@@ -67,7 +67,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
       <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <!-- Users -->
         <div
-          class="rounded-xl border border-(--border) bg-(--card) p-5"
+          class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Utilisateurs</span>
@@ -93,7 +93,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 
         <!-- Orders -->
         <div
-          class="rounded-xl border border-(--border) bg-(--card) p-5"
+          class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Commandes</span>
@@ -116,7 +116,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 
         <!-- Services -->
         <div
-          class="rounded-xl border border-(--border) bg-(--card) p-5"
+          class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Services</span>
@@ -142,7 +142,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 
         <!-- Appointments -->
         <div
-          class="rounded-xl border border-(--border) bg-(--card) p-5"
+          class="rounded-sm border border-(--border) bg-(--card) p-5"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Rendez-vous</span>
@@ -167,14 +167,14 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
       <!-- Quick Actions -->
       <div class="mt-8">
         <h2
-          class="font-display text-lg font-semibold text-(--foreground)"
+          class="text-lg font-semibold text-(--foreground)"
         >
           Accès rapides
         </h2>
         <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <a
             routerLink="/admin/services"
-            class="group flex items-center justify-between rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-violet-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-violet-500/30 hover:shadow-md"
           >
             <div class="flex items-center gap-3">
               <div
@@ -200,7 +200,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 
           <a
             routerLink="/admin/users"
-            class="group flex items-center justify-between rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-blue-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-blue-500/30 hover:shadow-md"
           >
             <div class="flex items-center gap-3">
               <div
@@ -226,7 +226,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 
           <a
             routerLink="/admin/orders"
-            class="group flex items-center justify-between rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-emerald-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-emerald-500/30 hover:shadow-md"
           >
             <div class="flex items-center gap-3">
               <div
@@ -252,7 +252,7 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 
           <a
             routerLink="/admin/appointments"
-            class="group flex items-center justify-between rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-amber-500/30 hover:shadow-md"
+            class="group flex items-center justify-between rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-amber-500/30 hover:shadow-md"
           >
             <div class="flex items-center gap-3">
               <div

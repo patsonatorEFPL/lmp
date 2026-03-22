@@ -40,7 +40,7 @@ type ModalMode = 'create' | 'edit';
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="font-display text-2xl font-bold text-(--foreground)">
+        <h1 class="text-2xl font-bold text-(--foreground)">
           Gestion des Services
         </h1>
         <p class="mt-1 text-sm text-(--muted-foreground)">
@@ -128,7 +128,7 @@ type ModalMode = 'create' | 'edit';
       <!-- Categories management -->
       <div class="mt-8">
         <div class="flex items-center justify-between">
-          <h2 class="font-display text-lg font-semibold text-(--foreground)">
+          <h2 class="text-lg font-semibold text-(--foreground)">
             Catégories
           </h2>
           <button
@@ -202,7 +202,7 @@ type ModalMode = 'create' | 'edit';
       <!-- Services list -->
       <div class="mt-8">
         <div class="flex items-center justify-between">
-          <h2 class="font-display text-lg font-semibold text-(--foreground)">
+          <h2 class="text-lg font-semibold text-(--foreground)">
             Services ({{ services().length }})
           </h2>
           <span class="text-xs text-(--muted-foreground)">Triés par ordre d'affichage</span>
@@ -210,13 +210,13 @@ type ModalMode = 'create' | 'edit';
         <div class="mt-3 space-y-3">
           @for (service of services(); track service.id; let i = $index; let first = $first; let last = $last) {
             <div
-              class="rounded-xl border bg-(--card) p-5 transition-all hover:border-(--primary)/20"
+              class="rounded-sm border bg-(--card) p-5 transition-all hover:border-(--primary)/20"
               [ngClass]="isDuplicateOrder(service) ? 'border-amber-500/40' : 'border-(--border)'"
             >
               <div class="flex items-start justify-between">
                 <div class="flex items-start gap-4">
                   <div
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-(--primary)/10 text-xl"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-sm bg-(--primary)/10 text-xl"
                   >
                     {{ service.icon }}
                   </div>
@@ -231,7 +231,7 @@ type ModalMode = 'create' | 'edit';
                         {{ service.displayOrder }}
                       </span>
                       <h3
-                        class="font-display text-base font-bold text-(--foreground)"
+                        class="text-base font-bold text-(--foreground)"
                       >
                         {{ service.title }}
                       </h3>
@@ -403,7 +403,7 @@ type ModalMode = 'create' | 'edit';
           <div
             class="flex items-center justify-between border-b border-(--border) px-6 py-4"
           >
-            <h3 class="font-display text-lg font-bold text-(--foreground)">
+            <h3 class="text-lg font-bold text-(--foreground)">
               {{
                 serviceModalMode() === 'create'
                   ? 'Nouveau service'
@@ -580,7 +580,7 @@ type ModalMode = 'create' | 'edit';
           <div
             class="flex items-center justify-between border-b border-(--border) px-6 py-4"
           >
-            <h3 class="font-display text-lg font-bold text-(--foreground)">
+            <h3 class="text-lg font-bold text-(--foreground)">
               {{
                 categoryModalMode() === 'create'
                   ? 'Nouvelle catégorie'
@@ -708,12 +708,12 @@ type ModalMode = 'create' | 'edit';
           <!-- Service card preview (mirrors public services page) -->
           @if (previewService()) {
             <div
-              class="group flex flex-col rounded-xl border border-(--border) bg-(--card) p-6 shadow-2xl"
+              class="group flex flex-col rounded-sm border border-(--border) bg-(--card) p-6 shadow-2xl"
             >
               <!-- Icon + Category -->
               <div class="mb-4 flex items-start justify-between">
                 <div
-                  class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-xl"
+                  class="flex h-12 w-12 items-center justify-center rounded-sm bg-blue-500/10 text-xl"
                 >
                   {{ previewService()!.icon }}
                 </div>
@@ -726,7 +726,7 @@ type ModalMode = 'create' | 'edit';
 
               <!-- Title -->
               <h3
-                class="font-display text-lg font-bold leading-snug text-(--foreground)"
+                class="text-lg font-bold leading-snug text-(--foreground)"
               >
                 {{ previewService()!.title }}
               </h3>
@@ -764,7 +764,7 @@ type ModalMode = 'create' | 'edit';
                 <div>
                   @if (previewService()!.currentOffer) {
                     <span
-                      class="font-display text-2xl font-bold text-(--primary)"
+                      class="text-2xl font-bold text-(--primary)"
                     >
                       {{
                         previewService()!.currentOffer!.price
@@ -801,7 +801,7 @@ type ModalMode = 'create' | 'edit';
                     </div>
                   } @else {
                     <span
-                      class="font-display text-lg font-bold text-(--primary)"
+                      class="text-lg font-bold text-(--primary)"
                       >Sur devis</span
                     >
                   }

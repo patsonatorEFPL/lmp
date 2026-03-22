@@ -12,7 +12,7 @@ declare const L: any;
   template: `
     <section class="relative">
       <div class="mx-auto max-w-7xl px-4 pt-12 pb-4 sm:px-6 lg:px-8 text-center">
-        <h1 class="font-display text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
+        <h1 class="text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
           Carte Interactive
         </h1>
         <p class="mt-4 text-lg text-(--muted-foreground)">
