@@ -141,7 +141,7 @@ import { ThemeService } from '../../core/services/theme.service';
       <div class="ml-64 flex-1">
         <!-- Top bar -->
         <header
-          class="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-(--border) bg-(--card)/80 px-6 backdrop-blur-xl"
+          class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-(--border) bg-(--card) px-6"
         >
           <div class="flex items-center gap-3">
             <a

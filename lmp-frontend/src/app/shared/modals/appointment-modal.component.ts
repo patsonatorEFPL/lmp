@@ -61,7 +61,7 @@ import { environment } from '../../../environments/environment';
       >
         <!-- Modal -->
         <div
-          class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-(--border) bg-(--card) p-6 sm:p-8 shadow-2xl"
+          class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8 shadow-sm"
           [ngClass]="closing() ? 'modal-slide-exit' : 'modal-slide-enter'"
           (click)="$event.stopPropagation()"
         >
@@ -77,13 +77,13 @@ import { environment } from '../../../environments/environment';
 
           <!-- Header -->
           <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20">
+            <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--primary) text-(--primary-foreground)">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <h2 class="font-display text-xl font-bold text-(--foreground)">Prendre rendez-vous</h2>
+              <h2 class="text-xl font-bold text-(--foreground)">Prendre rendez-vous</h2>
               <p class="text-sm text-(--muted-foreground)">Sélectionnez une date et un créneau horaire</p>
             </div>
           </div>
@@ -215,7 +215,7 @@ import { environment } from '../../../environments/environment';
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h4 class="font-display text-sm font-semibold text-(--foreground)">
+                <h4 class="text-sm font-semibold text-(--foreground)">
                   {{ monthNames[currentMonth()] }} {{ currentYear() }}
                 </h4>
                 <button class="text-(--muted-foreground) hover:text-(--foreground) cursor-pointer" (click)="nextMonth()">
@@ -270,7 +270,7 @@ import { environment } from '../../../environments/environment';
                 <!-- Slot error highlight border -->
                 <div
                   [class]="submitted() && (!selectedDay() || !selectedTime())
-                    ? 'rounded-xl border border-red-300 p-2 dark:border-red-700/50'
+                    ? 'rounded-sm border border-red-300 p-2 dark:border-red-700/50'
                     : ''"
                 >
                   @if (selectedDay()) {
@@ -279,7 +279,7 @@ import { environment } from '../../../environments/environment';
                     <div class="grid grid-cols-3 gap-1.5 mb-3">
                       @for (slot of morningSlots; track slot; let i = $index) {
                         <button
-                          class="slot-animate rounded-lg border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer hover:scale-[1.04] active:scale-95"
+                          class="slot-animate rounded-lg border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer [1.04] active:scale-95"
                           [style.animation-delay]="i * 40 + 'ms'"
                           [ngClass]="
                             selectedTime() === slot
@@ -297,7 +297,7 @@ import { environment } from '../../../environments/environment';
                     <div class="grid grid-cols-3 gap-1.5">
                       @for (slot of afternoonSlots; track slot; let i = $index) {
                         <button
-                          class="slot-animate rounded-lg border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer hover:scale-[1.04] active:scale-95"
+                          class="slot-animate rounded-lg border px-2 py-2 text-xs font-medium transition-all duration-200 cursor-pointer [1.04] active:scale-95"
                           [style.animation-delay]="(i + 6) * 40 + 'ms'"
                           [ngClass]="
                             selectedTime() === slot

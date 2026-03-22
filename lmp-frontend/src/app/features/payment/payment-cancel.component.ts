@@ -25,7 +25,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             ></lucide-icon>
           </div>
           <div>
-            <h2 class="font-display text-2xl font-bold text-(--foreground)">
+            <h2 class="text-2xl font-bold text-(--foreground)">
               Paiement annulé
             </h2>
             <p class="mt-2 text-sm text-(--muted-foreground)">

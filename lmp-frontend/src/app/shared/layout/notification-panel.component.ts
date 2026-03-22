@@ -61,7 +61,7 @@ interface NotificationGroup {
               [size]="18"
               class="text-(--primary)"
             ></lucide-icon>
-            <h3 class="font-display text-sm font-bold text-(--foreground)">
+            <h3 class="text-sm font-bold text-(--foreground)">
               Notifications
             </h3>
             @if (notificationService.unreadCount() > 0) {
@@ -154,7 +154,7 @@ interface NotificationGroup {
 
                   <!-- Type icon -->
                   <div
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-105"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform 105"
                     [class]="getTypeIconBg(notification.type)"
                   >
                     <lucide-icon

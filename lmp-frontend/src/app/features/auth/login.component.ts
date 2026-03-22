@@ -24,49 +24,39 @@ import { environment } from '../../../environments/environment';
   ],
   template: `
     <div class="flex min-h-screen">
-      <!-- Left Panel: Office Image + Testimonial -->
-      <div class="relative hidden w-1/2 lg:flex flex-col justify-between overflow-hidden">
-        <!-- Background image -->
-        <img
-          src="/images/hero-bg-office.jpg"
-          alt="Modern corporate office with glass walls"
-          class="absolute inset-0 h-full w-full object-cover"
-        />
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0a0e1a]/80 via-[#0a1a14]/70 to-[#0d1f17]/60"></div>
-
+      <!-- Left Panel: simple brand panel -->
+      <div class="relative hidden w-1/2 lg:flex flex-col justify-between bg-(--card) border-r border-(--border)">
         <!-- Logo + Title -->
-        <div class="relative z-10 p-8">
+        <div class="p-8">
           <a routerLink="/" class="flex items-center gap-3">
-            <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-10 w-auto rounded" />
-            <span class="text-lg font-bold text-white font-display">LMP Digital Services</span>
+            <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-8 w-auto rounded-xs" />
+            <span class="text-base font-semibold text-(--foreground)">LMP Digital Services</span>
           </a>
         </div>
 
-        <!-- Testimonial -->
-        <div class="relative z-10 p-8">
-          <div class="text-emerald-400 text-4xl font-bold mb-3">99%</div>
-          <div class="text-xs text-gray-400 uppercase tracking-wider mb-2">Taux de satisfaction client</div>
-          <blockquote class="text-lg leading-relaxed text-white font-medium max-w-md">
+        <!-- Simple testimonial -->
+        <div class="p-8">
+          <blockquote class="text-base leading-relaxed text-(--foreground) max-w-md">
             "Une plateforme robuste et un accompagnement de haute qualité.
             Nous nous sentons écoutés et conseillés à chaque étape."
           </blockquote>
-          <div class="mt-6 flex items-center gap-3">
+          <div class="mt-4 flex items-center gap-3">
             <img
-              src="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?auto=format&fit=crop&q=80&w=100&h=100"
+              src="https://i.pravatar.cc/48?u=julien-moreau"
               alt="Portrait"
-              class="h-12 w-12 rounded-full object-cover"
+              class="h-10 w-10 rounded-sm object-cover"
             />
             <div>
-              <div class="text-sm font-semibold text-white">Julien Moreau</div>
-              <div class="text-xs text-gray-400">DRH Associé</div>
+              <div class="text-sm font-medium text-(--foreground)">Julien Moreau</div>
+              <div class="text-xs text-(--muted-foreground)">DRH Associé</div>
             </div>
           </div>
         </div>
 
         <!-- Bottom links -->
-        <div class="relative z-10 p-8 pt-0 flex items-center gap-6">
-          <a routerLink="/privacy" class="text-xs text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
-          <a routerLink="/terms" class="text-xs text-gray-400 hover:text-white transition-colors">Terms of Service</a>
+        <div class="p-8 pt-0 flex items-center gap-6">
+          <a routerLink="/privacy" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors">Politique de confidentialité</a>
+          <a routerLink="/terms" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors">Conditions d'utilisation</a>
         </div>
       </div>
 
@@ -85,9 +75,8 @@ import { environment } from '../../../environments/environment';
         <!-- Centered Form -->
         <div class="flex flex-1 items-center justify-center px-4 py-8">
           <div class="w-full max-w-md">
-            <h1 class="font-display text-2xl font-bold text-(--foreground) sm:text-3xl">
-              Bienvenue
-              <span class="text-(--primary)">de retour</span>
+            <h1 class="text-2xl font-bold text-(--foreground) sm:text-3xl">
+              Bienvenue de retour
             </h1>
             <p class="mt-1.5 text-sm text-(--muted-foreground)">
               Veuillez entrer vos identifiants pour accéder.

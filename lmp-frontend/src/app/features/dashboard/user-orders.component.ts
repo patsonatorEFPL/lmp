@@ -72,7 +72,7 @@ const ORDER_STEPS = [
     <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="font-display text-2xl font-bold text-(--foreground)">Mes commandes</h1>
+        <h1 class="text-2xl font-bold text-(--foreground)">Mes commandes</h1>
         <p class="mt-1 text-sm text-(--muted-foreground)">
           {{ allOrders().length }} commande(s) au total
         </p>
@@ -114,7 +114,7 @@ const ORDER_STEPS = [
           <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
         </div>
       } @else if (filteredOrders().length === 0) {
-        <div class="flex flex-col items-center justify-center py-16 text-center rounded-xl border border-(--border) bg-(--card)">
+        <div class="flex flex-col items-center justify-center py-16 text-center rounded-sm border border-(--border) bg-(--card)">
           <div class="flex h-14 w-14 items-center justify-center rounded-full bg-(--muted)">
             <lucide-icon [img]="FileTextIcon" [size]="24" class="text-(--muted-foreground)"></lucide-icon>
           </div>
@@ -130,13 +130,13 @@ const ORDER_STEPS = [
       } @else {
         @for (order of paginatedOrders(); track order.id) {
           <div
-            class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md hover:border-(--primary)/20 cursor-pointer"
+            class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md hover:border-(--primary)/20 cursor-pointer"
             (click)="viewOrderDetail(order.id)"
           >
             <div class="flex items-center gap-4 flex-1 min-w-0">
               <!-- Status icon -->
               <div
-                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm transition-transform 105"
                 [ngClass]="getStatusBgClass(order.status)"
               >
                 <lucide-icon [img]="getStatusIcon(order.status)" [size]="18"></lucide-icon>
@@ -228,7 +228,7 @@ const ORDER_STEPS = [
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
               <div>
-                <h3 class="font-display text-lg font-bold text-(--foreground)">Détail de la commande</h3>
+                <h3 class="text-lg font-bold text-(--foreground)">Détail de la commande</h3>
                 <p class="text-xs text-(--muted-foreground)">{{ selectedOrder()!.serviceName }}</p>
               </div>
               <button
@@ -244,7 +244,7 @@ const ORDER_STEPS = [
               <div class="grid grid-cols-3 gap-3">
                 <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Montant</p>
-                  <p class="mt-1 font-display text-lg font-bold text-(--foreground)">
+                  <p class="mt-1 text-lg font-bold text-(--foreground)">
                     {{ selectedOrder()!.totalAmount | currency:(selectedOrder()!.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
                   </p>
                 </div>

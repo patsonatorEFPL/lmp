@@ -88,7 +88,7 @@ const USER_ORDER_STEPS = [
     <div class="min-h-screen bg-(--background)">
       <!-- Top navbar -->
       <header
-        class="sticky top-0 z-40 border-b border-(--border) bg-(--card)/80 backdrop-blur-xl"
+        class="sticky top-0 z-40 border-b border-(--border) bg-(--card)/80 backdrop-blur-sm"
       >
         <div
           class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
@@ -174,7 +174,7 @@ const USER_ORDER_STEPS = [
           <div class="flex items-center justify-between">
             <div>
               <h1
-                class="font-display text-2xl font-bold text-(--foreground) sm:text-3xl"
+                class="text-2xl font-bold text-(--foreground) sm:text-3xl"
               >
                 Bienvenue,
                 {{ authService.user()?.firstName || 'Utilisateur' }} 👋
@@ -225,7 +225,7 @@ const USER_ORDER_STEPS = [
             class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
             <div
-              class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
             >
               <div class="flex items-center justify-between">
                 <span
@@ -240,7 +240,7 @@ const USER_ORDER_STEPS = [
               </div>
               <div class="mt-3">
                 <span
-                  class="font-display text-2xl font-bold text-(--foreground)"
+                  class="text-2xl font-bold text-(--foreground)"
                   >{{ stats()!.totalOrders }}</span
                 >
               </div>
@@ -250,7 +250,7 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
             >
               <div class="flex items-center justify-between">
                 <span
@@ -265,7 +265,7 @@ const USER_ORDER_STEPS = [
               </div>
               <div class="mt-3">
                 <span
-                  class="font-display text-2xl font-bold text-(--foreground)"
+                  class="text-2xl font-bold text-(--foreground)"
                   >{{ stats()!.inProgressOrders }}</span
                 >
               </div>
@@ -275,7 +275,7 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
             >
               <div class="flex items-center justify-between">
                 <span
@@ -290,7 +290,7 @@ const USER_ORDER_STEPS = [
               </div>
               <div class="mt-3">
                 <span
-                  class="font-display text-2xl font-bold text-(--foreground)"
+                  class="text-2xl font-bold text-(--foreground)"
                   >{{ stats()!.upcomingAppointments }}</span
                 >
               </div>
@@ -298,7 +298,7 @@ const USER_ORDER_STEPS = [
             </div>
 
             <div
-              class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
+              class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md"
             >
               <div class="flex items-center justify-between">
                 <span
@@ -313,7 +313,7 @@ const USER_ORDER_STEPS = [
               </div>
               <div class="mt-3">
                 <span
-                  class="font-display text-2xl font-bold text-(--foreground)"
+                  class="text-2xl font-bold text-(--foreground)"
                   >{{ stats()!.totalReviews }}</span
                 >
               </div>
@@ -326,11 +326,11 @@ const USER_ORDER_STEPS = [
             <!-- Recent Orders (2/3 width) -->
             <div class="lg:col-span-2">
               <h2
-                class="font-display mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-lg font-bold text-(--foreground)"
               >
                 Commandes récentes
               </h2>
-              <div class="rounded-xl border border-(--border) bg-(--card)">
+              <div class="rounded-sm border border-(--border) bg-(--card)">
                 @if (stats()!.recentOrders.length === 0) {
                   <div
                     class="flex flex-col items-center justify-center py-10 text-center"
@@ -428,7 +428,7 @@ const USER_ORDER_STEPS = [
             <!-- Quick actions (1/3 width) -->
             <div>
               <h2
-                class="font-display mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-lg font-bold text-(--foreground)"
               >
                 Actions rapides
               </h2>
@@ -436,10 +436,10 @@ const USER_ORDER_STEPS = [
                 @for (action of quickActions; track action.label) {
                   <a
                     [routerLink]="action.route"
-                    class="group flex items-center gap-3 rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5"
+                    class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5"
                   >
                     <div
-                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary) transition-transform group-hover:scale-110"
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary) transition-transform 110"
                     >
                       <lucide-icon
                         [img]="action.icon"
@@ -469,7 +469,7 @@ const USER_ORDER_STEPS = [
           @if (stats()!.upcomingAppointmentsList.length > 0) {
             <div class="mt-8">
               <h2
-                class="font-display mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-lg font-bold text-(--foreground)"
               >
                 Prochains rendez-vous
               </h2>
@@ -481,7 +481,7 @@ const USER_ORDER_STEPS = [
                   track appt.id
                 ) {
                   <div
-                    class="rounded-xl border border-(--border) bg-(--card) p-5"
+                    class="rounded-sm border border-(--border) bg-(--card) p-5"
                   >
                     <div class="flex items-start justify-between">
                       <div
@@ -516,7 +516,7 @@ const USER_ORDER_STEPS = [
           @if (stats()!.recentReviews.length > 0) {
             <div class="mt-8">
               <h2
-                class="font-display mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-lg font-bold text-(--foreground)"
               >
                 Vos avis récents
               </h2>
@@ -526,7 +526,7 @@ const USER_ORDER_STEPS = [
                   track review.id
                 ) {
                   <div
-                    class="rounded-xl border border-(--border) bg-(--card) p-5"
+                    class="rounded-sm border border-(--border) bg-(--card) p-5"
                   >
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-1">
@@ -592,7 +592,7 @@ const USER_ORDER_STEPS = [
               <!-- Header -->
               <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
                 <div>
-                  <h3 class="font-display text-lg font-bold text-(--foreground)">
+                  <h3 class="text-lg font-bold text-(--foreground)">
                     Détail de la commande
                   </h3>
                   <p class="text-xs text-(--muted-foreground)">{{ selectedOrder()!.serviceName }}</p>
@@ -610,7 +610,7 @@ const USER_ORDER_STEPS = [
                 <div class="grid grid-cols-3 gap-3">
                   <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
                     <p class="text-xs text-(--muted-foreground)">Montant</p>
-                    <p class="mt-1 font-display text-lg font-bold text-(--foreground)">
+                    <p class="mt-1 text-lg font-bold text-(--foreground)">
                       {{ selectedOrder()!.totalAmount | currency:(selectedOrder()!.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
                     </p>
                   </div>

@@ -102,7 +102,7 @@ const ORDER_STEPS = [
     <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="font-display text-2xl font-bold text-(--foreground)">
+        <h1 class="text-2xl font-bold text-(--foreground)">
           Gestion des Commandes
         </h1>
         <p class="mt-1 text-sm text-(--muted-foreground)">
@@ -150,7 +150,7 @@ const ORDER_STEPS = [
     </div>
 
     <!-- Orders table -->
-    <div class="mt-6 overflow-x-auto rounded-xl border border-(--border) bg-(--card)">
+    <div class="mt-6 overflow-x-auto rounded-sm border border-(--border) bg-(--card)">
       @if (loading()) {
         <div class="flex items-center justify-center py-12">
           <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-(--muted-foreground)"></lucide-icon>
@@ -274,7 +274,7 @@ const ORDER_STEPS = [
             <!-- Modal Header -->
             <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
               <div>
-                <h3 class="font-display text-lg font-bold text-(--foreground)">
+                <h3 class="text-lg font-bold text-(--foreground)">
                   Détail de la commande
                 </h3>
                 <p class="font-mono text-xs text-(--muted-foreground)">{{ orderDetail()!.id }}</p>
@@ -293,7 +293,7 @@ const ORDER_STEPS = [
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div class="rounded-lg border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Montant</p>
-                  <p class="mt-1 font-display text-lg font-bold text-(--foreground)">
+                  <p class="mt-1 text-lg font-bold text-(--foreground)">
                     {{ orderDetail()!.totalAmount | currency:(orderDetail()!.currency || 'EUR'):'symbol':'1.2-2' }}
                   </p>
                 </div>
@@ -560,7 +560,7 @@ const ORDER_STEPS = [
           (click)="$event.stopPropagation()"
         >
           <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
-            <h3 class="font-display text-lg font-bold text-(--foreground)">
+            <h3 class="text-lg font-bold text-(--foreground)">
               Créer une commande
             </h3>
             <button

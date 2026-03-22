@@ -129,7 +129,7 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
       <div class="flex flex-1 flex-col lg:ml-60">
         <!-- Top navbar -->
         <header
-          class="sticky top-0 z-20 border-b border-(--border) bg-(--card)/80 backdrop-blur-xl"
+          class="sticky top-0 z-20 border-b border-(--border) bg-(--card)"
         >
           <div class="flex h-16 items-center justify-between px-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -164,7 +164,7 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
                   <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
                   @if (notificationService.unreadCount() > 0) {
                     <span
-                      class="absolute -top-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-(--card) bell-badge-pulse"
+                      class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white"
                     >
                       {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
                     </span>

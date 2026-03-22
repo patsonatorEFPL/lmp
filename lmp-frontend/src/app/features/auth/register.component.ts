@@ -25,19 +25,17 @@ import { switchMap } from 'rxjs';
   ],
   template: `
     <div class="flex min-h-screen items-center justify-center px-4 py-12">
-      <div
-        class="pointer-events-none absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%239C92AC%22%20fill-opacity%3D%220.03%22%3E%3Cpath%20d%3D%22M0%200h1v1H0zM39%200h1v1h-1zM0%2039h1v1H0zM39%2039h1v1h-1z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')]"
-      ></div>
+
 
       <div class="relative w-full max-w-md">
         <!-- Logo -->
         <div class="mb-8 flex flex-col items-center">
           <div
-            class="flex h-12 w-12 items-center justify-center rounded-xl bg-(--primary) text-(--primary-foreground)"
+            class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--primary) text-(--primary-foreground)"
           >
-            <span class="font-display text-xl font-bold">L</span>
+            <span class="text-lg font-bold">L</span>
           </div>
-          <h1 class="mt-4 font-display text-2xl font-bold text-(--foreground)">
+          <h1 class="mt-4 text-2xl font-bold text-(--foreground)">
             Créer votre compte
           </h1>
           <p class="mt-1.5 text-sm text-(--muted-foreground)">
@@ -46,7 +44,7 @@ import { switchMap } from 'rxjs';
         </div>
 
         <!-- Card -->
-        <div class="rounded-xl border border-(--border) bg-(--card) p-6 sm:p-8">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8">
           <form (ngSubmit)="onSubmit()" class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">

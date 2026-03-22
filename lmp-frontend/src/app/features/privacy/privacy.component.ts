@@ -11,7 +11,7 @@ import { SeoService } from '../../core/services/seo.service';
         <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
           Légal
         </span>
-        <h1 class="font-display text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
+        <h1 class="text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
           Politique de Confidentialité
         </h1>
         <p class="mt-4 text-lg text-(--muted-foreground)">
@@ -20,7 +20,7 @@ import { SeoService } from '../../core/services/seo.service';
       </div>
 
       <!-- Info banner -->
-      <div class="mt-10 rounded-xl border border-(--primary)/20 bg-(--primary)/5 p-6 scroll-animate anim-fade-up delay-100">
+      <div class="mt-10 rounded-sm border border-(--primary)/20 bg-(--primary)/5 p-6 scroll-animate anim-fade-up delay-100">
         <p class="text-sm font-semibold text-(--primary)">Dernière mise à jour : Janvier 2025</p>
         <p class="mt-2 text-sm text-(--muted-foreground)">
           Cette politique de confidentialité explique comment
@@ -32,7 +32,7 @@ import { SeoService } from '../../core/services/seo.service';
       <div class="mt-10 space-y-10">
         @for (section of sections; track section.title; let i = $index) {
           <div class="scroll-animate anim-fade-up" [style.transition-delay.ms]="(i + 1) * 100">
-            <h2 class="font-display text-2xl font-bold text-(--foreground)">{{ section.title }}</h2>
+            <h2 class="text-2xl font-bold text-(--foreground)">{{ section.title }}</h2>
             <p class="mt-4 text-sm leading-relaxed text-(--muted-foreground)" [innerHTML]="section.content"></p>
           </div>
         }

@@ -38,12 +38,12 @@ import {
   template: `
     <!-- Welcome banner -->
     <div
-      class="rounded-2xl border border-(--border) bg-gradient-to-br from-(--primary)/5 to-transparent p-6 sm:p-8"
+      class="rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8"
     >
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="font-display text-2xl font-bold text-(--foreground) sm:text-3xl">
-            Bienvenue, {{ authService.user()?.firstName || 'Utilisateur' }} 👋
+          <h1 class="text-2xl font-bold text-(--foreground)">
+            Bienvenue, {{ authService.user()?.firstName || 'Utilisateur' }}
           </h1>
           <p class="mt-2 text-sm text-(--muted-foreground)">
             Gérez vos services, commandes et rendez-vous depuis votre espace personnel.
@@ -71,7 +71,7 @@ import {
     @if (!loading() && stats()) {
       <!-- Quick stats -->
       <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Commandes</span>
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
@@ -79,12 +79,12 @@ import {
             </div>
           </div>
           <div class="mt-3">
-            <span class="font-display text-2xl font-bold text-(--foreground)">{{ stats()!.totalOrders }}</span>
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.totalOrders }}</span>
           </div>
           <p class="mt-1 text-xs text-(--muted-foreground)">{{ stats()!.completedOrders }} terminée(s)</p>
         </div>
 
-        <div class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">En cours</span>
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
@@ -92,12 +92,12 @@ import {
             </div>
           </div>
           <div class="mt-3">
-            <span class="font-display text-2xl font-bold text-(--foreground)">{{ stats()!.inProgressOrders }}</span>
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.inProgressOrders }}</span>
           </div>
           <p class="mt-1 text-xs text-(--muted-foreground)">Commandes actives</p>
         </div>
 
-        <div class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Rendez-vous</span>
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
@@ -105,12 +105,12 @@ import {
             </div>
           </div>
           <div class="mt-3">
-            <span class="font-display text-2xl font-bold text-(--foreground)">{{ stats()!.upcomingAppointments }}</span>
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.upcomingAppointments }}</span>
           </div>
           <p class="mt-1 text-xs text-(--muted-foreground)">À venir</p>
         </div>
 
-        <div class="rounded-xl border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-5 transition-all hover:shadow-md">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium uppercase tracking-wider text-(--muted-foreground)">Avis</span>
             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
@@ -118,7 +118,7 @@ import {
             </div>
           </div>
           <div class="mt-3">
-            <span class="font-display text-2xl font-bold text-(--foreground)">{{ stats()!.totalReviews }}</span>
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.totalReviews }}</span>
           </div>
           <p class="mt-1 text-xs text-(--muted-foreground)">Avis donnés</p>
         </div>
@@ -129,7 +129,7 @@ import {
         <!-- Recent Orders -->
         <div class="lg:col-span-2">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-display text-lg font-bold text-(--foreground)">Commandes récentes</h2>
+            <h2 class="text-lg font-bold text-(--foreground)">Commandes récentes</h2>
             <a
               routerLink="/dashboard/orders"
               class="text-xs font-semibold text-(--primary) hover:underline"
@@ -137,7 +137,7 @@ import {
               Voir tout →
             </a>
           </div>
-          <div class="rounded-xl border border-(--border) bg-(--card)">
+          <div class="rounded-sm border border-(--border) bg-(--card)">
             @if (stats()!.recentOrders.length === 0) {
               <div class="flex flex-col items-center justify-center py-10 text-center">
                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-(--muted)">
@@ -192,14 +192,14 @@ import {
 
         <!-- Quick actions -->
         <div>
-          <h2 class="font-display mb-4 text-lg font-bold text-(--foreground)">Actions rapides</h2>
+          <h2 class="mb-4 text-lg font-bold text-(--foreground)">Actions rapides</h2>
           <div class="space-y-3">
             @for (action of quickActions; track action.label) {
               <a
                 [routerLink]="action.route"
-                class="group flex items-center gap-3 rounded-xl border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5"
+                class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-all hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5"
               >
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary) transition-transform group-hover:scale-110">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary) transition-transform 110">
                   <lucide-icon [img]="action.icon" [size]="18"></lucide-icon>
                 </div>
                 <div class="flex-1">
@@ -220,7 +220,7 @@ import {
       @if (stats()!.upcomingAppointmentsList.length > 0) {
         <div class="mt-8">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-display text-lg font-bold text-(--foreground)">Prochains rendez-vous</h2>
+            <h2 class="text-lg font-bold text-(--foreground)">Prochains rendez-vous</h2>
             <a
               routerLink="/dashboard/appointments"
               class="text-xs font-semibold text-(--primary) hover:underline"
@@ -230,7 +230,7 @@ import {
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (appt of stats()!.upcomingAppointmentsList; track appt.id) {
-              <div class="rounded-xl border border-(--border) bg-(--card) p-5">
+              <div class="rounded-sm border border-(--border) bg-(--card) p-5">
                 <div class="flex items-start justify-between">
                   <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500">
                     <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
@@ -252,10 +252,10 @@ import {
       <!-- Recent Reviews -->
       @if (stats()!.recentReviews.length > 0) {
         <div class="mt-8">
-          <h2 class="font-display mb-4 text-lg font-bold text-(--foreground)">Vos avis récents</h2>
+          <h2 class="mb-4 text-lg font-bold text-(--foreground)">Vos avis récents</h2>
           <div class="space-y-3">
             @for (review of stats()!.recentReviews; track review.id) {
-              <div class="rounded-xl border border-(--border) bg-(--card) p-5">
+              <div class="rounded-sm border border-(--border) bg-(--card) p-5">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-1">
                     @for (s of [1, 2, 3, 4, 5]; track s) {

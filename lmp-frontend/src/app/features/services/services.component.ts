@@ -30,45 +30,39 @@ import { environment } from '../../../environments/environment';
   imports: [LucideAngularModule, HlmButton, NgClass, CurrencyPipe],
   template: `
     <section class="relative">
-      <div class="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <!-- Header -->
-        <div class="mx-auto max-w-3xl text-center scroll-animate anim-fade-up">
-          <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
-            Nos Solutions
-          </span>
-          <h1 class="font-display text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl lg:text-6xl">
-            Expertise Digitale
-            <span class="italic font-light text-(--primary)">360°</span>
+        <div class="mx-auto max-w-3xl text-center scroll-animate">
+          <h1 class="text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
+            Nos services
           </h1>
-          <p class="mt-6 text-lg text-(--muted-foreground)">
+          <p class="mt-4 text-base text-(--muted-foreground)">
             Une gamme complète d'outils et de services pour dominer votre
             marché local et national.
           </p>
         </div>
 
-        <!-- Category Filter Tabs -->
+        <!-- Category Filter Tabs (underline style, not pills) -->
         @if (!loading() && !error() && categories().length > 0) {
-          <div class="mt-10 flex flex-wrap items-center justify-center gap-2 scroll-animate anim-fade-up delay-100">
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-1 border-b border-(--border) scroll-animate">
             <button
-              class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer"
+              class="px-4 py-2.5 text-sm font-medium transition-colors duration-150 cursor-pointer border-b-2 -mb-px"
               [ngClass]="selectedCategory() === null
-                ? 'bg-(--primary) text-white shadow-md shadow-(--primary)/25'
-                : 'bg-(--card) text-(--muted-foreground) border border-(--border) hover:border-(--primary)/30 hover:text-(--foreground)'"
+                ? 'border-(--primary) text-(--foreground)'
+                : 'border-transparent text-(--muted-foreground) hover:text-(--foreground)'"
               (click)="selectedCategory.set(null)"
             >
-              Tous
-              <span class="ml-1 text-xs opacity-70">({{ services().length }})</span>
+              Tous ({{ services().length }})
             </button>
             @for (cat of categories(); track cat.slug) {
               <button
-                class="rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 cursor-pointer"
+                class="px-4 py-2.5 text-sm font-medium transition-colors duration-150 cursor-pointer border-b-2 -mb-px"
                 [ngClass]="selectedCategory() === cat.slug
-                  ? 'bg-(--primary) text-white shadow-md shadow-(--primary)/25'
-                  : 'bg-(--card) text-(--muted-foreground) border border-(--border) hover:border-(--primary)/30 hover:text-(--foreground)'"
+                  ? 'border-(--primary) text-(--foreground)'
+                  : 'border-transparent text-(--muted-foreground) hover:text-(--foreground)'"
                 (click)="selectedCategory.set(cat.slug)"
               >
-                {{ cat.name }}
-                <span class="ml-1 text-xs opacity-70">({{ getCategoryCount(cat.slug) }})</span>
+                {{ cat.name }} ({{ getCategoryCount(cat.slug) }})
               </button>
             }
           </div>
@@ -76,13 +70,13 @@ import { environment } from '../../../environments/environment';
 
         <!-- Loading state -->
         @if (loading()) {
-          <div class="mt-16 flex flex-col items-center justify-center py-16">
+          <div class="mt-12 flex flex-col items-center justify-center py-12">
             <lucide-icon
               [img]="Loader2Icon"
-              [size]="32"
+              [size]="24"
               class="animate-spin text-(--primary)"
             ></lucide-icon>
-            <p class="mt-4 text-sm text-(--muted-foreground)">
+            <p class="mt-3 text-sm text-(--muted-foreground)">
               Chargement des services…
             </p>
           </div>
@@ -91,14 +85,14 @@ import { environment } from '../../../environments/environment';
         <!-- Error state -->
         @if (error()) {
           <div
-            class="mt-16 rounded-xl border border-red-500/20 bg-red-500/5 p-8 text-center"
+            class="mt-12 rounded-sm border border-(--destructive)/20 bg-(--destructive)/5 p-6 text-center"
           >
-            <p class="text-sm text-red-400">{{ error() }}</p>
+            <p class="text-sm text-(--destructive)">{{ error() }}</p>
             <button
               hlmBtn
               variant="outline"
               size="sm"
-              class="mt-4 cursor-pointer"
+              class="mt-3 cursor-pointer"
               (click)="loadServices()"
             >
               Réessayer
@@ -108,19 +102,16 @@ import { environment } from '../../../environments/environment';
 
         <!-- Services Grid -->
         @if (!loading() && !error()) {
-          <!-- Empty state for filtered category -->
           @if (filteredServices().length === 0) {
-            <div class="mt-16 py-16 text-center">
-              <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-(--primary)/10">
-                <lucide-icon [img]="FilterIcon" [size]="24" class="text-(--primary)"></lucide-icon>
-              </div>
-              <h3 class="font-display text-lg font-semibold text-(--foreground)">Aucun service trouvé</h3>
-              <p class="mt-2 text-sm text-(--muted-foreground)">Aucun service disponible dans cette catégorie.</p>
+            <div class="mt-12 py-12 text-center">
+              <lucide-icon [img]="FilterIcon" [size]="24" class="mx-auto text-(--muted-foreground)"></lucide-icon>
+              <h3 class="mt-3 text-base font-semibold text-(--foreground)">Aucun service trouvé</h3>
+              <p class="mt-1 text-sm text-(--muted-foreground)">Aucun service disponible dans cette catégorie.</p>
               <button
                 hlmBtn
                 variant="outline"
                 size="sm"
-                class="mt-4 cursor-pointer"
+                class="mt-3 cursor-pointer"
                 (click)="selectedCategory.set(null)"
               >
                 Voir tous les services
@@ -128,46 +119,36 @@ import { environment } from '../../../environments/environment';
             </div>
           }
 
-          <div class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (service of filteredServices(); track service.id; let i = $index) {
               <div
                 [id]="service.slug"
-                class="group relative flex flex-col rounded-xl border bg-(--card) p-6 transition-all duration-300 hover:border-(--primary)/30 hover:shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-1 scroll-animate anim-fade-up"
+                class="group relative flex flex-col rounded-sm border bg-(--card) p-5 transition-colors duration-150 scroll-animate"
                 [ngClass]="{
-                  'service-highlight border-(--primary) ring-2 ring-(--primary)/40 shadow-lg shadow-emerald-500/20 scale-[1.02] -translate-y-2': highlightedSlug() === service.slug,
-                  'border-(--border)': highlightedSlug() !== service.slug
+                  'border-(--primary) ring-1 ring-(--primary)/30': highlightedSlug() === service.slug,
+                  'border-(--border) hover:border-(--primary)/30': highlightedSlug() !== service.slug
                 }"
                 [style.transition-delay.ms]="(i % 3) * 100"
               >
-                <!-- Selected badge -->
-                @if (highlightedSlug() === service.slug) {
-                  <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-(--primary) px-3 py-1 text-xs font-semibold text-white shadow-md whitespace-nowrap">
-                    ✨ Service sélectionné
-                  </div>
-                }
-
-                <!-- Number + Category -->
-                <div class="mb-4 flex items-start justify-between">
-                  <span class="font-mono text-xs font-semibold text-(--muted-foreground)/40">
-                    /{{ (i + 1).toString().padStart(2, '0') }}
+                <!-- Category -->
+                <div class="mb-3 flex items-start justify-between">
+                  <span class="text-xs font-mono text-(--muted-foreground)">
+                    {{ (i + 1).toString().padStart(2, '0') }}
                   </span>
-                  <span class="rounded-full bg-(--primary)/10 px-3 py-1 text-xs font-medium text-(--primary)">
+                  <span class="rounded-sm bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                     {{ service.categoryName }}
                   </span>
                 </div>
 
-                <!-- Title -->
-                <h3 class="font-display text-lg font-bold leading-snug text-(--foreground) group-hover:text-(--primary) transition-colors">
+                <h3 class="text-sm font-semibold text-(--foreground)">
                   {{ service.title }}
                 </h3>
 
-                <!-- Description -->
-                <p class="mt-3 text-sm leading-relaxed text-(--muted-foreground)">
+                <p class="mt-2 text-sm leading-relaxed text-(--muted-foreground)">
                   {{ service.description }}
                 </p>
 
-                <!-- Features / Benefits -->
-                <ul class="mt-4 flex-1 space-y-2">
+                <ul class="mt-3 flex-1 space-y-1.5">
                   @for (benefit of service.benefits; track benefit) {
                     <li class="flex items-start gap-2 text-sm text-(--muted-foreground)">
                       <lucide-icon
@@ -180,18 +161,17 @@ import { environment } from '../../../environments/environment';
                   }
                 </ul>
 
-                <!-- Price + Add button -->
-                <div class="mt-6 flex items-end justify-between border-t border-(--border) pt-4">
+                <div class="mt-5 flex items-end justify-between border-t border-(--border) pt-3">
                   <div>
                     @if (service.currentOffer) {
-                      <span class="font-display text-2xl font-bold text-(--primary)">
+                      <span class="text-lg font-bold text-(--foreground)">
                         {{ service.currentOffer.price | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
                       </span>
                       @if (
                         service.currentOffer.originalPrice &&
                         service.currentOffer.originalPrice > service.currentOffer.price
                       ) {
-                        <span class="ml-2 text-sm text-(--muted-foreground) line-through">
+                        <span class="ml-1.5 text-sm text-(--muted-foreground) line-through">
                           {{ service.currentOffer.originalPrice | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
                         </span>
                       }
@@ -201,11 +181,11 @@ import { environment } from '../../../environments/environment';
                            service.currentOffer.durationType === 'YEARLY' ? '/ an' : 'Paiement unique' }}
                       </div>
                     } @else {
-                      <span class="font-display text-lg font-bold text-(--primary)">Sur devis</span>
+                      <span class="text-base font-semibold text-(--foreground)">Sur devis</span>
                     }
                   </div>
                   <button
-                    class="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-(--primary)/10 px-3 text-sm font-medium text-(--primary) transition-all duration-200 hover:scale-105 hover:bg-(--primary)/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="flex h-8 cursor-pointer items-center gap-1.5 rounded-sm bg-(--muted) px-3 text-sm font-medium text-(--foreground) transition-colors duration-150 hover:bg-(--accent) disabled:opacity-50 disabled:cursor-not-allowed"
                     [disabled]="!service.currentOffer || checkoutLoading() === service.id"
                     (click)="onCheckout(service)"
                   >
@@ -223,23 +203,18 @@ import { environment } from '../../../environments/environment';
         }
 
         <!-- CTA Section -->
-        <section class="mt-20 scroll-animate anim-fade-up rounded-2xl border border-(--border) bg-(--card) p-10 text-center sm:p-16">
-          <span class="text-xs font-semibold uppercase tracking-[0.2em] text-(--primary) block mb-3">
-            Parlons Business
-          </span>
-          <h2 class="font-display text-3xl font-bold text-(--foreground) sm:text-4xl">
-            Prêt à dominer
-            <span class="italic font-light text-(--primary)">votre marché ?</span>
+        <section class="mt-16 scroll-animate rounded-sm border border-(--border) bg-(--card) p-8 sm:p-12 text-center">
+          <h2 class="text-2xl font-bold text-(--foreground) sm:text-3xl">
+            Prêt à démarrer ?
           </h2>
-          <p class="mx-auto mt-4 max-w-xl text-(--muted-foreground)">
+          <p class="mx-auto mt-3 max-w-xl text-sm text-(--muted-foreground)">
             Ne laissez pas vos concurrents prendre l'avantage. Nos experts
             vous accompagnent vers le sommet.
           </p>
-          <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <div class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <a
               hlmBtn
               variant="default"
-              size="lg"
               href="mailto:lmp.assistance&#64;gmail.com"
               class="cursor-pointer gap-2"
             >

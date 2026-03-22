@@ -10,7 +10,7 @@ import { ContactFabComponent } from './contact-fab.component';
   imports: [RouterOutlet, NavbarComponent, FooterComponent, ContactFabComponent],
   template: `
     <lmp-navbar />
-    <main class="min-h-screen pt-16">
+    <main class="min-h-screen pt-14">
       <router-outlet />
     </main>
     <lmp-footer />

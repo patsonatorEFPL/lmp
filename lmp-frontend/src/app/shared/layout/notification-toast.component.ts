@@ -42,7 +42,7 @@ interface ToastWithProgress extends AppNotification {
     <!-- Floating toasts for new notifications -->
     @for (toast of visibleToasts(); track toast.id; let i = $index) {
       <div
-        class="fixed right-4 z-[250] w-[21rem] sm:w-[22rem] overflow-hidden rounded-xl border bg-(--card)/95 backdrop-blur-md shadow-2xl"
+        class="fixed right-4 z-[250] w-[21rem] sm:w-[22rem] overflow-hidden rounded-sm border bg-(--card)/95 backdrop-blur-md shadow-2xl"
         [class]="getToastClasses(toast)"
         [style.bottom.px]="96 + i * 94"
         (mouseenter)="pauseToast(toast.id)"
@@ -56,7 +56,7 @@ interface ToastWithProgress extends AppNotification {
         <div class="flex items-start gap-3 p-4">
           <!-- Animated icon -->
           <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl notification-icon-pulse"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm notification-icon-pulse"
             [class]="getToastIconBg(toast.type)"
           >
             @switch (toast.type) {
