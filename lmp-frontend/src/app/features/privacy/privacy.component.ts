@@ -7,7 +7,7 @@ import { SeoService } from '../../core/services/seo.service';
   standalone: true,
   template: `
     <section class="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8">
-      <div class="text-center scroll-animate anim-fade-up">
+      <div class="text-center">
         <span class="text-xs font-semibold tracking-[0.2em] uppercase text-(--primary) mb-4 block">
           Légal
         </span>

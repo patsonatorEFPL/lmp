@@ -125,7 +125,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
           </div>
 
           <!-- Connexion Button -->
-          @if (authService.isAuthenticated()) {
+          @if (authService.loading()) {
+            <div class="w-[90px] h-8 rounded-sm bg-(--muted) animate-pulse"></div>
+          } @else if (authService.isAuthenticated()) {
             @if (authService.isAdmin()) {
               <a
                 hlmBtn
@@ -211,7 +213,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
               </button>
             </div>
 
-            @if (!authService.isAuthenticated()) {
+            @if (authService.loading()) {
+              <div class="w-full h-9 rounded-sm bg-(--muted) animate-pulse"></div>
+            } @else if (!authService.isAuthenticated()) {
               <a
                 routerLink="/login"
                 class="w-full cursor-pointer rounded-sm border border-(--border) px-4 py-2 text-center text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent)"

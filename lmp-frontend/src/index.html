@@ -167,6 +167,18 @@
 
     <!-- Polyfill: sockjs-client requires `global` (Node.js) in browser -->
     <script>window.global = window;</script>
+
+    <!-- Prevent theme FOUC: apply saved theme before first paint -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('lmp-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var useDark = saved ? saved === 'dark' : prefersDark;
+          document.documentElement.classList.toggle('dark', useDark);
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-(--background) text-(--foreground) antialiased">
     <lmp-root></lmp-root>

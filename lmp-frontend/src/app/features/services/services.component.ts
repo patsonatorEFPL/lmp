@@ -32,7 +32,7 @@ import { environment } from '../../../environments/environment';
     <section class="relative">
       <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <!-- Header -->
-        <div class="mx-auto max-w-3xl text-center scroll-animate">
+        <div class="mx-auto max-w-3xl text-center">
           <h1 class="text-4xl font-bold tracking-tight text-(--foreground) sm:text-5xl">
             Nos services
           </h1>
