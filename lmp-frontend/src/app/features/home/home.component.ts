@@ -87,21 +87,6 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         </div>
       </div>
 
-<<<<<<< Updated upstream
-    <!-- ===== PARTNER TICKER ===== -->
-    <section class="border-b border-(--border) overflow-hidden">
-      <div class="py-4">
-        <div class="ticker-track">
-          @for (i of [0,1]; track i) {
-            <div class="flex items-center gap-10 px-5">
-              @for (partner of partners; track $index) {
-                <span class="text-sm text-(--muted-foreground) whitespace-nowrap opacity-50 hover:opacity-100 transition-opacity">
-                  {{ partner.name }}
-                </span>
-              }
-            </div>
-          }
-=======
       <!-- Partner ticker — pinned at the bottom of the hero -->
       <div class="relative z-10 border-t border-white/10 overflow-hidden">
         <div class="py-4">
@@ -109,15 +94,13 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             @for (i of [0,1]; track i) {
               <div class="flex items-center gap-10 px-5">
                 @for (partner of partners; track $index) {
-                  <span class="flex items-center gap-1.5 text-sm text-white/40 whitespace-nowrap hover:text-white/80 transition-colors">
-                    <span class="text-base">{{ partner.icon }}</span>
+                  <span class="text-sm text-white/40 whitespace-nowrap hover:text-white/80 transition-colors">
                     {{ partner.name }}
                   </span>
                 }
               </div>
             }
           </div>
->>>>>>> Stashed changes
         </div>
       </div>
     </section>
