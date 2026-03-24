@@ -45,9 +45,9 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
   standalone: true,
   imports: [RouterLink, FormsModule, LucideAngularModule, AppointmentModalComponent, CurrencyPipe],
   template: `
-    <!-- ===== HERO SECTION ===== -->
+    <!-- ===== HERO SECTION (includes ticker at bottom) ===== -->
     <section
-      class="relative overflow-hidden -mt-14 pt-14 flex items-center min-h-[85vh]"
+      class="relative overflow-hidden -mt-14 pt-14 flex flex-col min-h-screen"
     >
       <!-- Background image with simple dark overlay -->
       <div class="absolute inset-0">
@@ -59,7 +59,8 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         <div class="absolute inset-0 bg-black/80"></div>
       </div>
 
-      <div class="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 w-full">
+      <!-- Hero content — grows to fill available space, centered -->
+      <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full flex-1 flex items-center py-20">
         <div class="max-w-2xl">
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
             Propulsez votre visibilité digitale
@@ -85,8 +86,8 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
           </div>
         </div>
       </div>
-    </section>
 
+<<<<<<< Updated upstream
     <!-- ===== PARTNER TICKER ===== -->
     <section class="border-b border-(--border) overflow-hidden">
       <div class="py-4">
@@ -100,6 +101,23 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               }
             </div>
           }
+=======
+      <!-- Partner ticker — pinned at the bottom of the hero -->
+      <div class="relative z-10 border-t border-white/10 overflow-hidden">
+        <div class="py-4">
+          <div class="ticker-track">
+            @for (i of [0,1]; track i) {
+              <div class="flex items-center gap-10 px-5">
+                @for (partner of partners; track $index) {
+                  <span class="flex items-center gap-1.5 text-sm text-white/40 whitespace-nowrap hover:text-white/80 transition-colors">
+                    <span class="text-base">{{ partner.icon }}</span>
+                    {{ partner.name }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+>>>>>>> Stashed changes
         </div>
       </div>
     </section>
