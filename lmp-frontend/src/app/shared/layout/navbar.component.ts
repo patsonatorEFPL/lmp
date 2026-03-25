@@ -34,14 +34,15 @@ import { HlmButton } from '@spartan-ng/helm/button';
       }"
     >
       <nav
-        class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
+      class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
       >
         <!-- Logo -->
         <a routerLink="/" class="flex items-center">
           <img
             src="/images/logo-lmp.webp"
             alt="LMP Logo"
-            class="h-10 w-auto"
+            class="w-auto rounded-sm transition-all duration-300 ease-in-out"
+            [ngClass]="isAtTop() ? 'h-14 drop-shadow-md' : 'h-9 shadow-xs'"
           />
         </a>
 
