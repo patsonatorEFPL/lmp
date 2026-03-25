@@ -98,6 +98,18 @@ src/
 │       └── templates/       # Vues Thymeleaf et templates Emails
 ```
 
+## 🔑 Premier démarrage — Compte Administrateur
+
+Au premier démarrage, Flyway seed un compte admin par défaut :
+
+| Champ | Valeur |
+|---|---|
+| Email | `admin@lmp.ca` |
+| Mot de passe | `Admin@LMP-ChangeMe2026!` |
+
+> **⚠️ Changez ce mot de passe immédiatement après la première connexion** via la page **Profil → Sécurité**.
+> Ce compte ne doit jamais rester avec ces identifiants par défaut en production.
+
 ## 🧪 Tests
 
 Des tests unitaires et d'intégration couvrent les fonctionnalités critiques du back-end.
