@@ -1,7 +1,24 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
+import { getDashboardStats1 } from '../../../app/generated/fn/admin/get-dashboard-stats-1';
+import { getCatalogStats } from '../../../app/generated/fn/admin-services/get-catalog-stats';
+import { getCategories } from '../../../app/generated/fn/admin-services/get-categories';
+import { createCategory } from '../../../app/generated/fn/admin-services/create-category';
+import { updateCategory } from '../../../app/generated/fn/admin-services/update-category';
+import { deleteCategory } from '../../../app/generated/fn/admin-services/delete-category';
+import { reorderServices } from '../../../app/generated/fn/admin-services/reorder-services';
+import { getAllServices } from '../../../app/generated/fn/admin-services/get-all-services';
+import { getService } from '../../../app/generated/fn/admin-services/get-service';
+import { createService } from '../../../app/generated/fn/admin-services/create-service';
+import { updateService } from '../../../app/generated/fn/admin-services/update-service';
+import { deleteService } from '../../../app/generated/fn/admin-services/delete-service';
+import { syncBenefits } from '../../../app/generated/fn/admin-services/sync-benefits';
+import { createOffer } from '../../../app/generated/fn/admin-services/create-offer';
+import { updateOffer } from '../../../app/generated/fn/admin-services/update-offer';
+import { deleteOffer } from '../../../app/generated/fn/admin-services/delete-offer';
+
 import { ServiceItem } from './catalog.service';
 
 export interface CategoryItem {
@@ -38,15 +55,12 @@ interface ApiResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/api/v1/admin`;
 
   // ========== Dashboard Stats ==========
 
   getDashboardStats(): Observable<AdminDashboardStats> {
     return this.http
-      .get<ApiResponse<AdminDashboardStats>>(`${this.baseUrl}/stats`, {
-        withCredentials: true,
-      })
+      .get<ApiResponse<AdminDashboardStats>>(getDashboardStats1.PATH)
       .pipe(map((res) => res.data!));
   }
 
@@ -54,9 +68,7 @@ export class AdminService {
 
   getCatalogStats(): Observable<CatalogStats> {
     return this.http
-      .get<ApiResponse<CatalogStats>>(`${this.baseUrl}/services/stats`, {
-        withCredentials: true,
-      })
+      .get<ApiResponse<CatalogStats>>(getCatalogStats.PATH)
       .pipe(map((res) => res.data!));
   }
 
@@ -64,125 +76,83 @@ export class AdminService {
 
   getCategories(): Observable<CategoryItem[]> {
     return this.http
-      .get<ApiResponse<CategoryItem[]>>(
-        `${this.baseUrl}/services/categories`,
-        { withCredentials: true },
-      )
+      .get<ApiResponse<CategoryItem[]>>(getCategories.PATH)
       .pipe(map((res) => res.data ?? []));
   }
 
-  createCategory(data: Partial<CategoryItem>): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(
-      `${this.baseUrl}/services/categories`,
-      data,
-      { withCredentials: true },
-    );
+  createCategory(data: Partial<CategoryItem>): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(createCategory.PATH, data);
   }
 
-  updateCategory(
-    id: string,
-    data: Partial<CategoryItem>,
-  ): Observable<ApiResponse<void>> {
-    return this.http.put<ApiResponse<void>>(
-      `${this.baseUrl}/services/categories/${id}`,
-      data,
-      { withCredentials: true },
-    );
+  updateCategory(id: string, data: Partial<CategoryItem>): Observable<ApiResponse<void>> {
+    const path = updateCategory.PATH.replace('{id}', id);
+    return this.http.put<ApiResponse<void>>(path, data);
   }
 
   deleteCategory(id: string): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(
-      `${this.baseUrl}/services/categories/${id}`,
-      { withCredentials: true },
-    );
+    const path = deleteCategory.PATH.replace('{id}', id);
+    return this.http.delete<ApiResponse<void>>(path);
   }
 
   // ========== Reorder ==========
 
   reorderServices(serviceIds: string[]): Observable<ApiResponse<void>> {
-    return this.http.put<ApiResponse<void>>(
-      `${this.baseUrl}/services/reorder`,
-      { serviceIds },
-      { withCredentials: true },
-    );
+    return this.http.put<ApiResponse<void>>(reorderServices.PATH, { serviceIds });
   }
 
   // ========== Services ==========
 
   getServices(): Observable<ServiceItem[]> {
     return this.http
-      .get<ApiResponse<ServiceItem[]>>(`${this.baseUrl}/services`, {
-        withCredentials: true,
-      })
+      .get<ApiResponse<ServiceItem[]>>(getAllServices.PATH)
       .pipe(map((res) => res.data ?? []));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getService(id: string): Observable<any> {
+    const path = getService.PATH.replace('{id}', id);
     return this.http
-      .get<ApiResponse<any>>(`${this.baseUrl}/services/${id}`, {
-        withCredentials: true,
-      })
+      .get<ApiResponse<any>>(path)
       .pipe(map((res) => res.data));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createService(data: any): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(
-      `${this.baseUrl}/services`,
-      data,
-      { withCredentials: true },
-    );
+    return this.http.post<ApiResponse<any>>(createService.PATH, data);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateService(id: string, data: any): Observable<ApiResponse<void>> {
-    return this.http.put<ApiResponse<void>>(
-      `${this.baseUrl}/services/${id}`,
-      data,
-      { withCredentials: true },
-    );
+    const path = updateService.PATH.replace('{id}', id);
+    return this.http.put<ApiResponse<void>>(path, data);
   }
 
   deleteService(id: string): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(
-      `${this.baseUrl}/services/${id}`,
-      { withCredentials: true },
-    );
+    const path = deleteService.PATH.replace('{id}', id);
+    return this.http.delete<ApiResponse<void>>(path);
   }
 
   // ========== Benefits ==========
 
-  syncBenefits(
-    serviceId: string,
-    benefits: string[],
-  ): Observable<ApiResponse<void>> {
-    return this.http.post<ApiResponse<void>>(
-      `${this.baseUrl}/services/${serviceId}/benefits/sync`,
-      { benefits },
-      { withCredentials: true },
-    );
+  syncBenefits(serviceId: string, benefits: string[]): Observable<ApiResponse<void>> {
+    const path = syncBenefits.PATH.replace('{serviceId}', serviceId);
+    return this.http.post<ApiResponse<void>>(path, { benefits });
   }
 
   // ========== Offers ==========
 
-  createOffer(serviceId: string, data: any): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(
-      `${this.baseUrl}/services/${serviceId}/offers`,
-      data,
-      { withCredentials: true },
-    );
+  createOffer(serviceId: string, data: unknown): Observable<ApiResponse<unknown>> {
+    const path = createOffer.PATH.replace('{serviceId}', serviceId);
+    return this.http.post<ApiResponse<unknown>>(path, data);
   }
 
-  updateOffer(offerId: string, data: any): Observable<ApiResponse<void>> {
-    return this.http.put<ApiResponse<void>>(
-      `${this.baseUrl}/services/offers/${offerId}`,
-      data,
-      { withCredentials: true },
-    );
+  updateOffer(offerId: string, data: unknown): Observable<ApiResponse<void>> {
+    const path = updateOffer.PATH.replace('{offerId}', offerId);
+    return this.http.put<ApiResponse<void>>(path, data);
   }
 
   deleteOffer(offerId: string): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(
-      `${this.baseUrl}/services/offers/${offerId}`,
-      { withCredentials: true },
-    );
+    const path = deleteOffer.PATH.replace('{offerId}', offerId);
+    return this.http.delete<ApiResponse<void>>(path);
   }
 }

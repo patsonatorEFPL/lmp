@@ -7,7 +7,11 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "codegen": "npx ng-openapi-gen --config ng-openapi-gen.json"
+    "codegen": "ng-openapi-gen --config ng-openapi-gen.json",
+    "fetch-spec": "node -e \"const h=require('http');const f=require('fs');h.get('http://localhost:8080/v3/api-docs',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{f.writeFileSync('openapi.json',d);console.log('openapi.json mis à jour');});}).on('error',e=>{console.error('Backend non disponible:',e.message);process.exit(1);});\"",
+    "update-api": "npm run fetch-spec && npm run codegen",
+    "prebuild": "npm run codegen",
+    "prestart": "npm run codegen"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
@@ -47,6 +51,7 @@
     "@types/node": "^25.5.0",
     "@types/sockjs-client": "^1.5.4",
     "jsdom": "^28.0.0",
+    "ng-openapi-gen": "^1.0.5",
     "postcss-import": "^16.1.1",
     "postcss-preset-env": "^11.2.0",
     "prettier": "^3.8.1",

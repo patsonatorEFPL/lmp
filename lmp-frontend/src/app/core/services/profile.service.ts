@@ -1,7 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
+import { updateProfile } from '../../../app/generated/fn/user-dashboard/update-profile';
+import { changePassword } from '../../../app/generated/fn/user-dashboard/change-password';
+import { ApiResponseUserResponse } from '../../../app/generated/models/api-response-user-response';
+import { ApiResponseVoid } from '../../../app/generated/models/api-response-void';
 import { UserInfo } from './auth.service';
 
 export interface UpdateProfileRequest {
@@ -21,27 +25,17 @@ export interface ChangePasswordRequest {
   confirmPassword: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly http = inject(HttpClient);
 
   updateProfile(request: UpdateProfileRequest): Observable<UserInfo> {
     return this.http
-      .put<ApiResponse<UserInfo>>(
-        `${environment.apiUrl}/api/v1/dashboard/profile`,
-        request,
-        { withCredentials: true },
-      )
+      .put<ApiResponseUserResponse>(updateProfile.PATH, request)
       .pipe(
         map((res) => {
           if (res.success && res.data) {
-            return res.data;
+            return res.data as UserInfo;
           }
           throw new Error(res.message ?? 'Erreur lors de la mise à jour');
         }),
@@ -50,11 +44,7 @@ export class ProfileService {
 
   changePassword(request: ChangePasswordRequest): Observable<void> {
     return this.http
-      .put<ApiResponse<void>>(
-        `${environment.apiUrl}/api/v1/dashboard/password`,
-        request,
-        { withCredentials: true },
-      )
+      .put<ApiResponseVoid>(changePassword.PATH, request)
       .pipe(
         map((res) => {
           if (!res.success) {

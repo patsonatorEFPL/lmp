@@ -60,6 +60,9 @@ SEMGREP_VULNERABILITY_REPORT.md
 node_modules/
 ${project.build.directory}/
 
+### OpenAPI Generated Clients (auto-générés depuis openapi.json via npm run codegen) ###
+lmp-frontend/src/app/generated/
+
 ### Third-party Tool Directories ###
 .kilocode/
 .qwen/

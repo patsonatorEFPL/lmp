@@ -1,7 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
+import { getAllServices1 } from '../../../app/generated/fn/services/get-all-services-1';
+import { getFeaturedServices } from '../../../app/generated/fn/services/get-featured-services';
+import { ApiResponseListServiceResponse } from '../../../app/generated/models/api-response-list-service-response';
 
 export interface ServiceOffer {
   id: string;
@@ -27,23 +30,14 @@ export interface ServiceItem {
   currentOffer: ServiceOffer | null;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
 @Injectable({ providedIn: 'root' })
 export class CatalogService {
   private readonly http = inject(HttpClient);
 
   getServices(): Observable<ServiceItem[]> {
     return this.http
-      .get<ApiResponse<ServiceItem[]>>(
-        `${environment.apiUrl}/api/v1/services`,
-        { withCredentials: true },
-      )
-      .pipe(map((res) => res.data ?? []));
+      .get<ApiResponseListServiceResponse>(getAllServices1.PATH)
+      .pipe(map((res) => (res.data ?? []) as ServiceItem[]));
   }
 
   getCategories(): Observable<{ name: string; slug: string }[]> {
@@ -64,10 +58,7 @@ export class CatalogService {
 
   getFeaturedServices(): Observable<ServiceItem[]> {
     return this.http
-      .get<ApiResponse<ServiceItem[]>>(
-        `${environment.apiUrl}/api/v1/services/featured`,
-        { withCredentials: true },
-      )
-      .pipe(map((res) => res.data ?? []));
+      .get<ApiResponseListServiceResponse>(getFeaturedServices.PATH)
+      .pipe(map((res) => (res.data ?? []) as ServiceItem[]));
   }
 }
