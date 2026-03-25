@@ -16,6 +16,7 @@ import { SeoService } from '../../core/services/seo.service';
 import { environment } from '../../../environments/environment';
 import {
   LucideAngularModule,
+  LucideIconData,
   ArrowRight,
   Check,
   ChevronDown,
@@ -23,6 +24,18 @@ import {
   ShoppingCart,
   Send,
   ExternalLink,
+  MapPin,
+  Search,
+  Globe,
+  Megaphone,
+  Star,
+  MessageSquare,
+  Store,
+  Rocket,
+  CreditCard,
+  BarChart2,
+  TrendingUp,
+  Users,
 } from 'lucide-angular';
 import { AppointmentModalComponent } from '../../shared/modals/appointment-modal.component';
 import { CatalogService, ServiceItem } from '../../core/services/catalog.service';
@@ -81,8 +94,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
           @for (i of [0,1]; track i) {
             <div class="flex items-center gap-10 px-5">
               @for (partner of partners; track $index) {
-                <span class="flex items-center gap-1.5 text-sm text-(--muted-foreground) whitespace-nowrap opacity-50 hover:opacity-100 transition-opacity">
-                  <span class="text-base">{{ partner.icon }}</span>
+                <span class="text-sm text-(--muted-foreground) whitespace-nowrap opacity-50 hover:opacity-100 transition-opacity">
                   {{ partner.name }}
                 </span>
               }
@@ -113,8 +125,8 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               class="bg-(--card) p-8 sm:p-10 transition-colors duration-150 hover:bg-(--accent) scroll-animate"
               [style.transition-delay.ms]="(i + 1) * 100"
             >
-              <div class="flex items-center justify-center h-12 w-12 rounded-sm bg-(--muted) mb-5 text-xl">
-                {{ svc.icon }}
+              <div class="flex items-center justify-center h-12 w-12 rounded-sm bg-(--muted) mb-5">
+                <lucide-icon [img]="getIcon(svc.iconName)" [size]="20" class="text-(--muted-foreground)"></lucide-icon>
               </div>
               <h3 class="text-base font-semibold text-(--foreground)">{{ svc.title }}</h3>
               <p class="mt-2 text-sm leading-relaxed text-(--muted-foreground)">{{ svc.description }}</p>
@@ -189,8 +201,8 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               [style.transition-delay.ms]="(i % 3 + 1) * 100"
             >
               <div class="flex items-start justify-between mb-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-lg">
-                  {{ service.icon }}
+                <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted)">
+                  <lucide-icon [img]="getIcon(service.icon)" [size]="18" class="text-(--muted-foreground)"></lucide-icon>
                 </div>
                 <span class="rounded-sm bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                   {{ service.categoryName }}
@@ -237,8 +249,8 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                 class="group flex flex-col rounded-sm border border-(--border) bg-(--card) p-5 transition-colors duration-150 hover:border-(--primary)/30 scroll-animate cursor-pointer"
               >
                 <div class="flex items-start justify-between mb-3">
-                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-lg">
-                    {{ service.emoji }}
+                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted)">
+                    <lucide-icon [img]="getIcon(service.iconName)" [size]="18" class="text-(--muted-foreground)"></lucide-icon>
                   </div>
                   <span class="rounded-sm bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                     {{ service.category }}
@@ -335,11 +347,9 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               "{{ testimonials[0].quote }}"
             </p>
             <div class="mt-6 flex items-center gap-3">
-              <img
-                [src]="'https://i.pravatar.cc/80?u=' + testimonials[0].name"
-                [alt]="testimonials[0].name"
-                class="h-10 w-10 rounded-sm object-cover"
-              />
+              <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-sm font-semibold text-(--foreground) shrink-0">
+                {{ getInitials(testimonials[0].name) }}
+              </div>
               <div>
                 <div class="text-sm font-medium text-(--foreground)">{{ testimonials[0].name }}</div>
                 <div class="text-xs text-(--muted-foreground)">{{ testimonials[0].role }}</div>
@@ -358,11 +368,9 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   "{{ t.quote }}"
                 </p>
                 <div class="mt-3 flex items-center gap-2">
-                  <img
-                    [src]="'https://i.pravatar.cc/60?u=' + t.name"
-                    [alt]="t.name"
-                    class="h-8 w-8 rounded-sm object-cover"
-                  />
+                  <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-xs font-semibold text-(--foreground) shrink-0">
+                    {{ getInitials(t.name) }}
+                  </div>
                   <div>
                     <div class="text-xs font-medium text-(--foreground)">{{ t.name }}</div>
                     <div class="text-xs text-(--muted-foreground)">{{ t.role }}</div>
@@ -575,6 +583,29 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly SendIcon = Send;
   readonly ExternalLinkIcon = ExternalLink;
 
+  readonly iconMap: Record<string, LucideIconData> = {
+    mapPin: MapPin,
+    search: Search,
+    globe: Globe,
+    megaphone: Megaphone,
+    star: Star,
+    messageSquare: MessageSquare,
+    store: Store,
+    rocket: Rocket,
+    creditCard: CreditCard,
+    barChart2: BarChart2,
+    trendingUp: TrendingUp,
+    users: Users,
+  };
+
+  getIcon(name: string): LucideIconData {
+    return this.iconMap[name] ?? Globe;
+  }
+
+  getInitials(name: string): string {
+    return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  }
+
   readonly showAppointment = signal(false);
   readonly featuredServices = signal<ServiceItem[]>([]);
   readonly loadingFeatured = signal(true);
@@ -595,29 +626,29 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   readonly partners = [
-    { name: 'Google Partner', icon: '🔍' },
-    { name: 'Meta Business', icon: '📘' },
-    { name: 'Stripe Payments', icon: '💳' },
-    { name: 'HubSpot', icon: '🟠' },
-    { name: 'Trustpilot', icon: '⭐' },
-    { name: 'Semrush', icon: '📊' },
-    { name: 'Google Analytics', icon: '📈' },
-    { name: 'WordPress', icon: '🌐' },
-    { name: 'Google Partner', icon: '🔍' },
-    { name: 'Meta Business', icon: '📘' },
-    { name: 'Stripe Payments', icon: '💳' },
-    { name: 'HubSpot', icon: '🟠' },
-    { name: 'Trustpilot', icon: '⭐' },
-    { name: 'Semrush', icon: '📊' },
-    { name: 'Google Analytics', icon: '📈' },
-    { name: 'WordPress', icon: '🌐' },
+    { name: 'Google Partner' },
+    { name: 'Meta Business' },
+    { name: 'Stripe Payments' },
+    { name: 'HubSpot' },
+    { name: 'Trustpilot' },
+    { name: 'Semrush' },
+    { name: 'Google Analytics' },
+    { name: 'WordPress' },
+    { name: 'Google Partner' },
+    { name: 'Meta Business' },
+    { name: 'Stripe Payments' },
+    { name: 'HubSpot' },
+    { name: 'Trustpilot' },
+    { name: 'Semrush' },
+    { name: 'Google Analytics' },
+    { name: 'WordPress' },
   ];
 
   readonly coreServices = [
-    { icon: '📍', title: 'Référencement Local', description: 'Optimisez votre fiche Google My Business et dominez les résultats de recherche locale pour attirer plus de clients.' },
-    { icon: '🔍', title: 'Optimisation SEO', description: 'Améliorez votre positionnement sur les moteurs de recherche avec des stratégies SEO data-driven et mesurables.' },
-    { icon: '💻', title: 'Développement Web', description: 'Créez des sites web performants, responsives et optimisés pour la conversion avec les dernières technologies.' },
-    { icon: '📢', title: 'Marketing Digital', description: 'Lancez des campagnes publicitaires ciblées sur Google Ads, Meta et d\'autres plateformes pour maximiser votre ROI.' },
+    { iconName: 'mapPin', title: 'Référencement Local', description: 'Optimisez votre fiche Google My Business et dominez les résultats de recherche locale pour attirer plus de clients.' },
+    { iconName: 'search', title: 'Optimisation SEO', description: 'Améliorez votre positionnement sur les moteurs de recherche avec des stratégies SEO data-driven et mesurables.' },
+    { iconName: 'globe', title: 'Développement Web', description: 'Créez des sites web performants, responsives et optimisés pour la conversion avec les dernières technologies.' },
+    { iconName: 'megaphone', title: 'Marketing Digital', description: 'Lancez des campagnes publicitaires ciblées sur Google Ads, Meta et d\'autres plateformes pour maximiser votre ROI.' },
   ];
 
   readonly stats = [
@@ -727,13 +758,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   readonly fallbackServices = [
-    { emoji: '📍', category: 'Référencement Local', subtitle: 'Sécurisations et Accès Google My Business', description: 'Protégez et sécurisez votre profil Google My Business avec un accès propriétaire garanti.', price: '353,89 €' },
-    { emoji: '⭐', category: 'Référencement Premium', subtitle: 'Référencement Optimale VIP+', description: 'Service premium exclusif avec garantie de résultats exceptionnels.', price: '750,79 €' },
-    { emoji: '💬', category: 'Réputation en Ligne', subtitle: 'Gestion des Avis', description: 'Améliorez votre réputation en ligne avec notre service de gestion des avis.', price: '747,43 €' },
-    { emoji: '🏪', category: 'Marketing Local', subtitle: 'Présence Locales', description: 'Boostez votre visibilité locale avec une présence optimisée.', price: '2 200,00 €' },
-    { emoji: '💻', category: 'Développement Web', subtitle: 'Création Site Web', description: 'Création de site web professionnel avec protocole SSL, référencement optimisé.', price: '550,00 €' },
-    { emoji: '🚀', category: 'Google Premium', subtitle: 'Mise à jour 2026', description: 'Solution complète intégrant tous nos services premium.', price: '1 000,00 €' },
-  ] as const;
+    { iconName: 'mapPin', category: 'Référencement Local', subtitle: 'Sécurisations et Accès Google My Business', description: 'Protégez et sécurisez votre profil Google My Business avec un accès propriétaire garanti.', price: '353,89 €' },
+    { iconName: 'star', category: 'Référencement Premium', subtitle: 'Référencement Optimale VIP+', description: 'Service premium exclusif avec garantie de résultats exceptionnels.', price: '750,79 €' },
+    { iconName: 'messageSquare', category: 'Réputation en Ligne', subtitle: 'Gestion des Avis', description: 'Améliorez votre réputation en ligne avec notre service de gestion des avis.', price: '747,43 €' },
+    { iconName: 'store', category: 'Marketing Local', subtitle: 'Présence Locales', description: 'Boostez votre visibilité locale avec une présence optimisée.', price: '2 200,00 €' },
+    { iconName: 'globe', category: 'Développement Web', subtitle: 'Création Site Web', description: 'Création de site web professionnel avec protocole SSL, référencement optimisé.', price: '550,00 €' },
+    { iconName: 'rocket', category: 'Google Premium', subtitle: 'Mise à jour 2026', description: 'Solution complète intégrant tous nos services premium.', price: '1 000,00 €' },
+  ];
 
   ngOnInit(): void {
     this.seo.updateMeta({

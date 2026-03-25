@@ -21,7 +21,7 @@ import { SeoService } from '../../core/services/seo.service';
 
       <!-- Info banner -->
       <div class="mt-10 rounded-sm border border-(--primary)/20 bg-(--primary)/5 p-6 scroll-animate anim-fade-up delay-100">
-        <p class="text-sm font-semibold text-(--primary)">Dernière mise à jour : Janvier 2025</p>
+        <p class="text-sm font-semibold text-(--primary)">Dernière mise à jour : {{ lastUpdated }}</p>
         <p class="mt-2 text-sm text-(--muted-foreground)">
           Cette politique de confidentialité explique comment
           <strong class="text-(--foreground)">LMP Local Map Profil</strong>
@@ -48,6 +48,10 @@ export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
+
+  readonly lastUpdated = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' })
+    .format(new Date())
+    .replace(/^./, (c) => c.toUpperCase());
 
   readonly sections = [
     {
