@@ -64,6 +64,9 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000,http://localhost:8080}")
     private String corsAllowedOrigins;
 
+    @org.springframework.beans.factory.annotation.Value("${security.remember-me.secret:lmpRememberMe-dev-changeme}")
+    private String rememberMeSecret;
+
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                            PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler) {
@@ -264,7 +267,7 @@ public class SecurityConfig {
 
                 // Se souvenir de moi
                 .rememberMe(remember -> remember
-                        .key("lmpSecretKey")
+                        .key(rememberMeSecret)
                         .tokenValiditySeconds(86400)
                         .userDetailsService(userDetailsService)
                         .rememberMeParameter("rememberMe"))

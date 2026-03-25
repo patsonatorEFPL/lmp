@@ -80,6 +80,19 @@ git_status.txt
 preview_payment.py
 take_screenshots.py
 
+### OS Files ###
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+### Environment Files ###
+.env
+.env.*
+*.env
+!*.env.sample
+!*.env.example
+
 ### Deployment-Specific Config ###
 docker-compose.coolify.yml
 docker-compose.test.yml
