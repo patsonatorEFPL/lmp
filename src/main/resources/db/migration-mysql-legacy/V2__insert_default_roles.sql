@@ -2,8 +2,8 @@
 INSERT INTO roles (name) VALUES ('USER');
 INSERT INTO roles (name) VALUES ('ADMIN');
 
--- Insertion d'un utilisateur administrateur par défaut (mot de passe: admin123)
--- Le mot de passe est hashé avec BCrypt
+-- Insertion d'un utilisateur administrateur par défaut
+-- IMPORTANT: Changez le mot de passe immédiatement après la première connexion !
 INSERT INTO users (
     email, 
     password, 
@@ -30,7 +30,7 @@ SELECT u.id, r.id
 FROM users u, roles r 
 WHERE u.email = 'admin@lmp.ca' AND r.name = 'ADMIN';
 
--- Insertion d'un utilisateur test (mot de passe: user123)
+-- Insertion d'un utilisateur test (à supprimer en production)
 INSERT INTO users (
     email, 
     password, 

@@ -44,8 +44,8 @@ CREATE USER 'lmp_dev'@'localhost' IDENTIFIED BY 'votre_mot_de_passe_local';
 GRANT ALL PRIVILEGES ON lmp_db.* TO 'lmp_dev'@'localhost';
 
 # 3. Configurer les variables locales
-cp src/main/resources/application.properties.example src/main/resources/application-secrets.properties
-# Éditer application-secrets.properties avec vos identifiants locaux (Bdd, Stripe Test, OAuth)
+cp src/main/resources/application-secrets.properties.sample src/main/resources/application-secrets.properties
+# Éditer application-secrets.properties avec vos identifiants locaux (BDD, Stripe Test, OAuth, Remember-Me)
 
 # 4. Démarrer l'application (Profil Dev)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
