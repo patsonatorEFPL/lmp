@@ -6,7 +6,11 @@ import {
 } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+} from '@angular/router';
 import {
   provideHttpClient,
   withInterceptors,
@@ -31,7 +35,14 @@ function initializeAuth(): () => Promise<void> {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(routes, withComponentInputBinding()),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'enabled',
+        anchorScrolling: 'enabled',
+      }),
+    ),
     provideHttpClient(
       withFetch(),
       withInterceptors([csrfInterceptor, errorInterceptor]),

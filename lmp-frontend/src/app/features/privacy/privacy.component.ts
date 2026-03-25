@@ -102,7 +102,11 @@ export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser) return;
     this.scrollObserver = new IntersectionObserver(
       (entries) => entries.forEach((entry) => {
-        if (entry.isIntersecting) entry.target.classList.add('animate-visible');
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-visible');
+        } else {
+          entry.target.classList.remove('animate-visible');
+        }
       }),
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' },
     );
