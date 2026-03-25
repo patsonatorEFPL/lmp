@@ -1,0 +1,12 @@
+# Répertoires de build et caches — jamais scannés
+target/
+.angular/
+node_modules/
+
+# Fichiers de migration SQL : les hashes BCrypt dans les seeds sont intentionnels
+# (detected-bcrypt-hash = faux positif pour les fichiers de migration)
+src/main/resources/db/migration/
+src/main/resources/db/migration-mysql-legacy/
+
+# Config Nginx de test uniquement (non déployée)
+lmp-frontend/nginx.test.conf
