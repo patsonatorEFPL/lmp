@@ -1,130 +1,159 @@
-# 🚀 LMP Digital Services - Application Spring Boot
+# LMP Digital Services
 
-Une application web complète pour la gestion des services digitaux incluant la prise de commande, l'authentification et un panneau d'administration.
+Application fullstack de gestion des services digitaux — marketing local, référencement SEO, création web et campagnes publicitaires.
 
-## 📋 Fonctionnalités
+## Stack technique
 
-- 🔐 **Authentification sécurisée** avec Spring Security (Local, Google, Microsoft)
-- 💳 **Paiements Stripe** intégrés (Checkout + Webhooks)
-- 👥 **Gestion utilisateurs** (Clients, Admins, Super Admins)
-- 📊 **Dashboard administrateur** pour piloter l'activité
-- 🏪 **Catalogue de services** géré dynamiquement
-- 📄 **Génération de factures** PDF et confirmations de commandes
-- 📧 **Notifications email** avec templates Thymeleaf
-- 🔄 **Migrations de schéma** avec Flyway
+| Couche | Technologie |
+|---|---|
+| Backend | Spring Boot 3.5.4, Java 21 |
+| Frontend | Angular 21 (SSR), Tailwind CSS v4 |
+| UI Components | Spartan UI / Helm, Lucide Angular |
+| Base de données | MySQL 8 (prod) / H2 (tests) |
+| Paiements | Stripe API (Checkout + Webhooks) |
+| Auth | Spring Security, OAuth2 (Google, Microsoft), BCrypt |
+| Emails | Thymeleaf templates |
+| Migrations | Flyway |
+| Build | Maven 3.9+, Angular CLI 21 |
+| Déploiement | Docker, Coolify |
 
-## 🛠️ Technologies
+## Fonctionnalités
 
-- **Backend**: Spring Boot 3.3+, Java 17
-- **Base de données**: MySQL (Prod) / H2 (Tests)
-- **Paiements**: Stripe API
-- **Frontend**: Thymeleaf, HTML5, CSS3, JavaScript (Vanilla/DaisyUI)
-- **Sécurité**: Spring Security, OAuth2, BCrypt, Vérification Email
-- **Build**: Maven 3.9+
-- **Déploiement**: Docker, Coolify
+- Authentification locale, Google et Microsoft (OAuth2)
+- Paiements Stripe avec gestion des webhooks
+- Catalogue de services géré dynamiquement via l'API
+- Prise de rendez-vous en ligne
+- Gestion des commandes et factures PDF
+- Notifications email HTML (confirmation, shipping, annulation…)
+- Dashboard administrateur complet (utilisateurs, commandes, RDV, services)
+- Dashboard client (historique commandes, rendez-vous, paramètres)
+- Landing page Angular SSR optimisée SEO
+- Support multilingue (FR, EN, ES, DE, IT, NL, PT, LB)
+- Mode clair / sombre
 
-## 💻 Développement Local
+## Démarrage local
 
 ### Prérequis
+
 - Java 21+
 - Maven 3.9+
+- Node.js 20+ et npm 10+
 - MySQL 8.0+
 
-### Installation Rapide
+### Backend
 
 ```bash
 # 1. Cloner le repository
 git clone https://github.com/votre-organisation/lmp.git
 cd lmp
 
-# 2. Configurer la base de données MySQL
+# 2. Créer la base de données
 mysql -u root -p
 CREATE DATABASE lmp_db;
-CREATE USER 'lmp_dev'@'localhost' IDENTIFIED BY 'votre_mot_de_passe_local';
+CREATE USER 'lmp_dev'@'localhost' IDENTIFIED BY 'votre_mot_de_passe';
 GRANT ALL PRIVILEGES ON lmp_db.* TO 'lmp_dev'@'localhost';
 
-# 3. Configurer les variables locales
-cp src/main/resources/application-secrets.properties.sample src/main/resources/application-secrets.properties
-# Éditer application-secrets.properties avec vos identifiants locaux (BDD, Stripe Test, OAuth, Remember-Me)
+# 3. Configurer les secrets
+cp src/main/resources/application-secrets.properties.sample \
+   src/main/resources/application-secrets.properties
+# Remplir les valeurs : BDD, Stripe Test, OAuth, Remember-Me
 
-# 4. Démarrer l'application (Profil Dev)
+# 4. Lancer l'application (profil dev)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-L'application sera accessible sur `http://localhost:8080`.
+API accessible sur `http://localhost:8080`.
 
-## 🚀 Déploiement (Production)
+### Frontend
 
-L'application est conteneurisée et optimisée pour un déploiement continu via **Coolify** (ou tout autre orchestrateur Docker).
+```bash
+cd lmp-frontend
 
-### Variables d'Environnement (Production)
-Ne stockez jamais de secrets dans le code source. Sur votre serveur de production, vous devez définir les variables d'environnement suivantes :
+# Installer les dépendances
+npm install
+
+# Lancer le serveur de développement
+npm start
+```
+
+Application accessible sur `http://localhost:4200` (proxy vers le backend sur `:8080`).
+
+## Architecture
+
+```
+lmp/
+├── src/main/java/com/lmp/
+│   ├── config/          # Spring Security, Stripe, CORS, maintenance
+│   ├── controller/      # Contrôleurs REST API
+│   ├── domain/          # Entités JPA, DTOs, enums
+│   ├── repository/      # Interfaces Spring Data JPA
+│   ├── service/         # Logique métier (commandes, paiements, emails…)
+│   └── shared/          # Utilitaires, exceptions globales
+├── src/main/resources/
+│   ├── db/migration/    # Scripts Flyway
+│   ├── static/          # Vérification Google Search Console
+│   └── templates/       # Emails HTML Thymeleaf
+└── lmp-frontend/        # SPA Angular (SSR)
+    ├── src/app/
+    │   ├── core/        # Services, guards, interceptors
+    │   ├── features/    # Pages (home, services, auth, dashboard, admin…)
+    │   ├── shared/      # Layouts, modals, composants partagés
+    │   └── libs/ui/     # Composants Spartan/Helm (button, card, input…)
+    └── public/          # manifest, robots.txt, sitemap
+```
+
+## Déploiement (production)
+
+L'application est conteneurisée. Le `Dockerfile` du frontend génère un build Angular SSR servi par Express, et le `Dockerfile` du backend produit un JAR Spring Boot optimisé.
+
+### Variables d'environnement requises
 
 ```env
-# Base de Données
-SPRING_DATASOURCE_URL=jdbc:mysql://votre-hote:3306/lmp_db
+# Base de données
+SPRING_DATASOURCE_URL=jdbc:mysql://hote:3306/lmp_db
 SPRING_DATASOURCE_USERNAME=user_prod
 SPRING_DATASOURCE_PASSWORD=secret_prod
 
-# Clés Publiques et Secrètes Stripe (Mode Live)
+# Stripe (clés Live)
 STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Authentification Sociale (OAuth2)
+# OAuth2
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=...
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=...
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MICROSOFT_CLIENT_ID=...
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MICROSOFT_CLIENT_SECRET=...
 ```
 
-*Le profil `prod` (activé via la directive du `Dockerfile`) gère l'optimisation des requêtes, le cache et le pool de connexions HikariCP.*
+## Compte administrateur par défaut
 
-## 🏗️ Architecture
-
-```text
-src/
-├── main/
-│   ├── java/com/lmp/
-│   │   ├── config/          # Configuration Spring, Sécurité, Maintenance
-│   │   ├── controller/      # Contrôleurs Web (Frontend)
-│   │   ├── domain/          # Entités JPA et DTOs
-│   │   ├── repository/      # Interfaces Spring Data JPA
-│   │   ├── service/         # Logique métier et implémentations
-│   │   └── web/             # Contrôleurs REST API
-│   └── resources/
-│       ├── db/migration/    # Scripts SQL Flyway
-│       ├── static/          # CSS dist, JS, Images (Assets)
-│       └── templates/       # Vues Thymeleaf et templates Emails
-```
-
-## 🔑 Premier démarrage — Compte Administrateur
-
-Au premier démarrage, Flyway seed un compte admin par défaut :
+Au premier démarrage, Flyway initialise un compte admin :
 
 | Champ | Valeur |
 |---|---|
 | Email | `admin@lmp.ca` |
 | Mot de passe | `Admin@LMP-ChangeMe2026!` |
 
-> **⚠️ Changez ce mot de passe immédiatement après la première connexion** via la page **Profil → Sécurité**.
-> Ce compte ne doit jamais rester avec ces identifiants par défaut en production.
+> Changer ce mot de passe immédiatement après la première connexion via **Profil → Sécurité**.
 
-## 🧪 Tests
-
-Des tests unitaires et d'intégration couvrent les fonctionnalités critiques du back-end.
+## Tests
 
 ```bash
-# Lancer la suite de tests
+# Tests backend
 ./mvnw test
+
+# Tests frontend
+cd lmp-frontend && npm test
 ```
 
-## 🤝 Contribution
+## Contribution
 
-1. Créez une branche feature (`git checkout -b feature/nom-de-la-feature`)
-2. Commitez vos changements (`git commit -m 'feat: ajout de...'`)
-3. Poussez vers la branche (`git push origin feature/nom-de-la-feature`)
-4. Ouvrez une Pull Request sur GitHub.
+1. Créer une branche : `git checkout -b feature/nom-de-la-feature`
+2. Committer : `git commit -m 'feat: description'`
+3. Pousser : `git push origin feature/nom-de-la-feature`
+4. Ouvrir une Pull Request
 
 ---
-© LMP Digital Services - Tous droits réservés.
+
+© 2026 LMP Digital Services — Tous droits réservés.
