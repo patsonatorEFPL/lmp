@@ -80,26 +80,48 @@ Application accessible sur `http://localhost:4200` (proxy vers le backend sur `:
 
 ## Architecture
 
+Le backend suit une **architecture modulaire par domaine** (package-by-feature).
+
 ```
 lmp/
 ├── src/main/java/com/lmp/
-│   ├── config/          # Spring Security, Stripe, CORS, maintenance
-│   ├── controller/      # Contrôleurs REST API
-│   ├── domain/          # Entités JPA, DTOs, enums
-│   ├── repository/      # Interfaces Spring Data JPA
-│   ├── service/         # Logique métier (commandes, paiements, emails…)
-│   └── shared/          # Utilitaires, exceptions globales
+│   ├── auth/            # Authentification (OAuth2, JWT, BCrypt, sessions)
+│   │   ├── config/      # Spring Security, OAuth2
+│   │   ├── domain/      # User, Role, Token
+│   │   ├── repository/
+│   │   ├── service/
+│   │   └── web/         # API auth + admin users
+│   ├── billing/         # Commandes, paiements Stripe, factures PDF
+│   │   ├── config/      # Stripe SDK
+│   │   ├── domain/      # Order, Invoice, Payment
+│   │   ├── service/     # Processeurs de paiement, webhooks
+│   │   └── web/         # API commandes + admin orders
+│   ├── catalog/         # Services & offres commerciales
+│   │   ├── domain/      # Service, Offer, Category
+│   │   └── web/         # API catalogue + admin services
+│   ├── crm/             # Rendez-vous et contacts
+│   │   ├── domain/      # Appointment, Contact
+│   │   └── web/         # API RDV + admin appointments
+│   ├── integration/     # Webhooks entrants / événements externes
+│   ├── notification/    # Emails Thymeleaf, notifications in-app
+│   ├── portal/          # Endpoints publics (landing, SEO)
+│   └── shared/          # Config globale, DTOs communs, exceptions, utils
 ├── src/main/resources/
-│   ├── db/migration/    # Scripts Flyway
-│   ├── static/          # Vérification Google Search Console
-│   └── templates/       # Emails HTML Thymeleaf
-└── lmp-frontend/        # SPA Angular (SSR)
-    ├── src/app/
-    │   ├── core/        # Services, guards, interceptors
-    │   ├── features/    # Pages (home, services, auth, dashboard, admin…)
-    │   ├── shared/      # Layouts, modals, composants partagés
-    │   └── libs/ui/     # Composants Spartan/Helm (button, card, input…)
-    └── public/          # manifest, robots.txt, sitemap
+│   ├── db/migration/         # Scripts Flyway (actifs)
+│   ├── db/migration-mysql-legacy/ # Historique legacy MySQL
+│   ├── db/scripts/           # Scripts SQL utilitaires
+│   ├── i18n/                 # Messages de validation (fr, en)
+│   ├── static/images/        # Assets statiques
+│   └── templates/
+│       ├── emails/           # Templates HTML Thymeleaf (15+ modèles)
+│       └── error/            # Pages d'erreur (403, 500)
+└── lmp-frontend/             # SPA Angular 21 (SSR)
+    └── src/app/
+        ├── core/             # Guards, interceptors, services métier
+        ├── features/         # Pages (home, services, auth, dashboard, admin…)
+        ├── generated/        # Clients API générés (OpenAPI / ng-openapi-gen)
+        ├── shared/           # Layouts, modals
+        └── libs/ui/          # Composants Spartan/Helm (button, card, input…)
 ```
 
 ## Déploiement (production)
