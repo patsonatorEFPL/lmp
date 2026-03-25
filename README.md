@@ -15,7 +15,7 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 | Emails | Thymeleaf templates |
 | Migrations | Flyway |
 | Build | Maven 3.9+, Angular CLI 21 |
-| Déploiement | Docker, Coolify |
+| Déploiement | Docker, Dokploy |
 
 ## Fonctionnalités
 
@@ -104,7 +104,7 @@ lmp/
 
 ## Déploiement (production)
 
-L'application est conteneurisée. Le `Dockerfile` du frontend génère un build Angular SSR servi par Express, et le `Dockerfile` du backend produit un JAR Spring Boot optimisé.
+L'application est conteneurisée et déployée via **Dokploy**. Le `Dockerfile` du frontend génère un build Angular SSR servi par Express, et le `Dockerfile` du backend produit un JAR Spring Boot optimisé.
 
 ### Variables d'environnement requises
 
