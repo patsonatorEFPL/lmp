@@ -1,8 +1,9 @@
 -- =============================================
 -- V3: Seed default roles and admin user
 -- =============================================
--- The default admin password hash is seeded below.
--- IMPORTANT: Please change the admin password immediately after your first login!
+-- Le hash du mot de passe administrateur initial est défini ci-dessous (BCrypt, cost 12).
+-- IMPORTANT: Changez ce mot de passe immédiatement après la première connexion !
+-- Le mot de passe initial de développement est documenté dans le README.md (section "Premier démarrage").
 -- Insert default roles
 INSERT INTO roles (name) VALUES ('USER') ON CONFLICT (name) DO NOTHING;
 INSERT INTO roles (name) VALUES ('ADMIN') ON CONFLICT (name) DO NOTHING;
@@ -11,7 +12,7 @@ INSERT INTO roles (name) VALUES ('ADMIN') ON CONFLICT (name) DO NOTHING;
 INSERT INTO users (email, password, first_name, last_name, registration_date, status, email_verified)
 VALUES (
     'admin@lmp.ca',
-    '$2a$10$Jjj7emlrGWWtIyo1wLo/5.c8f/pedwHp4rWHwQcynqH4WJbYZ/OVq',
+    '$2b$12$xZgW8rkyBuf1ReSNaX845uulGVtODVzFg5T7BQ10tyQhSnIkcvBP6',
     'Admin',
     'LMP',
     NOW(),
