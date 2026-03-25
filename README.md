@@ -9,7 +9,7 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 | Backend | Spring Boot 3.5.4, Java 21 |
 | Frontend | Angular 21 (SSR), Tailwind CSS v4 |
 | UI Components | Spartan UI / Helm, Lucide Angular |
-| Base de données | MySQL 8 (prod) / H2 (tests) |
+| Base de données | PostgreSQL 16 (prod) / Testcontainers PostgreSQL (dev) |
 | Paiements | Stripe API (Checkout + Webhooks) |
 | Auth | Spring Security, OAuth2 (Google, Microsoft), BCrypt |
 | Emails | Thymeleaf templates |
@@ -38,7 +38,7 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 - Java 21+
 - Maven 3.9+
 - Node.js 20+ et npm 10+
-- MySQL 8.0+
+- Docker (requis pour Testcontainers en dev — aucune installation PostgreSQL locale nécessaire)
 
 ### Backend
 
@@ -47,19 +47,14 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 git clone https://github.com/votre-organisation/lmp.git
 cd lmp
 
-# 2. Créer la base de données
-mysql -u root -p
-CREATE DATABASE lmp_db;
-CREATE USER 'lmp_dev'@'localhost' IDENTIFIED BY 'votre_mot_de_passe';
-GRANT ALL PRIVILEGES ON lmp_db.* TO 'lmp_dev'@'localhost';
-
-# 3. Configurer les secrets
+# 2. Configurer les secrets
 cp src/main/resources/application-secrets.properties.sample \
    src/main/resources/application-secrets.properties
-# Remplir les valeurs : BDD, Stripe Test, OAuth, Remember-Me
+# Remplir les valeurs : Stripe Test, OAuth, Remember-Me
 
-# 4. Lancer l'application (profil dev)
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+# 3. Lancer l'application (profil dev)
+# Testcontainers démarre automatiquement un PostgreSQL éphémère via Docker
+./mvnw spring-boot:test-run
 ```
 
 API accessible sur `http://localhost:8080`.
@@ -132,7 +127,7 @@ L'application est conteneurisée et déployée via **Dokploy**. Le `Dockerfile` 
 
 ```env
 # Base de données
-SPRING_DATASOURCE_URL=jdbc:mysql://hote:3306/lmp_db
+SPRING_DATASOURCE_URL=jdbc:postgresql://hote:5432/lmp_db
 SPRING_DATASOURCE_USERNAME=user_prod
 SPRING_DATASOURCE_PASSWORD=secret_prod
 

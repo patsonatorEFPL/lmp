@@ -1,7 +1,10 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+
+import { getCurrentUser } from '../../../app/generated/fn/authentication/get-current-user';
+import { logout as logoutFn } from '../../../app/generated/fn/authentication/logout';
+import { ApiResponseUserResponse } from '../../../app/generated/models/api-response-user-response';
 
 export interface UserInfo {
   id: string;
@@ -15,12 +18,6 @@ export interface UserInfo {
   phone?: string;
   city?: string;
   country?: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -39,7 +36,6 @@ export class AuthService {
    * Returns a Promise so APP_INITIALIZER waits for completion.
    */
   checkSession(): Promise<void> {
-    // During SSR/prerender, skip session check — no cookies available
     if (!isPlatformBrowser(this.platformId)) {
       this._loading.set(false);
       return Promise.resolve();
@@ -48,13 +44,11 @@ export class AuthService {
     this._loading.set(true);
     return new Promise<void>((resolve) => {
       this.http
-        .get<ApiResponse<UserInfo>>(`${environment.apiUrl}/api/v1/auth/me`, {
-          withCredentials: true,
-        })
+        .get<ApiResponseUserResponse>(getCurrentUser.PATH)
         .subscribe({
           next: (response) => {
             if (response.success && response.data) {
-              this.currentUser.set(response.data);
+              this.currentUser.set(response.data as UserInfo);
             } else {
               this.currentUser.set(null);
             }
@@ -91,15 +85,12 @@ export class AuthService {
   }
 
   hasModule(_module: string): boolean {
-    // TODO: implement module-based access control
     return true;
   }
 
   logout(): void {
     this.http
-      .post(`${environment.apiUrl}/api/v1/auth/logout`, null, {
-        withCredentials: true,
-      })
+      .post(logoutFn.PATH, null)
       .subscribe({
         next: () => this.clearUser(),
         error: () => this.clearUser(),

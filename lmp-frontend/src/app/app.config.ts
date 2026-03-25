@@ -18,7 +18,7 @@ import {
 } from '@angular/common/http';
 
 import { routes } from './app.routes';
-import { csrfInterceptor, errorInterceptor } from './core/interceptors';
+import { credentialsInterceptor, csrfInterceptor, errorInterceptor } from './core/interceptors';
 import { ThemeService, AuthService } from './core/services';
 
 registerLocaleData(localeFr);
@@ -45,7 +45,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(
       withFetch(),
-      withInterceptors([csrfInterceptor, errorInterceptor]),
+      withInterceptors([credentialsInterceptor, csrfInterceptor, errorInterceptor]),
     ),
     {
       provide: APP_INITIALIZER,

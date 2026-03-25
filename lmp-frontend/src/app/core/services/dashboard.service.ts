@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { environment } from '../../../environments/environment';
+
+import { getDashboardStats } from '../../../app/generated/fn/user-dashboard/get-dashboard-stats';
+import { ApiResponseDashboardStatsResponse } from '../../../app/generated/models/api-response-dashboard-stats-response';
 
 export interface RecentOrder {
   id: string;
@@ -40,26 +42,17 @@ export interface DashboardStats {
   upcomingAppointmentsList: UpcomingAppointment[];
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
-
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   private readonly http = inject(HttpClient);
 
   getStats(): Observable<DashboardStats> {
     return this.http
-      .get<ApiResponse<DashboardStats>>(
-        `${environment.apiUrl}/api/v1/dashboard/stats`,
-        { withCredentials: true },
-      )
+      .get<ApiResponseDashboardStatsResponse>(getDashboardStats.PATH)
       .pipe(
         map((res) => {
           if (res.success && res.data) {
-            return res.data;
+            return res.data as DashboardStats;
           }
           throw new Error(res.message ?? 'Failed to load dashboard stats');
         }),
