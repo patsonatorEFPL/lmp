@@ -9,7 +9,7 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 | Backend | Spring Boot 3.5.4, Java 21 |
 | Frontend | Angular 21 (SSR), Tailwind CSS v4 |
 | UI Components | Spartan UI / Helm, Lucide Angular |
-| Base de données | PostgreSQL 16 (prod) / Testcontainers PostgreSQL (dev) |
+| Base de données | PostgreSQL 18 (prod) / Testcontainers PostgreSQL (dev) |
 | Paiements | Stripe API (Checkout + Webhooks) |
 | Auth | Spring Security, OAuth2 (Google, Microsoft), BCrypt |
 | Emails | Thymeleaf templates |
