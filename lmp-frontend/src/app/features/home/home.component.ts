@@ -212,7 +212,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               <h3 class="text-sm font-semibold text-(--foreground)">{{ service.title }}</h3>
               <p class="mt-1.5 flex-1 text-sm leading-relaxed text-(--muted-foreground)">{{ service.description }}</p>
               <ul class="mt-3 space-y-1">
-                @for (benefit of service.benefits?.slice(0, 3); track benefit) {
+                @for (benefit of service.benefits.slice(0, 3); track benefit) {
                   <li class="flex items-start gap-2 text-xs text-(--muted-foreground)">
                     <lucide-icon [img]="CheckIcon" [size]="12" class="mt-0.5 text-(--primary) shrink-0"></lucide-icon>
                     {{ benefit }}

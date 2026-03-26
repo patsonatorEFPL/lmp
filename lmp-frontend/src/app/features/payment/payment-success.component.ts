@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { NgClass, CurrencyPipe, DatePipe } from '@angular/common';
+
 import { HttpClient } from '@angular/common/http';
 import {
   LucideAngularModule,
@@ -30,7 +30,7 @@ interface ApiResponse<T> {
 @Component({
   selector: 'lmp-payment-success',
   standalone: true,
-  imports: [NgClass, CurrencyPipe, DatePipe, LucideAngularModule, HlmButton, RouterLink],
+  imports: [LucideAngularModule, HlmButton, RouterLink],
   template: `
     <section class="flex min-h-screen items-center justify-center bg-(--background) px-4">
       <div class="w-full max-w-md text-center">
