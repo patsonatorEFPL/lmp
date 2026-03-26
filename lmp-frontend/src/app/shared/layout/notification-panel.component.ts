@@ -13,7 +13,7 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   LucideAngularModule,
   Bell,
@@ -43,7 +43,7 @@ interface NotificationGroup {
 @Component({
   selector: 'lmp-notification-panel',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, HlmButton],
+  imports: [LucideAngularModule, HlmButton],
   template: `
     @if (isOpen()) {
       <div

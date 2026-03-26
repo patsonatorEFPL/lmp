@@ -17,6 +17,9 @@ RUN npm ci --legacy-peer-deps
 # Copier le code source
 COPY . .
 
+# Générer le client API depuis openapi.json
+RUN npx ng-openapi-gen --config ng-openapi-gen.json
+
 # Build de production Angular (SSR)
 RUN npx ng build --configuration=production
 
