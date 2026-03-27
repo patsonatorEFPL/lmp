@@ -134,7 +134,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                 hlmBtn
                 variant="ghost"
                 routerLink="/admin"
-                class="cursor-pointer gap-1 text-(--primary) text-sm"
+                class="cursor-pointer gap-1 text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
               >
                 Admin
               </a>
@@ -143,7 +143,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
               hlmBtn
               variant="ghost"
               routerLink="/dashboard"
-              class="cursor-pointer text-sm"
+              class="cursor-pointer text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
             >
               Dashboard
             </a>
