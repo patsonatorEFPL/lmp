@@ -139,7 +139,7 @@ interface ApiResponse<T> {
                   <div class="flex items-center gap-3">
                     <div
                       class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                      [ngClass]="user.roles.includes('ADMIN') ? 'bg-violet-500' : 'bg-blue-500'"
+                      [ngClass]="user.roles.includes('ADMIN') ? 'bg-zinc-700' : 'bg-blue-500'"
                     >
                       {{ getInitials(user) }}
                     </div>
@@ -266,7 +266,7 @@ interface ApiResponse<T> {
             <div class="flex items-center gap-3">
               <div
                 class="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-                [ngClass]="editingUser?.roles?.includes('ADMIN') ? 'bg-violet-500' : 'bg-blue-500'"
+                [ngClass]="editingUser?.roles?.includes('ADMIN') ? 'bg-zinc-700' : 'bg-blue-500'"
               >
                 {{ editingUser ? getInitials(editingUser) : '' }}
               </div>

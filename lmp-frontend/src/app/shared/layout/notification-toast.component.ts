@@ -433,7 +433,7 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       case 'STATUS_CHANGED':
         return 'border-amber-500/30';
       case 'REFUND':
-        return 'border-violet-500/30';
+        return 'border-zinc-500/30';
       default:
         return 'border-(--primary)/30';
     }
@@ -448,7 +448,7 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
       case 'STATUS_CHANGED':
         return 'bg-amber-500';
       case 'REFUND':
-        return 'bg-violet-500';
+        return 'bg-zinc-500';
       default:
         return 'bg-(--primary)';
     }
