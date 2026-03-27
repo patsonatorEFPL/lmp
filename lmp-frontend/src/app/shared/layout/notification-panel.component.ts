@@ -432,7 +432,7 @@ export class NotificationPanelComponent implements OnInit, OnDestroy {
       case 'STATUS_CHANGED':
         return 'bg-amber-500';
       case 'REFUND':
-        return 'bg-violet-500';
+        return 'bg-zinc-500';
       default:
         return 'bg-(--primary)';
     }

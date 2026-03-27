@@ -68,7 +68,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             variant="ghost"
             size="icon"
             (click)="toggleTheme()"
-            class="cursor-pointer"
+            class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
             [attr.aria-label]="themeService.isDark() ? 'Passer au thème clair' : 'Passer au thème sombre'"
           >
             @if (themeService.isDark()) {
@@ -150,7 +150,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
           } @else {
             <a
               routerLink="/login"
-              class="cursor-pointer rounded-sm border border-(--border) px-4 py-1.5 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent)"
+              class="px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
             >
               Connexion
             </a>
@@ -162,7 +162,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
           hlmBtn
           variant="ghost"
           size="icon"
-          class="cursor-pointer md:hidden"
+          class="cursor-pointer md:hidden text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
           (click)="mobileMenuOpen.set(!mobileMenuOpen())"
           [attr.aria-label]="mobileMenuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
           aria-controls="mobile-menu"
@@ -204,7 +204,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                 variant="ghost"
                 size="icon-sm"
                 (click)="toggleTheme()"
-                class="cursor-pointer"
+                class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
               >
                 @if (themeService.isDark()) {
                   <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
@@ -219,7 +219,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             } @else if (!authService.isAuthenticated()) {
               <a
                 routerLink="/login"
-                class="w-full cursor-pointer rounded-sm border border-(--border) px-4 py-2 text-center text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent)"
+                class="w-full px-3 py-2 text-center text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
                 (click)="mobileMenuOpen.set(false)"
               >
                 Connexion
