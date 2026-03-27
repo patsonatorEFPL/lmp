@@ -65,21 +65,21 @@ public class AdminRestController {
     private final RefundRepository refundRepository;
     private final InvoicePdfService invoicePdfService;
     private final EmailService emailService;
-    private final com.lmp.shared.service.WebSocketNotificationService webSocketNotificationService;
+    private final com.lmp.shared.service.SseNotificationService sseNotificationService;
 
     public AdminRestController(UserService userService, OrderRepository orderRepository,
                                AppointmentRepository appointmentRepository,
                                RefundRepository refundRepository,
                                InvoicePdfService invoicePdfService,
                                EmailService emailService,
-                               com.lmp.shared.service.WebSocketNotificationService webSocketNotificationService) {
+                               com.lmp.shared.service.SseNotificationService sseNotificationService) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.appointmentRepository = appointmentRepository;
         this.refundRepository = refundRepository;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
-        this.webSocketNotificationService = webSocketNotificationService;
+        this.sseNotificationService = sseNotificationService;
     }
 
     @GetMapping("/stats")
@@ -450,9 +450,9 @@ public class AdminRestController {
                 // Non-blocking — order is already created
             }
 
-            // Send real-time WebSocket notification to the user
+            // Send real-time SSE notification to the user
             try {
-                webSocketNotificationService.notifyUserNewPendingOrder(
+                sseNotificationService.notifyUserNewPendingOrder(
                         user.getId().toString(),
                         order.getId().toString(),
                         serviceName,

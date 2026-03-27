@@ -8,8 +8,6 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Client, IMessage } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 
@@ -30,30 +28,39 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+/**
+ * Reconnect delay constants for exponential backoff.
+ */
+const INITIAL_RECONNECT_DELAY = 1000;
+const MAX_RECONNECT_DELAY = 30000;
+
 @Injectable({ providedIn: 'root' })
 export class NotificationService implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly http = inject(HttpClient);
-  private client: Client | null = null;
+  private eventSource: EventSource | null = null;
   private isBrowser: boolean;
+  private reconnectDelay = INITIAL_RECONNECT_DELAY;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /** Live list of notifications (most recent first) */
   readonly notifications = signal<AppNotification[]>([]);
   /** Unread count */
   readonly unreadCount = signal(0);
-  /** Whether the WebSocket connection is active */
+  /** Whether the SSE connection is active */
   readonly connected = signal(false);
   /** Whether initial load from API is done */
   readonly loaded = signal(false);
 
   private readonly apiUrl = `${environment.apiUrl}/api/v1/notifications`;
+  private readonly sseUrl = `${environment.apiUrl}/api/v1/sse/notifications`;
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
   /**
-   * Connect to WebSocket and load persisted notifications from backend.
+   * Connect to SSE and load persisted notifications from backend.
    * Should be called once the user is authenticated.
    */
   connect(): void {
@@ -68,58 +75,80 @@ export class NotificationService implements OnDestroy {
     }
 
     // Avoid duplicate connections
-    if (this.client?.active) return;
+    if (this.eventSource) return;
 
-    const wsBaseUrl = environment.apiUrl || window.location.origin;
+    this.createEventSource();
+  }
 
-    this.client = new Client({
-      webSocketFactory: () => new SockJS(`${wsBaseUrl}/ws/notifications`),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
+  /**
+   * Creates the EventSource connection to the SSE endpoint.
+   * EventSource sends cookies automatically (same-origin), so session auth works natively.
+   */
+  private createEventSource(): void {
+    // Construct SSE URL — use same origin for relative paths
+    const url = this.sseUrl || '/api/v1/sse/notifications';
 
-      onConnect: () => {
-        this.connected.set(true);
+    this.eventSource = new EventSource(url, { withCredentials: true });
 
-        // Subscribe to user-specific notification topic
-        this.client!.subscribe(
-          `/topic/user/${user.id}/notifications`,
-          (message: IMessage) => this.handleMessage(message),
-        );
-
-        // Also subscribe to the user-scoped queue (Spring's /user prefix)
-        this.client!.subscribe(
-          `/user/queue/notifications`,
-          (message: IMessage) => this.handleMessage(message),
-        );
-      },
-
-      onDisconnect: () => {
-        this.connected.set(false);
-      },
-
-      onStompError: (frame) => {
-        console.error('WebSocket STOMP error:', frame.headers['message']);
-        this.connected.set(false);
-      },
+    // Listen for user notification events
+    this.eventSource.addEventListener('notification', (event: MessageEvent) => {
+      this.handleSseMessage(event.data);
     });
 
-    this.client.activate();
+    this.eventSource.onopen = () => {
+      this.connected.set(true);
+      this.reconnectDelay = INITIAL_RECONNECT_DELAY; // Reset backoff on success
+    };
+
+    this.eventSource.onerror = () => {
+      this.connected.set(false);
+
+      // EventSource auto-reconnects for network errors, but if the connection
+      // is closed (readyState === CLOSED), we need to reconnect manually.
+      if (this.eventSource?.readyState === EventSource.CLOSED) {
+        this.eventSource.close();
+        this.eventSource = null;
+        this.scheduleReconnect();
+      }
+    };
   }
 
   /**
-   * Disconnect the WebSocket client.
+   * Schedules a reconnection with exponential backoff.
+   */
+  private scheduleReconnect(): void {
+    if (this.reconnectTimeout) return;
+
+    // Only reconnect if user is still authenticated
+    if (!this.authService.user()) return;
+
+    this.reconnectTimeout = setTimeout(() => {
+      this.reconnectTimeout = null;
+      this.createEventSource();
+    }, this.reconnectDelay);
+
+    // Exponential backoff, capped at max
+    this.reconnectDelay = Math.min(this.reconnectDelay * 2, MAX_RECONNECT_DELAY);
+  }
+
+  /**
+   * Disconnect the SSE client.
    */
   disconnect(): void {
-    if (this.client?.active) {
-      this.client.deactivate();
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
     }
-    this.client = null;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     this.connected.set(false);
+    this.reconnectDelay = INITIAL_RECONNECT_DELAY;
   }
 
   /**
-   * Full teardown: disconnect WebSocket and purge all notification state.
+   * Full teardown: disconnect SSE and purge all notification state.
    * Must be called on logout to prevent stale data leaking to the public UI.
    */
   reset(): void {
@@ -272,9 +301,12 @@ export class NotificationService implements OnDestroy {
     this.unreadCount.update((c) => c + 1);
   }
 
-  private handleMessage(message: IMessage): void {
+  /**
+   * Handle incoming SSE notification message.
+   */
+  private handleSseMessage(data: string): void {
     try {
-      const payload = JSON.parse(message.body);
+      const payload = JSON.parse(data);
 
       const notification: AppNotification = {
         // Use persisted ID from backend if available, otherwise generate one
@@ -300,7 +332,7 @@ export class NotificationService implements OnDestroy {
       );
       this.unreadCount.update((c) => c + 1);
     } catch (e) {
-      console.error('Failed to parse WebSocket notification:', e);
+      console.error('Failed to parse SSE notification:', e);
     }
   }
 

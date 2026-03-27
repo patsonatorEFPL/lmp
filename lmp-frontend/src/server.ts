@@ -46,15 +46,14 @@ export function app(): ReturnType<typeof express> {
    */
   const backendUrl = process.env['BACKEND_URL'] || 'http://localhost:8080';
 
-  // Proxy API, OAuth2, WebSocket and Actuator requests to Spring Boot backend
-  const proxyPaths = ['/api', '/oauth2', '/ws', '/actuator'];
+  // Proxy API, OAuth2 and Actuator requests to Spring Boot backend
+  const proxyPaths = ['/api', '/oauth2', '/actuator'];
   for (const path of proxyPaths) {
     server.use(
       path,
       createProxyMiddleware({
         target: backendUrl,
         changeOrigin: true,
-        ws: path === '/ws',
       }),
     );
   }

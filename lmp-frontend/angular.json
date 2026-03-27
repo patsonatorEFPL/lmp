@@ -55,8 +55,7 @@
               ],
               "outputHashing": "all",
               "allowedCommonJsDependencies": [
-                "http-proxy-middleware",
-                "sockjs-client"
+                "http-proxy-middleware"
               ]
             },
             "development": {
