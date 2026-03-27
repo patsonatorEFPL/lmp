@@ -26,7 +26,7 @@ import com.lmp.billing.dto.admin.OrderSearchDto;
 import com.lmp.billing.dto.admin.OrderActionDto;
 import com.lmp.billing.dto.admin.OrderReportDto;
 import com.lmp.notification.service.NotificationService;
-import com.lmp.shared.service.WebSocketNotificationService;
+import com.lmp.shared.service.SseNotificationService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 
@@ -52,7 +52,7 @@ public class OrderAdminService {
 
         private final ReportsService reportsService;
 
-        private final WebSocketNotificationService webSocketNotificationService;
+        private final SseNotificationService sseNotificationService;
 
 
     public OrderAdminService(OrderRepository orderRepository,
@@ -61,14 +61,14 @@ public class OrderAdminService {
                            NotificationService notificationService,
                            RefundService refundService,
                            ReportsService reportsService,
-                           WebSocketNotificationService webSocketNotificationService) {
+                           SseNotificationService sseNotificationService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderStatusHistoryService = orderStatusHistoryService;
         this.notificationService = notificationService;
         this.refundService = refundService;
         this.reportsService = reportsService;
-        this.webSocketNotificationService = webSocketNotificationService;
+        this.sseNotificationService = sseNotificationService;
     }
 
     // ========== CRUD et Recherche ==========
@@ -190,10 +190,10 @@ public class OrderAdminService {
         // Notification automatique du client
         notificationService.sendOrderStatusNotification(order, oldStatus, newStatus);
 
-        // Notification WebSocket temps réel pour les admins
+        // Notification SSE temps réel pour les admins
         OrderDto orderDto = convertToDto(order);
-        webSocketNotificationService.notifyOrderStatusChanged(orderDto, oldStatus.toString(), newStatus.toString());
-        webSocketNotificationService.notifyDashboardUpdate();
+        sseNotificationService.notifyOrderStatusChanged(orderDto, oldStatus.toString(), newStatus.toString());
+        sseNotificationService.notifyDashboardUpdate();
 
         logger.info("Statut commande {} changé: {} -> {}", orderId, oldStatus, newStatus);
         return orderDto;
@@ -240,10 +240,10 @@ public class OrderAdminService {
             "Annulation admin: " + reason);
         notificationService.sendOrderCancellationNotification(order, reason);
 
-        // Notification WebSocket temps réel pour les admins
+        // Notification SSE temps réel pour les admins
         OrderDto orderDto = convertToDto(order);
-        webSocketNotificationService.notifyOrderStatusChanged(orderDto, oldStatus.toString(), order.getStatus().toString());
-        webSocketNotificationService.notifyDashboardUpdate();
+        sseNotificationService.notifyOrderStatusChanged(orderDto, oldStatus.toString(), order.getStatus().toString());
+        sseNotificationService.notifyDashboardUpdate();
 
         return orderDto;
     }

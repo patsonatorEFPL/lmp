@@ -186,12 +186,6 @@
 			<artifactId>spring-session-jdbc</artifactId>
 		</dependency>
 
-		<!-- WebSocket pour les mises à jour temps réel (legacy — sera remplacé par SSE) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-websocket</artifactId>
-		</dependency>
-
 		<!-- Spring Modulith — Architecture modulaire -->
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>

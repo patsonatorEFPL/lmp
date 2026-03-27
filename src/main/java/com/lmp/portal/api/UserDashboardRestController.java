@@ -17,7 +17,7 @@ import com.lmp.portal.dto.DashboardStatsResponse.RecentReviewDto;
 import com.lmp.portal.dto.DashboardStatsResponse.UpcomingAppointmentDto;
 import com.lmp.portal.dto.UpdateProfileRequest;
 import com.lmp.shared.dto.ApiResponse;
-import com.lmp.shared.service.WebSocketNotificationService;
+import com.lmp.shared.service.SseNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,18 +57,18 @@ public class UserDashboardRestController {
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
     private final AppointmentRepository appointmentRepository;
-    private final WebSocketNotificationService webSocketNotificationService;
+    private final SseNotificationService sseNotificationService;
 
     public UserDashboardRestController(UserService userService,
                                         OrderRepository orderRepository,
                                         ReviewRepository reviewRepository,
                                         AppointmentRepository appointmentRepository,
-                                        WebSocketNotificationService webSocketNotificationService) {
+                                        SseNotificationService sseNotificationService) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.reviewRepository = reviewRepository;
         this.appointmentRepository = appointmentRepository;
-        this.webSocketNotificationService = webSocketNotificationService;
+        this.sseNotificationService = sseNotificationService;
     }
 
     @GetMapping("/stats")
@@ -201,10 +201,10 @@ public class UserDashboardRestController {
         }
     }
 
-    // ========== WebSocket Test Endpoint ==========
+    // ========== SSE Test Endpoint ==========
 
     @GetMapping("/test-notification")
-    @Operation(summary = "Test WebSocket notification", description = "Sends a test WebSocket notification to the authenticated user")
+    @Operation(summary = "Test SSE notification", description = "Sends a test SSE notification to the authenticated user")
     public ResponseEntity<ApiResponse<String>> testNotification(Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         if (user == null) {
@@ -212,15 +212,15 @@ public class UserDashboardRestController {
         }
 
         try {
-            webSocketNotificationService.notifyUserNewPendingOrder(
+            sseNotificationService.notifyUserNewPendingOrder(
                     user.getId().toString(),
                     "test-" + System.currentTimeMillis(),
                     "Test Notification Service",
                     99.99);
-            logger.info("Test WebSocket notification sent to user: {}", user.getEmail());
-            return ResponseEntity.ok(ApiResponse.ok("Notification WebSocket envoyée", "OK"));
+            logger.info("Test SSE notification sent to user: {}", user.getEmail());
+            return ResponseEntity.ok(ApiResponse.ok("Notification SSE envoyée", "OK"));
         } catch (Exception e) {
-            logger.error("Failed to send test WebSocket notification: {}", e.getMessage());
+            logger.error("Failed to send test SSE notification: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed: " + e.getMessage()));
         }

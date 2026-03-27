@@ -279,12 +279,11 @@ public class SecurityConfig {
                         .expiredUrl("/login?expired=true")
                         .sessionRegistry(sessionRegistry()))
 
-                // CSRF exceptions pour webhooks, endpoints publics et WebSocket
+                // CSRF exceptions pour webhooks et endpoints publics
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 "/webhook/**",
                                 "/stripe/**",
-                                "/ws/**",
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
                                 "/appointments/create",
