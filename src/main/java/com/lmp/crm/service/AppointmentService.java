@@ -29,10 +29,13 @@ import com.lmp.crm.repository.AppointmentRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.shared.util.DateUtils;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+
+import com.lmp.integration.event.LmpBusinessEvent;
 
 /**
  * Service pour la gestion des rendez-vous.
@@ -58,6 +61,8 @@ public class AppointmentService {
         private final JavaMailSender mailSender;
     
         private final MailAddressConfig mailAddressConfig;
+
+        private final ApplicationEventPublisher eventPublisher;
     
     // Cache simple pour les créneaux (clé = date, valeur = créneaux disponibles)
     private final Map<String, CachedSlots> slotsCache = new ConcurrentHashMap<>();
@@ -127,6 +132,10 @@ public class AppointmentService {
         }
 
             logger.info("Emails de confirmation envoyés pour le rendez-vous ID: {}", appointment.getId());
+
+        // Publish business event for SSE notifications
+        publishAppointmentEvent(LmpBusinessEvent.EventType.APPOINTMENT_CREATED, appointment);
+
         return appointment;
     }
 
@@ -167,6 +176,9 @@ public class AppointmentService {
             logger.error("Erreur lors de l'envoi de la notification équipe pour le RDV {}: {}", 
                 appointment.getId(), e.getMessage());
         }
+
+        // Publish business event for SSE notifications
+        publishAppointmentEvent(LmpBusinessEvent.EventType.APPOINTMENT_CONFIRMED, appointment);
 
         logger.info("Rendez-vous confirmé - ID: {}", appointmentId);
         return appointment;
@@ -209,6 +221,13 @@ public class AppointmentService {
             logger.error("Erreur lors de l'envoi de la notification équipe pour l'annulation du RDV {}: {}", 
                 appointment.getId(), e.getMessage());
         }
+
+        // Publish business event for SSE notifications
+        Map<String, Object> cancelPayload = buildAppointmentPayload(appointment);
+        cancelPayload.put("reason", reason);
+        eventPublisher.publishEvent(LmpBusinessEvent.of(
+                LmpBusinessEvent.EventType.APPOINTMENT_CANCELLED, "CRM",
+                appointment.getId(), cancelPayload));
 
         logger.info("Rendez-vous annulé - ID: {}", appointmentId);
         return appointment;
@@ -597,11 +616,13 @@ public class AppointmentService {
     public AppointmentService(AppointmentRepository appointmentRepository,
                            UserRepository userRepository,
                            JavaMailSender mailSender,
-                           MailAddressConfig mailAddressConfig) {
+                           MailAddressConfig mailAddressConfig,
+                           ApplicationEventPublisher eventPublisher) {
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.mailSender = mailSender;
         this.mailAddressConfig = mailAddressConfig;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -1406,6 +1427,37 @@ public class AppointmentService {
         return appointmentRepository.save(appointment);
     }
 
+    // ======== EVENT PUBLISHING ========
+
+    /**
+     * Publie un événement métier pour un rendez-vous.
+     */
+    private void publishAppointmentEvent(LmpBusinessEvent.EventType type, Appointment appointment) {
+        try {
+            eventPublisher.publishEvent(LmpBusinessEvent.of(
+                    type, "CRM", appointment.getId(), buildAppointmentPayload(appointment)));
+        } catch (Exception e) {
+            logger.error("Failed to publish {} event for appointment {}: {}",
+                    type, appointment.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Construit le payload commun pour les événements de rendez-vous.
+     */
+    private Map<String, Object> buildAppointmentPayload(Appointment appointment) {
+        Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("subject", appointment.getSubject());
+        payload.put("dateTime", appointment.getAppointmentDate() != null
+                ? appointment.getAppointmentDate().format(DATETIME_FORMATTER) : "");
+        payload.put("clientName", appointment.getEffectiveClientName());
+
+        if (appointment.getUser() != null) {
+            payload.put("userId", appointment.getUser().getId().toString());
+        }
+        return payload;
+    }
+
     /**
      * Crée un rendez-vous avec un objet User
      */
@@ -1453,6 +1505,9 @@ public class AppointmentService {
         
         // Envoi de la notification à l'équipe
         sendAnonymousTeamNotificationEmail(appointment);
+
+        // Publish business event for SSE notifications
+        publishAppointmentEvent(LmpBusinessEvent.EventType.APPOINTMENT_CREATED, appointment);
 
         logger.info("Rendez-vous anonyme créé avec succès - ID: {}", appointment.getId());
         return appointment;

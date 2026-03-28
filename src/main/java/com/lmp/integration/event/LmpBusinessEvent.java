@@ -49,7 +49,11 @@ public record LmpBusinessEvent(
 
         // Catalog
         SERVICE_CREATED,
-        SERVICE_UPDATED
+        SERVICE_UPDATED,
+
+        // Reviews
+        REVIEW_CREATED,
+        REVIEW_UPDATED
     }
 
     /**
