@@ -133,7 +133,7 @@ public class AppointmentService {
                 appointment.getId(), e.getMessage());
         }
 
-            logger.info("Emails de confirmation envoyés pour le rendez-vous ID: {}", appointment.getId());
+        logger.info("Emails de confirmation envoyés pour le rendez-vous ID: {}", appointment.getId());
         publishAppointmentEvent(EventType.APPOINTMENT_CREATED, appointment);
         return appointment;
     }
@@ -220,7 +220,11 @@ public class AppointmentService {
         }
 
         logger.info("Rendez-vous annulé - ID: {}", appointmentId);
-        publishAppointmentEvent(EventType.APPOINTMENT_CANCELLED, appointment);
+        Map<String, Object> cancelExtra = new HashMap<>();
+        if (reason != null) {
+            cancelExtra.put("reason", reason);
+        }
+        publishAppointmentEvent(EventType.APPOINTMENT_CANCELLED, appointment, cancelExtra);
         return appointment;
     }
     
@@ -619,7 +623,7 @@ public class AppointmentService {
         this.eventPublisher = eventPublisher;
     }
 
-    private Map<String, Object> appointmentPayload(Appointment a, EventType type) {
+    private Map<String, Object> appointmentPayload(Appointment a, EventType type, Map<String, Object> extra) {
         Map<String, Object> m = new HashMap<>();
         m.put("appointmentId", a.getId().toString());
         m.put(BusinessEventPayloadKeys.SUBJECT, a.getSubject());
@@ -627,6 +631,7 @@ public class AppointmentService {
         m.put("clientEmail", a.getEffectiveClientEmail());
         if (a.getAppointmentDate() != null) {
             m.put("appointmentDate", a.getAppointmentDate().toString());
+            m.put("dateTime", a.getAppointmentDate().format(DATETIME_FORMATTER));
         }
         if (a.getUser() != null) {
             m.put(BusinessEventPayloadKeys.USER_ID, a.getUser().getId().toString());
@@ -635,10 +640,24 @@ public class AppointmentService {
             m.put("status", a.getStatus().name());
         }
         m.put(BusinessEventPayloadKeys.MESSAGE, appointmentAdminMessage(type, a));
-        if (appointmentNotifiesUser(type) && a.getUser() != null) {
-            m.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
-            m.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "APPOINTMENT_" + type.name());
-            m.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, m.get(BusinessEventPayloadKeys.MESSAGE));
+        if (extra != null && !extra.isEmpty()) {
+            m.putAll(extra);
+        }
+        if (a.getUser() != null) {
+            if (type == EventType.APPOINTMENT_CREATED) {
+                m.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+                m.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "APPOINTMENT_CREATED");
+                String subj = a.getSubject() != null ? a.getSubject() : "";
+                String dt = a.getAppointmentDate() != null
+                        ? a.getAppointmentDate().format(DATETIME_FORMATTER)
+                        : "";
+                m.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, String.format(
+                        "Votre rendez-vous « %s » du %s est en attente de confirmation", subj, dt));
+            } else if (appointmentNotifiesUser(type)) {
+                m.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+                m.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "APPOINTMENT_" + type.name());
+                m.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, m.get(BusinessEventPayloadKeys.MESSAGE));
+            }
         }
         return m;
     }
@@ -664,7 +683,11 @@ public class AppointmentService {
     }
 
     private void publishAppointmentEvent(EventType type, Appointment a) {
-        eventPublisher.publishEvent(LmpBusinessEvent.of(type, "crm", a.getId(), appointmentPayload(a, type)));
+        publishAppointmentEvent(type, a, Map.of());
+    }
+
+    private void publishAppointmentEvent(EventType type, Appointment a, Map<String, Object> extra) {
+        eventPublisher.publishEvent(LmpBusinessEvent.of(type, "crm", a.getId(), appointmentPayload(a, type, extra)));
     }
 
     /**
