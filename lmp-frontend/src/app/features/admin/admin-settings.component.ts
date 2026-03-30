@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, NgZone, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 import {
   LucideAngularModule,
   Settings,
@@ -10,6 +11,7 @@ import {
   Mail,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { AdminService, CompanyAddressPayload } from '../../core/services/admin.service';
 
 @Component({
   selector: 'lmp-admin-settings',
@@ -62,6 +64,35 @@ import { HlmButton } from '@spartan-ng/helm/button';
               type="url"
               [(ngModel)]="settings.siteUrl"
               class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+            />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-medium text-(--foreground)">Adresse postale (factures PDF)</label>
+            <textarea
+              rows="2"
+              [(ngModel)]="companyAddress.addressLine"
+              class="mt-1 w-full resize-y rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+              placeholder="Ex. 123 rue Principale, bureau 200"
+            ></textarea>
+            <p class="mt-1 text-[11px] text-(--muted-foreground)">
+              Première ligne sous le nom sur la facture PDF (rue, numéro, CP si besoin). La ligne suivante est la ville ci-dessous.
+            </p>
+            @if (isAddressStillFlywaySeed()) {
+              <p
+                class="mt-2 rounded-sm border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-100"
+                role="status"
+              >
+                <strong>Texte d’exemple encore actif :</strong> cette valeur est toujours affichée sur vos factures tant que vous ne la remplacez pas. Modifiez le champ ci-dessus puis enregistrez.
+              </p>
+            }
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-xs font-medium text-(--foreground)">Ville, province / région</label>
+            <input
+              type="text"
+              [(ngModel)]="companyAddress.cityRegion"
+              class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+              placeholder="Ex. Montréal, QC"
             />
           </div>
         </div>
@@ -138,20 +169,33 @@ import { HlmButton } from '@spartan-ng/helm/button';
           (click)="saveSettings()"
         >
           <lucide-icon [img]="SaveIcon" [size]="16"></lucide-icon>
-          {{ saving() ? 'Enregistrement...' : 'Enregistrer les paramètres' }}
+          {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
       </div>
     </div>
   `,
 })
-export class AdminSettingsComponent {
+export class AdminSettingsComponent implements OnInit {
+  /** Aligné sur {@code V8__company_profile.sql} (seed Flyway). */
+  private static readonly FLYWAY_ADDRESS_SEED =
+    '123 Rue Principale, Ville, Province, Code Postal';
+
   readonly GlobeIcon = Globe;
   readonly BellIcon = Bell;
   readonly ShieldIcon = Shield;
   readonly MailIcon = Mail;
   readonly SaveIcon = Save;
 
+  private readonly adminService = inject(AdminService);
+  private readonly ngZone = inject(NgZone);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   readonly saving = signal(false);
+
+  companyAddress: CompanyAddressPayload = {
+    addressLine: '',
+    cityRegion: '',
+  };
 
   settings = {
     companyName: '',
@@ -168,11 +212,42 @@ export class AdminSettingsComponent {
     { key: 'contactForm', label: 'Formulaire de contact', description: 'Email lorsqu\'un message est envoyé via le formulaire', enabled: true },
   ];
 
+  isAddressStillFlywaySeed(): boolean {
+    return this.companyAddress.addressLine.trim() === AdminSettingsComponent.FLYWAY_ADDRESS_SEED;
+  }
+
+  ngOnInit(): void {
+    this.adminService.getCompanyAddress().subscribe({
+      next: (c) => {
+        // withFetch() peut livrer hors zone ; ngModel peut rester visuellement figé sans CD explicite
+        this.ngZone.run(() => {
+          this.companyAddress.addressLine = c.addressLine;
+          this.companyAddress.cityRegion = c.cityRegion;
+          this.cdr.detectChanges();
+        });
+      },
+      error: () => {
+        /* session ou réseau : champs vides, l’admin peut saisir */
+      },
+    });
+  }
+
   saveSettings(): void {
     this.saving.set(true);
-    // TODO: Connect to backend settings API
-    setTimeout(() => {
-      this.saving.set(false);
-    }, 1000);
+    this.adminService
+      .updateCompanyAddress(this.companyAddress)
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: (saved) => {
+          this.ngZone.run(() => {
+            this.companyAddress.addressLine = saved.addressLine;
+            this.companyAddress.cityRegion = saved.cityRegion;
+            this.cdr.detectChanges();
+          });
+        },
+        error: () => {
+          /* erreur validation ou réseau */
+        },
+      });
   }
 }
