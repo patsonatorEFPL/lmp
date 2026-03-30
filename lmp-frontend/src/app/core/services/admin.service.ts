@@ -46,6 +46,14 @@ export interface AdminDashboardStats {
   ordersByStatus: Record<string, { count: number; revenue: number }>;
 }
 
+/** Adresse / ville-province (factures PDF, éditable admin) */
+export interface CompanyAddressPayload {
+  addressLine: string;
+  cityRegion: string;
+}
+
+const COMPANY_PROFILE_PATH = '/api/v1/admin/company-profile';
+
 interface ApiResponse<T> {
   success: boolean;
   message?: string;
@@ -154,5 +162,19 @@ export class AdminService {
   deleteOffer(offerId: string): Observable<ApiResponse<void>> {
     const path = deleteOffer.PATH.replace('{offerId}', offerId);
     return this.http.delete<ApiResponse<void>>(path);
+  }
+
+  // ========== Profil entreprise (adresse facturation) ==========
+
+  getCompanyAddress(): Observable<CompanyAddressPayload> {
+    return this.http
+      .get<ApiResponse<CompanyAddressPayload>>(COMPANY_PROFILE_PATH)
+      .pipe(map((res) => res.data!));
+  }
+
+  updateCompanyAddress(body: CompanyAddressPayload): Observable<CompanyAddressPayload> {
+    return this.http
+      .put<ApiResponse<CompanyAddressPayload>>(COMPANY_PROFILE_PATH, body)
+      .pipe(map((res) => res.data!));
   }
 }

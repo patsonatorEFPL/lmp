@@ -2,6 +2,7 @@ package com.lmp.billing.service;
 
 import com.lmp.billing.domain.Order;
 import com.lmp.auth.domain.User;
+import com.lmp.shared.service.CompanyProfileService;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import org.slf4j.Logger;
@@ -23,6 +24,8 @@ import org.springframework.beans.factory.annotation.Value;
 public class InvoicePdfService {
 
     private static final Logger log = LoggerFactory.getLogger(InvoicePdfService.class);
+
+    private final CompanyProfileService companyProfileService;
 
     // ═══════════════════════════════════════════════════════
     // PALETTE PREMIUM — Charcoal + Gold
@@ -46,12 +49,6 @@ public class InvoicePdfService {
     @Value("${company.tagline:Marketing Digital & Solutions Web}")
     private String companyTagline;
 
-    @Value("${company.address:123 Rue Principale}")
-    private String companyAddress;
-
-    @Value("${company.city:Ville, Province}")
-    private String companyCity;
-
     @Value("${company.email:support@localhost}")
     private String companyEmail;
 
@@ -64,11 +61,18 @@ public class InvoicePdfService {
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm");
 
+    public InvoicePdfService(CompanyProfileService companyProfileService) {
+        this.companyProfileService = companyProfileService;
+    }
+
     /**
      * Génère une facture PDF premium pour une commande donnée.
      */
     public byte[] generateInvoicePdf(Order order, User user) {
         log.info("Génération de la facture PDF premium pour la commande #{}", order.getId());
+
+        String addressLine = companyProfileService.resolveAddressLine();
+        String cityRegion = companyProfileService.resolveCityRegion();
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4, 45, 45, 40, 60);
@@ -80,13 +84,13 @@ public class InvoicePdfService {
             drawAccentBar(writer);
 
             addPremiumHeader(document, order);
-            addCompanyAndClientBlock(document, order, user);
+            addCompanyAndClientBlock(document, order, user, addressLine, cityRegion);
             addInvoiceMetaStrip(document, order);
             addItemsTable(document, order);
             addTotalsBlock(document, order);
             addPaymentInfo(document, order);
             addLegalMentions(document);
-            addPremiumFooter(writer);
+            addPremiumFooter(writer, addressLine, cityRegion);
 
             document.close();
 
@@ -182,7 +186,8 @@ public class InvoicePdfService {
     // BLOCS ENTREPRISE / CLIENT
     // ═══════════════════════════════════════════════════════
 
-    private void addCompanyAndClientBlock(Document document, Order order, User user) throws DocumentException {
+    private void addCompanyAndClientBlock(Document document, Order order, User user,
+            String addressLine, String cityRegion) throws DocumentException {
         document.add(new Paragraph(" ", new Font(Font.HELVETICA, 8)));
 
         PdfPTable infoTable = new PdfPTable(2);
@@ -205,8 +210,8 @@ public class InvoicePdfService {
         companyCell.addElement(emLabel);
 
         companyCell.addElement(new Paragraph(companyName.toUpperCase(), new Font(Font.HELVETICA, 10, Font.BOLD, TEXT_PRIMARY)));
-        companyCell.addElement(new Paragraph(companyAddress, valueFont));
-        companyCell.addElement(new Paragraph(companyCity, valueFont));
+        companyCell.addElement(new Paragraph(addressLine, valueFont));
+        companyCell.addElement(new Paragraph(cityRegion, valueFont));
 
         Paragraph emailLine = new Paragraph(companyEmail, valueSmallFont);
         emailLine.setSpacingBefore(4);
@@ -552,7 +557,7 @@ public class InvoicePdfService {
     // FOOTER PREMIUM
     // ═══════════════════════════════════════════════════════
 
-    private void addPremiumFooter(PdfWriter writer) {
+    private void addPremiumFooter(PdfWriter writer, String addressLine, String cityRegion) {
         PdfContentByte cb = writer.getDirectContent();
 
         // Ligne dorée fine
@@ -566,7 +571,7 @@ public class InvoicePdfService {
         Font footerBoldFont = new Font(Font.HELVETICA, 7, Font.BOLD, CHARCOAL);
 
         ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
-                new Phrase(companyName.toUpperCase() + "  ·  " + companyAddress + ", " + companyCity, footerFont),
+                new Phrase(companyName.toUpperCase() + "  ·  " + addressLine + ", " + cityRegion, footerFont),
                 297.5f, 42, 0);
 
         String webDisplay = companyWebsite.replace("https://", "").replace("http://", "");
