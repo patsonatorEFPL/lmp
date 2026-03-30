@@ -11,7 +11,7 @@ import com.lmp.notification.config.MailAddressConfig;
 @SpringBootApplication
 @EnableConfigurationProperties({MailAddressConfig.class})
 @EnableScheduling // Pour l'auto-répondeur noreply
-@EnableAsync // Pour le bus d'événements ERPNext (traitement asynchrone)
+@EnableAsync // Pour le bus d'événements vers l’ERP (traitement asynchrone)
 public class LmpApplication {
 
 	public static void main(String[] args) {

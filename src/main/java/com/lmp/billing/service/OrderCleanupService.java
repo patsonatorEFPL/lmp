@@ -2,6 +2,7 @@ package com.lmp.billing.service;
 
 import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderStatus;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.repository.OrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +29,12 @@ public class OrderCleanupService {
 
     private final OrderRepository orderRepository;
 
-    public OrderCleanupService(OrderRepository orderRepository) {
+    private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+
+    public OrderCleanupService(OrderRepository orderRepository,
+            OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.orderRepository = orderRepository;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     @Value("${stripe.secret.key}")
@@ -79,12 +84,15 @@ public class OrderCleanupService {
                     // Vérifier auprès de Stripe avant d'annuler
                     if (isActuallyPaidOnStripe(order)) {
                         // Le paiement a été effectué — ne pas annuler, confirmer la commande
+                        OrderStatus previous = order.getStatus();
                         order.setStatus(OrderStatus.CONFIRMED);
                         order.setPaymentStatus("succeeded");
                         order.setPaidAt(LocalDateTime.now());
                         order.setUpdatedAt(LocalDateTime.now());
                         order.setPaymentMethod("stripe_checkout");
                         orderRepository.save(order);
+                        orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previous,
+                                OrderStatus.CONFIRMED);
 
                         logger.info("✅ Commande {} confirmée par vérification Stripe lors du nettoyage (créée le: {})",
                                    order.getId(), order.getCreatedAt());
@@ -92,12 +100,14 @@ public class OrderCleanupService {
                     }
 
                     // Annuler la commande car le délai de paiement est expiré et non payée
+                    OrderStatus previous = order.getStatus();
                     order.setStatus(OrderStatus.CANCELLED);
                     order.setCancellationReason("Paiement non finalisé dans le délai imparti (" + paymentPendingTimeoutMinutes + " minutes)");
                     order.setCancelledAt(LocalDateTime.now());
                     order.setUpdatedAt(LocalDateTime.now());
                     
                     orderRepository.save(order);
+                    orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
                     cancelledCount++;
                     
                     logger.info("Commande {} annulée car Paiement non finalisé (créée le: {})", 
@@ -138,12 +148,14 @@ public class OrderCleanupService {
 
         for (Order order : staleOrders) {
             try {
+                OrderStatus previous = order.getStatus();
                 order.setStatus(OrderStatus.CANCELLED);
                 order.setCancellationReason("Paiement non finalisé dans le délai imparti (" + timeoutMinutes + " minutes)");
                 order.setCancelledAt(LocalDateTime.now());
                 order.setUpdatedAt(LocalDateTime.now());
                 
                 orderRepository.save(order);
+                orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
                 cancelledCount++;
                 
                 logger.info("Commande {} annulée manuellement car Paiement non finalisé", order.getId());

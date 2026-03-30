@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderStatus;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.notification.service.EmailService;
 import com.lmp.billing.service.InvoicePdfService;
@@ -37,6 +38,8 @@ public class PaymentReconciliationService {
 
         private final EmailService emailService;
 
+        private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
 
@@ -57,10 +60,12 @@ public class PaymentReconciliationService {
 
     public PaymentReconciliationService(OrderRepository orderRepository,
                            InvoicePdfService invoicePdfService,
-                           EmailService emailService) {
+                           EmailService emailService,
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.orderRepository = orderRepository;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     /**
@@ -186,11 +191,13 @@ public class PaymentReconciliationService {
                         && session.getExpiresAt() < java.time.Instant.now().getEpochSecond()) {
                     // Session expirée et non payée → annuler seulement si encore PAYMENT_PENDING
                     if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+                        OrderStatus previous = order.getStatus();
                         order.setStatus(OrderStatus.CANCELLED);
                         order.setCancellationReason("Session Stripe expirée sans paiement (réconciliation)");
                         order.setCancelledAt(LocalDateTime.now());
                         order.setUpdatedAt(LocalDateTime.now());
                         orderRepository.save(order);
+                        orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
 
                         logger.info("⏰ RÉCONCILIATION - Commande {} annulée : session Stripe expirée",
                                 order.getId());
@@ -254,6 +261,8 @@ public class PaymentReconciliationService {
         }
 
         orderRepository.save(order);
+
+        orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previousStatus, OrderStatus.CONFIRMED);
 
         logger.info("✅ RÉCONCILIATION - Commande {} confirmée ({} → CONFIRMED) via vérification Stripe",
                 order.getId(), previousStatus);

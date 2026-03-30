@@ -7,10 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,10 @@ import com.lmp.billing.service.InvoicePdfService;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import com.lmp.billing.dto.WebhookEventDto;
+import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
@@ -72,6 +78,10 @@ public class StripeWebhookHandler {
 
         private final RefundRepository refundRepository;
 
+        private final ApplicationEventPublisher eventPublisher;
+
+        private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -82,7 +92,9 @@ public class StripeWebhookHandler {
                            InvoicePdfService invoicePdfService,
                            WebhookEventLogRepository webhookEventLogRepository,
                            TemplateEngine templateEngine,
-                           RefundRepository refundRepository) {
+                           RefundRepository refundRepository,
+                           ApplicationEventPublisher eventPublisher,
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -91,6 +103,8 @@ public class StripeWebhookHandler {
         this.webhookEventLogRepository = webhookEventLogRepository;
         this.templateEngine = templateEngine;
         this.refundRepository = refundRepository;
+        this.eventPublisher = eventPublisher;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     /**
@@ -351,6 +365,8 @@ public class StripeWebhookHandler {
                     paymentIntent.getId(), paymentIntent.getLastPaymentError());
 
             securityLogger.info("Payment failure recorded - PaymentIntent: {}", paymentIntent.getId());
+
+            publishPaymentFailed(paymentIntent);
         }
     }
 
@@ -452,6 +468,7 @@ public class StripeWebhookHandler {
             }
 
             Order order = orderOpt.get();
+            OrderStatus statusBeforeRefund = order.getStatus();
 
             com.lmp.billing.domain.Refund refundEntity = new com.lmp.billing.domain.Refund();
             refundEntity.setOrder(order);
@@ -465,6 +482,18 @@ public class StripeWebhookHandler {
 
             refundRepository.save(refundEntity);
 
+            Map<String, Object> rpl = new HashMap<>();
+            rpl.put("orderId", order.getId().toString());
+            if (order.getUser() != null) {
+                rpl.put("userId", order.getUser().getId().toString());
+            }
+            rpl.put("stripeRefundId", stripeRefund.getId());
+            rpl.put("amount", refundEntity.getAmount().doubleValue());
+            rpl.put("currency", refundEntity.getCurrency());
+            rpl.put(BusinessEventPayloadKeys.MESSAGE, String.format("Remboursement enregistré — commande %s",
+                    order.getId()));
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.REFUND_PROCESSED, "billing", order.getId(), rpl));
+
             logger.info("✅ REFUND PERSISTED - ID: {}, Stripe: {}, Montant: {} {}, Commande: {}",
                     refundEntity.getId(), stripeRefund.getId(),
                     refundEntity.getAmount(), refundEntity.getCurrency(), order.getId());
@@ -475,6 +504,7 @@ public class StripeWebhookHandler {
                 order.setStatus(OrderStatus.REFUNDED);
                 order.setUpdatedAt(LocalDateTime.now());
                 orderRepository.save(order);
+                orderRealtimeEventPublisher.publishOrderUpdated(order, statusBeforeRefund, OrderStatus.REFUNDED);
                 logger.info("🔄 REFUND - Commande {} marquée comme REFUNDED (remboursement total)", order.getId());
             }
 
@@ -509,6 +539,16 @@ public class StripeWebhookHandler {
                 }
                 refundRepository.save(refundEntity);
                 logger.info("✅ REFUND UPDATED - Stripe: {}, Status: {}", stripeRefund.getId(), stripeRefund.getStatus());
+
+                Map<String, Object> upl = new HashMap<>();
+                upl.put("stripeRefundId", stripeRefund.getId());
+                upl.put("status", stripeRefund.getStatus());
+                Order linkedOrder = refundEntity.getOrder();
+                upl.put("orderId", linkedOrder.getId().toString());
+                upl.put(BusinessEventPayloadKeys.MESSAGE, String.format("Mise à jour remboursement — %s",
+                        stripeRefund.getId()));
+                eventPublisher.publishEvent(
+                        LmpBusinessEvent.of(EventType.REFUND_STATUS_UPDATED, "billing", linkedOrder.getId(), upl));
             }
 
             // Mettre à jour le statut si le remboursement est réussi
@@ -824,6 +864,8 @@ public class StripeWebhookHandler {
 
                     orderRepository.save(order);
 
+                    orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
+
                     logger.info("✅ Order status updated via webhook - Order: {}, Stripe Session: {}, Status: {} -> {}",
                             order.getId(), stripeSessionId, oldStatus, newStatus);
 
@@ -890,6 +932,8 @@ public class StripeWebhookHandler {
                     }
 
                     orderRepository.save(order);
+
+                    orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
 
                     logger.info(
                             "✅ Order status updated via PaymentIntent webhook - Order: {}, PaymentIntent: {}, Status: {} -> {}",
@@ -1111,6 +1155,8 @@ public class StripeWebhookHandler {
 
             securityLogger.info("Order created via Stripe webhook - Order: {}, Session: {}, Amount: {} {}",
                     savedOrder.getId(), session.getId(), amount, currency);
+
+            orderRealtimeEventPublisher.publishPaymentReceived(savedOrder);
 
             return savedOrder;
 
@@ -1359,6 +1405,8 @@ public class StripeWebhookHandler {
             logger.info("✅ STATUT MISE À JOUR - Commande {} mis à jour: {} -> {}",
                     order.getId(), oldStatus, newStatus);
 
+            orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
+
             // 🆕 Envoi automatique de la facture par email après confirmation du paiement
             if (newStatus == OrderStatus.CONFIRMED && order.getUser() != null) {
                 sendInvoiceByEmail(order, order.getUser());
@@ -1428,6 +1476,19 @@ public class StripeWebhookHandler {
             securityLogger.info("Invoice sent via email - Order: {}, Invoice: {}, Email: {}",
                     order.getId(), invoiceNumber, user.getEmail());
 
+            Map<String, Object> inv = new HashMap<>();
+            inv.put("orderId", order.getId().toString());
+            inv.put("userId", user.getId().toString());
+            inv.put("serviceName", order.getServiceName());
+            inv.put("invoiceNumber", invoiceNumber);
+            inv.put(BusinessEventPayloadKeys.MESSAGE, String.format("Facture disponible — commande %s",
+                    order.getId()));
+            inv.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, "Votre facture est prête");
+            inv.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+            inv.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "INVOICE_READY");
+            inv.put(BusinessEventPayloadKeys.SSE_DASHBOARD_PING, Boolean.FALSE);
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.INVOICE_GENERATED, "billing", order.getId(), inv));
+
         } catch (Exception e) {
             logger.error("❌ ENVOI FACTURE - Erreur lors de l'envoi de la facture pour la commande {}: {}",
                     order.getId(), e.getMessage(), e);
@@ -1474,5 +1535,40 @@ public class StripeWebhookHandler {
                     + "- Date de paiement : " + formattedDate + "\n\n"
                     + "Cordialement,\nL'équipe LMP\n";
         }
+    }
+
+    private void publishPaymentFailed(PaymentIntent paymentIntent) {
+        Map<String, Object> pl = new HashMap<>();
+        pl.put("paymentIntentId", paymentIntent.getId());
+        String err = paymentIntent.getLastPaymentError() != null
+                ? paymentIntent.getLastPaymentError().toString()
+                : "failed";
+        pl.put("error", err);
+
+        Optional<Order> orderOpt = orderRepository.findByStripePaymentIntentId(paymentIntent.getId());
+        if (orderOpt.isEmpty() && paymentIntent.getMetadata() != null
+                && paymentIntent.getMetadata().get("session_id") != null) {
+            orderOpt = orderRepository.findByStripeSessionId(paymentIntent.getMetadata().get("session_id"));
+        }
+
+        UUID entityId;
+        if (orderOpt.isPresent()) {
+            Order o = orderOpt.get();
+            entityId = o.getId();
+            pl.put("orderId", o.getId().toString());
+            if (o.getUser() != null) {
+                pl.put("userId", o.getUser().getId().toString());
+            }
+        } else {
+            entityId = UUID.randomUUID();
+        }
+        String adminLine = String.format("Échec de paiement — %s", err);
+        pl.put(BusinessEventPayloadKeys.MESSAGE, adminLine);
+        if (orderOpt.isPresent() && orderOpt.get().getUser() != null) {
+            pl.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+            pl.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "PAYMENT_ERROR");
+            pl.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, adminLine);
+        }
+        eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.PAYMENT_FAILED, "billing", entityId, pl));
     }
 }

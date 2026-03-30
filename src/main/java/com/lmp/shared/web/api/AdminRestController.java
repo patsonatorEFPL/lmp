@@ -15,6 +15,10 @@ import com.lmp.crm.domain.Appointment;
 import com.lmp.crm.domain.AppointmentStatus;
 import com.lmp.crm.dto.AppointmentResponse;
 import com.lmp.crm.repository.AppointmentRepository;
+import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.shared.dto.ApiResponse;
 
 import com.lmp.notification.service.EmailService;
@@ -32,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,21 +70,25 @@ public class AdminRestController {
     private final RefundRepository refundRepository;
     private final InvoicePdfService invoicePdfService;
     private final EmailService emailService;
-    private final com.lmp.shared.service.SseNotificationService sseNotificationService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
     public AdminRestController(UserService userService, OrderRepository orderRepository,
                                AppointmentRepository appointmentRepository,
                                RefundRepository refundRepository,
                                InvoicePdfService invoicePdfService,
                                EmailService emailService,
-                               com.lmp.shared.service.SseNotificationService sseNotificationService) {
+                               ApplicationEventPublisher eventPublisher,
+                               OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.appointmentRepository = appointmentRepository;
         this.refundRepository = refundRepository;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
-        this.sseNotificationService = sseNotificationService;
+        this.eventPublisher = eventPublisher;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     @GetMapping("/stats")
@@ -271,6 +280,7 @@ public class AdminRestController {
         try {
             Order order = orderRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
+            OrderStatus previousStatus = order.getStatus();
 
             if (data.containsKey("status")) {
                 order.setStatus(OrderStatus.valueOf((String) data.get("status")));
@@ -294,6 +304,10 @@ public class AdminRestController {
             order.setUpdatedAt(LocalDateTime.now());
             order.setLastModifiedAt(LocalDateTime.now());
             orderRepository.save(order);
+
+            if (data.containsKey("status") && previousStatus != order.getStatus()) {
+                orderRealtimeEventPublisher.publishOrderUpdated(order, previousStatus, order.getStatus());
+            }
 
             return ResponseEntity.ok(ApiResponse.ok("Commande mise à jour", null));
         } catch (Exception e) {
@@ -450,14 +464,20 @@ public class AdminRestController {
                 // Non-blocking — order is already created
             }
 
-            // Send real-time SSE notification to the user
             try {
-                sseNotificationService.notifyUserNewPendingOrder(
-                        user.getId().toString(),
-                        order.getId().toString(),
-                        serviceName,
-                        amount);
-            } catch (Exception wsEx) {
+                Map<String, Object> pl = new HashMap<>();
+                pl.put(BusinessEventPayloadKeys.PENDING_PAYMENT_NOTIFY, Boolean.TRUE);
+                pl.put(BusinessEventPayloadKeys.USER_ID, user.getId().toString());
+                pl.put(BusinessEventPayloadKeys.ORDER_ID, order.getId().toString());
+                pl.put(BusinessEventPayloadKeys.SERVICE_NAME, serviceName);
+                pl.put(BusinessEventPayloadKeys.AMOUNT, amount);
+                pl.put(BusinessEventPayloadKeys.CUSTOMER_EMAIL, user.getEmail());
+                pl.put(BusinessEventPayloadKeys.CUSTOMER_NAME,
+                        user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
+                String who = user.getDisplayName() != null ? user.getDisplayName() : user.getEmail();
+                pl.put(BusinessEventPayloadKeys.MESSAGE, "Nouvelle commande — " + who);
+                eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.ORDER_CREATED, "admin", order.getId(), pl));
+            } catch (Exception ignored) {
                 // Non-blocking
             }
 
@@ -556,6 +576,7 @@ public class AdminRestController {
             syncResult.put("currentPaymentStatus", order.getPaymentStatus());
 
             if (order.getStripePaymentIntentId() != null && !order.getStripePaymentIntentId().isEmpty()) {
+                OrderStatus statusBeforeSync = order.getStatus();
                 Stripe.apiKey = stripeSecretKey;
                 PaymentIntent pi = PaymentIntent.retrieve(order.getStripePaymentIntentId());
 
@@ -586,10 +607,16 @@ public class AdminRestController {
                 order.setUpdatedAt(LocalDateTime.now());
                 orderRepository.save(order);
 
+                if (statusBeforeSync != order.getStatus()) {
+                    orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, statusBeforeSync,
+                            order.getStatus());
+                }
+
                 syncResult.put("updatedStatus", order.getStatus() != null ? order.getStatus().name() : null);
                 syncResult.put("updatedPaymentStatus", order.getPaymentStatus());
                 syncResult.put("synced", true);
             } else if (order.getStripeSessionId() != null && !order.getStripeSessionId().isEmpty()) {
+                OrderStatus statusBeforeSync = order.getStatus();
                 Stripe.apiKey = stripeSecretKey;
                 com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(order.getStripeSessionId());
 
@@ -620,6 +647,11 @@ public class AdminRestController {
 
                 order.setUpdatedAt(LocalDateTime.now());
                 orderRepository.save(order);
+
+                if (statusBeforeSync != order.getStatus()) {
+                    orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, statusBeforeSync,
+                            order.getStatus());
+                }
 
                 syncResult.put("updatedStatus", order.getStatus() != null ? order.getStatus().name() : null);
                 syncResult.put("updatedPaymentStatus", order.getPaymentStatus());

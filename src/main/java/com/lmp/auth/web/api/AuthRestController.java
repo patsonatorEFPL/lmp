@@ -3,6 +3,9 @@ package com.lmp.auth.web.api;
 import com.lmp.auth.domain.User;
 import com.lmp.auth.service.AuthService;
 import com.lmp.auth.service.UserService;
+import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.shared.dto.ApiResponse;
 import com.lmp.auth.dto.UserResponse;
 import com.lmp.auth.dto.LoginDto;
@@ -17,6 +20,7 @@ import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +31,9 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * API REST d'authentification.
@@ -44,12 +51,15 @@ public class AuthRestController {
     private final AuthService authService;
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AuthRestController(AuthService authService, UserService userService,
-                              AuthenticationManager authenticationManager) {
+                              AuthenticationManager authenticationManager,
+                              ApplicationEventPublisher eventPublisher) {
         this.authService = authService;
         this.userService = userService;
         this.authenticationManager = authenticationManager;
+        this.eventPublisher = eventPublisher;
     }
 
     @PostMapping("/login")
@@ -112,6 +122,13 @@ public class AuthRestController {
             // Send emails asynchronously via Spring proxy (@Async) — non-blocking
             authService.sendVerificationEmail(user);
             authService.sendWelcomeEmail(user);
+
+            Map<String, Object> regPl = new HashMap<>();
+            regPl.put(BusinessEventPayloadKeys.EMAIL, user.getEmail());
+            regPl.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
+            regPl.put(BusinessEventPayloadKeys.MESSAGE,
+                    "Nouvel utilisateur : " + user.getEmail());
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "auth", user.getId(), regPl));
 
             logger.info("API registration successful for: {}", user.getEmail());
             return ResponseEntity.status(HttpStatus.CREATED)

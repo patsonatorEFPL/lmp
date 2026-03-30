@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideAngularModule,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
+import { AdminSseService } from '../../core/services/admin-sse.service';
 import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
@@ -28,6 +29,15 @@ import { ThemeService } from '../../core/services/theme.service';
     HlmButton,
   ],
   template: `
+    @if (adminSse.lastToast(); as toast) {
+      <div
+        class="fixed bottom-4 right-4 z-[260] max-w-sm rounded-sm border border-(--border) bg-(--card) p-4 shadow-lg"
+        role="alert"
+      >
+        <p class="text-xs font-semibold text-(--primary)">{{ toast.title }}</p>
+        <p class="mt-1 text-sm text-(--foreground)">{{ toast.message }}</p>
+      </div>
+    }
     <div class="flex min-h-screen bg-(--background)">
       <!-- Sidebar -->
       <aside
@@ -75,26 +85,47 @@ import { ThemeService } from '../../core/services/theme.service';
           <a
             routerLink="/admin/users"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            (click)="adminSse.badgeUsers.set(0)"
+            class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
             Utilisateurs
+            @if (adminSse.badgeUsers() > 0) {
+              <span
+                class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                >{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span
+              >
+            }
           </a>
           <a
             routerLink="/admin/orders"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            (click)="adminSse.badgeOrders.set(0)"
+            class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="OrdersIcon" [size]="18"></lucide-icon>
             Commandes
+            @if (adminSse.badgeOrders() > 0) {
+              <span
+                class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                >{{ adminSse.badgeOrders() > 9 ? '9+' : adminSse.badgeOrders() }}</span
+              >
+            }
           </a>
           <a
             routerLink="/admin/appointments"
             routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            (click)="adminSse.badgeAppointments.set(0)"
+            class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
           >
             <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
             Rendez-vous
+            @if (adminSse.badgeAppointments() > 0) {
+              <span
+                class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                >{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span
+              >
+            }
           </a>
           <a
             routerLink="/admin/settings"
@@ -144,6 +175,17 @@ import { ThemeService } from '../../core/services/theme.service';
           class="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-(--border) bg-(--card) px-6"
         >
           <div class="flex items-center gap-3">
+            <span
+              class="inline-flex items-center gap-1.5 text-xs text-(--muted-foreground)"
+              title="Connexion temps réel (SSE)"
+            >
+              <span
+                class="h-2 w-2 rounded-full"
+                [class.bg-emerald-500]="adminSse.connected()"
+                [class.bg-red-500]="!adminSse.connected()"
+              ></span>
+              Live
+            </span>
             <a
               routerLink="/"
               class="flex items-center gap-1 text-xs text-(--muted-foreground) hover:text-(--foreground)"
@@ -174,9 +216,10 @@ import { ThemeService } from '../../core/services/theme.service';
     </div>
   `,
 })
-export class AdminLayoutComponent {
+export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
+  readonly adminSse = inject(AdminSseService);
   private readonly router = inject(Router);
 
   readonly DashboardIcon = LayoutDashboard;
@@ -190,11 +233,20 @@ export class AdminLayoutComponent {
   readonly MoonIcon = Moon;
   readonly SunIcon = Sun;
 
+  ngOnInit(): void {
+    this.adminSse.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.adminSse.disconnect();
+  }
+
   toggleTheme(): void {
     this.themeService.toggle();
   }
 
   onLogout(): void {
+    this.adminSse.disconnect();
     this.authService.logout();
     this.router.navigate(['/']);
   }

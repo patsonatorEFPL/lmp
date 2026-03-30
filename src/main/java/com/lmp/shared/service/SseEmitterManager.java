@@ -80,10 +80,7 @@ public class SseEmitterManager {
 
         adminEmitters.add(emitter);
 
-        Runnable cleanup = () -> {
-            adminEmitters.remove(emitter);
-            logger.debug("Admin SSE emitter removed (remaining: {})", adminEmitters.size());
-        };
+        Runnable cleanup = () -> removeAdminEmitter(emitter);
         emitter.onCompletion(cleanup);
         emitter.onTimeout(cleanup);
         emitter.onError(e -> {
@@ -137,9 +134,14 @@ public class SseEmitterManager {
                 emitter.send(event);
             } catch (IOException | IllegalStateException e) {
                 logger.debug("Failed to send SSE to admin: {}", e.getMessage());
-                adminEmitters.remove(emitter);
+                removeAdminEmitter(emitter);
             }
         }
+    }
+
+    private void removeAdminEmitter(SseEmitter emitter) {
+        adminEmitters.remove(emitter);
+        logger.debug("Admin SSE emitter removed (remaining: {})", adminEmitters.size());
     }
 
     private void removeEmitter(String userId, SseEmitter emitter) {
@@ -172,7 +174,7 @@ public class SseEmitterManager {
             try {
                 emitter.send(SseEmitter.event().comment("heartbeat"));
             } catch (IOException | IllegalStateException e) {
-                adminEmitters.remove(emitter);
+                removeAdminEmitter(emitter);
             }
         }
     }

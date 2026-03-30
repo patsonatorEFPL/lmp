@@ -4,6 +4,7 @@ import com.lmp.notification.dto.ContactForm;
 import com.lmp.notification.service.ContactService;
 import com.lmp.shared.dto.ApiResponse;
 
+import com.lmp.integration.event.BusinessEventPayloadKeys;
 import com.lmp.integration.event.LmpBusinessEvent;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,8 +18,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * API REST pour le formulaire de contact.
@@ -47,13 +48,18 @@ public class ContactRestController {
         boolean success = contactService.processContact(contactForm);
 
         if (success) {
-            // Publier événement pour ERPNext (Lead CRM)
+            // Publier événement pour synchronisation ERP (lead CRM)
+            Map<String, Object> contactPl = new HashMap<>();
+            contactPl.put("name", contactForm.getName());
+            contactPl.put(BusinessEventPayloadKeys.EMAIL, contactForm.getEmail());
+            contactPl.put("subject", contactForm.getSubject());
+            contactPl.put(BusinessEventPayloadKeys.MESSAGE,
+                    "Nouveau message contact — " + contactForm.getEmail());
             eventPublisher.publishEvent(LmpBusinessEvent.of(
                     LmpBusinessEvent.EventType.CONTACT_FORM_SUBMITTED,
                     "notification",
                     null,
-                    Map.of("name", contactForm.getName(), "email", contactForm.getEmail(), "subject", contactForm.getSubject())
-            ));
+                    contactPl));
             return ResponseEntity.ok(ApiResponse.ok("Message envoyé avec succès", null));
         } else {
             return ResponseEntity.internalServerError()

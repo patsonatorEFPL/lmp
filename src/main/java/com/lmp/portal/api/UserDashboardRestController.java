@@ -16,8 +16,10 @@ import com.lmp.portal.dto.DashboardStatsResponse.RecentOrderDto;
 import com.lmp.portal.dto.DashboardStatsResponse.RecentReviewDto;
 import com.lmp.portal.dto.DashboardStatsResponse.UpcomingAppointmentDto;
 import com.lmp.portal.dto.UpdateProfileRequest;
+import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.shared.dto.ApiResponse;
-import com.lmp.shared.service.SseNotificationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +28,7 @@ import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -36,8 +39,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -57,18 +63,18 @@ public class UserDashboardRestController {
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
     private final AppointmentRepository appointmentRepository;
-    private final SseNotificationService sseNotificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserDashboardRestController(UserService userService,
                                         OrderRepository orderRepository,
                                         ReviewRepository reviewRepository,
                                         AppointmentRepository appointmentRepository,
-                                        SseNotificationService sseNotificationService) {
+                                        ApplicationEventPublisher eventPublisher) {
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.reviewRepository = reviewRepository;
         this.appointmentRepository = appointmentRepository;
-        this.sseNotificationService = sseNotificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     @GetMapping("/stats")
@@ -167,6 +173,13 @@ public class UserDashboardRestController {
         User saved = userService.save(user);
         logger.info("Profile updated for user: {}", saved.getEmail());
 
+        Map<String, Object> profilePl = new HashMap<>();
+        profilePl.put(BusinessEventPayloadKeys.EMAIL, saved.getEmail());
+        profilePl.put("displayName", saved.getDisplayName() != null ? saved.getDisplayName() : saved.getEmail());
+        profilePl.put(BusinessEventPayloadKeys.MESSAGE,
+                "Profil mis à jour : " + saved.getEmail());
+        eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_UPDATED, "portal", saved.getId(), profilePl));
+
         // Reload with roles for response
         User withRoles = userService.findByEmailWithRoles(saved.getEmail()).orElse(saved);
         return ResponseEntity.ok(ApiResponse.ok("Profile updated successfully", UserResponse.from(withRoles)));
@@ -212,11 +225,16 @@ public class UserDashboardRestController {
         }
 
         try {
-            sseNotificationService.notifyUserNewPendingOrder(
-                    user.getId().toString(),
-                    "test-" + System.currentTimeMillis(),
-                    "Test Notification Service",
-                    99.99);
+            UUID testOrderId = UUID.randomUUID();
+            Map<String, Object> pl = new HashMap<>();
+            pl.put(BusinessEventPayloadKeys.PENDING_PAYMENT_NOTIFY, Boolean.TRUE);
+            pl.put(BusinessEventPayloadKeys.USER_ID, user.getId().toString());
+            pl.put(BusinessEventPayloadKeys.ORDER_ID, testOrderId.toString());
+            pl.put(BusinessEventPayloadKeys.SERVICE_NAME, "Test Notification Service");
+            pl.put(BusinessEventPayloadKeys.AMOUNT, 99.99);
+            pl.put(BusinessEventPayloadKeys.CUSTOMER_EMAIL, user.getEmail());
+            pl.put(BusinessEventPayloadKeys.MESSAGE, "Nouvelle commande — " + user.getEmail());
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.ORDER_CREATED, "portal", testOrderId, pl));
             logger.info("Test SSE notification sent to user: {}", user.getEmail());
             return ResponseEntity.ok(ApiResponse.ok("Notification SSE envoyée", "OK"));
         } catch (Exception e) {

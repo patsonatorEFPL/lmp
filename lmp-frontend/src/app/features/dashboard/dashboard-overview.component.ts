@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe, CurrencyPipe, NgClass } from '@angular/common';
 import {
@@ -23,6 +23,7 @@ import {
   DashboardService,
   DashboardStats,
 } from '../../core/services/dashboard.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'lmp-dashboard-overview',
@@ -286,6 +287,17 @@ import {
 export class DashboardOverviewComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
+  private readonly notificationService = inject(NotificationService);
+
+  constructor() {
+    effect(() => {
+      const orders = this.notificationService.liveOrderHint();
+      const appts = this.notificationService.liveAppointmentHint();
+      if (orders > 0 || appts > 0) {
+        untracked(() => this.loadStats());
+      }
+    });
+  }
 
   readonly stats = signal<DashboardStats | null>(null);
   readonly loading = signal(true);

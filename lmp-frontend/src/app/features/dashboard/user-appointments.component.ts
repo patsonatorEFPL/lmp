@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import {
   LucideAngularModule,
@@ -14,6 +14,7 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/services/notification.service';
 
 interface Appointment {
   id: string;
@@ -147,6 +148,16 @@ interface ApiResponse<T> {
 })
 export class UserAppointmentsComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly notificationService = inject(NotificationService);
+
+  constructor() {
+    effect(() => {
+      const hint = this.notificationService.liveAppointmentHint();
+      if (hint > 0) {
+        untracked(() => this.loadAppointments());
+      }
+    });
+  }
 
   readonly loading = signal(true);
   readonly appointments = signal<Appointment[]>([]);

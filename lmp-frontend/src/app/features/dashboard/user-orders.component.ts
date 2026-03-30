@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, effect, untracked } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe, CurrencyPipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NotificationService } from '../../core/services/notification.service';
 import {
   LucideAngularModule,
   ShoppingCart,
@@ -386,6 +387,18 @@ const ORDER_STEPS = [
 export class UserOrdersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly notificationService = inject(NotificationService);
+
+  constructor() {
+    // Auto-reload orders when a new order-related SSE notification arrives
+    effect(() => {
+      const hint = this.notificationService.liveOrderHint();
+      // Only reload when hint changes after initial load (hint > 0)
+      if (hint > 0) {
+        untracked(() => this.loadOrders());
+      }
+    });
+  }
 
   readonly loading = signal(true);
   readonly allOrders = signal<OrderItem[]>([]);

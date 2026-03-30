@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { isPlatformBrowser, NgClass } from '@angular/common';
+import { Component, inject, OnInit, PLATFORM_ID, signal, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgClass } from '@angular/common';
 import {
   LucideAngularModule,
   Users,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/services/admin.service';
+import { AdminSseService } from '../../core/services/admin-sse.service';
 
 @Component({
   selector: 'lmp-admin-dashboard',
@@ -282,6 +283,21 @@ import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/serv
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly adminSse = inject(AdminSseService);
+  private readonly platformId = inject(PLATFORM_ID);
+
+  constructor() {
+    effect(() => {
+      const orders = this.adminSse.badgeOrders();
+      const users = this.adminSse.badgeUsers();
+      const appts = this.adminSse.badgeAppointments();
+      if (orders > 0 || users > 0 || appts > 0) {
+        if (isPlatformBrowser(this.platformId)) {
+          untracked(() => this.loadStats());
+        }
+      }
+    });
+  }
 
   readonly stats = signal<AdminDashboardStats | null>(null);
   readonly catalogStats = signal<CatalogStats | null>(null);
@@ -297,7 +313,11 @@ export class AdminDashboardComponent implements OnInit {
   readonly ArrowRightIcon = ArrowRight;
 
   ngOnInit(): void {
-    this.loadStats();
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadStats();
+    } else {
+      this.loading.set(false);
+    }
   }
 
   loadStats(): void {
@@ -311,6 +331,9 @@ export class AdminDashboardComponent implements OnInit {
     });
     this.adminService.getCatalogStats().subscribe({
       next: (data) => this.catalogStats.set(data),
+      error: () => {
+        /* évite une erreur RxJS non gérée (ex. 401) */
+      },
     });
   }
 }
