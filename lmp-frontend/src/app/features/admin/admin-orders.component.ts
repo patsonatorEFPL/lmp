@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { NgClass, DatePipe, CurrencyPipe, SlicePipe } from '@angular/common';
 import {
   LucideAngularModule,
@@ -28,6 +28,7 @@ import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { AdminSseService } from '../../core/services/admin-sse.service';
 
 interface OrderItem {
   id: string;
@@ -665,6 +666,16 @@ const ORDER_STEPS = [
 })
 export class AdminOrdersComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly adminSse = inject(AdminSseService);
+
+  constructor() {
+    effect(() => {
+      const badge = this.adminSse.badgeOrders();
+      if (badge > 0) {
+        untracked(() => this.loadOrders());
+      }
+    });
+  }
 
   readonly RefreshCwIcon = RefreshCw;
   readonly ChevronLeftIcon = ChevronLeft;

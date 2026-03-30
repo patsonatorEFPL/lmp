@@ -84,6 +84,18 @@ interface ToastWithProgress extends AppNotification {
                   [size]="18"
                 ></lucide-icon>
               }
+              @case ('PAYMENT_ERROR') {
+                <lucide-icon
+                  [img]="AlertCircleIcon"
+                  [size]="18"
+                ></lucide-icon>
+              }
+              @case ('INVOICE_READY') {
+                <lucide-icon
+                  [img]="CheckCircleIcon"
+                  [size]="18"
+                ></lucide-icon>
+              }
               @default {
                 <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
               }
@@ -411,7 +423,14 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
         return '🔄 Statut mis à jour';
       case 'REFUND':
         return '↩️ Remboursement';
+      case 'PAYMENT_ERROR':
+        return '⚠️ Paiement refusé';
+      case 'INVOICE_READY':
+        return '📄 Facture disponible';
       default:
+        if (type.startsWith('APPOINTMENT_')) {
+          return '📅 Rendez-vous';
+        }
         return '🔔 Notification';
     }
   }

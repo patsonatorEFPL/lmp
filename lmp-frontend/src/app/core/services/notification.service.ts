@@ -20,6 +20,8 @@ export interface AppNotification {
   amount?: number;
   timestamp: string;
   read: boolean;
+  /** Id métier pour dédoublonnage (égal à {@code eventId} SSE si fourni). */
+  eventId?: string;
 }
 
 interface ApiResponse<T> {
@@ -51,6 +53,10 @@ export class NotificationService implements OnDestroy {
   readonly connected = signal(false);
   /** Whether initial load from API is done */
   readonly loaded = signal(false);
+  /** Activité récente liée aux commandes (pour badge menu). */
+  readonly liveOrderHint = signal(0);
+  /** Activité récente liée aux RDV (pour badge menu). */
+  readonly liveAppointmentHint = signal(0);
 
   private readonly apiUrl = `${environment.apiUrl}/api/v1/notifications`;
   private readonly sseUrl = `${environment.apiUrl}/api/v1/sse/notifications`;
@@ -156,6 +162,8 @@ export class NotificationService implements OnDestroy {
     this.notifications.set([]);
     this.unreadCount.set(0);
     this.loaded.set(false);
+    this.liveOrderHint.set(0);
+    this.liveAppointmentHint.set(0);
   }
 
   /**
@@ -308,9 +316,13 @@ export class NotificationService implements OnDestroy {
     try {
       const payload = JSON.parse(data);
 
+      const evName = typeof payload.event === 'string' ? payload.event : '';
+
+      const eventId =
+        typeof payload.eventId === 'string' ? payload.eventId : undefined;
       const notification: AppNotification = {
         // Use persisted ID from backend if available, otherwise generate one
-        id: payload.id || crypto.randomUUID(),
+        id: payload.id || eventId || crypto.randomUUID(),
         type: payload.type || 'INFO',
         message: payload.message || 'Nouvelle notification',
         orderId: payload.orderId,
@@ -318,11 +330,24 @@ export class NotificationService implements OnDestroy {
         amount: payload.amount,
         timestamp: payload.timestamp || new Date().toISOString(),
         read: false,
+        eventId,
       };
 
-      // Avoid duplicates (check if this ID already exists from initial load)
+      // Hints drive list reload (user orders / RDV). Must run even when we skip
+      // adding a duplicate (same persisted id as REST already loaded).
+      if (evName.startsWith('order:')) {
+        this.liveOrderHint.update((n) => n + 1);
+      }
+      if (evName.startsWith('appointment:')) {
+        this.liveAppointmentHint.update((n) => n + 1);
+      }
+
+      // Avoid duplicates (DB id or event bus id)
       const existing = this.notifications().find(
-        (n) => n.id === notification.id,
+        (n) =>
+          n.id === notification.id ||
+          (eventId != null && n.eventId === eventId) ||
+          (eventId != null && n.id === eventId),
       );
       if (existing) return;
 

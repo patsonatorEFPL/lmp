@@ -23,6 +23,7 @@ import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.RefundRepository;
 import com.lmp.billing.dto.admin.RefundDto;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.notification.service.NotificationService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -43,13 +44,17 @@ public class RefundService {
 
         private final NotificationService notificationService;
 
+        private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+
 
     public RefundService(RefundRepository refundRepository,
                            OrderRepository orderRepository,
-                           NotificationService notificationService) {
+                           NotificationService notificationService,
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.refundRepository = refundRepository;
         this.orderRepository = orderRepository;
         this.notificationService = notificationService;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     /**
@@ -86,9 +91,11 @@ public class RefundService {
         refund = refundRepository.save(refund);
 
         // Mise à jour du statut de la commande si remboursement complet
+        OrderStatus statusBeforeRefund = order.getStatus();
         if (amount.compareTo(order.getTotalAmount()) >= 0) {
             order.setStatus(OrderStatus.REFUNDED);
             orderRepository.save(order);
+            orderRealtimeEventPublisher.publishOrderUpdated(order, statusBeforeRefund, OrderStatus.REFUNDED);
         }
 
         // Notification client

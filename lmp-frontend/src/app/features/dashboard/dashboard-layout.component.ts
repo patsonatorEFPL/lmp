@@ -52,10 +52,23 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
               [routerLink]="item.route"
               routerLinkActive="bg-(--primary)/10 text-(--primary)"
               [routerLinkActiveOptions]="{ exact: item.exact }"
-              class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              (click)="onSidebarNav(item.route)"
+              class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
             >
               <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
               {{ item.label }}
+              @if (item.route === '/dashboard/orders' && notificationService.liveOrderHint() > 0) {
+                <span
+                  class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                  >{{ notificationService.liveOrderHint() > 9 ? '9+' : notificationService.liveOrderHint() }}</span
+                >
+              }
+              @if (item.route === '/dashboard/appointments' && notificationService.liveAppointmentHint() > 0) {
+                <span
+                  class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                  >{{ notificationService.liveAppointmentHint() > 9 ? '9+' : notificationService.liveAppointmentHint() }}</span
+                >
+              }
             </a>
           }
         </nav>
@@ -114,11 +127,23 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
                 [routerLink]="item.route"
                 routerLinkActive="bg-(--primary)/10 text-(--primary)"
                 [routerLinkActiveOptions]="{ exact: item.exact }"
-                class="flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
-                (click)="mobileMenuOpen.set(false)"
+                class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+                (click)="mobileMenuOpen.set(false); onSidebarNav(item.route)"
               >
                 <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
                 {{ item.label }}
+                @if (item.route === '/dashboard/orders' && notificationService.liveOrderHint() > 0) {
+                  <span
+                    class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                    >{{ notificationService.liveOrderHint() > 9 ? '9+' : notificationService.liveOrderHint() }}</span
+                  >
+                }
+                @if (item.route === '/dashboard/appointments' && notificationService.liveAppointmentHint() > 0) {
+                  <span
+                    class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                    >{{ notificationService.liveAppointmentHint() > 9 ? '9+' : notificationService.liveAppointmentHint() }}</span
+                  >
+                }
               </a>
             }
           </nav>
@@ -143,6 +168,16 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
               </button>
 
               <span class="text-sm font-semibold text-(--foreground)">Dashboard</span>
+              <span
+                class="inline-flex items-center gap-1 text-[10px] text-(--muted-foreground)"
+                title="Connexion notifications (SSE)"
+              >
+                <span
+                  class="h-1.5 w-1.5 rounded-full"
+                  [class.bg-emerald-500]="notificationService.connected()"
+                  [class.bg-red-500]="!notificationService.connected()"
+                ></span>
+              </span>
               @if (authService.isAdmin()) {
                 <a
                   routerLink="/admin"
@@ -232,6 +267,15 @@ export class DashboardLayoutComponent {
 
   toggleNotificationPanel(): void {
     this.showNotificationPanel.update((v) => !v);
+  }
+
+  onSidebarNav(route: string): void {
+    if (route === '/dashboard/orders') {
+      this.notificationService.liveOrderHint.set(0);
+    }
+    if (route === '/dashboard/appointments') {
+      this.notificationService.liveAppointmentHint.set(0);
+    }
   }
 
   onLogout(): void {

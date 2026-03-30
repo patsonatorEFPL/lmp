@@ -3,7 +3,9 @@ package com.lmp.billing.service.admin;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -13,9 +15,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.domain.Order;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
@@ -26,7 +33,6 @@ import com.lmp.billing.dto.admin.OrderSearchDto;
 import com.lmp.billing.dto.admin.OrderActionDto;
 import com.lmp.billing.dto.admin.OrderReportDto;
 import com.lmp.notification.service.NotificationService;
-import com.lmp.shared.service.SseNotificationService;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 
@@ -52,7 +58,9 @@ public class OrderAdminService {
 
         private final ReportsService reportsService;
 
-        private final SseNotificationService sseNotificationService;
+        private final ApplicationEventPublisher eventPublisher;
+
+        private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
 
     public OrderAdminService(OrderRepository orderRepository,
@@ -61,14 +69,16 @@ public class OrderAdminService {
                            NotificationService notificationService,
                            RefundService refundService,
                            ReportsService reportsService,
-                           SseNotificationService sseNotificationService) {
+                           ApplicationEventPublisher eventPublisher,
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderStatusHistoryService = orderStatusHistoryService;
         this.notificationService = notificationService;
         this.refundService = refundService;
         this.reportsService = reportsService;
-        this.sseNotificationService = sseNotificationService;
+        this.eventPublisher = eventPublisher;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     // ========== CRUD et Recherche ==========
@@ -190,10 +200,8 @@ public class OrderAdminService {
         // Notification automatique du client
         notificationService.sendOrderStatusNotification(order, oldStatus, newStatus);
 
-        // Notification SSE temps réel pour les admins
         OrderDto orderDto = convertToDto(order);
-        sseNotificationService.notifyOrderStatusChanged(orderDto, oldStatus.toString(), newStatus.toString());
-        sseNotificationService.notifyDashboardUpdate();
+        publishOrderUpdated(order, orderDto, oldStatus.toString(), newStatus.toString());
 
         logger.info("Statut commande {} changé: {} -> {}", orderId, oldStatus, newStatus);
         return orderDto;
@@ -240,10 +248,8 @@ public class OrderAdminService {
             "Annulation admin: " + reason);
         notificationService.sendOrderCancellationNotification(order, reason);
 
-        // Notification SSE temps réel pour les admins
         OrderDto orderDto = convertToDto(order);
-        sseNotificationService.notifyOrderStatusChanged(orderDto, oldStatus.toString(), order.getStatus().toString());
-        sseNotificationService.notifyDashboardUpdate();
+        publishOrderUpdated(order, orderDto, oldStatus.toString(), order.getStatus().toString());
 
         return orderDto;
     }
@@ -309,6 +315,7 @@ public class OrderAdminService {
         }
 
         try {
+            OrderStatus statusBeforeSync = order.getStatus();
             // Récupération des informations Stripe
             PaymentIntent paymentIntent = PaymentIntent.retrieve(order.getStripePaymentIntentId());
             
@@ -325,6 +332,11 @@ public class OrderAdminService {
             }
 
             order = orderRepository.save(order);
+
+            if (statusBeforeSync != order.getStatus()) {
+                orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, statusBeforeSync,
+                        order.getStatus());
+            }
             
             logger.info("Synchronisation Stripe réussie: {} -> {}", 
                 oldPaymentStatus, order.getPaymentStatus());
@@ -503,6 +515,29 @@ public class OrderAdminService {
                 // Géré par le RefundService
                 break;
         }
+    }
+
+    private void publishOrderUpdated(Order order, OrderDto dto, String oldStatus, String newStatus) {
+        Map<String, Object> pl = new HashMap<>();
+        pl.put(BusinessEventPayloadKeys.ORDER_ID, order.getId().toString());
+        if (order.getUser() != null) {
+            pl.put(BusinessEventPayloadKeys.USER_ID, order.getUser().getId().toString());
+        }
+        pl.put(BusinessEventPayloadKeys.CUSTOMER_NAME, dto.getCustomerName());
+        pl.put(BusinessEventPayloadKeys.SERVICE_NAME, dto.getServiceName());
+        if (dto.getAmount() != null) {
+            pl.put(BusinessEventPayloadKeys.AMOUNT, dto.getAmount().doubleValue());
+        }
+        pl.put(BusinessEventPayloadKeys.OLD_STATUS, oldStatus);
+        pl.put(BusinessEventPayloadKeys.NEW_STATUS, newStatus);
+        String line = String.format("Commande %s : %s → %s", order.getId(), oldStatus, newStatus);
+        pl.put(BusinessEventPayloadKeys.MESSAGE, line);
+        pl.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, line);
+        if (order.getUser() != null) {
+            pl.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+            pl.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "STATUS_CHANGED");
+        }
+        eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.ORDER_UPDATED, "billing", order.getId(), pl));
     }
 
     private OrderDto convertToDto(Order order) {

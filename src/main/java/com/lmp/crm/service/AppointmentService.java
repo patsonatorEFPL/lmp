@@ -4,8 +4,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -16,9 +19,13 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.notification.config.MailAddressConfig;
 import com.lmp.crm.dto.AppointmentForm;
 import com.lmp.crm.dto.AppointmentRequest;
@@ -31,8 +38,6 @@ import com.lmp.shared.util.DateUtils;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.Map;
 
 /**
  * Service pour la gestion des rendez-vous.
@@ -58,6 +63,8 @@ public class AppointmentService {
         private final JavaMailSender mailSender;
     
         private final MailAddressConfig mailAddressConfig;
+
+        private final ApplicationEventPublisher eventPublisher;
     
     // Cache simple pour les créneaux (clé = date, valeur = créneaux disponibles)
     private final Map<String, CachedSlots> slotsCache = new ConcurrentHashMap<>();
@@ -127,6 +134,7 @@ public class AppointmentService {
         }
 
             logger.info("Emails de confirmation envoyés pour le rendez-vous ID: {}", appointment.getId());
+        publishAppointmentEvent(EventType.APPOINTMENT_CREATED, appointment);
         return appointment;
     }
 
@@ -169,6 +177,7 @@ public class AppointmentService {
         }
 
         logger.info("Rendez-vous confirmé - ID: {}", appointmentId);
+        publishAppointmentEvent(EventType.APPOINTMENT_CONFIRMED, appointment);
         return appointment;
     }
 
@@ -211,6 +220,7 @@ public class AppointmentService {
         }
 
         logger.info("Rendez-vous annulé - ID: {}", appointmentId);
+        publishAppointmentEvent(EventType.APPOINTMENT_CANCELLED, appointment);
         return appointment;
     }
     
@@ -257,6 +267,8 @@ public class AppointmentService {
         
         // Invalider le cache pour cette date
         invalidateCacheForDate(appointment.getAppointmentDate().toLocalDate());
+
+        publishAppointmentEvent(EventType.APPOINTMENT_DELETED, appointment);
         
         // Suppression définitive de la base de données
         appointmentRepository.delete(appointment);
@@ -299,6 +311,7 @@ public class AppointmentService {
         sendUpdateEmail(appointment);
 
         logger.info("Rendez-vous mis à jour - ID: {}", appointmentId);
+        publishAppointmentEvent(EventType.APPOINTMENT_UPDATED, appointment);
         return appointment;
     }
 
@@ -597,11 +610,61 @@ public class AppointmentService {
     public AppointmentService(AppointmentRepository appointmentRepository,
                            UserRepository userRepository,
                            JavaMailSender mailSender,
-                           MailAddressConfig mailAddressConfig) {
+                           MailAddressConfig mailAddressConfig,
+                           ApplicationEventPublisher eventPublisher) {
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
         this.mailSender = mailSender;
         this.mailAddressConfig = mailAddressConfig;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private Map<String, Object> appointmentPayload(Appointment a, EventType type) {
+        Map<String, Object> m = new HashMap<>();
+        m.put("appointmentId", a.getId().toString());
+        m.put(BusinessEventPayloadKeys.SUBJECT, a.getSubject());
+        m.put(BusinessEventPayloadKeys.CLIENT_NAME, a.getEffectiveClientName());
+        m.put("clientEmail", a.getEffectiveClientEmail());
+        if (a.getAppointmentDate() != null) {
+            m.put("appointmentDate", a.getAppointmentDate().toString());
+        }
+        if (a.getUser() != null) {
+            m.put(BusinessEventPayloadKeys.USER_ID, a.getUser().getId().toString());
+        }
+        if (a.getStatus() != null) {
+            m.put("status", a.getStatus().name());
+        }
+        m.put(BusinessEventPayloadKeys.MESSAGE, appointmentAdminMessage(type, a));
+        if (appointmentNotifiesUser(type) && a.getUser() != null) {
+            m.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+            m.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "APPOINTMENT_" + type.name());
+            m.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, m.get(BusinessEventPayloadKeys.MESSAGE));
+        }
+        return m;
+    }
+
+    private static boolean appointmentNotifiesUser(EventType type) {
+        return type == EventType.APPOINTMENT_CONFIRMED
+                || type == EventType.APPOINTMENT_CANCELLED
+                || type == EventType.APPOINTMENT_UPDATED
+                || type == EventType.APPOINTMENT_DELETED;
+    }
+
+    private static String appointmentAdminMessage(EventType type, Appointment a) {
+        String subject = a.getSubject() != null ? a.getSubject() : "";
+        String client = a.getEffectiveClientName() != null ? a.getEffectiveClientName() : "";
+        return switch (type) {
+            case APPOINTMENT_CREATED -> "Nouveau RDV : " + client;
+            case APPOINTMENT_CONFIRMED -> "RDV confirmé : " + subject;
+            case APPOINTMENT_CANCELLED -> "RDV annulé : " + subject;
+            case APPOINTMENT_UPDATED -> "RDV modifié : " + subject;
+            case APPOINTMENT_DELETED -> "RDV supprimé : " + subject;
+            default -> "Rendez-vous";
+        };
+    }
+
+    private void publishAppointmentEvent(EventType type, Appointment a) {
+        eventPublisher.publishEvent(LmpBusinessEvent.of(type, "crm", a.getId(), appointmentPayload(a, type)));
     }
 
     /**
@@ -1455,6 +1518,7 @@ public class AppointmentService {
         sendAnonymousTeamNotificationEmail(appointment);
 
         logger.info("Rendez-vous anonyme créé avec succès - ID: {}", appointment.getId());
+        publishAppointmentEvent(EventType.APPOINTMENT_CREATED, appointment);
         return appointment;
     }
     

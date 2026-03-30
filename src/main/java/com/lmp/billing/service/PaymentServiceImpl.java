@@ -13,6 +13,7 @@ import com.lmp.billing.dto.RefundResponseDto;
 import com.lmp.billing.dto.WebhookEventDto;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.exception.PaymentValidationException;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.integration.service.StripeWebhookHandler;
 import com.lmp.shared.exception.ResourceNotFoundException;
 
@@ -45,16 +46,20 @@ public class PaymentServiceImpl implements PaymentService {
         private final OrderRepository orderRepository;
     
         private final StripeWebhookHandler stripeWebhookHandler;
+
+        private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
     
 
     public PaymentServiceImpl(Map<String, PaymentProcessor> paymentProcessors,
                            PaymentTransactionRepository paymentTransactionRepository,
                            OrderRepository orderRepository,
-                           StripeWebhookHandler stripeWebhookHandler) {
+                           StripeWebhookHandler stripeWebhookHandler,
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.paymentProcessors = paymentProcessors;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.orderRepository = orderRepository;
         this.stripeWebhookHandler = stripeWebhookHandler;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     @Override
@@ -404,11 +409,13 @@ public class PaymentServiceImpl implements PaymentService {
      * Met à jour le statut d'une commande
      */
     private void updateOrderStatus(Order order, OrderStatus status) {
-        logger.debug("Updating order {} status from {} to {}", order.getId(), order.getStatus(), status);
+        OrderStatus previous = order.getStatus();
+        logger.debug("Updating order {} status from {} to {}", order.getId(), previous, status);
         order.setStatus(status);
         order.setUpdatedAt(LocalDateTime.now());
         logger.debug("Saving order {} to database with new status: {}", order.getId(), status);
         Order savedOrder = orderRepository.save(order);
+        orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(savedOrder, previous, status);
         logger.debug("Order {} saved successfully with new status: {}", savedOrder.getId(), savedOrder.getStatus());
     }
     
