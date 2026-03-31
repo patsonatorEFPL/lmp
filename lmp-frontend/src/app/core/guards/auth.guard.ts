@@ -10,6 +10,11 @@ import { AuthService } from '../services/auth.service';
 /**
  * Session cookies are not available during SSR. Defer the real check to the
  * browser after hydration / APP_INITIALIZER (checkSession).
+ *
+ * Same pattern as {@link adminGuard}: wait for loading to finish, then read
+ * {@link AuthService#isLoggedIn} synchronously. Do not use combineLatest(loading, user):
+ * combineLatest can emit [false, null] if loading flips false before the user stream
+ * has re-emitted, which wrongly sends users to /login on refresh.
  */
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);

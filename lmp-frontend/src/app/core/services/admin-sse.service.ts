@@ -15,7 +15,7 @@ const MAX_RECONNECT_DELAY = 30000;
 const TOAST_MS = 8000;
 
 /**
- * SSE admin : flux /api/v1/sse/admin/events (événement unifié {@code lmp-admin} + legacy).
+ * SSE admin : flux /api/v1/sse/admin/events (événement unifié {@code lmp-admin}).
  */
 @Injectable({ providedIn: 'root' })
 export class AdminSseService implements OnDestroy {
@@ -77,18 +77,6 @@ export class AdminSseService implements OnDestroy {
 
     this.eventSource.addEventListener('lmp-admin', (e: MessageEvent) => {
       this.handlePayload(this.safeParse(e.data));
-    });
-
-    this.eventSource.addEventListener('admin-order', (e: MessageEvent) => {
-      this.handlePayload(this.safeParse(e.data));
-    });
-
-    this.eventSource.addEventListener('admin-stats', () => {
-      this.connected.set(true);
-    });
-
-    this.eventSource.addEventListener('admin-dashboard', () => {
-      this.connected.set(true);
     });
 
     this.eventSource.onerror = () => {

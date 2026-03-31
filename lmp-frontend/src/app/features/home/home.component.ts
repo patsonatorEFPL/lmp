@@ -47,16 +47,15 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
   template: `
     <!-- ===== HERO SECTION (includes ticker at bottom) ===== -->
     <section
-      class="relative overflow-hidden -mt-14 pt-14 flex flex-col min-h-screen"
+      class="home-hero relative overflow-hidden -mt-14 pt-14 flex flex-col min-h-screen"
     >
-      <!-- Background image with simple dark overlay -->
-      <div class="absolute inset-0">
+      <div class="home-hero-media absolute inset-0">
         <img
           src="/images/hero-bg-office.jpg"
           alt="Modern corporate office"
           class="absolute inset-0 w-full h-full object-cover"
         />
-        <div class="absolute inset-0 bg-black/80"></div>
+        <div class="home-hero-shade absolute inset-0 bg-black/80"></div>
       </div>
 
       <!-- Hero content — grows to fill available space, centered -->

@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
 import { getCurrentUser } from '../../../app/generated/fn/authentication/get-current-user';
 import { logout as logoutFn } from '../../../app/generated/fn/authentication/logout';
@@ -37,14 +37,18 @@ export class AuthService {
    */
   checkSession(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) {
-      this._loading.set(false);
+      // SSR : ne pas passer loading à false sans session — sinon la navbar rend
+      // « Connexion » dans le HTML, puis le client restaure l’utilisateur → flash.
+      // Garder loading à true (état initial) affiche le squelette jusqu’à l’hydratation + /me.
       return Promise.resolve();
     }
 
     this._loading.set(true);
     return new Promise<void>((resolve) => {
       this.http
-        .get<ApiResponseUserResponse>(getCurrentUser.PATH)
+        .get<ApiResponseUserResponse>(getCurrentUser.PATH, {
+          withCredentials: true,
+        })
         .subscribe({
           next: (response) => {
             if (response.success && response.data) {
@@ -55,7 +59,7 @@ export class AuthService {
             this._loading.set(false);
             resolve();
           },
-          error: () => {
+          error: (_err: HttpErrorResponse) => {
             this.currentUser.set(null);
             this._loading.set(false);
             resolve();

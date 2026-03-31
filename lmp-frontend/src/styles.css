@@ -103,6 +103,15 @@
   }
 }
 
+/* Accueil — hero : la colonne z-10 est transparente ; si l’overlay Tailwind n’est pas encore actif, le fond clair transparaît. */
+.home-hero,
+.home-hero .home-hero-media {
+  background-color: rgb(10, 14, 26);
+}
+.home-hero .home-hero-shade {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
 /* === Partner Ticker / Marquee === */
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }
