@@ -227,13 +227,16 @@ public class UserDashboardRestController {
         try {
             UUID testOrderId = UUID.randomUUID();
             Map<String, Object> pl = new HashMap<>();
-            pl.put(BusinessEventPayloadKeys.PENDING_PAYMENT_NOTIFY, Boolean.TRUE);
             pl.put(BusinessEventPayloadKeys.USER_ID, user.getId().toString());
             pl.put(BusinessEventPayloadKeys.ORDER_ID, testOrderId.toString());
             pl.put(BusinessEventPayloadKeys.SERVICE_NAME, "Test Notification Service");
             pl.put(BusinessEventPayloadKeys.AMOUNT, 99.99);
             pl.put(BusinessEventPayloadKeys.CUSTOMER_EMAIL, user.getEmail());
             pl.put(BusinessEventPayloadKeys.MESSAGE, "Nouvelle commande — " + user.getEmail());
+            pl.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+            pl.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "NEW_PENDING_ORDER");
+            pl.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, String.format(
+                    "Nouvelle commande en attente : %s (%.2f€)", "Test Notification Service", 99.99));
             eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.ORDER_CREATED, "portal", testOrderId, pl));
             logger.info("Test SSE notification sent to user: {}", user.getEmail());
             return ResponseEntity.ok(ApiResponse.ok("Notification SSE envoyée", "OK"));

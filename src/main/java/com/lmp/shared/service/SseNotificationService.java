@@ -14,7 +14,6 @@ import com.lmp.integration.event.BusinessEventPayloadKeys;
 import com.lmp.integration.event.BusinessEventSseDispatchPolicy;
 import com.lmp.integration.event.BusinessEventSseNames;
 import com.lmp.integration.event.LmpBusinessEvent;
-import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.notification.domain.InAppNotification;
 import com.lmp.notification.service.InAppNotificationService;
 
@@ -60,27 +59,7 @@ public class SseNotificationService {
             notifyDashboardUpdate();
         }
 
-        if (e.type() == EventType.ORDER_CREATED) {
-            maybeNotifyPendingOrderCreated(payload);
-        }
-
         maybeNotifyUserFromPayload(payload);
-    }
-
-    private void maybeNotifyPendingOrderCreated(Map<String, Object> payload) {
-        Object flag = payload.get(BusinessEventPayloadKeys.PENDING_PAYMENT_NOTIFY);
-        if (!Boolean.TRUE.equals(flag)) {
-            return;
-        }
-        Object uid = payload.get(BusinessEventPayloadKeys.USER_ID);
-        Object oid = payload.get(BusinessEventPayloadKeys.ORDER_ID);
-        if (uid == null || oid == null) {
-            return;
-        }
-        String serviceName = Objects.toString(payload.get(BusinessEventPayloadKeys.SERVICE_NAME), "");
-        double amount = toDouble(payload.get(BusinessEventPayloadKeys.AMOUNT));
-        notifyUserNewPendingOrder(uid.toString(), oid.toString(), serviceName, amount,
-                Objects.toString(payload.get("eventId"), null));
     }
 
     private void maybeNotifyUserFromPayload(Map<String, Object> payload) {
@@ -134,52 +113,6 @@ public class SseNotificationService {
         if (amount != null) {
             notification.put("amount", amount);
         }
-        if (persistedId != null) {
-            notification.put("id", persistedId);
-        }
-
-        emitterManager.sendToUser(userId, "notification", notification);
-    }
-
-    private static double toDouble(Object v) {
-        if (v instanceof Number n) {
-            return n.doubleValue();
-        }
-        if (v != null) {
-            try {
-                return Double.parseDouble(v.toString());
-            } catch (NumberFormatException ignored) {
-                return 0d;
-            }
-        }
-        return 0d;
-    }
-
-    public void notifyUserNewPendingOrder(String userId, String orderId, String serviceName, Double amount,
-                                          String businessEventId) {
-        String type = "NEW_PENDING_ORDER";
-        String message = String.format("Nouvelle commande en attente : %s (%.2f€)", serviceName, amount);
-
-        String persistedId = null;
-        try {
-            InAppNotification persisted = inAppNotificationService.createNotification(
-                    userId, type, message, orderId, serviceName, amount);
-            persistedId = persisted.getId().toString();
-        } catch (Exception e) {
-            logger.error("Failed to persist in-app notification for user {}: {}", userId, e.getMessage());
-        }
-
-        Map<String, Object> notification = new HashMap<>();
-        notification.put("type", type);
-        notification.put("orderId", orderId);
-        notification.put("serviceName", serviceName);
-        notification.put("amount", amount);
-        notification.put("timestamp", java.time.Instant.now().toString());
-        notification.put("message", message);
-        notification.put("event", "order:created");
-        notification.put("eventId", businessEventId != null && !businessEventId.isEmpty()
-                ? businessEventId
-                : java.util.UUID.randomUUID().toString());
         if (persistedId != null) {
             notification.put("id", persistedId);
         }

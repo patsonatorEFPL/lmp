@@ -111,6 +111,11 @@ public class SseEmitterManager {
                 emitter.send(event);
             } catch (IOException | IllegalStateException e) {
                 logger.debug("Failed to send SSE to user {}: {}", userId, e.getMessage());
+                safeComplete(emitter);
+                removeEmitter(userId, emitter);
+            } catch (Exception e) {
+                logger.debug("Failed to send SSE to user {}: {}", userId, e.getMessage());
+                safeComplete(emitter);
                 removeEmitter(userId, emitter);
             }
         }
@@ -134,6 +139,11 @@ public class SseEmitterManager {
                 emitter.send(event);
             } catch (IOException | IllegalStateException e) {
                 logger.debug("Failed to send SSE to admin: {}", e.getMessage());
+                safeComplete(emitter);
+                removeAdminEmitter(emitter);
+            } catch (Exception e) {
+                logger.debug("Failed to send SSE to admin: {}", e.getMessage());
+                safeComplete(emitter);
                 removeAdminEmitter(emitter);
             }
         }
@@ -164,6 +174,10 @@ public class SseEmitterManager {
                 try {
                     emitter.send(SseEmitter.event().comment("heartbeat"));
                 } catch (IOException | IllegalStateException e) {
+                    safeComplete(emitter);
+                    removeEmitter(entry.getKey(), emitter);
+                } catch (Exception e) {
+                    safeComplete(emitter);
                     removeEmitter(entry.getKey(), emitter);
                 }
             }
@@ -174,8 +188,20 @@ public class SseEmitterManager {
             try {
                 emitter.send(SseEmitter.event().comment("heartbeat"));
             } catch (IOException | IllegalStateException e) {
+                safeComplete(emitter);
+                removeAdminEmitter(emitter);
+            } catch (Exception e) {
+                safeComplete(emitter);
                 removeAdminEmitter(emitter);
             }
+        }
+    }
+
+    private static void safeComplete(SseEmitter emitter) {
+        try {
+            emitter.complete();
+        } catch (Exception ignored) {
+            // already completed or broken
         }
     }
 

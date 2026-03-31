@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { HomeComponent } from './features/home/home.component';
 import { PublicLayoutComponent } from './shared/layout/public-layout.component';
 import { authGuard, adminGuard } from './core/guards';
 
@@ -10,8 +11,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () =>
-          import('./features/home/home.component').then((m) => m.HomeComponent),
+        // Eager : évite la course au refresh entre bundle initial et chunk lazy (flash intermittent).
+        component: HomeComponent,
       },
       {
         path: 'services',

@@ -466,7 +466,6 @@ public class AdminRestController {
 
             try {
                 Map<String, Object> pl = new HashMap<>();
-                pl.put(BusinessEventPayloadKeys.PENDING_PAYMENT_NOTIFY, Boolean.TRUE);
                 pl.put(BusinessEventPayloadKeys.USER_ID, user.getId().toString());
                 pl.put(BusinessEventPayloadKeys.ORDER_ID, order.getId().toString());
                 pl.put(BusinessEventPayloadKeys.SERVICE_NAME, serviceName);
@@ -476,6 +475,11 @@ public class AdminRestController {
                         user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
                 String who = user.getDisplayName() != null ? user.getDisplayName() : user.getEmail();
                 pl.put(BusinessEventPayloadKeys.MESSAGE, "Nouvelle commande — " + who);
+                pl.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+                pl.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "NEW_PENDING_ORDER");
+                pl.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE, String.format(
+                        "Nouvelle commande en attente : %s (%.2f€)",
+                        serviceName != null ? serviceName : "", amount));
                 eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.ORDER_CREATED, "admin", order.getId(), pl));
             } catch (Exception ignored) {
                 // Non-blocking

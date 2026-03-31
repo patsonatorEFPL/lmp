@@ -11,6 +11,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.servlet.http.HttpServletResponse;
+
 /**
  * Gestionnaire d'exceptions REST pour les endpoints /api/**.
  * Retourne toujours du JSON (ApiResponse) au lieu des templates Thymeleaf.
@@ -46,7 +48,11 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException ex, HttpServletResponse response) {
+        if (response.isCommitted()) {
+            logger.debug("RuntimeException on committed response (e.g. SSE stream): {}", ex.toString());
+            return null;
+        }
         if (ex.getMessage() != null && ex.getMessage().contains("non trouvé")) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(ex.getMessage()));
@@ -57,14 +63,22 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNullPointer(NullPointerException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleNullPointer(NullPointerException ex, HttpServletResponse response) {
+        if (response.isCommitted()) {
+            logger.debug("NullPointerException on committed response (e.g. SSE): {}", ex.toString());
+            return null;
+        }
         logger.error("NullPointerException in API: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Erreur de configuration interne"));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex) {
+    public ResponseEntity<ApiResponse<Void>> handleGeneral(Exception ex, HttpServletResponse response) {
+        if (response.isCommitted()) {
+            logger.debug("Unhandled exception on committed response (e.g. SSE client closed): {}", ex.toString());
+            return null;
+        }
         logger.error("Unhandled API exception: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Une erreur inattendue s'est produite"));

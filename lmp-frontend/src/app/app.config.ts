@@ -11,11 +11,7 @@ import {
   withComponentInputBinding,
   withInMemoryScrolling,
 } from '@angular/router';
-import {
-  provideHttpClient,
-  withInterceptors,
-  withFetch,
-} from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { credentialsInterceptor, csrfInterceptor, errorInterceptor } from './core/interceptors';
@@ -44,7 +40,6 @@ export const appConfig: ApplicationConfig = {
       }),
     ),
     provideHttpClient(
-      withFetch(),
       withInterceptors([credentialsInterceptor, csrfInterceptor, errorInterceptor]),
     ),
     {
