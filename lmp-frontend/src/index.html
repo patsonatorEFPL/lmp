@@ -176,6 +176,23 @@
         } catch(e) {}
       })();
     </script>
+    <!-- Navbar auth slot : évite flash blanc (squelette --muted clair ou lien sans variables CSS) avant le bundle -->
+    <style>
+      html.dark lmp-navbar .lmp-nav-auth-placeholder {
+        background-color: rgba(255, 255, 255, 0.14) !important;
+      }
+      html:not(.dark) lmp-navbar .lmp-nav-auth-placeholder {
+        background-color: rgba(0, 0, 0, 0.08) !important;
+      }
+      html.dark lmp-navbar a.lmp-nav-auth-login {
+        color: rgba(255, 255, 255, 0.85);
+        background-color: transparent;
+      }
+      html:not(.dark) lmp-navbar a.lmp-nav-auth-login {
+        color: rgba(64, 64, 64, 0.92);
+        background-color: transparent;
+      }
+    </style>
   </head>
   <body class="min-h-screen bg-(--background) text-(--foreground) antialiased">
     <lmp-root></lmp-root>

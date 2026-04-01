@@ -29,6 +29,10 @@ yarn-error.log
 !.vscode/mcp.json
 .history/*
 
+# dev-browser (https://github.com/SawyerHood/dev-browser) — cache, captures, scripts locaux
+.dev-browser/
+tools/dev-browser/
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/

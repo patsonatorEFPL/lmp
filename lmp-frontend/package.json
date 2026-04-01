@@ -11,7 +11,8 @@
     "fetch-spec": "node -e \"const h=require('http');const f=require('fs');h.get('http://localhost:8080/v3/api-docs',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{f.writeFileSync('openapi.json',d);console.log('openapi.json mis à jour');});}).on('error',e=>{console.error('Backend non disponible:',e.message);process.exit(1);});\"",
     "update-api": "npm run fetch-spec && npm run codegen",
     "prebuild": "npm run codegen",
-    "prestart": "npm run codegen"
+    "prestart": "npm run codegen",
+    "dev-browser:install": "npx --yes dev-browser install"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
