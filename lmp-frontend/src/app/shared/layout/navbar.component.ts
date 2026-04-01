@@ -127,7 +127,10 @@ import { HlmButton } from '@spartan-ng/helm/button';
 
           <!-- Connexion Button -->
           @if (authService.loading()) {
-            <div class="w-[90px] h-8 rounded-sm bg-(--muted) animate-pulse"></div>
+            <div
+              class="lmp-nav-auth-placeholder w-[90px] h-8 shrink-0 rounded-sm animate-pulse"
+              aria-hidden="true"
+            ></div>
           } @else if (authService.isAuthenticated()) {
             @if (authService.isAdmin()) {
               <a
@@ -150,7 +153,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
           } @else {
             <a
               routerLink="/login"
-              class="px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
+              class="lmp-nav-auth-login px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
             >
               Connexion
             </a>
@@ -215,11 +218,14 @@ import { HlmButton } from '@spartan-ng/helm/button';
             </div>
 
             @if (authService.loading()) {
-              <div class="w-full h-9 rounded-sm bg-(--muted) animate-pulse"></div>
+              <div
+                class="lmp-nav-auth-placeholder w-full h-9 shrink-0 rounded-sm animate-pulse"
+                aria-hidden="true"
+              ></div>
             } @else if (!authService.isAuthenticated()) {
               <a
                 routerLink="/login"
-                class="w-full px-3 py-2 text-center text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
+                class="lmp-nav-auth-login w-full px-3 py-2 text-center text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
                 (click)="mobileMenuOpen.set(false)"
               >
                 Connexion
