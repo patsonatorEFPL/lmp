@@ -595,13 +595,13 @@ const ORDER_STEPS = [
             } @else {
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
-                Email du client (référence, optionnel)
+                Email du client (optionnel — envoi du lien)
               </label>
               <input
                 [(ngModel)]="newOrderForm.guestEmail"
                 type="email"
                 class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
-                placeholder="Pour vos notes — le client s’inscrira avec l’email de son choix"
+                placeholder="Si renseigné, un e-mail avec le lien de paiement est envoyé ici"
               />
             </div>
             }
@@ -1039,7 +1039,13 @@ export class AdminOrdersComponent implements OnInit {
             const link = (res.data as any)?.paymentLink as string | undefined;
             if (res.success && link) {
               this.guestPaymentLink.set(link);
-              this.showToast('success', 'Commande invité créée — copiez le lien pour le client.');
+              const data = res.data as {
+                guestEmailSendFailed?: boolean;
+                guestEmailInvalid?: boolean;
+              } | undefined;
+              const variant =
+                data?.guestEmailSendFailed || data?.guestEmailInvalid ? 'error' : 'success';
+              this.showToast(variant, res.message || 'Commande invité créée.');
               this.loadOrders();
             } else {
               this.showToast('error', res.message || 'Erreur lors de la création');

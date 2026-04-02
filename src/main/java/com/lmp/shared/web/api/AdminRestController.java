@@ -24,6 +24,8 @@ import com.lmp.shared.dto.ApiResponse;
 
 import com.lmp.notification.service.EmailService;
 import com.stripe.Stripe;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import com.stripe.model.PaymentIntent;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,7 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -556,6 +561,23 @@ public class AdminRestController {
             String base = frontendUrl != null ? frontendUrl.replaceAll("/$", "") : "http://localhost:4200";
             String paymentLink = base + "/payment/guest?t=" + order.getCheckoutToken();
 
+            String guestEmailTrimmed = guestEmail != null ? guestEmail.trim() : "";
+            boolean guestEmailSent = false;
+            boolean guestEmailInvalid = false;
+            boolean guestEmailSendFailed = false;
+            if (!guestEmailTrimmed.isEmpty()) {
+                if (isPlausibleEmailAddress(guestEmailTrimmed)) {
+                    try {
+                        sendGuestCheckoutInvitationEmail(guestEmailTrimmed, order, paymentLink);
+                        guestEmailSent = true;
+                    } catch (Exception emailEx) {
+                        guestEmailSendFailed = true;
+                    }
+                } else {
+                    guestEmailInvalid = true;
+                }
+            }
+
             try {
                 Map<String, Object> pl = new HashMap<>();
                 pl.put(BusinessEventPayloadKeys.ORDER_ID, order.getId().toString());
@@ -572,9 +594,23 @@ public class AdminRestController {
             payload.put("order", OrderResponse.from(order));
             payload.put("checkoutToken", order.getCheckoutToken());
             payload.put("paymentLink", paymentLink);
+            payload.put("guestEmailSent", guestEmailSent);
+            payload.put("guestEmailInvalid", guestEmailInvalid);
+            payload.put("guestEmailSendFailed", guestEmailSendFailed);
+
+            String message;
+            if (guestEmailSent) {
+                message = "Commande invité créée — un e-mail avec le lien a été envoyé au client.";
+            } else if (guestEmailInvalid) {
+                message = "Commande invité créée — l’adresse e-mail du client est invalide ; transmettez le lien manuellement.";
+            } else if (guestEmailSendFailed) {
+                message = "Commande invité créée — l’e-mail n’a pas pu être envoyé ; transmettez le lien manuellement.";
+            } else {
+                message = "Commande invité créée — transmettez le lien au client";
+            }
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.ok("Commande invité créée — transmettez le lien au client", payload));
+                    .body(ApiResponse.ok(message, payload));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
@@ -836,5 +872,39 @@ public class AdminRestController {
         }).toList();
 
         return ResponseEntity.ok(ApiResponse.ok(refundList));
+    }
+
+    private static boolean isPlausibleEmailAddress(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        try {
+            InternetAddress addr = new InternetAddress(email.trim());
+            addr.validate();
+            return true;
+        } catch (AddressException e) {
+            return false;
+        }
+    }
+
+    private void sendGuestCheckoutInvitationEmail(String to, Order order, String paymentLink) {
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.FRENCH);
+        nf.setMinimumFractionDigits(2);
+        nf.setMaximumFractionDigits(2);
+        String currency = order.getCurrency() != null ? order.getCurrency() : "EUR";
+        String formattedAmount = nf.format(order.getTotalAmount()) + " " + currency;
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("companyName", "LMP Digital Services");
+        vars.put("serviceName", order.getServiceName());
+        vars.put("formattedAmount", formattedAmount);
+        vars.put("paymentLink", paymentLink);
+        vars.put("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
+
+        emailService.sendHtmlEmail(
+                to,
+                "LMP — Finalisez votre commande (lien sécurisé)",
+                "emails/guest-checkout-invitation",
+                vars);
     }
 }
