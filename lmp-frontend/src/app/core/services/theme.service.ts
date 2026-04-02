@@ -1,33 +1,80 @@
-import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
+import {
+  Injectable,
+  signal,
+  inject,
+  PLATFORM_ID,
+  computed,
+  effect,
+  untracked,
+} from '@angular/core';
 import { isPlatformBrowser, DOCUMENT } from '@angular/common';
+
+export type ThemePreference = 'light' | 'dark' | 'system';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
-  private readonly darkMode = signal(true); // Dark by default
-  readonly isDark = this.darkMode.asReadonly();
 
-  toggle(): void {
-    this.darkMode.update((v) => !v);
+  private readonly preference = signal<ThemePreference>('system');
+  private readonly systemIsDark = signal(false);
+
+  private mql: MediaQueryList | null = null;
+  private mqlListener?: (e: MediaQueryListEvent) => void;
+
+  readonly themePreference = this.preference.asReadonly();
+
+  /** Thème effectif (inclut le choix « système »). */
+  readonly isDark = computed(() => {
+    const p = this.preference();
+    if (p === 'dark') return true;
+    if (p === 'light') return false;
+    return this.systemIsDark();
+  });
+
+  constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.document.documentElement.classList.toggle('dark');
-      localStorage.setItem('lmp-theme', this.darkMode() ? 'dark' : 'light');
+      effect(() => {
+        const dark = this.isDark();
+        untracked(() => {
+          this.document.documentElement.classList.toggle('dark', dark);
+        });
+      });
     }
+  }
+
+  setPreference(p: ThemePreference): void {
+    this.preference.set(p);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('lmp-theme', p);
+    }
+  }
+
+  /**
+   * Compat : cycle clair → sombre → système (ex. ancien bouton seul dans la barre).
+   */
+  toggle(): void {
+    const cur = this.preference();
+    if (cur === 'light') this.setPreference('dark');
+    else if (cur === 'dark') this.setPreference('system');
+    else this.setPreference('light');
   }
 
   init(): void {
     if (!isPlatformBrowser(this.platformId)) {
-      // During SSR/prerender, keep dark mode default (matches class="dark" on <html>)
       return;
     }
 
     const saved = localStorage.getItem('lmp-theme');
-    const prefersDark = window.matchMedia(
-      '(prefers-color-scheme: dark)',
-    ).matches;
-    const useDark = saved ? saved === 'dark' : prefersDark;
-    this.darkMode.set(useDark);
-    this.document.documentElement.classList.toggle('dark', useDark);
+    if (saved === 'light' || saved === 'dark' || saved === 'system') {
+      this.preference.set(saved);
+    } else {
+      this.preference.set('system');
+    }
+
+    this.mql = window.matchMedia('(prefers-color-scheme: dark)');
+    this.systemIsDark.set(this.mql.matches);
+    this.mqlListener = (e: MediaQueryListEvent) => this.systemIsDark.set(e.matches);
+    this.mql.addEventListener('change', this.mqlListener);
   }
 }

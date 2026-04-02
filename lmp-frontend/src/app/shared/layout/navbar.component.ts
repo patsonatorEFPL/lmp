@@ -6,11 +6,30 @@ import {
   OnDestroy,
   Inject,
   PLATFORM_ID,
+  HostListener,
+  computed,
+  viewChild,
+  ElementRef,
+  effect,
 } from '@angular/core';
-import { isPlatformBrowser, NgClass } from '@angular/common';
+import { isPlatformBrowser, NgClass, UpperCasePipe, DOCUMENT } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { LucideAngularModule, Menu, X, Sun, Moon } from 'lucide-angular';
-import { ThemeService } from '../../core/services';
+import {
+  LucideAngularModule,
+  Menu,
+  X,
+  Sun,
+  Moon,
+  User,
+  LogIn,
+  UserPlus,
+  Monitor,
+  ChevronRight,
+  Globe,
+  HelpCircle,
+  Check,
+} from 'lucide-angular';
+import { ThemeService, type ThemePreference } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
 import { HlmButton } from '@spartan-ng/helm/button';
 
@@ -23,121 +42,142 @@ import { HlmButton } from '@spartan-ng/helm/button';
     LucideAngularModule,
     HlmButton,
     NgClass,
+    UpperCasePipe,
   ],
+  styles: `
+    :host {
+      display: block;
+      overflow: visible;
+    }
+  `,
   template: `
     <header
-      class="fixed top-0 right-0 left-0 z-50 transition-colors duration-200"
+      class="fixed top-0 right-0 left-0 overflow-visible transition-colors duration-200"
       [ngClass]="{
         'bg-transparent': isAtTop(),
         'bg-(--background)/95 backdrop-blur-sm border-b border-(--border)':
           !isAtTop(),
+        'z-[1200]': mobileMenuOpen() || accountMenuOpen(),
+        'z-50': !mobileMenuOpen() && !accountMenuOpen(),
       }"
     >
       <nav
-      class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 overflow-visible"
+        class="relative mx-auto flex min-h-14 max-w-7xl items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8 overflow-visible md:min-h-0"
+        [ngClass]="{
+          'max-md:items-start max-md:pt-2 md:items-center': isAtTop(),
+          'items-center': !isAtTop(),
+          'max-md:z-[85]': mobileMenuOpen(),
+        }"
       >
-        <!-- Logo -->
-        <a routerLink="/" class="flex items-center" [ngClass]="isAtTop() ? 'self-start' : 'self-center'">
+        <!-- Logo (hauteur réduite sur mobile pour éviter de masquer le hero) -->
+        <a
+          routerLink="/"
+          class="flex shrink-0 items-center"
+          [ngClass]="isAtTop() ? 'max-md:self-start md:self-start' : 'self-center'"
+        >
           <img
             src="/images/logo-lmp.webp"
             alt="LMP Logo"
             class="w-auto rounded-sm transition-all duration-300 ease-in-out"
-            [ngClass]="isAtTop() ? 'h-20 drop-shadow-md' : 'h-9 shadow-xs'"
+            [ngClass]="
+              isAtTop()
+                ? 'h-12 max-h-[3rem] drop-shadow-md sm:h-14 md:h-20 md:max-h-none'
+                : 'h-9 shadow-xs'
+            "
           />
         </a>
 
-        <!-- Desktop Nav Links -->
-        <div class="hidden items-center gap-1 md:flex">
+        <!-- Liens centrés (desktop / tablette) — inert + aria-hidden sous breakpoint md (viewport réel) -->
+        <div
+          class="hidden min-w-0 flex-1 justify-center gap-0.5 px-1 md:flex lg:gap-1"
+          [attr.aria-hidden]="isMdUp() ? null : 'true'"
+          [attr.inert]="!isMdUp() ? '' : null"
+        >
           @for (link of navLinks; track link.path) {
             <a
               [routerLink]="link.path"
               routerLinkActive="text-(--foreground)"
               [routerLinkActiveOptions]="{ exact: link.path === '/' }"
-              class="px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
+              class="shrink-0 px-2 py-2 text-xs font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground) lg:px-3 lg:text-sm"
             >
               {{ link.label }}
             </a>
           }
         </div>
 
-        <!-- Desktop Actions -->
-        <div class="hidden items-center gap-2 md:flex">
-          <!-- Theme Toggle -->
-          <button
-            hlmBtn
-            variant="ghost"
-            size="icon"
-            (click)="toggleTheme()"
-            class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
-            [attr.aria-label]="themeService.isDark() ? 'Passer au thème clair' : 'Passer au thème sombre'"
-          >
-            @if (themeService.isDark()) {
-              <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
-            } @else {
-              <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
-            }
-          </button>
-
-          <!-- Language Selector -->
-          <div class="relative">
-            <button
-              class="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:text-(--foreground)"
-              (click)="langMenuOpen.set(!langMenuOpen())"
-            >
-              <img
-                src="https://flagcdn.com/w40/fr.png"
-                alt="Drapeau français"
-                class="h-3.5 w-5 rounded-xs object-cover"
-              />
-              <span class="font-medium text-xs">FR</span>
-              <svg
-                class="h-3 w-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-            @if (langMenuOpen()) {
-              <div
-                class="absolute right-0 mt-1 w-40 rounded-sm border border-(--border) bg-(--card) py-1 shadow-sm"
-              >
-                @for (lang of languages; track lang.code) {
-                  <button
-                    class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
-                    (click)="langMenuOpen.set(false)"
-                  >
-                    <img
-                      [src]="lang.flag"
-                      [alt]="lang.label"
-                      class="h-3.5 w-5 rounded-xs object-cover"
-                    />
-                    {{ lang.label }}
-                  </button>
-                }
-              </div>
-            }
-          </div>
-
-          <!-- Connexion Button -->
+        <!-- Actions : invité = menu compte sur tous les écrans ; connecté = barre desktop uniquement -->
+        <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           @if (authService.loading()) {
             <div
-              class="lmp-nav-auth-placeholder w-[90px] h-8 shrink-0 rounded-sm animate-pulse"
+              class="lmp-nav-auth-placeholder h-9 w-9 shrink-0 rounded-full animate-pulse bg-(--muted)"
               aria-hidden="true"
             ></div>
           } @else if (authService.isAuthenticated()) {
+            <div class="hidden items-center gap-1.5 md:flex lg:gap-2">
+            <button
+              hlmBtn
+              variant="ghost"
+              size="icon"
+              (click)="themeService.toggle()"
+              class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
+              [attr.aria-label]="themeAriaLabel()"
+            >
+              @if (themeService.isDark()) {
+                <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
+              } @else {
+                <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
+              }
+            </button>
+
+            <div class="relative">
+              <button
+                type="button"
+                class="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:text-(--foreground)"
+                (click)="langMenuOpen.set(!langMenuOpen())"
+              >
+                <img
+                  [src]="currentLangFlag()"
+                  [alt]="currentLangLabel()"
+                  class="h-3.5 w-5 rounded-xs object-cover"
+                />
+                <span class="text-xs font-medium">{{ selectedLangCode() | uppercase }}</span>
+                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+              @if (langMenuOpen()) {
+                <div
+                  class="absolute right-0 z-[60] mt-1 w-40 rounded-sm border border-(--border) bg-(--card) py-1 shadow-sm"
+                >
+                  @for (lang of languages; track lang.code) {
+                    <button
+                      type="button"
+                      class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+                      (click)="pickLanguage(lang.code)"
+                    >
+                      <img
+                        [src]="lang.flag"
+                        [alt]="lang.label"
+                        class="h-3.5 w-5 rounded-xs object-cover"
+                      />
+                      {{ lang.label }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+
             @if (authService.isAdmin()) {
               <a
                 hlmBtn
                 variant="ghost"
                 routerLink="/admin"
-                class="cursor-pointer gap-1 text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
+                class="cursor-pointer gap-1 bg-transparent text-sm text-(--muted-foreground) transition-colors hover:bg-transparent hover:text-(--foreground)"
               >
                 Admin
               </a>
@@ -146,92 +186,244 @@ import { HlmButton } from '@spartan-ng/helm/button';
               hlmBtn
               variant="ghost"
               routerLink="/dashboard"
-              class="cursor-pointer text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
+              class="cursor-pointer bg-transparent text-sm text-(--muted-foreground) transition-colors hover:bg-transparent hover:text-(--foreground)"
             >
               Dashboard
             </a>
+            </div>
           } @else {
-            <a
-              routerLink="/login"
-              class="lmp-nav-auth-login px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
-            >
-              Connexion
-            </a>
-          }
-        </div>
+            <!-- Invité : menu compte (style pro, thème + langue regroupés) -->
+            <div class="relative" #accountMenuHost>
+              <button
+                type="button"
+                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--border) bg-(--muted)/35 text-(--muted-foreground) transition-colors hover:bg-(--muted)/55 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                (click)="$event.stopPropagation(); toggleAccountMenu()"
+                (keydown.enter)="$event.preventDefault(); openAccountMenuFromKeyboard()"
+                (keydown.space)="$event.preventDefault(); openAccountMenuFromKeyboard()"
+                [attr.aria-expanded]="accountMenuOpen()"
+                aria-haspopup="true"
+                aria-label="Menu compte et paramètres"
+              >
+                <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
+              </button>
 
-        <!-- Mobile Menu Toggle -->
-        <button
-          hlmBtn
-          variant="ghost"
-          size="icon"
-          class="cursor-pointer md:hidden text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
-          (click)="mobileMenuOpen.set(!mobileMenuOpen())"
-          [attr.aria-label]="mobileMenuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
-          aria-controls="mobile-menu"
-        >
-          @if (mobileMenuOpen()) {
-            <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
-          } @else {
-            <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+              @if (accountMenuOpen()) {
+                <div
+                  class="absolute right-0 z-[60] mt-2 flex w-max max-w-[min(calc(100vw-2rem),18.5rem)] max-h-[min(70dvh,calc(100dvh-5rem))] flex-col overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-(--border) bg-(--card) py-1 text-(--foreground) shadow-lg max-sm:right-1"
+                  role="menu"
+                >
+                  <div class="w-full border-b border-(--border) px-3 pb-3 pt-2">
+                    <div class="flex gap-3">
+                      <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--muted) text-(--muted-foreground)"
+                      >
+                        <lucide-icon [img]="UserIcon" [size]="20"></lucide-icon>
+                      </div>
+                      <div class="min-w-0 flex-1 text-left">
+                        <p class="truncate text-sm font-semibold">LMP Digital</p>
+                        <p class="truncate text-xs text-(--muted-foreground)">
+                          Non connecté
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="w-full py-1">
+                    <a
+                      routerLink="/login"
+                      role="menuitem"
+                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="closeAccountMenu()"
+                    >
+                      <lucide-icon [img]="LogInIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span>Se connecter</span>
+                    </a>
+                    <a
+                      routerLink="/register"
+                      role="menuitem"
+                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="closeAccountMenu()"
+                    >
+                      <lucide-icon [img]="UserPlusIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span>Créer un compte</span>
+                    </a>
+                  </div>
+
+                  <div class="mx-3 h-px shrink-0 bg-(--border)"></div>
+
+                  <div class="w-full py-1">
+                    <button
+                      type="button"
+                      class="flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="appearanceSubOpen.update((v) => !v); langSubOpen.set(false)"
+                    >
+                      <lucide-icon [img]="MoonIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span class="min-w-0 flex-1 truncate"
+                        >Apparence&nbsp;: {{ appearanceSummary() }}</span
+                      >
+                      <lucide-icon
+                        [img]="ChevronRightIcon"
+                        [size]="16"
+                        class="shrink-0 opacity-60 transition-transform"
+                        [class.rotate-90]="appearanceSubOpen()"
+                      ></lucide-icon>
+                    </button>
+                    @if (appearanceSubOpen()) {
+                      <div class="border-t border-(--border) bg-(--muted)/15 px-2 py-1.5">
+                        @for (opt of themeOptions; track opt.value) {
+                          <button
+                            type="button"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors"
+                            [class.bg-(--accent)]="themeService.themePreference() === opt.value"
+                            (click)="setTheme(opt.value)"
+                          >
+                            <lucide-icon [img]="opt.icon" [size]="16" class="shrink-0 opacity-80"></lucide-icon>
+                            <span class="flex-1">{{ opt.label }}</span>
+                            @if (themeService.themePreference() === opt.value) {
+                              <lucide-icon [img]="CheckIcon" [size]="16" class="shrink-0 text-(--primary)"></lucide-icon>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    <button
+                      type="button"
+                      class="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="langSubOpen.update((v) => !v); appearanceSubOpen.set(false)"
+                    >
+                      <lucide-icon [img]="GlobeIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span class="min-w-0 flex-1 truncate"
+                        >Langue&nbsp;: {{ currentLangLabel() }}</span
+                      >
+                      <lucide-icon
+                        [img]="ChevronRightIcon"
+                        [size]="16"
+                        class="shrink-0 opacity-60 transition-transform"
+                        [class.rotate-90]="langSubOpen()"
+                      ></lucide-icon>
+                    </button>
+                    @if (langSubOpen()) {
+                      <div class="border-t border-(--border) bg-(--muted)/15 px-2 py-1.5">
+                        @for (lang of languages; track lang.code) {
+                          <button
+                            type="button"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors"
+                            [class.bg-(--accent)]="selectedLangCode() === lang.code"
+                            (click)="pickLanguageGuest(lang.code)"
+                          >
+                            <img
+                              [src]="lang.flag"
+                              [alt]="lang.label"
+                              class="h-3.5 w-5 shrink-0 rounded-xs object-cover"
+                            />
+                            <span class="flex-1">{{ lang.label }}</span>
+                            @if (selectedLangCode() === lang.code) {
+                              <lucide-icon [img]="CheckIcon" [size]="16" class="shrink-0 text-(--primary)"></lucide-icon>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <div class="mx-3 h-px shrink-0 bg-(--border)"></div>
+
+                  <div class="w-full py-1">
+                    <a
+                      routerLink="/contact"
+                      role="menuitem"
+                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="closeAccountMenu()"
+                    >
+                      <lucide-icon [img]="HelpCircleIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span>Aide</span>
+                    </a>
+                  </div>
+                </div>
+              }
+            </div>
           }
-        </button>
+
+          <!-- Bouton natif (pas hlmBtn) : meilleure expo a11y / automation sur petit écran -->
+          <button
+            type="button"
+            class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md md:hidden text-(--muted-foreground) transition-colors hover:bg-(--accent)/50 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+            (click)="toggleMobileMenu()"
+            [attr.aria-expanded]="mobileMenuOpen()"
+            [attr.aria-label]="mobileMenuOpen() ? 'Fermer le menu' : 'Ouvrir le menu'"
+            aria-controls="mobile-menu"
+          >
+            <span class="sr-only">{{ mobileMenuOpen() ? 'Fermer le menu' : 'Ouvrir le menu' }}</span>
+            @if (mobileMenuOpen()) {
+              <lucide-icon [img]="XIcon" [size]="18" aria-hidden="true"></lucide-icon>
+            } @else {
+              <lucide-icon [img]="MenuIcon" [size]="18" aria-hidden="true"></lucide-icon>
+            }
+          </button>
+        </div>
       </nav>
 
-      <!-- Mobile Menu -->
+      <!-- Mobile : voile + panneau (barre reste au-dessus du voile) -->
       @if (mobileMenuOpen()) {
+        <button
+          type="button"
+          tabindex="-1"
+          class="fixed inset-0 z-[55] cursor-default bg-(--foreground)/25 md:hidden"
+          aria-label="Fermer le menu"
+          (click)="closeMobileMenu()"
+        ></button>
         <div
-          class="border-t border-(--border) bg-(--background) px-4 pb-4 pt-2 md:hidden"
+          id="mobile-menu"
+          role="navigation"
+          aria-label="Menu principal"
+          class="absolute right-2 top-full z-[60] mt-3 flex h-fit w-max max-w-[min(calc(100vw-2rem),18.5rem)] max-h-[min(65dvh,calc(100dvh-6rem))] flex-col overflow-y-auto overscroll-y-contain rounded-xl border border-(--border) bg-(--card) py-1.5 pl-2 pr-1 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] text-(--foreground) shadow-2xl ring-1 ring-(--foreground)/8 sm:right-3 md:hidden"
         >
-          <div class="flex flex-col gap-1">
+          <!-- self-start : largeur au contenu ; section auth en w-full sous la même colonne -->
+          <div class="flex flex-col self-start gap-0">
             @for (link of navLinks; track link.path) {
               <a
                 [routerLink]="link.path"
-                routerLinkActive="text-(--foreground)"
+                routerLinkActive="bg-(--accent) font-semibold text-(--foreground)"
                 [routerLinkActiveOptions]="{ exact: link.path === '/' }"
-                class="px-3 py-2 text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
-                (click)="mobileMenuOpen.set(false)"
+                class="rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap text-(--foreground) transition-colors hover:bg-(--accent)/80 focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                (click)="closeMobileMenu()"
               >
                 {{ link.label }}
               </a>
             }
           </div>
 
-          <div
-            class="mt-3 flex flex-col gap-2 border-t border-(--border) pt-3"
-          >
-            <div class="flex items-center justify-between px-3">
-              <span class="text-sm text-(--muted-foreground)">Thème</span>
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon-sm"
-                (click)="toggleTheme()"
-                class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
-              >
-                @if (themeService.isDark()) {
-                  <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
-                } @else {
-                  <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
-                }
-              </button>
+          @if (authService.loading() || authService.isAuthenticated()) {
+            <div class="mt-3 flex w-full flex-col gap-2 border-t border-(--border) pt-3">
+              @if (authService.loading()) {
+                <div
+                  class="lmp-nav-auth-placeholder h-10 w-full shrink-0 rounded-sm animate-pulse bg-(--muted)"
+                  aria-hidden="true"
+                ></div>
+              } @else {
+                <div class="flex items-center justify-between px-3">
+                  <span class="text-sm text-(--muted-foreground)">Thème</span>
+                  <button
+                    hlmBtn
+                    variant="ghost"
+                    size="icon-sm"
+                    type="button"
+                    (click)="themeService.toggle()"
+                    class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
+                    [attr.aria-label]="themeAriaLabel()"
+                  >
+                    @if (themeService.isDark()) {
+                      <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
+                    } @else {
+                      <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
+                    }
+                  </button>
+                </div>
+              }
             </div>
-
-            @if (authService.loading()) {
-              <div
-                class="lmp-nav-auth-placeholder w-full h-9 shrink-0 rounded-sm animate-pulse"
-                aria-hidden="true"
-              ></div>
-            } @else if (!authService.isAuthenticated()) {
-              <a
-                routerLink="/login"
-                class="lmp-nav-auth-login w-full px-3 py-2 text-center text-sm font-medium text-(--muted-foreground) transition-colors duration-150 hover:text-(--foreground)"
-                (click)="mobileMenuOpen.set(false)"
-              >
-                Connexion
-              </a>
-            }
-          </div>
+          }
+          <!-- Invité : pas de 2ᵉ bloc (apparence / langue / aide → menu compte uniquement, évite chevauchement plein écran) -->
         </div>
       }
     </header>
@@ -240,21 +432,69 @@ import { HlmButton } from '@spartan-ng/helm/button';
 export class NavbarComponent implements OnInit, OnDestroy {
   protected readonly themeService = inject(ThemeService);
   protected readonly authService = inject(AuthService);
+  private readonly document = inject(DOCUMENT);
+
+  readonly accountMenuHost = viewChild<ElementRef<HTMLElement>>('accountMenuHost');
 
   readonly mobileMenuOpen = signal(false);
   readonly langMenuOpen = signal(false);
   readonly isAtTop = signal(true);
 
+  readonly accountMenuOpen = signal(false);
+  readonly appearanceSubOpen = signal(false);
+  readonly langSubOpen = signal(false);
+
+  readonly selectedLangCode = signal<string>('fr');
+
   readonly MenuIcon = Menu;
   readonly XIcon = X;
   readonly SunIcon = Sun;
   readonly MoonIcon = Moon;
+  readonly UserIcon = User;
+  readonly LogInIcon = LogIn;
+  readonly UserPlusIcon = UserPlus;
+  readonly MonitorIcon = Monitor;
+  readonly ChevronRightIcon = ChevronRight;
+  readonly GlobeIcon = Globe;
+  readonly HelpCircleIcon = HelpCircle;
+  readonly CheckIcon = Check;
+
+  readonly themeOptions: {
+    value: ThemePreference;
+    label: string;
+    icon: typeof Monitor;
+  }[] = [
+    { value: 'system', label: 'Système', icon: Monitor },
+    { value: 'light', label: 'Clair', icon: Sun },
+    { value: 'dark', label: 'Sombre', icon: Moon },
+  ];
 
   private isBrowser: boolean;
   private scrollHandler: (() => void) | null = null;
+  private mdMql: MediaQueryList | null = null;
+  private mdMqlListener?: () => void;
+
+  /** Aligné sur la breakpoint Tailwind `md` (768px). */
+  readonly isMdUp = signal(false);
+
+  readonly currentLangLabel = computed(() => {
+    const code = this.selectedLangCode();
+    return this.languages.find((l) => l.code === code)?.label ?? 'Français';
+  });
+
+  readonly currentLangFlag = computed(() => {
+    const code = this.selectedLangCode();
+    return this.languages.find((l) => l.code === code)?.flag ?? this.languages[0].flag;
+  });
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
+    if (this.isBrowser) {
+      effect(() => {
+        const open = this.mobileMenuOpen();
+        this.document.body.style.overflow = open ? 'hidden' : '';
+      });
+    }
   }
 
   readonly navLinks = [
@@ -297,15 +537,119 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     window.addEventListener('scroll', this.scrollHandler, { passive: true });
     this.scrollHandler();
+
+    this.mdMql = window.matchMedia('(min-width: 768px)');
+    this.mdMqlListener = () => this.syncMdUp();
+    this.syncMdUp();
+    this.mdMql.addEventListener('change', this.mdMqlListener);
   }
 
   ngOnDestroy(): void {
     if (this.scrollHandler && this.isBrowser) {
       window.removeEventListener('scroll', this.scrollHandler);
     }
+    if (this.mdMql && this.mdMqlListener && this.isBrowser) {
+      this.mdMql.removeEventListener('change', this.mdMqlListener);
+    }
+    if (this.isBrowser) {
+      this.document.body.style.overflow = '';
+    }
   }
 
-  toggleTheme(): void {
-    this.themeService.toggle();
+  private syncMdUp(): void {
+    if (!this.isBrowser) return;
+    this.isMdUp.set(window.matchMedia('(min-width: 768px)').matches);
+  }
+
+  appearanceSummary(): string {
+    const p = this.themeService.themePreference();
+    if (p === 'system') return 'système';
+    if (p === 'light') return 'clair';
+    return 'sombre';
+  }
+
+  themeAriaLabel(): string {
+    const p = this.themeService.themePreference();
+    if (p === 'dark') return 'Passer au thème clair ou système';
+    if (p === 'light') return 'Passer au thème sombre ou système';
+    return 'Passer au thème clair';
+  }
+
+  setTheme(p: ThemePreference): void {
+    this.themeService.setPreference(p);
+  }
+
+  toggleAccountMenu(): void {
+    const next = !this.accountMenuOpen();
+    this.accountMenuOpen.set(next);
+    this.appearanceSubOpen.set(false);
+    this.langSubOpen.set(false);
+    if (next) {
+      this.mobileMenuOpen.set(false);
+      this.langMenuOpen.set(false);
+    }
+  }
+
+  toggleMobileMenu(): void {
+    const next = !this.mobileMenuOpen();
+    if (next) {
+      this.closeAccountMenu();
+      this.langMenuOpen.set(false);
+    }
+    this.mobileMenuOpen.set(next);
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen.set(false);
+  }
+
+  openAccountMenuFromKeyboard(): void {
+    this.toggleAccountMenu();
+  }
+
+  closeAccountMenu(): void {
+    this.accountMenuOpen.set(false);
+    this.appearanceSubOpen.set(false);
+    this.langSubOpen.set(false);
+  }
+
+  pickLanguage(code: string): void {
+    this.selectedLangCode.set(code);
+    this.langMenuOpen.set(false);
+  }
+
+  pickLanguageGuest(code: string): void {
+    this.selectedLangCode.set(code);
+    this.langSubOpen.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    queueMicrotask(() => {
+      if (!this.accountMenuOpen()) return;
+      const host = this.accountMenuHost()?.nativeElement;
+      if (!host) return;
+      if (!host.contains(ev.target as Node)) {
+        this.closeAccountMenu();
+      }
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.accountMenuOpen()) {
+      this.closeAccountMenu();
+    }
+    this.langMenuOpen.set(false);
+    this.closeMobileMenu();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (!this.isBrowser || typeof window === 'undefined') return;
+    this.syncMdUp();
+    if (this.isMdUp()) {
+      this.closeMobileMenu();
+    }
   }
 }
