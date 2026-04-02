@@ -159,6 +159,41 @@ import { ProfileService } from '../../core/services/profile.service';
             </div>
           </div>
 
+          <div class="mt-8 border-t border-(--border) pt-6">
+            <h3 class="text-sm font-semibold text-(--foreground)">TVA et autoliquidation (auto-reverse)</h3>
+            <p class="mt-2 text-xs leading-relaxed text-(--muted-foreground)">
+              Cochez cette option uniquement si vous êtes une entreprise assujettie à la TVA et que, pour cette
+              prestation, la TVA n’est pas facturée par LMP mais déclarée par vos soins (autoliquidation /
+              mécanisme d’auto-reverse), ou si une exonération similaire s’applique à votre situation. Dans ce
+              cas, indiquez votre numéro de TVA intracommunautaire (ou équivalent). Sinon, laissez décoché : la
+              facture sera établie comme d’habitude avec TVA.
+            </p>
+            <div class="mt-4 space-y-3">
+              <label class="flex cursor-pointer items-start gap-3 text-sm text-(--foreground)">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="profileForm.vatReverseCharge"
+                  name="vatReverseCharge"
+                  class="mt-1 rounded-sm border-(--border)"
+                />
+                <span>Je suis concerné par l’autoliquidation / l’auto-reverse (ou une exonération liée)</span>
+              </label>
+              @if (profileForm.vatReverseCharge) {
+                <div class="space-y-2 sm:max-w-md">
+                  <label hlmLabel>Numéro de TVA</label>
+                  <input
+                    hlmInput
+                    type="text"
+                    [(ngModel)]="profileForm.vatNumber"
+                    name="vatNumber"
+                    placeholder="ex. FR12345678901, BE0123456789…"
+                    autocomplete="off"
+                  />
+                </div>
+              }
+            </div>
+          </div>
+
           <div class="mt-6 flex justify-end">
             <button
               hlmBtn
@@ -346,6 +381,8 @@ export class SettingsComponent implements OnInit {
     companyName: '',
     city: '',
     country: '',
+    vatReverseCharge: false,
+    vatNumber: '',
   };
 
   // Password form
@@ -376,6 +413,8 @@ export class SettingsComponent implements OnInit {
         companyName: user.companyName ?? '',
         city: user.city ?? '',
         country: user.country ?? '',
+        vatReverseCharge: !!user.vatReverseCharge,
+        vatNumber: user.vatNumber ?? '',
       };
     }
   }

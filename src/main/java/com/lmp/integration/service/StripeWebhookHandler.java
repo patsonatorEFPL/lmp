@@ -37,6 +37,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import com.lmp.billing.dto.WebhookEventDto;
 import com.lmp.integration.event.BusinessEventPayloadKeys;
+import com.lmp.shared.util.VatIdentifierUtils;
 import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
@@ -1126,6 +1127,13 @@ public class StripeWebhookHandler {
             newOrder.setStripePaymentIntentId(session.getPaymentIntent());
             newOrder.setStripeCustomerId(session.getCustomer());
             newOrder.setPaymentMethod("stripe_checkout");
+
+            if (user != null) {
+                boolean reverse = Boolean.TRUE.equals(user.getVatReverseCharge());
+                newOrder.setVatReverseCharge(reverse);
+                String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+                newOrder.setCustomerVatNumber(reverse && !vat.isEmpty() ? vat : null);
+            }
 
             // Dates importantes
             LocalDateTime now = LocalDateTime.now();

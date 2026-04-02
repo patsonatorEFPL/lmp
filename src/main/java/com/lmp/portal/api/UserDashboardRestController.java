@@ -20,6 +20,7 @@ import com.lmp.integration.event.BusinessEventPayloadKeys;
 import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.util.VatIdentifierUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -169,6 +170,39 @@ public class UserDashboardRestController {
         if (request.country() != null) user.setCountry(request.country());
         if (request.address() != null) user.setAddress(request.address());
         if (request.postalCode() != null) user.setPostalCode(request.postalCode());
+
+        if (request.vatReverseCharge() != null) {
+            if (Boolean.TRUE.equals(request.vatReverseCharge())) {
+                String vat = VatIdentifierUtils.normalize(request.vatNumber());
+                if (vat.isEmpty()) {
+                    return ResponseEntity.badRequest()
+                            .body(ApiResponse.error("Le numéro de TVA est obligatoire lorsque l'autoliquidation (auto-reverse) est activée."));
+                }
+                if (!VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                    return ResponseEntity.badRequest()
+                            .body(ApiResponse.error(
+                                    "Format de numéro de TVA invalide : attendu un code pays à 2 lettres suivi de l'identifiant national (ex. FR12345678901, BE0123456789)."));
+                }
+                user.setVatReverseCharge(true);
+                user.setVatNumber(vat);
+            } else {
+                user.setVatReverseCharge(false);
+                user.setVatNumber(null);
+            }
+        } else if (request.vatNumber() != null) {
+            String vat = VatIdentifierUtils.normalize(request.vatNumber());
+            if (Boolean.TRUE.equals(user.getVatReverseCharge()) && vat.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Le numéro de TVA ne peut pas être vide."));
+            }
+            if (!vat.isEmpty() && Boolean.TRUE.equals(user.getVatReverseCharge())
+                    && !VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Format de numéro de TVA invalide : attendu un code pays à 2 lettres suivi de l'identifiant national (ex. FR12345678901, BE0123456789)."));
+            }
+            user.setVatNumber(vat.isEmpty() ? null : vat);
+        }
 
         User saved = userService.save(user);
         logger.info("Profile updated for user: {}", saved.getEmail());

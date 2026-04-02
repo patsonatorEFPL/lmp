@@ -140,6 +140,13 @@ public class Order {
     @Column(name = "progress_status")
     private String progressStatus;
 
+    /** Copie au moment de la commande : déclaration autoliquidation côté client. */
+    @Column(name = "vat_reverse_charge", nullable = false)
+    private Boolean vatReverseCharge = false;
+
+    @Column(name = "customer_vat_number", length = 64)
+    private String customerVatNumber;
+
     public Order() {}
     
     // Getters and Setters
@@ -217,4 +224,10 @@ public class Order {
     public void setProgressPercentage(Integer progressPercentage) { this.progressPercentage = progressPercentage; }
     public String getProgressStatus() { return progressStatus; }
     public void setProgressStatus(String progressStatus) { this.progressStatus = progressStatus; }
+
+    public Boolean getVatReverseCharge() { return vatReverseCharge; }
+    public void setVatReverseCharge(Boolean vatReverseCharge) { this.vatReverseCharge = vatReverseCharge; }
+
+    public String getCustomerVatNumber() { return customerVatNumber; }
+    public void setCustomerVatNumber(String customerVatNumber) { this.customerVatNumber = customerVatNumber; }
 }

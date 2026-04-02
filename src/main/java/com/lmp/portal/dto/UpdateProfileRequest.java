@@ -13,5 +13,8 @@ public record UpdateProfileRequest(
         @Size(max = 100) String city,
         @Size(max = 100) String country,
         @Size(max = 200) String address,
-        @Size(max = 10) String postalCode
+        @Size(max = 10) String postalCode,
+        /** Si true, le client déclare l'autoliquidation TVA ; {@code vatNumber} doit être renseigné. */
+        Boolean vatReverseCharge,
+        @Size(max = 64) String vatNumber
 ) {}
