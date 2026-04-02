@@ -10,9 +10,8 @@ import {
   computed,
   viewChild,
   ElementRef,
-  effect,
 } from '@angular/core';
-import { isPlatformBrowser, NgClass, UpperCasePipe, DOCUMENT } from '@angular/common';
+import { isPlatformBrowser, NgClass, UpperCasePipe } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideAngularModule,
@@ -56,7 +55,9 @@ import { HlmButton } from '@spartan-ng/helm/button';
       [ngClass]="{
         'bg-transparent': isAtTop(),
         'bg-(--background)/95 backdrop-blur-sm border-b border-(--border)':
-          !isAtTop(),
+          !isAtTop() && !mobileMenuOpen(),
+        'bg-(--background)/95 border-b border-(--border)':
+          !isAtTop() && mobileMenuOpen(),
         'z-[1200]': mobileMenuOpen() || accountMenuOpen(),
         'z-50': !mobileMenuOpen() && !accountMenuOpen(),
       }"
@@ -364,12 +365,12 @@ import { HlmButton } from '@spartan-ng/helm/button';
         </div>
       </nav>
 
-      <!-- Mobile : voile + panneau (barre reste au-dessus du voile) -->
+      <!-- Mobile : zone cliquable transparente (pas de voile ni flou — comme le menu compte) -->
       @if (mobileMenuOpen()) {
         <button
           type="button"
           tabindex="-1"
-          class="fixed inset-0 z-[55] cursor-default bg-(--foreground)/25 md:hidden"
+          class="fixed inset-0 z-[55] cursor-default touch-none overscroll-none bg-transparent md:hidden"
           aria-label="Fermer le menu"
           (click)="closeMobileMenu()"
         ></button>
@@ -432,7 +433,6 @@ import { HlmButton } from '@spartan-ng/helm/button';
 export class NavbarComponent implements OnInit, OnDestroy {
   protected readonly themeService = inject(ThemeService);
   protected readonly authService = inject(AuthService);
-  private readonly document = inject(DOCUMENT);
 
   readonly accountMenuHost = viewChild<ElementRef<HTMLElement>>('accountMenuHost');
 
@@ -489,12 +489,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
-    if (this.isBrowser) {
-      effect(() => {
-        const open = this.mobileMenuOpen();
-        this.document.body.style.overflow = open ? 'hidden' : '';
-      });
-    }
   }
 
   readonly navLinks = [
@@ -550,9 +544,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     }
     if (this.mdMql && this.mdMqlListener && this.isBrowser) {
       this.mdMql.removeEventListener('change', this.mdMqlListener);
-    }
-    if (this.isBrowser) {
-      this.document.body.style.overflow = '';
     }
   }
 
