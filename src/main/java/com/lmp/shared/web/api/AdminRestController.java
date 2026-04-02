@@ -3,6 +3,7 @@ package com.lmp.shared.web.api;
 import com.lmp.auth.domain.User;
 import com.lmp.auth.domain.UserStatus;
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.domain.Refund;
 import com.lmp.billing.dto.OrderResponse;
@@ -291,6 +292,9 @@ public class AdminRestController {
             if (data.containsKey("progressStatus")) {
                 order.setProgressStatus((String) data.get("progressStatus"));
             }
+            if (data.containsKey("status")) {
+                OrderProgressSync.applyMinimumForStatus(order);
+            }
             if (data.containsKey("adminNotes")) {
                 order.setAdminNotes((String) data.get("adminNotes"));
             }
@@ -444,6 +448,8 @@ public class AdminRestController {
             order.setUpdatedAt(LocalDateTime.now());
             order.setPriority(1); // High priority — admin-created
 
+            OrderProgressSync.applyMinimumForStatus(order);
+
             order = orderRepository.save(order);
 
             // Send notification email to user about the new order
@@ -595,11 +601,8 @@ public class AdminRestController {
                     if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
                         order.setStatus(OrderStatus.CONFIRMED);
                         order.setPaidAt(LocalDateTime.now());
-                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
-                            order.setProgressPercentage(10);
-                            order.setProgressStatus("Paiement confirmé");
-                        }
                     }
+                    OrderProgressSync.applyMinimumForStatus(order);
                 } else if ("canceled".equals(stripeStatus)) {
                     order.setPaymentStatus("cancelled");
                 } else if ("requires_payment_method".equals(stripeStatus)) {
@@ -635,17 +638,15 @@ public class AdminRestController {
                     if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
                         order.setStatus(OrderStatus.CONFIRMED);
                         order.setPaidAt(LocalDateTime.now());
-                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
-                            order.setProgressPercentage(10);
-                            order.setProgressStatus("Paiement confirmé");
-                        }
                     }
+                    OrderProgressSync.applyMinimumForStatus(order);
                 } else if ("expired".equals(session.getStatus())) {
                     order.setPaymentStatus("expired");
                     if (order.getStatus() == OrderStatus.PAYMENT_PENDING) {
                         order.setStatus(OrderStatus.CANCELLED);
                         order.setCancelledAt(LocalDateTime.now());
                         order.setCancellationReason("Session Stripe expirée");
+                        OrderProgressSync.applyMinimumForStatus(order);
                     }
                 }
 

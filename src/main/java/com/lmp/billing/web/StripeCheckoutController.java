@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.PaymentTransaction;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.shared.exception.ResourceNotFoundException;
@@ -224,6 +225,8 @@ public class StripeCheckoutController {
                             "message", "Utilisateur non trouvé. Veuillez vous reconnecter."));
                 }
             }
+
+            OrderProgressSync.applyMinimumForStatus(persistentOrder);
 
             // Sauvegarder la commande dans la base de données
             Order savedOrder = orderRepository.save(persistentOrder);

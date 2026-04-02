@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.PaymentTransaction;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
@@ -503,6 +504,7 @@ public class StripeWebhookHandler {
             if (totalRefunded.compareTo(order.getTotalAmount()) >= 0) {
                 order.setStatus(OrderStatus.REFUNDED);
                 order.setUpdatedAt(LocalDateTime.now());
+                OrderProgressSync.applyMinimumForStatus(order);
                 orderRepository.save(order);
                 orderRealtimeEventPublisher.publishOrderUpdated(order, statusBeforeRefund, OrderStatus.REFUNDED);
                 logger.info("🔄 REFUND - Commande {} marquée comme REFUNDED (remboursement total)", order.getId());
@@ -851,16 +853,12 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
-                        // Progress tracking
-                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
-                            order.setProgressPercentage(10);
-                            order.setProgressStatus("Paiement confirmé");
-                        }
                         // Auto-verify user
                         if (order.getUser() != null) {
                             autoVerifyUserOnPayment(order.getUser());
                         }
                     }
+                    OrderProgressSync.applyMinimumForStatus(order);
 
                     orderRepository.save(order);
 
@@ -920,16 +918,12 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
-                        // Progress tracking
-                        if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
-                            order.setProgressPercentage(10);
-                            order.setProgressStatus("Paiement confirmé");
-                        }
                         // Auto-verify user
                         if (order.getUser() != null) {
                             autoVerifyUserOnPayment(order.getUser());
                         }
                     }
+                    OrderProgressSync.applyMinimumForStatus(order);
 
                     orderRepository.save(order);
 
@@ -1146,6 +1140,8 @@ public class StripeWebhookHandler {
                     newOrder.setNotes("Email client: " + session.getCustomerEmail());
                 }
             }
+
+            OrderProgressSync.applyMinimumForStatus(newOrder);
 
             // 7. Sauvegarder la commande
             Order savedOrder = orderRepository.save(newOrder);
@@ -1387,18 +1383,12 @@ public class StripeWebhookHandler {
                 order.setPaidAt(LocalDateTime.now());
                 order.setPaymentStatus("succeeded");
 
-                // 🆕 PROGRESS TRACKING: Set initial progress on payment confirmation
-                if (order.getProgressPercentage() == null || order.getProgressPercentage() < 10) {
-                    order.setProgressPercentage(10);
-                    order.setProgressStatus("Paiement confirmé");
-                    logger.info("📊 PROGRESS - Commande {} progression initialisée à 10%", order.getId());
-                }
-
                 // 🆕 AUTO-VERIFY: Mark user's email as verified upon confirmed payment
                 if (order.getUser() != null) {
                     autoVerifyUserOnPayment(order.getUser());
                 }
             }
+            OrderProgressSync.applyMinimumForStatus(order);
 
             orderRepository.save(order);
 

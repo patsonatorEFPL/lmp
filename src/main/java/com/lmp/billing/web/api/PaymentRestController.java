@@ -1,12 +1,14 @@
 package com.lmp.billing.web.api;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.catalog.domain.ServiceOffer;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.catalog.service.ServiceCatalogService;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
+import com.lmp.billing.service.PaymentReconciliationService;
 import com.lmp.billing.service.PaymentService;
 import com.lmp.billing.dto.PaymentRequestDto;
 import com.lmp.billing.dto.PaymentResponseDto;
@@ -51,19 +53,22 @@ public class PaymentRestController {
     private final StripeCheckoutPaymentProcessor stripeCheckoutProcessor;
     private final PaymentService paymentService;
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+    private final PaymentReconciliationService paymentReconciliationService;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
                                  ServiceCatalogService catalogService,
                                  StripeCheckoutPaymentProcessor stripeCheckoutProcessor,
                                  PaymentService paymentService,
-                                 OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                                 OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                                 PaymentReconciliationService paymentReconciliationService) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
         this.stripeCheckoutProcessor = stripeCheckoutProcessor;
         this.paymentService = paymentService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.paymentReconciliationService = paymentReconciliationService;
     }
 
     // =========================================================================
@@ -137,6 +142,8 @@ public class PaymentRestController {
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setLastModifiedAt(LocalDateTime.now());
+
+            OrderProgressSync.applyMinimumForStatus(order);
 
             Order savedOrder = orderRepository.save(order);
             orderRealtimeEventPublisher.publishOrderCreated(savedOrder);
@@ -288,25 +295,57 @@ public class PaymentRestController {
 
         return orderRepository.findById(orderId)
                 .filter(order -> order.getUser() != null && order.getUser().getId().equals(user.getId()))
-                .map(order -> {
-                    String status = order.getStatus().name();
-                    String paymentStatus = order.getPaymentStatus() != null ? order.getPaymentStatus() : "pending";
-                    // ready = webhook has been processed (status changed from initial)
-                    boolean ready = !"PAYMENT_PENDING".equals(status);
-                    // paymentConfirmed = payment was actually successful (not cancelled/refunded/failed)
-                    boolean paymentConfirmed = ready && !Set.of(
-                            "CANCELLED", "REFUNDED", "PENDING"
-                    ).contains(status);
+                .map(order -> ResponseEntity.ok(ApiResponse.ok(toPaymentStatusResponse(orderId, order))))
+                .orElse(ResponseEntity.notFound().build());
+    }
 
-                    var statusResponse = new PaymentStatusResponse(orderId, status, paymentStatus, ready, paymentConfirmed);
-                    return ResponseEntity.ok(ApiResponse.ok(statusResponse));
-                })
+    @PostMapping("/status/{orderId}/verify-with-stripe")
+    @Operation(summary = "Vérifier le paiement auprès de Stripe",
+               description = "Interroge l'API Stripe (session Checkout) et met à jour la commande si le paiement est confirmé. "
+                       + "À utiliser lorsque le webhook n'a pas encore été reçu.")
+    public ResponseEntity<ApiResponse<PaymentStatusResponse>> verifyPaymentWithStripe(
+            @PathVariable UUID orderId,
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Optional<Order> orderOpt = orderRepository.findById(orderId)
+                .filter(order -> order.getUser() != null && order.getUser().getId().equals(user.getId()));
+
+        if (orderOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Order order = orderOpt.get();
+        try {
+            paymentReconciliationService.syncCheckoutSessionImmediately(order);
+        } catch (Exception e) {
+            logger.warn("verify-with-stripe failed for order {}: {}", orderId, e.getMessage());
+        }
+
+        return orderRepository.findById(orderId)
+                .filter(o -> o.getUser() != null && o.getUser().getId().equals(user.getId()))
+                .map(o -> ResponseEntity.ok(ApiResponse.ok(toPaymentStatusResponse(orderId, o))))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     // =========================================================================
     // Helpers
     // =========================================================================
+
+    private static PaymentStatusResponse toPaymentStatusResponse(UUID orderId, Order order) {
+        String status = order.getStatus().name();
+        String paymentStatus = order.getPaymentStatus() != null ? order.getPaymentStatus() : "pending";
+        boolean ready = !"PAYMENT_PENDING".equals(status);
+        boolean paymentConfirmed = ready && !Set.of(
+                "CANCELLED", "REFUNDED", "PENDING"
+        ).contains(status);
+        return new PaymentStatusResponse(orderId, status, paymentStatus, ready, paymentConfirmed);
+    }
 
     private User getAuthenticatedUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()

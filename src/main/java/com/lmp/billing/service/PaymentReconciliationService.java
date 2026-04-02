@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.repository.OrderRepository;
@@ -166,6 +167,16 @@ public class PaymentReconciliationService {
     }
 
     /**
+     * Interroge Stripe immédiatement pour la session Checkout de la commande (sans attendre le job planifié).
+     * Utile lorsque le webhook tarde ou n'est pas disponible (ex. localhost sans Stripe CLI).
+     *
+     * @return {@code true} si un changement a été persisté (confirmation, annulation session expirée, etc.)
+     */
+    public boolean syncCheckoutSessionImmediately(Order order) {
+        return reconcileOrderWithStripe(order);
+    }
+
+    /**
      * Vérifie une commande individuelle auprès de Stripe et met à jour son statut.
      *
      * @return true si la commande a été mise à jour, false sinon
@@ -196,6 +207,7 @@ public class PaymentReconciliationService {
                         order.setCancellationReason("Session Stripe expirée sans paiement (réconciliation)");
                         order.setCancelledAt(LocalDateTime.now());
                         order.setUpdatedAt(LocalDateTime.now());
+                        OrderProgressSync.applyMinimumForStatus(order);
                         orderRepository.save(order);
                         orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
 
@@ -253,6 +265,8 @@ public class PaymentReconciliationService {
         if (order.getPaymentMethod() == null) {
             order.setPaymentMethod("stripe_checkout");
         }
+
+        OrderProgressSync.applyMinimumForStatus(order);
 
         // Si la commande était annulée, nettoyer la raison d'annulation
         if (previousStatus == OrderStatus.CANCELLED) {

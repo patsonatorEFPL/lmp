@@ -1,6 +1,7 @@
 package com.lmp.billing.service;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.repository.OrderRepository;
@@ -90,6 +91,7 @@ public class OrderCleanupService {
                         order.setPaidAt(LocalDateTime.now());
                         order.setUpdatedAt(LocalDateTime.now());
                         order.setPaymentMethod("stripe_checkout");
+                        OrderProgressSync.applyMinimumForStatus(order);
                         orderRepository.save(order);
                         orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previous,
                                 OrderStatus.CONFIRMED);
@@ -105,7 +107,7 @@ public class OrderCleanupService {
                     order.setCancellationReason("Paiement non finalisé dans le délai imparti (" + paymentPendingTimeoutMinutes + " minutes)");
                     order.setCancelledAt(LocalDateTime.now());
                     order.setUpdatedAt(LocalDateTime.now());
-                    
+                    OrderProgressSync.applyMinimumForStatus(order);
                     orderRepository.save(order);
                     orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
                     cancelledCount++;
@@ -153,7 +155,7 @@ public class OrderCleanupService {
                 order.setCancellationReason("Paiement non finalisé dans le délai imparti (" + timeoutMinutes + " minutes)");
                 order.setCancelledAt(LocalDateTime.now());
                 order.setUpdatedAt(LocalDateTime.now());
-                
+                OrderProgressSync.applyMinimumForStatus(order);
                 orderRepository.save(order);
                 orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
                 cancelledCount++;

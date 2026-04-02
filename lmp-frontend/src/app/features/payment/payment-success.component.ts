@@ -48,9 +48,15 @@ interface ApiResponse<T> {
               <h2 class="text-xl font-bold text-(--foreground)">
                 Confirmation en cours…
               </h2>
-              <p class="mt-2 text-sm text-(--muted-foreground)">
-                Nous vérifions votre paiement auprès de Stripe. Cela ne prendra que quelques secondes.
-              </p>
+              @if (stripeDirectVerify()) {
+                <p class="mt-2 text-sm text-(--muted-foreground)">
+                  La confirmation automatique prend du temps — nous interrogeons Stripe directement pour finaliser votre commande.
+                </p>
+              } @else {
+                <p class="mt-2 text-sm text-(--muted-foreground)">
+                  Nous vérifions votre paiement auprès de Stripe. Cela ne prendra que quelques secondes.
+                </p>
+              }
             </div>
             <div class="h-1.5 w-full overflow-hidden rounded-full bg-(--muted)">
               <div class="h-full w-1/2 animate-pulse rounded-full bg-(--primary)"></div>
@@ -165,6 +171,7 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   readonly ShoppingCartIcon = ShoppingCart;
 
   readonly polling = signal(true);
+  readonly stripeDirectVerify = signal(false);
   readonly confirmed = signal(false);
   readonly error = signal<string | null>(null);
   readonly orderId = signal<string | null>(null);
@@ -176,7 +183,6 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const orderIdParam = this.route.snapshot.queryParamMap.get('order_id');
-    const sessionId = this.route.snapshot.queryParamMap.get('session_id');
 
     if (!orderIdParam) {
       this.polling.set(false);
@@ -201,12 +207,8 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
       this.pollCount++;
       if (this.pollCount >= this.maxPolls) {
         this.stopPolling();
-        this.polling.set(false);
-        this.error.set(
-          'La confirmation de votre paiement prend plus de temps que prévu. ' +
-          'Votre paiement a bien été reçu par Stripe, mais la confirmation automatique n\'a pas encore été traitée. ' +
-          'Veuillez vérifier votre tableau de bord ou contacter le support si le problème persiste.'
-        );
+        this.stripeDirectVerify.set(true);
+        this.verifyWithStripeApi(orderId);
         return;
       }
       this.checkPaymentStatus(orderId);
@@ -245,6 +247,50 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
         },
         error: () => {
           // Don't stop polling on error, might be temporary
+        },
+      });
+  }
+
+  /**
+   * Après timeout du polling webhook : interroge le backend qui appelle l'API Stripe (session Checkout).
+   */
+  private verifyWithStripeApi(orderId: string): void {
+    this.http
+      .post<ApiResponse<PaymentStatusResponse>>(
+        `${environment.apiUrl}/api/v1/payments/status/${orderId}/verify-with-stripe`,
+        {},
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          this.stripeDirectVerify.set(false);
+          this.polling.set(false);
+          if (res.data?.ready && res.data.paymentConfirmed) {
+            this.confirmed.set(true);
+            this.orderStatus.set(res.data.status);
+            return;
+          }
+          if (res.data?.ready && !res.data.paymentConfirmed) {
+            this.error.set(
+              'Votre paiement n\'a pas pu être confirmé. Statut : ' +
+                res.data.status +
+                '. Veuillez contacter le support si vous pensez qu\'il s\'agit d\'une erreur.',
+            );
+            return;
+          }
+          this.error.set(
+            'La confirmation de votre paiement prend plus de temps que prévu. ' +
+              'Votre paiement peut avoir été reçu par Stripe, mais nous n\'avons pas pu le confirmer tout de suite. ' +
+              'Vérifiez votre tableau de bord dans quelques minutes ou contactez le support si le problème persiste.',
+          );
+        },
+        error: () => {
+          this.stripeDirectVerify.set(false);
+          this.polling.set(false);
+          this.error.set(
+            'Impossible de finaliser la vérification du paiement. ' +
+              'Vérifiez votre tableau de bord ou contactez le support.',
+          );
         },
       });
   }

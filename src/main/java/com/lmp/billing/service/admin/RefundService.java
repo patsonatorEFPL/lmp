@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.Refund;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
@@ -94,6 +95,7 @@ public class RefundService {
         OrderStatus statusBeforeRefund = order.getStatus();
         if (amount.compareTo(order.getTotalAmount()) >= 0) {
             order.setStatus(OrderStatus.REFUNDED);
+            OrderProgressSync.applyMinimumForStatus(order);
             orderRepository.save(order);
             orderRealtimeEventPublisher.publishOrderUpdated(order, statusBeforeRefund, OrderStatus.REFUNDED);
         }
