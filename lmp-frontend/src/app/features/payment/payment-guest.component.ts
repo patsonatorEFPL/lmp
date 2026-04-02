@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, PLATFORM_ID, ViewChild, inject, signal } from '@angular/core';
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
@@ -18,13 +18,17 @@ interface ApiOk<T> {
 @Component({
   selector: 'lmp-payment-guest',
   standalone: true,
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, RouterLink],
   template: `
     <div class="flex min-h-screen flex-col bg-(--background) px-4 py-10">
       <div class="mx-auto w-full max-w-lg">
         <h1 class="text-2xl font-bold text-(--foreground)">Finaliser votre commande</h1>
         <p class="mt-2 text-sm text-(--muted-foreground)">
-          Créez votre compte puis payez en toute sécurité.
+          @if (authService.isAuthenticated()) {
+            Vous êtes connecté : préparation du paiement sécurisé.
+          } @else {
+            Créez votre compte ou connectez-vous pour payer en toute sécurité.
+          }
         </p>
 
         @if (loadError()) {
@@ -40,7 +44,23 @@ interface ApiOk<T> {
           </div>
         }
 
-        @if (preview() && !payReady()) {
+        @if (preview() && !payReady() && authService.isAuthenticated() && guestAttachPending()) {
+          <p class="mt-8 text-sm text-(--muted-foreground)">Préparation du paiement…</p>
+        }
+
+        @if (preview() && !payReady() && authService.isAuthenticated() && guestAttachError()) {
+          <div class="mt-8 space-y-3 rounded-sm border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600">
+            <p>{{ guestAttachError() }}</p>
+            <a
+              class="inline-block font-medium text-(--primary) underline cursor-pointer"
+              routerLink="/login"
+              [queryParams]="loginReturnQueryParams()"
+              >Se connecter avec un autre compte</a
+            >
+          </div>
+        }
+
+        @if (preview() && !payReady() && !authService.isAuthenticated()) {
           <form class="mt-8 space-y-4" (ngSubmit)="onRegisterAndPrepare()">
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Email *</label>
@@ -140,7 +160,8 @@ interface ApiOk<T> {
 export class PaymentGuestComponent implements OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
-  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
 
   @ViewChild('stripeHost') stripeHost?: ElementRef<HTMLDivElement>;
@@ -169,6 +190,8 @@ export class PaymentGuestComponent implements OnDestroy {
   readonly payError = signal<string | null>(null);
   readonly paySubmitting = signal(false);
   readonly stripeMounted = signal(false);
+  readonly guestAttachPending = signal(false);
+  readonly guestAttachError = signal<string | null>(null);
 
   vatReverseCharge = false;
   vatNumber = '';
@@ -208,8 +231,15 @@ export class PaymentGuestComponent implements OnDestroy {
     return `lmp_guest_resume_${token}`;
   }
 
+  loginReturnQueryParams(): { returnUrl: string } {
+    const path = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
+    return { returnUrl: path };
+  }
+
   private resetGuestPaymentState(): void {
     this.resumeTriggered = false;
+    this.guestAttachPending.set(false);
+    this.guestAttachError.set(null);
     this.paymentElement?.unmount();
     this.paymentElement = null;
     this.elements = null;
@@ -233,13 +263,63 @@ export class PaymentGuestComponent implements OnDestroy {
         next: (res) => {
           if (res.success && res.data) {
             this.preview.set(res.data);
-            this.tryResumePaymentAfterPreview(token, res.data.orderId);
+            if (this.authService.isLoggedIn()) {
+              this.guestAttachError.set(null);
+              this.guestAttachPending.set(true);
+              this.tryAttachGuestOrderForLoggedInUser(token);
+            } else {
+              this.tryResumePaymentAfterPreview(token, res.data.orderId);
+            }
           } else {
             this.loadError.set(res.message || 'Lien invalide ou expiré.');
           }
         },
         error: (err) => {
           this.loadError.set(err.error?.message || 'Impossible de charger la commande.');
+        },
+      });
+  }
+
+  private tryAttachGuestOrderForLoggedInUser(token: string): void {
+    this.http
+      .post<
+        ApiOk<{
+          orderId: string;
+          clientSecret: string;
+          publishableKey: string;
+          user: UserInfo;
+        }>
+      >(`${environment.apiUrl}/api/v1/payments/guest-order/attach`, { checkoutToken: token }, { withCredentials: true })
+      .subscribe({
+        next: (res) => {
+          this.guestAttachPending.set(false);
+          if (!res.success || !res.data?.clientSecret) {
+            this.guestAttachError.set(res.message || 'Impossible de préparer le paiement.');
+            return;
+          }
+          this.clientSecret = res.data.clientSecret;
+          this.publishableKey = res.data.publishableKey;
+          this.orderId = String(res.data.orderId);
+          try {
+            sessionStorage.setItem(this.guestResumeStorageKey(token), this.orderId);
+          } catch {
+            /* ignore */
+          }
+          if (res.data.user) {
+            this.authService.setUser(res.data.user as UserInfo);
+          }
+          this.mountStripeAttempts = 0;
+          this.payReady.set(true);
+          setTimeout(() => void this.mountStripe(), 200);
+        },
+        error: (err) => {
+          this.guestAttachPending.set(false);
+          if (err.status === 401) {
+            const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
+            void this.router.navigate(['/login'], { queryParams: { returnUrl } });
+            return;
+          }
+          this.guestAttachError.set(err.error?.message || 'Impossible de préparer le paiement.');
         },
       });
   }
@@ -331,7 +411,7 @@ export class PaymentGuestComponent implements OnDestroy {
             /* ignore quota / private mode */
           }
           if (res.data.user) {
-            this.auth.setUser(res.data.user as UserInfo);
+            this.authService.setUser(res.data.user as UserInfo);
           }
           this.mountStripeAttempts = 0;
           this.payReady.set(true);
@@ -339,6 +419,11 @@ export class PaymentGuestComponent implements OnDestroy {
         },
         error: (err) => {
           this.preparing.set(false);
+          if (err.status === 409) {
+            const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
+            void this.router.navigate(['/login'], { queryParams: { returnUrl } });
+            return;
+          }
           this.formError.set(err.error?.message || 'Erreur lors de l’inscription.');
         },
       });

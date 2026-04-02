@@ -158,12 +158,13 @@ public class AdminRestController {
         if (status != null && !status.isEmpty()) {
             try {
                 orders = orderRepository.findByStatusOrderByCreatedAtDesc(
-                        OrderStatus.valueOf(status), pageRequest).map(OrderResponse::from);
+                        OrderStatus.valueOf(status), pageRequest)
+                        .map(o -> OrderResponse.forAdmin(o, frontendUrl));
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
-            orders = orderRepository.findAll(pageRequest).map(OrderResponse::from);
+            orders = orderRepository.findAll(pageRequest).map(o -> OrderResponse.forAdmin(o, frontendUrl));
         }
 
         return ResponseEntity.ok(ApiResponse.ok(orders));
@@ -285,6 +286,8 @@ public class AdminRestController {
                         detail.put("userId", order.getUser().getId());
                     }
 
+                    detail.put("guestPaymentLink", OrderResponse.computeGuestPaymentLink(order, frontendUrl));
+
                     return ResponseEntity.ok(ApiResponse.ok(detail));
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -333,6 +336,35 @@ public class AdminRestController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    @DeleteMapping("/orders/{id}")
+    @Transactional
+    @Operation(summary = "Supprimer une commande",
+            description = "Supprime une commande non payée en attente de paiement ou annulée, sans remboursement enregistré.")
+    public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable UUID id) {
+        Optional<Order> opt = orderRepository.findById(id);
+        if (opt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Order order = opt.get();
+        if (order.getPaidAt() != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("Impossible de supprimer une commande marquée comme payée."));
+        }
+        OrderStatus st = order.getStatus();
+        if (st != OrderStatus.PAYMENT_PENDING && st != OrderStatus.CANCELLED) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(
+                            "Seules les commandes en attente de paiement ou annulées peuvent être supprimées."));
+        }
+        if (refundRepository.existsByOrderId(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(
+                            "Impossible de supprimer une commande qui a des enregistrements de remboursement."));
+        }
+        orderRepository.delete(order);
+        return ResponseEntity.ok(ApiResponse.ok("Commande supprimée", null));
     }
 
     // ========== Appointment Management ==========
@@ -591,7 +623,7 @@ public class AdminRestController {
             }
 
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("order", OrderResponse.from(order));
+            payload.put("order", OrderResponse.forAdmin(order, frontendUrl));
             payload.put("checkoutToken", order.getCheckoutToken());
             payload.put("paymentLink", paymentLink);
             payload.put("guestEmailSent", guestEmailSent);

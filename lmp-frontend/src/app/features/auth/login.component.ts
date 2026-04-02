@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
@@ -211,7 +211,11 @@ import { environment } from '../../../environments/environment';
             <!-- Register link -->
             <p class="mt-6 text-center text-sm text-(--muted-foreground)">
               Pas encore de compte ?
-              <a routerLink="/register" class="font-medium text-(--primary) hover:underline">
+              <a
+                routerLink="/register"
+                [queryParams]="registerQueryParams()"
+                class="font-medium text-(--primary) hover:underline"
+              >
                 S'inscrire
               </a>
             </p>
@@ -224,6 +228,7 @@ import { environment } from '../../../environments/environment';
 export class LoginComponent {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
 
   readonly EyeIcon = Eye;
@@ -241,6 +246,21 @@ export class LoginComponent {
     email: '',
     password: '',
   };
+
+  registerQueryParams(): Record<string, string> {
+    const r = this.route.snapshot.queryParamMap.get('returnUrl');
+    return r ? { returnUrl: r } : {};
+  }
+
+  private safeInternalReturnPath(raw: string | null): string | null {
+    if (!raw || !raw.startsWith('/')) {
+      return null;
+    }
+    if (raw.startsWith('//') || raw.includes('://')) {
+      return null;
+    }
+    return raw;
+  }
 
   onSubmit(): void {
     if (!this.form.email || !this.form.password) {
@@ -271,7 +291,12 @@ export class LoginComponent {
             city: user.city,
             country: user.country,
           });
-          this.router.navigate(['/dashboard']);
+          const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'));
+          if (back) {
+            void this.router.navigateByUrl(back);
+          } else {
+            void this.router.navigate(['/dashboard']);
+          }
           this.submitting.set(false);
         },
         error: (err) => {
