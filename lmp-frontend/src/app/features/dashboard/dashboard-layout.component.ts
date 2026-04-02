@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import {
@@ -7,19 +7,15 @@ import {
   ShoppingCart,
   Calendar,
   Settings,
-  LogOut,
-  User,
-  Bell,
   Menu,
   X,
-  Moon,
-  Sun,
+  Bell,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ThemeService } from '../../core/services/theme.service';
 import { NotificationPanelComponent } from '../../shared/layout/notification-panel.component';
+import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-menu.component';
 
 @Component({
   selector: 'lmp-dashboard-layout',
@@ -31,29 +27,28 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
     LucideAngularModule,
     HlmButton,
     NotificationPanelComponent,
+    ShellAccountMenuComponent,
   ],
   template: `
     <div class="flex min-h-screen bg-(--background)">
-      <!-- Sidebar (desktop) -->
+      <!-- Sidebar desktop -->
       <aside
         class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-(--border) bg-(--card) lg:flex"
       >
-        <!-- Logo -->
         <div class="flex h-16 items-center gap-3 border-b border-(--border) px-5">
-          <a routerLink="/" class="flex items-center">
+          <a routerLink="/" class="flex items-center rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)">
             <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto" />
           </a>
         </div>
 
-        <!-- Navigation -->
-        <nav class="flex-1 space-y-1 px-3 py-4">
+        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           @for (item of sidebarItems; track item.route) {
             <a
               [routerLink]="item.route"
               routerLinkActive="bg-(--primary)/10 text-(--primary)"
               [routerLinkActiveOptions]="{ exact: item.exact }"
               (click)="onSidebarNav(item.route)"
-              class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
             >
               <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
               {{ item.label }}
@@ -66,68 +61,63 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
               @if (item.route === '/dashboard/appointments' && notificationService.liveAppointmentHint() > 0) {
                 <span
                   class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
-                  >{{ notificationService.liveAppointmentHint() > 9 ? '9+' : notificationService.liveAppointmentHint() }}</span
+                  >{{
+                    notificationService.liveAppointmentHint() > 9
+                      ? '9+'
+                      : notificationService.liveAppointmentHint()
+                  }}</span
                 >
               }
             </a>
           }
         </nav>
 
-        <!-- Bottom actions -->
-        <div class="border-t border-(--border) p-4">
-          <div class="flex items-center justify-between">
-            <button
-              hlmBtn variant="ghost" size="sm"
-              class="cursor-pointer gap-2 text-xs text-(--muted-foreground)"
-              (click)="themeService.toggle()"
-            >
-              @if (themeService.isDark()) {
-                <lucide-icon [img]="SunIcon" [size]="14"></lucide-icon>
-                Clair
-              } @else {
-                <lucide-icon [img]="MoonIcon" [size]="14"></lucide-icon>
-                Sombre
-              }
-            </button>
-            <button
-              hlmBtn variant="ghost" size="icon"
-              class="h-8 w-8 cursor-pointer text-(--muted-foreground) hover:text-(--destructive)"
-              (click)="onLogout()"
-            >
-              <lucide-icon [img]="LogOutIcon" [size]="16"></lucide-icon>
-            </button>
-          </div>
+        <div class="shrink-0 border-t border-(--border) px-4 py-3">
+          <p class="text-center text-[10px] font-medium tracking-wide text-(--muted-foreground)">
+            LMP Digital Services
+          </p>
         </div>
       </aside>
 
-      <!-- Mobile sidebar overlay -->
+      <!-- Mobile drawer -->
       @if (mobileMenuOpen()) {
-        <div
-          class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+        <button
+          type="button"
+          tabindex="-1"
+          class="fixed inset-0 z-40 cursor-default touch-none bg-black/40 lg:hidden"
+          aria-label="Fermer le menu"
           (click)="mobileMenuOpen.set(false)"
-        ></div>
+        ></button>
         <aside
-          class="fixed inset-y-0 left-0 z-50 w-60 flex-col border-r border-(--border) bg-(--card) lg:hidden flex"
+          class="fixed inset-y-0 left-0 z-50 flex w-[min(17rem,calc(100vw-2.5rem))] flex-col border-r border-(--border) bg-(--card) shadow-xl lg:hidden"
         >
-          <div class="flex h-16 items-center justify-between border-b border-(--border) px-5">
-            <a routerLink="/" class="flex items-center">
+          <div class="flex h-16 items-center justify-between gap-2 border-b border-(--border) px-4">
+            <a
+              routerLink="/"
+              class="flex min-w-0 items-center rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)"
+              (click)="mobileMenuOpen.set(false)"
+            >
               <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto" />
             </a>
             <button
-              hlmBtn variant="ghost" size="icon"
-              class="h-8 w-8 cursor-pointer"
+              hlmBtn
+              variant="ghost"
+              size="icon"
+              type="button"
+              class="shrink-0 cursor-pointer"
               (click)="mobileMenuOpen.set(false)"
+              aria-label="Fermer"
             >
-              <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+              <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
             </button>
           </div>
-          <nav class="flex-1 space-y-1 px-3 py-4">
+          <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
             @for (item of sidebarItems; track item.route) {
               <a
                 [routerLink]="item.route"
                 routerLinkActive="bg-(--primary)/10 text-(--primary)"
                 [routerLinkActiveOptions]="{ exact: item.exact }"
-                class="relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+                class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
                 (click)="mobileMenuOpen.set(false); onSidebarNav(item.route)"
               >
                 <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
@@ -141,7 +131,11 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
                 @if (item.route === '/dashboard/appointments' && notificationService.liveAppointmentHint() > 0) {
                   <span
                     class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
-                    >{{ notificationService.liveAppointmentHint() > 9 ? '9+' : notificationService.liveAppointmentHint() }}</span
+                    >{{
+                      notificationService.liveAppointmentHint() > 9
+                        ? '9+'
+                        : notificationService.liveAppointmentHint()
+                    }}</span
                   >
                 }
               </a>
@@ -150,56 +144,46 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
         </aside>
       }
 
-      <!-- Main content area -->
       <div class="flex flex-1 flex-col lg:ml-60">
-        <!-- Top navbar -->
         <header
-          class="sticky top-0 z-20 border-b border-(--border) bg-(--card)"
+          class="sticky top-0 z-20 border-b border-(--border) bg-(--card)/95 backdrop-blur-sm supports-[backdrop-filter]:bg-(--card)/80"
         >
-          <div class="flex h-16 items-center justify-between px-4 sm:px-6">
-            <div class="flex items-center gap-3">
-              <!-- Mobile hamburger -->
+          <div class="flex h-14 items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
               <button
-                hlmBtn variant="ghost" size="icon"
-                class="cursor-pointer lg:hidden"
+                hlmBtn
+                variant="ghost"
+                size="icon"
+                type="button"
+                class="shrink-0 cursor-pointer lg:hidden"
                 (click)="mobileMenuOpen.set(!mobileMenuOpen())"
+                [attr.aria-expanded]="mobileMenuOpen()"
+                aria-label="Menu de navigation"
               >
                 <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
               </button>
-
-              <span class="text-sm font-semibold text-(--foreground)">Dashboard</span>
-              <span
-                class="inline-flex items-center gap-1 text-[10px] text-(--muted-foreground)"
-                title="Connexion notifications (SSE)"
+              <h1
+                class="min-w-0 truncate text-sm font-semibold tracking-tight text-(--foreground) sm:text-base"
               >
-                <span
-                  class="h-1.5 w-1.5 rounded-full"
-                  [class.bg-emerald-500]="notificationService.connected()"
-                  [class.bg-red-500]="!notificationService.connected()"
-                ></span>
-              </span>
-              @if (authService.isAdmin()) {
-                <a
-                  routerLink="/admin"
-                  class="inline-flex items-center gap-1.5 rounded-xs border border-(--border) px-2 py-0.5 text-xs font-medium text-(--primary) transition-colors hover:bg-(--accent)"
-                >
-                  🛡️ Admin
-                </a>
-              }
+                Espace client
+              </h1>
             </div>
 
-            <div class="flex items-center gap-3">
-              <!-- Bell + notification panel -->
+            <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <div class="relative" (click)="$event.stopPropagation()">
                 <button
-                  hlmBtn variant="ghost" size="icon"
-                  class="relative cursor-pointer"
-                  (click)="toggleNotificationPanel()"
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  class="relative cursor-pointer rounded-full"
+                  (click)="onNotificationButtonClick()"
+                  aria-label="Notifications"
                 >
                   <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
                   @if (notificationService.unreadCount() > 0) {
                     <span
-                      class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-sm bg-red-500 text-[10px] font-bold text-white"
+                      class="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-(--card)"
                     >
                       {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
                     </span>
@@ -211,28 +195,15 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
                 />
               </div>
 
-              <!-- User chip -->
-              <div class="hidden items-center gap-2 rounded-sm border border-(--border) px-3 py-1.5 sm:flex">
-                <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
-                  <lucide-icon [img]="UserIcon" [size]="14"></lucide-icon>
-                </div>
-                <span class="text-sm font-medium text-(--foreground)">
-                  {{ authService.user()?.displayName || authService.user()?.email }}
-                </span>
-              </div>
-
-              <button
-                hlmBtn variant="ghost" size="icon"
-                class="cursor-pointer text-(--muted-foreground) hover:text-(--destructive)"
-                (click)="onLogout()"
-              >
-                <lucide-icon [img]="LogOutIcon" [size]="18"></lucide-icon>
-              </button>
+              <lmp-shell-account-menu
+                variant="user"
+                (menuOpenChange)="onAccountMenuOpenChange($event)"
+                (logoutRequest)="onLogout()"
+              />
             </div>
           </div>
         </header>
 
-        <!-- Page content -->
         <main class="flex-1 p-4 sm:p-6 lg:p-8">
           <router-outlet />
         </main>
@@ -243,20 +214,16 @@ import { NotificationPanelComponent } from '../../shared/layout/notification-pan
 export class DashboardLayoutComponent {
   readonly authService = inject(AuthService);
   readonly notificationService = inject(NotificationService);
-  readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
+
+  private readonly accountMenu = viewChild(ShellAccountMenuComponent);
 
   readonly showNotificationPanel = signal(false);
   readonly mobileMenuOpen = signal(false);
 
-  // Icons
   readonly BellIcon = Bell;
-  readonly UserIcon = User;
-  readonly LogOutIcon = LogOut;
   readonly MenuIcon = Menu;
   readonly XIcon = X;
-  readonly MoonIcon = Moon;
-  readonly SunIcon = Sun;
 
   readonly sidebarItems = [
     { label: "Vue d'ensemble", route: '/dashboard', icon: LayoutDashboard, exact: true },
@@ -265,7 +232,14 @@ export class DashboardLayoutComponent {
     { label: 'Paramètres', route: '/settings', icon: Settings, exact: false },
   ];
 
-  toggleNotificationPanel(): void {
+  onAccountMenuOpenChange(open: boolean): void {
+    if (open) {
+      this.showNotificationPanel.set(false);
+    }
+  }
+
+  onNotificationButtonClick(): void {
+    this.accountMenu()?.closeMenu();
     this.showNotificationPanel.update((v) => !v);
   }
 
@@ -279,8 +253,6 @@ export class DashboardLayoutComponent {
   }
 
   onLogout(): void {
-    // Immédiat : {@link AuthService#logout} ne vide le user qu’après la réponse HTTP ;
-    // sans cela le SSE et les notifs de l’ancienne session restent actifs un moment.
     this.notificationService.reset();
     this.authService.logout();
     this.router.navigate(['/']);
