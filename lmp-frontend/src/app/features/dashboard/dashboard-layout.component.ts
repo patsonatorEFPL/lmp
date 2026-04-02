@@ -33,9 +33,11 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
     <div class="flex min-h-screen bg-(--background)">
       <!-- Sidebar desktop -->
       <aside
-        class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-(--border) bg-(--card) lg:flex"
+        class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-(--border) bg-(--card) box-border lg:flex"
       >
-        <div class="flex h-16 items-center gap-3 border-b border-(--border) px-5">
+        <div
+          class="flex h-16 min-h-16 shrink-0 items-center gap-3 border-b border-(--border) px-5 box-border bg-(--card)"
+        >
           <a routerLink="/" class="flex items-center rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)">
             <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto" />
           </a>
@@ -146,9 +148,11 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
 
       <div class="flex flex-1 flex-col lg:ml-60">
         <header
-          class="sticky top-0 z-20 border-b border-(--border) bg-(--card)/95 backdrop-blur-sm supports-[backdrop-filter]:bg-(--card)/80"
+          class="sticky top-0 z-20 bg-(--card)/95 backdrop-blur-sm supports-[backdrop-filter]:bg-(--card)/80"
         >
-          <div class="flex h-14 items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+          <div
+            class="flex h-16 min-h-16 shrink-0 items-center justify-between gap-3 border-b border-(--border) px-4 box-border sm:px-6"
+          >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <button
                 hlmBtn

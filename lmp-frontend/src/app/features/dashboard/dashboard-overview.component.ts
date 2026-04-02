@@ -23,13 +23,11 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  RefreshCw,
   Eye,
   ChevronRight,
   FileText,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { AuthService } from '../../core/services/auth.service';
 import {
   DashboardService,
   DashboardStats,
@@ -63,41 +61,15 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
     NgClass,
   ],
   template: `
-    <!-- Welcome banner -->
-    <div
-      class="rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8"
-    >
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-(--foreground)">
-            Bienvenue, {{ authService.user()?.firstName || 'Utilisateur' }}
-          </h1>
-          <p class="mt-2 text-sm text-(--muted-foreground)">
-            Gérez vos services, commandes et rendez-vous depuis votre espace personnel.
-          </p>
-        </div>
-        <button
-          hlmBtn variant="ghost" size="icon" class="cursor-pointer"
-          (click)="refreshStats()"
-        >
-          <lucide-icon
-            [img]="RefreshCwIcon" [size]="18"
-            [ngClass]="{ 'animate-spin': statsRefreshing() }"
-          ></lucide-icon>
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading (premier chargement uniquement ; rechargement silencieux en reloading) -->
     @if (blockingLoader()) {
-      <div class="mt-8 flex items-center justify-center py-16">
+      <div class="flex items-center justify-center py-16">
         <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
       </div>
     }
 
     @if (!blockingLoader() && stats()) {
       <!-- Quick stats -->
-      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-sm border border-(--border) bg-(--card) p-5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Commandes</span>
@@ -311,7 +283,6 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
   `,
 })
 export class DashboardOverviewComponent implements OnInit {
-  readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly notificationService = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -348,12 +319,6 @@ export class DashboardOverviewComponent implements OnInit {
     () => this.statsResource.status() === 'loading' && !this.statsResource.hasValue(),
   );
 
-  readonly statsRefreshing = computed(
-    () =>
-      this.statsResource.status() === 'loading' ||
-      this.statsResource.status() === 'reloading',
-  );
-
   // Icons
   readonly ShoppingCartIcon = ShoppingCart;
   readonly CalendarIcon = Calendar;
@@ -363,7 +328,6 @@ export class DashboardOverviewComponent implements OnInit {
   readonly XCircleIcon = XCircle;
   readonly AlertCircleIcon = AlertCircle;
   readonly Loader2Icon = Loader2;
-  readonly RefreshCwIcon = RefreshCw;
   readonly EyeIcon = Eye;
   readonly ChevronRightIcon = ChevronRight;
   readonly FileTextIcon = FileText;
@@ -382,10 +346,6 @@ export class DashboardOverviewComponent implements OnInit {
         () => this.statsResource.reload(),
       );
     }
-  }
-
-  refreshStats(): void {
-    this.statsResource.reload();
   }
 
   getStatusLabel(status: string): string {
