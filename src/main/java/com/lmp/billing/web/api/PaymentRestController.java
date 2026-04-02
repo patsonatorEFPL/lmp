@@ -15,6 +15,7 @@ import com.lmp.billing.dto.PaymentResponseDto;
 import com.lmp.billing.service.processor.StripeCheckoutPaymentProcessor;
 import com.lmp.auth.service.UserService;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.util.VatIdentifierUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -114,6 +115,15 @@ public class PaymentRestController {
                     .body(ApiResponse.error("Authentication required"));
         }
 
+        if (Boolean.TRUE.equals(user.getVatReverseCharge())) {
+            String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+            if (vat.isEmpty() || !VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+        }
+
         // Valider l'offre
         if (request.offerId() == null) {
             return ResponseEntity.badRequest()
@@ -142,6 +152,8 @@ public class PaymentRestController {
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setLastModifiedAt(LocalDateTime.now());
+
+            applyVatSnapshotFromUser(order, user);
 
             OrderProgressSync.applyMinimumForStatus(order);
 
@@ -223,12 +235,25 @@ public class PaymentRestController {
             return ResponseEntity.notFound().build();
         }
 
+        if (Boolean.TRUE.equals(user.getVatReverseCharge())) {
+            String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+            if (vat.isEmpty() || !VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+        }
+
         if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Cette commande n'est pas en attente de paiement"));
         }
 
         try {
+            applyVatSnapshotFromUser(order, user);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+
             String currency = order.getCurrency() != null ? order.getCurrency() : "EUR";
 
             PaymentRequestDto paymentRequest = new PaymentRequestDto();
@@ -353,6 +378,13 @@ public class PaymentRestController {
             return null;
         }
         return userService.findByEmail(authentication.getName()).orElse(null);
+    }
+
+    private static void applyVatSnapshotFromUser(Order order, User user) {
+        boolean reverse = Boolean.TRUE.equals(user.getVatReverseCharge());
+        order.setVatReverseCharge(reverse);
+        String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+        order.setCustomerVatNumber(reverse && !vat.isEmpty() ? vat : null);
     }
 
     private String getClientIp(HttpServletRequest request) {

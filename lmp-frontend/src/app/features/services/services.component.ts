@@ -11,6 +11,7 @@ import {
   effect,
 } from '@angular/core';
 import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
@@ -23,11 +24,12 @@ import {
 } from '../../core/services/catalog.service';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
+import { ProfileService } from '../../core/services/profile.service';
 
 @Component({
   selector: 'lmp-services',
   standalone: true,
-  imports: [LucideAngularModule, HlmButton, NgClass, CurrencyPipe],
+  imports: [LucideAngularModule, HlmButton, NgClass, CurrencyPipe, FormsModule],
   template: `
     <section class="relative">
       <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -65,6 +67,43 @@ import { environment } from '../../../environments/environment';
                 {{ cat.name }} ({{ getCategoryCount(cat.slug) }})
               </button>
             }
+          </div>
+        }
+
+        @if (authService.user()) {
+          <div
+            class="mt-8 scroll-animate rounded-sm border border-(--border) bg-(--card) p-5 sm:p-6"
+          >
+            <h2 class="text-sm font-semibold text-(--foreground)">Facturation avant commande</h2>
+            <p class="mt-2 text-xs leading-relaxed text-(--muted-foreground)">
+              Si vous êtes assujetti à l’autoliquidation de la TVA (auto-reverse) ou à une exonération équivalente
+              pour nos prestations, cochez la case et saisissez votre numéro de TVA. Vos préférences sont
+              enregistrées sur votre compte et figureront sur la facture (mention auto-reverse). Sinon, ne cochez
+              pas : la TVA sera traitée comme d’habitude sur la facture.
+            </p>
+            <div class="mt-4 space-y-3">
+              <label class="flex cursor-pointer items-start gap-3 text-sm text-(--foreground)">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="checkoutTaxForm.vatReverseCharge"
+                  class="mt-1 rounded-sm border-(--border)"
+                />
+                <span>Autoliquidation / auto-reverse (ou exonération liée) — j’indique mon N° TVA ci-dessous</span>
+              </label>
+              @if (checkoutTaxForm.vatReverseCharge) {
+                <div class="max-w-md space-y-1">
+                  <label class="text-xs font-medium text-(--foreground)" for="svc-vat-number">Numéro de TVA</label>
+                  <input
+                    id="svc-vat-number"
+                    type="text"
+                    [(ngModel)]="checkoutTaxForm.vatNumber"
+                    placeholder="ex. FR…, BE…"
+                    class="w-full rounded-sm border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                    autocomplete="off"
+                  />
+                </div>
+              }
+            </div>
           </div>
         }
 
@@ -229,6 +268,8 @@ import { environment } from '../../../environments/environment';
   `,
 })
 export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
+  readonly authService = inject(AuthService);
+
   readonly CheckIcon = Check;
   readonly ArrowRightIcon = ArrowRight;
   readonly Loader2Icon = Loader2;
@@ -239,8 +280,13 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly authService = inject(AuthService);
   private readonly seo = inject(SeoService);
+  private readonly profileService = inject(ProfileService);
+
+  checkoutTaxForm = {
+    vatReverseCharge: false,
+    vatNumber: '',
+  };
 
   readonly services = signal<ServiceItem[]>([]);
   readonly loading = signal(true);
@@ -295,6 +341,14 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.loadServices();
+
+    const u = this.authService.user();
+    if (u) {
+      this.checkoutTaxForm = {
+        vatReverseCharge: !!u.vatReverseCharge,
+        vatNumber: u.vatNumber ?? '',
+      };
+    }
 
     if (this.isBrowser) {
       this.fragmentSub = this.route.fragment.subscribe((fragment) => {
@@ -384,7 +438,46 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (!service.currentOffer) return;
 
+    if (
+      this.checkoutTaxForm.vatReverseCharge &&
+      !this.checkoutTaxForm.vatNumber.trim()
+    ) {
+      alert(
+        'Veuillez saisir votre numéro de TVA lorsque l’autoliquidation (auto-reverse) est activée.',
+      );
+      return;
+    }
+
     this.checkoutLoading.set(service.id);
+
+    this.profileService
+      .updateProfile({
+        vatReverseCharge: this.checkoutTaxForm.vatReverseCharge,
+        vatNumber: this.checkoutTaxForm.vatReverseCharge
+          ? this.checkoutTaxForm.vatNumber.trim()
+          : '',
+      })
+      .subscribe({
+        next: (updated) => {
+          this.authService.setUser(updated);
+          this.startCheckoutSession(service);
+        },
+        error: (err) => {
+          this.checkoutLoading.set(null);
+          alert(
+            err.error?.message ||
+              err.message ||
+              'Impossible d’enregistrer vos informations de TVA.',
+          );
+        },
+      });
+  }
+
+  private startCheckoutSession(service: ServiceItem): void {
+    if (!service.currentOffer) {
+      this.checkoutLoading.set(null);
+      return;
+    }
 
     this.http
       .post<{
@@ -413,7 +506,10 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
           if (err.status === 401) {
             this.router.navigate(['/login']);
           } else {
-            alert('Erreur lors de la création du paiement. Veuillez réessayer.');
+            alert(
+              err.error?.message ||
+                'Erreur lors de la création du paiement. Veuillez réessayer.',
+            );
           }
         },
       });

@@ -278,6 +278,13 @@ public class InvoicePdfService {
             }
         }
 
+        if (Boolean.TRUE.equals(order.getVatReverseCharge()) && order.getCustomerVatNumber() != null
+                && !order.getCustomerVatNumber().isBlank()) {
+            Paragraph vatLine = new Paragraph("N° TVA : " + order.getCustomerVatNumber().trim(), valueSmallFont);
+            vatLine.setSpacingBefore(4);
+            clientCell.addElement(vatLine);
+        }
+
         infoTable.addCell(clientCell);
         document.add(infoTable);
     }
@@ -435,23 +442,34 @@ public class InvoicePdfService {
         Font totalLabelFont = new Font(Font.HELVETICA, 11, Font.BOLD, CHARCOAL);
         Font totalValueFont = new Font(Font.HELVETICA, 14, Font.BOLD, GOLD_ACCENT);
 
-        // Calcul TVA
         java.math.BigDecimal totalAmount = order.getTotalAmount();
-        java.math.BigDecimal tvaRate = new java.math.BigDecimal("0.21");
-        java.math.BigDecimal htAmount = totalAmount.divide(tvaRate.add(java.math.BigDecimal.ONE), 2,
-                java.math.RoundingMode.HALF_UP);
-        java.math.BigDecimal tvaAmount = totalAmount.subtract(htAmount);
+        java.math.BigDecimal htAmount;
+        java.math.BigDecimal tvaAmount;
+        String tvaLabel;
+        String totalLabel;
 
-        // Sous-total HT
+        if (Boolean.TRUE.equals(order.getVatReverseCharge())) {
+            htAmount = totalAmount;
+            tvaAmount = java.math.BigDecimal.ZERO;
+            tvaLabel = "TVA — autoliquidation (auto-reverse)";
+            totalLabel = "TOTAL";
+        } else {
+            java.math.BigDecimal tvaRate = new java.math.BigDecimal("0.21");
+            htAmount = totalAmount.divide(tvaRate.add(java.math.BigDecimal.ONE), 2,
+                    java.math.RoundingMode.HALF_UP);
+            tvaAmount = totalAmount.subtract(htAmount);
+            tvaLabel = "TVA (21%)";
+            totalLabel = "TOTAL TTC";
+        }
+
         addTotalRow(totalsTable, "Sous-total HT", formatPrice(htAmount, currency), labelFont, valueFont, WHITE,
                 BORDER_SUBTLE);
 
-        // TVA
-        addTotalRow(totalsTable, "TVA (21%)", formatPrice(tvaAmount, currency), labelFont, valueFont, WHITE,
+        addTotalRow(totalsTable, tvaLabel, formatPrice(tvaAmount, currency), labelFont, valueFont, WHITE,
                 BORDER_SUBTLE);
 
-        // ── TOTAL TTC — fond accent ──
-        PdfPCell totalLabelCell = new PdfPCell(new Phrase("TOTAL TTC", totalLabelFont));
+        // ── TOTAL — fond accent ──
+        PdfPCell totalLabelCell = new PdfPCell(new Phrase(totalLabel, totalLabelFont));
         totalLabelCell.setPadding(12);
         totalLabelCell.setBackgroundColor(GOLD_LIGHT);
         totalLabelCell.setBorder(Rectangle.NO_BORDER);
@@ -467,6 +485,13 @@ public class InvoicePdfService {
         totalsTable.addCell(totalValueCell);
 
         document.add(totalsTable);
+
+        if (Boolean.TRUE.equals(order.getVatReverseCharge())) {
+            Font noteFont = new Font(Font.HELVETICA, 8, Font.ITALIC, TEXT_SECONDARY);
+            Paragraph note = new Paragraph("Auto-reverse.", noteFont);
+            note.setSpacingBefore(6);
+            document.add(note);
+        }
     }
 
     private void addTotalRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont, Color bgColor,

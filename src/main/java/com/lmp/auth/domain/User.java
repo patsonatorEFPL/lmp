@@ -91,6 +91,15 @@ public class User {
     @Column(name = "oauth_provider_id")
     private String oauthProviderId;
 
+    /**
+     * Le client déclare être assujetti à l'autoliquidation TVA (auto-reverse) / exonération liée en B2B.
+     */
+    @Column(name = "vat_reverse_charge", nullable = false)
+    private Boolean vatReverseCharge = false;
+
+    @Column(name = "vat_number", length = 64)
+    private String vatNumber;
+
     // Relationships
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -226,4 +235,10 @@ public class User {
 
     public String getOauthProviderId() { return oauthProviderId; }
     public void setOauthProviderId(String oauthProviderId) { this.oauthProviderId = oauthProviderId; }
+
+    public Boolean getVatReverseCharge() { return vatReverseCharge; }
+    public void setVatReverseCharge(Boolean vatReverseCharge) { this.vatReverseCharge = vatReverseCharge; }
+
+    public String getVatNumber() { return vatNumber; }
+    public void setVatNumber(String vatNumber) { this.vatNumber = vatNumber; }
 }

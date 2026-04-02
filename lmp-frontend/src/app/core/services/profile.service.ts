@@ -17,6 +17,8 @@ export interface UpdateProfileRequest {
   country?: string;
   address?: string;
   postalCode?: string;
+  vatReverseCharge?: boolean;
+  vatNumber?: string;
 }
 
 export interface ChangePasswordRequest {

@@ -18,6 +18,9 @@ export interface UserInfo {
   phone?: string;
   city?: string;
   country?: string;
+  /** Déclaration autoliquidation TVA (auto-reverse) côté client */
+  vatReverseCharge?: boolean;
+  vatNumber?: string;
 }
 
 @Injectable({ providedIn: 'root' })

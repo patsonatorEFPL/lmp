@@ -25,7 +25,9 @@ public record UserResponse(
         boolean accountLocked,
         Set<String> roles,
         LocalDateTime registrationDate,
-        LocalDateTime lastLoginDate
+        LocalDateTime lastLoginDate,
+        boolean vatReverseCharge,
+        String vatNumber
 ) {
     public static UserResponse from(User user) {
         Set<String> roleNames = user.getRoles() != null
@@ -47,6 +49,8 @@ public record UserResponse(
                 Boolean.TRUE.equals(user.getAccountLocked()),
                 roleNames,
                 user.getRegistrationDate(),
-                user.getLastLoginDate());
+                user.getLastLoginDate(),
+                Boolean.TRUE.equals(user.getVatReverseCharge()),
+                user.getVatNumber());
     }
 }
