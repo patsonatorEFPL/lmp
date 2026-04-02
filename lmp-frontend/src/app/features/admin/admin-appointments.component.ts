@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { NgClass, DatePipe } from '@angular/common';
 import {
   LucideAngularModule,
@@ -25,6 +25,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AdminSseService } from '../../core/services/admin-sse.service';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 
 interface AppointmentItem {
   id: string;
@@ -392,12 +394,14 @@ interface ApiResponse<T> {
 export class AdminAppointmentsComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly adminSse = inject(AdminSseService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
 
   constructor() {
     effect(() => {
       const badge = this.adminSse.badgeAppointments();
       if (badge > 0) {
-        untracked(() => this.loadAppointments());
+        untracked(() => this.loadAppointments({ silent: true }));
       }
     });
   }
@@ -421,6 +425,7 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly Trash2Icon = Trash2;
 
   readonly loading = signal(false);
+  private readonly listFetch = createListFetchLoading(this.loading);
   readonly loadingDetail = signal(false);
   readonly saving = signal(false);
   readonly appointments = signal<AppointmentItem[]>([]);
@@ -436,10 +441,16 @@ export class AdminAppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAppointments();
+    this.visiblePoll.subscribeWhileVisible(
+      this.destroyRef,
+      environment.dashboardPollIntervalMs,
+      () => this.loadAppointments({ silent: true }),
+    );
   }
 
-  loadAppointments(): void {
-    this.loading.set(true);
+  loadAppointments(options?: { silent?: boolean }): void {
+    const silent = options?.silent === true;
+    this.listFetch.beforeFetch(silent);
     const params: Record<string, string> = {
       page: this.currentPage().toString(),
       size: '20',
@@ -457,9 +468,11 @@ export class AdminAppointmentsComponent implements OnInit {
           this.appointments.set(page.content);
           this.totalAppointments.set(page.totalElements);
           this.totalPages.set(page.totalPages);
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.listFetch.afterFetch();
+        },
       });
   }
 

@@ -279,6 +279,9 @@ export class DashboardLayoutComponent {
   }
 
   onLogout(): void {
+    // Immédiat : {@link AuthService#logout} ne vide le user qu’après la réponse HTTP ;
+    // sans cela le SSE et les notifs de l’ancienne session restent actifs un moment.
+    this.notificationService.reset();
     this.authService.logout();
     this.router.navigate(['/']);
   }

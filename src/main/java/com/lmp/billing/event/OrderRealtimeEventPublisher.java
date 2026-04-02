@@ -2,6 +2,7 @@ package com.lmp.billing.event;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,32 @@ public class OrderRealtimeEventPublisher {
         } else {
             publishOrderUpdated(order, oldStatus, newStatus);
         }
+    }
+
+    /**
+     * Commande persistée (checkout client) : SSE admin + notif utilisateur si lié.
+     * Sans cet événement, le dashboard admin ne se rafraîchit pas avant paiement ou poll.
+     */
+    public void publishOrderCreated(Order order) {
+        if (order == null || order.getId() == null) {
+            return;
+        }
+        Map<String, Object> pl = basePayload(order);
+        String who = Objects.toString(pl.get(BusinessEventPayloadKeys.CUSTOMER_NAME), "");
+        if (who.isEmpty()) {
+            who = Objects.toString(pl.get(BusinessEventPayloadKeys.SERVICE_NAME), "Commande");
+        }
+        pl.put(BusinessEventPayloadKeys.MESSAGE, "Nouvelle commande — " + who);
+        if (order.getUser() != null) {
+            pl.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.TRUE);
+            pl.put(BusinessEventPayloadKeys.IN_APP_NOTIFICATION_TYPE, "NEW_PENDING_ORDER");
+            String svc = order.getServiceName() != null ? order.getServiceName() : "";
+            double amt = order.getTotalAmount() != null ? order.getTotalAmount().doubleValue() : 0d;
+            pl.put(BusinessEventPayloadKeys.USER_IN_APP_MESSAGE,
+                    String.format("Nouvelle commande en attente : %s (%.2f€)", svc, amt));
+        }
+        eventPublisher.publishEvent(LmpBusinessEvent.of(LmpBusinessEvent.EventType.ORDER_CREATED, "billing",
+                order.getId(), pl));
     }
 
     /**

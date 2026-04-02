@@ -1,5 +1,15 @@
 import { isPlatformBrowser, NgClass } from '@angular/common';
-import { Component, inject, OnInit, PLATFORM_ID, signal, effect, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  PLATFORM_ID,
+  computed,
+  effect,
+  resource,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
@@ -15,6 +25,14 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/services/admin.service';
 import { AdminSseService } from '../../core/services/admin-sse.service';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { environment } from '../../../environments/environment';
+import { firstValueFrom } from 'rxjs';
+
+type AdminDashboardPayload = {
+  stats: AdminDashboardStats | null;
+  catalog: CatalogStats | null;
+};
 
 @Component({
   selector: 'lmp-admin-dashboard',
@@ -41,19 +59,18 @@ import { AdminSseService } from '../../core/services/admin-sse.service';
           variant="ghost"
           size="icon"
           class="cursor-pointer"
-          (click)="loadStats()"
+          (click)="refreshStats()"
         >
           <lucide-icon
             [img]="RefreshCwIcon"
             [size]="18"
-            [ngClass]="{ 'animate-spin': loading() }"
+            [ngClass]="{ 'animate-spin': statsRefreshing() }"
           ></lucide-icon>
         </button>
       </div>
     </div>
 
-    <!-- Loading -->
-    @if (loading()) {
+    @if (blockingLoader()) {
       <div class="mt-8 flex items-center justify-center py-16">
         <lucide-icon
           [img]="Loader2Icon"
@@ -64,7 +81,7 @@ import { AdminSseService } from '../../core/services/admin-sse.service';
     }
 
     <!-- Stats Grid -->
-    @if (!loading() && stats()) {
+    @if (!blockingLoader() && stats()) {
       <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <!-- Users -->
         <div
@@ -285,6 +302,8 @@ export class AdminDashboardComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly adminSse = inject(AdminSseService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
 
   constructor() {
     effect(() => {
@@ -293,15 +312,46 @@ export class AdminDashboardComponent implements OnInit {
       const appts = this.adminSse.badgeAppointments();
       if (orders > 0 || users > 0 || appts > 0) {
         if (isPlatformBrowser(this.platformId)) {
-          untracked(() => this.loadStats());
+          untracked(() => this.dashboardResource.reload());
         }
       }
     });
   }
 
-  readonly stats = signal<AdminDashboardStats | null>(null);
-  readonly catalogStats = signal<CatalogStats | null>(null);
-  readonly loading = signal(true);
+  readonly dashboardResource = resource<AdminDashboardPayload, { browser: boolean }>({
+    params: () => ({ browser: isPlatformBrowser(this.platformId) }),
+    loader: async ({ params }) => {
+      if (!params.browser) {
+        return { stats: null, catalog: null };
+      }
+      let stats: AdminDashboardStats | null = null;
+      try {
+        stats = await firstValueFrom(this.adminService.getDashboardStats());
+      } catch {
+        stats = null;
+      }
+      let catalog: CatalogStats | null = null;
+      try {
+        catalog = await firstValueFrom(this.adminService.getCatalogStats());
+      } catch {
+        catalog = null;
+      }
+      return { stats, catalog };
+    },
+  });
+
+  readonly stats = computed(() => this.dashboardResource.value()?.stats ?? null);
+  readonly catalogStats = computed(() => this.dashboardResource.value()?.catalog ?? null);
+
+  readonly blockingLoader = computed(
+    () => this.dashboardResource.status() === 'loading' && !this.dashboardResource.hasValue(),
+  );
+
+  readonly statsRefreshing = computed(
+    () =>
+      this.dashboardResource.status() === 'loading' ||
+      this.dashboardResource.status() === 'reloading',
+  );
 
   readonly UsersIcon = Users;
   readonly OrdersIcon = ShoppingCart;
@@ -314,26 +364,15 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      this.loadStats();
-    } else {
-      this.loading.set(false);
+      this.visiblePoll.subscribeWhileVisible(
+        this.destroyRef,
+        environment.dashboardPollIntervalMs,
+        () => this.dashboardResource.reload(),
+      );
     }
   }
 
-  loadStats(): void {
-    this.loading.set(true);
-    this.adminService.getDashboardStats().subscribe({
-      next: (data) => {
-        this.stats.set(data);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
-    this.adminService.getCatalogStats().subscribe({
-      next: (data) => this.catalogStats.set(data),
-      error: () => {
-        /* évite une erreur RxJS non gérée (ex. 401) */
-      },
-    });
+  refreshStats(): void {
+    this.dashboardResource.reload();
   }
 }

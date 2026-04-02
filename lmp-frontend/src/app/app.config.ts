@@ -1,8 +1,8 @@
 import {
   ApplicationConfig,
-  APP_INITIALIZER,
   LOCALE_ID,
   inject,
+  provideAppInitializer,
 } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
@@ -19,16 +19,6 @@ import { ThemeService, AuthService } from './core/services';
 
 registerLocaleData(localeFr);
 
-function initializeTheme(): () => void {
-  const themeService = inject(ThemeService);
-  return () => themeService.init();
-}
-
-function initializeAuth(): () => Promise<void> {
-  const authService = inject(AuthService);
-  return () => authService.checkSession();
-}
-
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(
@@ -42,16 +32,10 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([credentialsInterceptor, csrfInterceptor, errorInterceptor]),
     ),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeTheme,
-      multi: true,
-    },
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeAuth,
-      multi: true,
-    },
+    provideAppInitializer(() => {
+      inject(ThemeService).init();
+    }),
+    provideAppInitializer(() => inject(AuthService).checkSession()),
     { provide: LOCALE_ID, useValue: 'fr' },
   ],
 };

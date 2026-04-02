@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import {
   LucideAngularModule,
@@ -15,6 +15,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { NotificationService } from '../../core/services/notification.service';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 
 interface Appointment {
   id: string;
@@ -149,17 +151,20 @@ interface ApiResponse<T> {
 export class UserAppointmentsComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
 
   constructor() {
     effect(() => {
       const hint = this.notificationService.liveAppointmentHint();
       if (hint > 0) {
-        untracked(() => this.loadAppointments());
+        untracked(() => this.loadAppointments({ silent: true }));
       }
     });
   }
 
   readonly loading = signal(true);
+  private readonly listFetch = createListFetchLoading(this.loading);
   readonly appointments = signal<Appointment[]>([]);
   readonly upcomingAppointments = signal<Appointment[]>([]);
   readonly pastAppointments = signal<Appointment[]>([]);
@@ -176,10 +181,16 @@ export class UserAppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAppointments();
+    this.visiblePoll.subscribeWhileVisible(
+      this.destroyRef,
+      environment.dashboardPollIntervalMs,
+      () => this.loadAppointments({ silent: true }),
+    );
   }
 
-  loadAppointments(): void {
-    this.loading.set(true);
+  loadAppointments(options?: { silent?: boolean }): void {
+    const silent = options?.silent === true;
+    this.listFetch.beforeFetch(silent);
     this.http
       .get<ApiResponse<Appointment[]>>(`${environment.apiUrl}/api/v1/dashboard/stats`, { withCredentials: true })
       .subscribe({
@@ -189,13 +200,13 @@ export class UserAppointmentsComponent implements OnInit {
           const allAppts = stats?.upcomingAppointmentsList ?? [];
           this.appointments.set(allAppts);
           this.splitAppointments(allAppts);
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
         error: () => {
           this.appointments.set([]);
           this.upcomingAppointments.set([]);
           this.pastAppointments.set([]);
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
       });
   }

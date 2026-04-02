@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { NgClass, DatePipe, CurrencyPipe, SlicePipe } from '@angular/common';
 import {
   LucideAngularModule,
@@ -29,6 +29,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AdminSseService } from '../../core/services/admin-sse.service';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 
 interface OrderItem {
   id: string;
@@ -667,12 +669,14 @@ const ORDER_STEPS = [
 export class AdminOrdersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly adminSse = inject(AdminSseService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
 
   constructor() {
     effect(() => {
       const badge = this.adminSse.badgeOrders();
       if (badge > 0) {
-        untracked(() => this.loadOrders());
+        untracked(() => this.loadOrders({ silent: true }));
       }
     });
   }
@@ -700,6 +704,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly CreditCardIcon = CreditCard;
 
   readonly loading = signal(false);
+  private readonly listFetch = createListFetchLoading(this.loading);
   readonly loadingDetail = signal(false);
   readonly savingProgress = signal(false);
   readonly orders = signal<OrderItem[]>([]);
@@ -733,10 +738,16 @@ export class AdminOrdersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadOrders();
+    this.visiblePoll.subscribeWhileVisible(
+      this.destroyRef,
+      environment.dashboardPollIntervalMs,
+      () => this.loadOrders({ silent: true }),
+    );
   }
 
-  loadOrders(): void {
-    this.loading.set(true);
+  loadOrders(options?: { silent?: boolean }): void {
+    const silent = options?.silent === true;
+    this.listFetch.beforeFetch(silent);
     const params: Record<string, string> = {
       page: this.currentPage().toString(),
       size: '20',
@@ -759,10 +770,10 @@ export class AdminOrdersComponent implements OnInit {
           })));
           this.totalOrders.set(page.totalElements);
           this.totalPages.set(page.totalPages);
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
         error: () => {
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
       });
   }

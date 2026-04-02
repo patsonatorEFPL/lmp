@@ -1,4 +1,15 @@
-import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  PLATFORM_ID,
+  computed,
+  effect,
+  resource,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatePipe, CurrencyPipe, NgClass } from '@angular/common';
 import {
@@ -24,6 +35,21 @@ import {
   DashboardStats,
 } from '../../core/services/dashboard.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { environment } from '../../../environments/environment';
+import { firstValueFrom } from 'rxjs';
+
+const EMPTY_DASHBOARD_STATS: DashboardStats = {
+  totalOrders: 0,
+  completedOrders: 0,
+  inProgressOrders: 0,
+  totalReviews: 0,
+  upcomingAppointments: 0,
+  totalSpent: 0,
+  recentOrders: [],
+  recentReviews: [],
+  upcomingAppointmentsList: [],
+};
 
 @Component({
   selector: 'lmp-dashboard-overview',
@@ -52,24 +78,24 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
         <button
           hlmBtn variant="ghost" size="icon" class="cursor-pointer"
-          (click)="loadStats()"
+          (click)="refreshStats()"
         >
           <lucide-icon
             [img]="RefreshCwIcon" [size]="18"
-            [ngClass]="{ 'animate-spin': loading() }"
+            [ngClass]="{ 'animate-spin': statsRefreshing() }"
           ></lucide-icon>
         </button>
       </div>
     </div>
 
-    <!-- Loading -->
-    @if (loading()) {
+    <!-- Loading (premier chargement uniquement ; rechargement silencieux en reloading) -->
+    @if (blockingLoader()) {
       <div class="mt-8 flex items-center justify-center py-16">
         <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
       </div>
     }
 
-    @if (!loading() && stats()) {
+    @if (!blockingLoader() && stats()) {
       <!-- Quick stats -->
       <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-sm border border-(--border) bg-(--card) p-5">
@@ -288,19 +314,45 @@ export class DashboardOverviewComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly dashboardService = inject(DashboardService);
   private readonly notificationService = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
+  private readonly platformId = inject(PLATFORM_ID);
 
   constructor() {
     effect(() => {
-      const orders = this.notificationService.liveOrderHint();
-      const appts = this.notificationService.liveAppointmentHint();
-      if (orders > 0 || appts > 0) {
-        untracked(() => this.loadStats());
+      const statsHint = this.notificationService.liveDashboardStatsHint();
+      if (statsHint > 0) {
+        untracked(() => this.statsResource.reload());
       }
     });
   }
 
-  readonly stats = signal<DashboardStats | null>(null);
-  readonly loading = signal(true);
+  /** Rechargé quand `browser` passe à true (hydratation) ou via `reload()`. */
+  readonly statsResource = resource({
+    params: () => ({ browser: isPlatformBrowser(this.platformId) }),
+    loader: async ({ params }) => {
+      if (!params.browser) {
+        return null;
+      }
+      try {
+        return await firstValueFrom(this.dashboardService.getStats());
+      } catch {
+        return EMPTY_DASHBOARD_STATS;
+      }
+    },
+  });
+
+  readonly stats = computed(() => this.statsResource.value() ?? null);
+
+  readonly blockingLoader = computed(
+    () => this.statsResource.status() === 'loading' && !this.statsResource.hasValue(),
+  );
+
+  readonly statsRefreshing = computed(
+    () =>
+      this.statsResource.status() === 'loading' ||
+      this.statsResource.status() === 'reloading',
+  );
 
   // Icons
   readonly ShoppingCartIcon = ShoppingCart;
@@ -323,25 +375,17 @@ export class DashboardOverviewComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.loadStats();
+    if (isPlatformBrowser(this.platformId)) {
+      this.visiblePoll.subscribeWhileVisible(
+        this.destroyRef,
+        environment.dashboardPollIntervalMs,
+        () => this.statsResource.reload(),
+      );
+    }
   }
 
-  loadStats(): void {
-    this.loading.set(true);
-    this.dashboardService.getStats().subscribe({
-      next: (data) => {
-        this.stats.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.stats.set({
-          totalOrders: 0, completedOrders: 0, inProgressOrders: 0,
-          totalReviews: 0, upcomingAppointments: 0, totalSpent: 0,
-          recentOrders: [], recentReviews: [], upcomingAppointmentsList: [],
-        });
-        this.loading.set(false);
-      },
-    });
+  refreshStats(): void {
+    this.statsResource.reload();
   }
 
   getStatusLabel(status: string): string {

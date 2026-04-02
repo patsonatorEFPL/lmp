@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { NgClass, DatePipe } from '@angular/common';
 import {
   LucideAngularModule,
@@ -26,6 +26,8 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AdminSseService } from '../../core/services/admin-sse.service';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 
 interface UserItem {
   id: string;
@@ -465,12 +467,14 @@ interface ApiResponse<T> {
 export class AdminUsersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly adminSse = inject(AdminSseService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
 
   constructor() {
     effect(() => {
       const badge = this.adminSse.badgeUsers();
       if (badge > 0) {
-        untracked(() => this.loadUsers());
+        untracked(() => this.loadUsers({ silent: true }));
       }
     });
   }
@@ -495,6 +499,7 @@ export class AdminUsersComponent implements OnInit {
   readonly InfoIcon = Info;
 
   readonly loading = signal(false);
+  private readonly listFetch = createListFetchLoading(this.loading);
   readonly saving = signal(false);
   readonly users = signal<UserItem[]>([]);
   readonly filteredUsers = signal<UserItem[]>([]);
@@ -511,10 +516,16 @@ export class AdminUsersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+    this.visiblePoll.subscribeWhileVisible(
+      this.destroyRef,
+      environment.dashboardPollIntervalMs,
+      () => this.loadUsers({ silent: true }),
+    );
   }
 
-  loadUsers(): void {
-    this.loading.set(true);
+  loadUsers(options?: { silent?: boolean }): void {
+    const silent = options?.silent === true;
+    this.listFetch.beforeFetch(silent);
     const params: Record<string, string> = {
       page: this.currentPage().toString(),
       size: '20',
@@ -533,10 +544,10 @@ export class AdminUsersComponent implements OnInit {
           this.filteredUsers.set(page.content);
           this.totalUsers.set(page.totalElements);
           this.totalPages.set(page.totalPages);
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
         error: () => {
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
       });
   }

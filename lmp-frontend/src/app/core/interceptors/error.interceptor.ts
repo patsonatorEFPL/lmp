@@ -1,26 +1,29 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
-import { inject, Injector } from '@angular/core';
+import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 
 /**
- * URLs that should NOT trigger a redirect to /login on 401.
- * - /auth/me : probe de session (déjà gérée par AuthService + garde).
- * - /services : catalogue public.
- * - Espace utilisateur (dashboard, commandes, notifications) : un 401 isolé ne doit pas
- *   expulser l’utilisateur comme un échec global ; les composants gèrent l’erreur.
- *   Sans cela, un 401 sur /dashboard/stats ou /notifications après F5 peut envoyer vers /login
- *   alors que /admin (autres endpoints) ne déclenche pas ce chemin.
+ * 401 sur ces URLs ne doit jamais déclencher une redirection globale :
+ * - /auth/me : son erreur est gérée par {@link AuthService#checkSession}.
+ * - /services : catalogue public ; un 401 ne doit pas envoyer un visiteur anonyme vers /login.
  */
-const SKIP_401_REDIRECT = [
-  '/api/v1/auth/me',
-  '/api/v1/services',
-  '/api/v1/dashboard',
-  '/api/v1/notifications',
-  '/api/v1/orders',
-];
+const SKIP_401_REDIRECT_URL_PARTS = ['/api/v1/auth/me', '/api/v1/services'];
+
+function shouldSkip401Redirect(req: { url: string }, authService: AuthService): boolean {
+  if (SKIP_401_REDIRECT_URL_PARTS.some((part) => req.url.includes(part))) {
+    return true;
+  }
+  if (authService.loading()) {
+    return true;
+  }
+  if (authService.isLoggedIn()) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Global error interceptor: handles 401/403 redirects
@@ -28,16 +31,13 @@ const SKIP_401_REDIRECT = [
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
-  const injector = inject(Injector);
+  const authService = inject(AuthService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
-        const shouldSkip = SKIP_401_REDIRECT.some((url) =>
-          req.url.includes(url),
-        );
-        if (!shouldSkip) {
-          injector.get(AuthService).clearUser();
+        if (!shouldSkip401Redirect(req, authService)) {
+          authService.clearUser();
           router.navigate(['/login']);
         }
       } else if (error.status === 403) {

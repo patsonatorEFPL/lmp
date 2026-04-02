@@ -57,6 +57,12 @@ export class NotificationService implements OnDestroy {
   readonly liveOrderHint = signal(0);
   /** Activité récente liée aux RDV (pour badge menu). */
   readonly liveAppointmentHint = signal(0);
+  /**
+   * Incrémenté sur les SSE utilisateur qui impactent {@code /dashboard/stats}
+   * (commandes, paiements, remboursements, avis, RDV). Le compteur « Commandes »
+   * ne doit pas dépendre uniquement de {@code order:*} : ex. {@code payment:succeeded}.
+   */
+  readonly liveDashboardStatsHint = signal(0);
 
   private readonly apiUrl = `${environment.apiUrl}/api/v1/notifications`;
   private readonly sseUrl = `${environment.apiUrl}/api/v1/sse/notifications`;
@@ -66,8 +72,10 @@ export class NotificationService implements OnDestroy {
   }
 
   /**
-   * Connect to SSE and load persisted notifications from backend.
-   * Should be called once the user is authenticated.
+   * Ouvre le SSE et charge les notifications persistées.
+   * Appelé automatiquement depuis {@link NotificationToastComponent} (racine {@code app.ts})
+   * dès que {@link AuthService#isAuthenticated} devient vrai — pas besoin d’appeler {@code connect()}
+   * depuis {@code DashboardLayoutComponent}.
    */
   connect(): void {
     if (!this.isBrowser) return;
@@ -164,6 +172,7 @@ export class NotificationService implements OnDestroy {
     this.loaded.set(false);
     this.liveOrderHint.set(0);
     this.liveAppointmentHint.set(0);
+    this.liveDashboardStatsHint.set(0);
   }
 
   /**
@@ -340,6 +349,15 @@ export class NotificationService implements OnDestroy {
       }
       if (evName.startsWith('appointment:')) {
         this.liveAppointmentHint.update((n) => n + 1);
+      }
+      if (
+        evName.startsWith('order:') ||
+        evName.startsWith('payment:') ||
+        evName.startsWith('refund:') ||
+        evName.startsWith('review:') ||
+        evName.startsWith('appointment:')
+      ) {
+        this.liveDashboardStatsHint.update((n) => n + 1);
       }
 
       // Avoid duplicates (DB id or event bus id)

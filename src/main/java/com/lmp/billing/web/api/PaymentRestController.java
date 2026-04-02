@@ -6,6 +6,7 @@ import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.catalog.service.ServiceCatalogService;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.service.PaymentService;
 import com.lmp.billing.dto.PaymentRequestDto;
 import com.lmp.billing.dto.PaymentResponseDto;
@@ -49,17 +50,20 @@ public class PaymentRestController {
     private final ServiceCatalogService catalogService;
     private final StripeCheckoutPaymentProcessor stripeCheckoutProcessor;
     private final PaymentService paymentService;
+    private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
                                  ServiceCatalogService catalogService,
                                  StripeCheckoutPaymentProcessor stripeCheckoutProcessor,
-                                 PaymentService paymentService) {
+                                 PaymentService paymentService,
+                                 OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
         this.stripeCheckoutProcessor = stripeCheckoutProcessor;
         this.paymentService = paymentService;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     // =========================================================================
@@ -135,6 +139,7 @@ public class PaymentRestController {
             order.setLastModifiedAt(LocalDateTime.now());
 
             Order savedOrder = orderRepository.save(order);
+            orderRealtimeEventPublisher.publishOrderCreated(savedOrder);
 
             // Créer la requête de paiement
             PaymentRequestDto paymentRequest = new PaymentRequestDto();

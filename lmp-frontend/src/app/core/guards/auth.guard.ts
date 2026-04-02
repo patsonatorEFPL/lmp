@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
 import { AuthService } from '../services/auth.service';
+import { AUTH_GUARD_LOADING_TIMEOUT_MS } from './guard-timeout';
 
 /**
  * Session cookies are not available during SSR. Defer the real check to the
@@ -37,7 +38,7 @@ export const authGuard: CanActivateFn = () => {
         ? true
         : router.createUrlTree(['/login']),
     ),
-    timeout(15_000),
+    timeout(AUTH_GUARD_LOADING_TIMEOUT_MS),
     catchError(() => of(router.createUrlTree(['/login']))),
   );
 };
@@ -66,7 +67,7 @@ export const moduleGuard = (requiredModule: string): CanActivateFn => {
         }
         return true;
       }),
-      timeout(15_000),
+      timeout(AUTH_GUARD_LOADING_TIMEOUT_MS),
       catchError(() => of(router.createUrlTree(['/login']))),
     );
   };

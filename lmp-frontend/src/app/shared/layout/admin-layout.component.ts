@@ -16,6 +16,7 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminSseService } from '../../core/services/admin-sse.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
@@ -220,6 +221,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
   readonly adminSse = inject(AdminSseService);
+  private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
 
   readonly DashboardIcon = LayoutDashboard;
@@ -247,6 +249,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
 
   onLogout(): void {
     this.adminSse.disconnect();
+    this.notificationService.reset();
     this.authService.logout();
     this.router.navigate(['/']);
   }

@@ -83,11 +83,6 @@ git_status.txt
 preview_payment.py
 take_screenshots.py
 
-### dev-browser (https://github.com/SawyerHood/dev-browser) ###
-# Caches / captures locales ; scripts locaux non versionnés (repo propre).
-**/.dev-browser/
-lmp-frontend/tools/dev-browser/
-
 ### OS Files ###
 .DS_Store
 Thumbs.db
