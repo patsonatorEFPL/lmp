@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
@@ -190,7 +191,9 @@ public class DashboardController {
         
         // Ajouter le nom du service dans les notes pour le moment
         order.setNotes("Service: " + intent.getServiceName() + " | Currency: " + intent.getCurrency());
-        
+
+        OrderProgressSync.applyMinimumForStatus(order);
+
         // Sauvegarder pour obtenir un ID
         return orderRepository.save(order);
     }

@@ -1,6 +1,7 @@
 package com.lmp.billing.service;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.PaymentTransaction;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.domain.PaymentStatus;
@@ -412,6 +413,7 @@ public class PaymentServiceImpl implements PaymentService {
         OrderStatus previous = order.getStatus();
         logger.debug("Updating order {} status from {} to {}", order.getId(), previous, status);
         order.setStatus(status);
+        OrderProgressSync.applyMinimumForStatus(order);
         order.setUpdatedAt(LocalDateTime.now());
         logger.debug("Saving order {} to database with new status: {}", order.getId(), status);
         Order savedOrder = orderRepository.save(order);

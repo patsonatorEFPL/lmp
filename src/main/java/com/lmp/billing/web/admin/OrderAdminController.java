@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.service.admin.OrderAdminService;
 import com.lmp.billing.service.admin.OrderStatusHistoryService;
@@ -343,6 +344,7 @@ public class OrderAdminController {
             if (request.containsKey("progressStatus")) {
                 order.setProgressStatus((String) request.get("progressStatus"));
             }
+            OrderProgressSync.applyMinimumForStatus(order);
             order.setUpdatedAt(LocalDateTime.now());
             orderRepository.save(order);
 

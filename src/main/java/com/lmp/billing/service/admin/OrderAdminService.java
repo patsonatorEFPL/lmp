@@ -24,6 +24,7 @@ import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.auth.domain.User;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
@@ -191,6 +192,7 @@ public class OrderAdminService {
 
         // Sauvegarde du changement
         order.setStatus(newStatus);
+        OrderProgressSync.applyMinimumForStatus(order);
         order.setLastModifiedAt(LocalDateTime.now());
         order = orderRepository.save(order);
 
@@ -241,6 +243,7 @@ public class OrderAdminService {
             }
         }
 
+        OrderProgressSync.applyMinimumForStatus(order);
         order = orderRepository.save(order);
 
         // Historique et notification
@@ -331,6 +334,7 @@ public class OrderAdminService {
                 order.setPaidAt(LocalDateTime.now());
             }
 
+            OrderProgressSync.applyMinimumForStatus(order);
             order = orderRepository.save(order);
 
             if (statusBeforeSync != order.getStatus()) {

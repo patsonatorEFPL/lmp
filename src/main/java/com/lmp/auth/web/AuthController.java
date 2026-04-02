@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.auth.domain.User;
 import com.lmp.catalog.domain.ServiceOffer;
 import com.lmp.billing.domain.OrderStatus;
@@ -186,6 +187,7 @@ public class AuthController {
             order.setTotalAmount(validatedAmount);
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
+            OrderProgressSync.applyMinimumForStatus(order);
             order = orderRepository.save(order);
 
             Map<String, Object> responseData = new HashMap<>();
