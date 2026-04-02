@@ -1,6 +1,7 @@
 package com.lmp.auth.service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import com.lmp.auth.domain.UserStatus;
 import com.lmp.crm.repository.AppointmentRepository;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.ReviewRepository;
+import com.lmp.auth.repository.RoleRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.auth.service.SessionSecurityService;
 
@@ -32,6 +34,8 @@ public class UserServiceImpl implements UserService {
 
         private final UserRepository userRepository;
 
+        private final RoleRepository roleRepository;
+
         private final PasswordEncoder passwordEncoder;
 
         private final SessionSecurityService sessionSecurityService;
@@ -44,12 +48,14 @@ public class UserServiceImpl implements UserService {
 
 
     public UserServiceImpl(UserRepository userRepository,
+                           RoleRepository roleRepository,
                            PasswordEncoder passwordEncoder,
                            SessionSecurityService sessionSecurityService,
                            OrderRepository orderRepository,
                            ReviewRepository reviewRepository,
                            AppointmentRepository appointmentRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.sessionSecurityService = sessionSecurityService;
         this.orderRepository = orderRepository;
@@ -361,6 +367,55 @@ public class UserServiceImpl implements UserService {
         return user.getRoles().stream()
                 .map(Role::getName)
                 .anyMatch(name -> name.equals(roleName));
+    }
+
+    @Override
+    @Transactional
+    public void setUserAdminRole(UUID targetUserId, boolean grantAdmin, UUID actingAdminId) {
+        if (!hasRole(actingAdminId, "ADMIN")) {
+            throw new RuntimeException("Seuls les administrateurs peuvent modifier les rôles");
+        }
+
+        User target = userRepository.findByIdWithRoles(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (target.getRoles() == null) {
+            target.setRoles(new HashSet<>());
+        }
+
+        Role adminRole = roleRepository.findByName("ADMIN")
+                .orElseThrow(() -> new RuntimeException("Rôle ADMIN introuvable"));
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("Rôle USER introuvable"));
+
+        boolean hasAdmin = target.getRoles().stream()
+                .anyMatch(r -> "ADMIN".equals(r.getName()));
+
+        if (grantAdmin) {
+            if (!hasAdmin) {
+                target.getRoles().add(adminRole);
+            }
+            if (target.getRoles().stream().noneMatch(r -> "USER".equals(r.getName()))) {
+                target.getRoles().add(userRole);
+            }
+            userRepository.save(target);
+            return;
+        }
+
+        if (targetUserId.equals(actingAdminId)) {
+            throw new RuntimeException("Vous ne pouvez pas retirer votre propre rôle administrateur");
+        }
+        if (hasAdmin) {
+            long adminCount = userRepository.countDistinctUsersWithRoleName("ADMIN");
+            if (adminCount <= 1) {
+                throw new RuntimeException("Impossible de retirer le dernier administrateur");
+            }
+            target.getRoles().removeIf(r -> "ADMIN".equals(r.getName()));
+        }
+        if (target.getRoles().stream().noneMatch(r -> "USER".equals(r.getName()))) {
+            target.getRoles().add(userRole);
+        }
+        userRepository.save(target);
     }
 
     /**

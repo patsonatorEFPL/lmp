@@ -36,6 +36,7 @@ import {
 } from '../../core/services/dashboard.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { PaymentSessionService } from '../../core/services/payment-session.service';
 import { FormsModule } from '@angular/forms';
 import { NotificationPanelComponent } from '../../shared/layout/notification-panel.component';
 
@@ -761,6 +762,7 @@ export class DashboardComponent implements OnInit {
   readonly notificationService = inject(NotificationService);
   private readonly dashboardService = inject(DashboardService);
   private readonly router = inject(Router);
+  private readonly paymentSession = inject(PaymentSessionService);
   private readonly http = inject(HttpClient);
 
   readonly DashboardIcon = LayoutDashboard;
@@ -963,19 +965,30 @@ export class DashboardComponent implements OnInit {
 
   payOrder(order: any): void {
     this.http
-      .post<any>(
-        `${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}`,
+      .post<{
+        success: boolean;
+        data?: { clientSecret: string; publishableKey: string; orderId: string };
+        message?: string;
+      }>(
+        `${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}/payment-element`,
         {},
         { withCredentials: true },
       )
       .subscribe({
         next: (res) => {
-          if (res.data?.redirectUrl) {
-            window.location.href = res.data.redirectUrl;
+          if (res.success && res.data?.clientSecret && res.data.publishableKey && res.data.orderId) {
+            this.paymentSession.start({
+              clientSecret: res.data.clientSecret,
+              publishableKey: res.data.publishableKey,
+              orderId: String(res.data.orderId),
+            });
+            void this.router.navigate(['/payment/process']);
+          } else {
+            alert(res.message || 'Erreur lors de la création du paiement.');
           }
         },
-        error: () => {
-          alert('Erreur lors de la création de la session de paiement.');
+        error: (err) => {
+          alert(err.error?.message || 'Erreur lors de la création du paiement.');
         },
       });
   }

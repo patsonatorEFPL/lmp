@@ -182,7 +182,10 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   private readonly maxPolls = 30; // 30 attempts × 2s = 60s max
 
   ngOnInit(): void {
-    const orderIdParam = this.route.snapshot.queryParamMap.get('order_id');
+    // Payment Element (confirmPayment return_url) utilise ?orderId= ; l’ancien redirect Checkout Java utilise ?order_id=
+    const q = this.route.snapshot.queryParamMap;
+    const orderIdParam =
+      q.get('orderId')?.trim() || q.get('order_id')?.trim() || null;
 
     if (!orderIdParam) {
       this.polling.set(false);

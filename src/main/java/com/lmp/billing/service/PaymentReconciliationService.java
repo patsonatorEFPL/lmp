@@ -18,6 +18,7 @@ import com.lmp.billing.repository.OrderRepository;
 import com.lmp.notification.service.EmailService;
 import com.lmp.billing.service.InvoicePdfService;
 import com.stripe.Stripe;
+import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 
 /**
@@ -106,14 +107,16 @@ public class PaymentReconciliationService {
         LocalDateTime cutoff = LocalDateTime.now().minusMinutes(pendingDelayMinutes);
         List<Order> staleOrders = orderRepository.findStaleOrdersWithStripeSession(
                 OrderStatus.PAYMENT_PENDING, cutoff);
+        List<Order> piOnly = orderRepository.findStaleOrdersWithPaymentIntentOnly(
+                OrderStatus.PAYMENT_PENDING, cutoff);
 
-        if (staleOrders.isEmpty()) {
+        if (staleOrders.isEmpty() && piOnly.isEmpty()) {
             logger.debug("RÉCONCILIATION - Aucune commande PAYMENT_PENDING à vérifier");
             return 0;
         }
 
-        logger.info("🔍 RÉCONCILIATION - {} commandes PAYMENT_PENDING à vérifier auprès de Stripe",
-                staleOrders.size());
+        logger.info("🔍 RÉCONCILIATION - {} commandes (session) + {} (PaymentIntent seul) PAYMENT_PENDING à vérifier",
+                staleOrders.size(), piOnly.size());
 
         int reconciledCount = 0;
 
@@ -121,6 +124,17 @@ public class PaymentReconciliationService {
             try {
                 boolean reconciled = reconcileOrderWithStripe(order);
                 if (reconciled) {
+                    reconciledCount++;
+                }
+            } catch (Exception e) {
+                logger.error("❌ RÉCONCILIATION - Erreur pour la commande {} : {}",
+                        order.getId(), e.getMessage());
+            }
+        }
+
+        for (Order order : piOnly) {
+            try {
+                if (reconcileOrderWithStripe(order)) {
                     reconciledCount++;
                 }
             } catch (Exception e) {
@@ -177,16 +191,32 @@ public class PaymentReconciliationService {
     }
 
     /**
+     * Session Checkout si présente, sinon PaymentIntent (Payment Element).
+     */
+    public boolean syncOrderPaymentImmediately(Order order) {
+        return reconcileOrderWithStripe(order);
+    }
+
+    /**
      * Vérifie une commande individuelle auprès de Stripe et met à jour son statut.
      *
      * @return true si la commande a été mise à jour, false sinon
      */
     private boolean reconcileOrderWithStripe(Order order) {
         String sessionId = order.getStripeSessionId();
-        if (sessionId == null || sessionId.isEmpty()) {
-            return false;
+        if (sessionId != null && !sessionId.isEmpty()) {
+            return reconcileCheckoutSession(order, sessionId);
         }
 
+        String piId = order.getStripePaymentIntentId();
+        if (piId != null && !piId.isEmpty()) {
+            return reconcilePaymentIntent(order, piId);
+        }
+
+        return false;
+    }
+
+    private boolean reconcileCheckoutSession(Order order, String sessionId) {
         try {
             Session session = Session.retrieve(sessionId);
             String paymentStatus = session.getPaymentStatus();
@@ -230,6 +260,83 @@ public class PaymentReconciliationService {
                     order.getId(), e.getMessage());
             return false;
         }
+    }
+
+    private boolean reconcilePaymentIntent(Order order, String paymentIntentId) {
+        try {
+            PaymentIntent pi = PaymentIntent.retrieve(paymentIntentId);
+            String status = pi.getStatus();
+
+            logger.info("🔍 RÉCONCILIATION - Commande {} (status={}), Stripe PI {} → status='{}'",
+                    order.getId(), order.getStatus(), paymentIntentId, status);
+
+            if ("succeeded".equals(status)) {
+                return confirmOrderFromPaymentIntent(order, pi);
+            }
+            if ("canceled".equals(status) && order.getStatus() == OrderStatus.PAYMENT_PENDING) {
+                order.setPaymentStatus("cancelled");
+                order.setUpdatedAt(LocalDateTime.now());
+                orderRepository.save(order);
+                return true;
+            }
+
+            return false;
+        } catch (com.stripe.exception.InvalidRequestException e) {
+            logger.warn("⚠️ RÉCONCILIATION - PaymentIntent Stripe introuvable pour commande {} : {}",
+                    order.getId(), e.getMessage());
+            return false;
+        } catch (Exception e) {
+            logger.error("❌ RÉCONCILIATION - Erreur PaymentIntent pour commande {} : {}",
+                    order.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean confirmOrderFromPaymentIntent(Order order, PaymentIntent pi) {
+        OrderStatus previousStatus = order.getStatus();
+
+        if (previousStatus == OrderStatus.CONFIRMED
+                || previousStatus == OrderStatus.PROCESSING
+                || previousStatus == OrderStatus.IN_PROGRESS
+                || previousStatus == OrderStatus.COMPLETED
+                || previousStatus == OrderStatus.SHIPPED
+                || previousStatus == OrderStatus.DELIVERED) {
+            return false;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        order.setStatus(OrderStatus.CONFIRMED);
+        order.setPaymentStatus("succeeded");
+        order.setPaidAt(now);
+        order.setUpdatedAt(now);
+        order.setStripePaymentIntentId(pi.getId());
+        if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
+            order.setPaymentMethod("payment_element");
+        }
+
+        OrderProgressSync.applyMinimumForStatus(order);
+
+        if (previousStatus == OrderStatus.CANCELLED) {
+            order.setCancellationReason(null);
+            order.setCancelledAt(null);
+        }
+
+        orderRepository.save(order);
+
+        orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previousStatus, OrderStatus.CONFIRMED);
+
+        logger.info("✅ RÉCONCILIATION - Commande {} confirmée ({} → CONFIRMED) via PaymentIntent",
+                order.getId(), previousStatus);
+
+        auditLogger.info("RECONCILIATION - Order {} status updated: {} → CONFIRMED, PaymentIntent: {}",
+                order.getId(), previousStatus, pi.getId());
+
+        if (order.getUser() != null) {
+            sendInvoiceAsync(order);
+        }
+
+        return true;
     }
 
     /**

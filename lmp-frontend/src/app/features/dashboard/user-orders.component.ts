@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, OnInit, signal, computed, effect, untracked } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DatePipe, CurrencyPipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NotificationService } from '../../core/services/notification.service';
@@ -28,6 +28,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
 import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
+import { PaymentSessionService } from '../../core/services/payment-session.service';
 
 interface OrderItem {
   id: string;
@@ -389,6 +390,8 @@ const ORDER_STEPS = [
 export class UserOrdersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly paymentSession = inject(PaymentSessionService);
   private readonly notificationService = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly visiblePoll = inject(VisiblePollService);
@@ -522,12 +525,30 @@ export class UserOrdersComponent implements OnInit {
 
   payOrder(order: OrderItem): void {
     this.http
-      .post<any>(`${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}`, {}, { withCredentials: true })
+      .post<{
+        success: boolean;
+        data?: { clientSecret: string; publishableKey: string; orderId: string };
+        message?: string;
+      }>(
+        `${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}/payment-element`,
+        {},
+        { withCredentials: true },
+      )
       .subscribe({
         next: (res) => {
-          if (res.data?.redirectUrl) {
-            window.location.href = res.data.redirectUrl;
+          if (res.success && res.data?.clientSecret && res.data.publishableKey && res.data.orderId) {
+            this.paymentSession.start({
+              clientSecret: res.data.clientSecret,
+              publishableKey: res.data.publishableKey,
+              orderId: String(res.data.orderId),
+            });
+            void this.router.navigate(['/payment/process']);
+          } else {
+            alert(res.message || 'Impossible de démarrer le paiement.');
           }
+        },
+        error: (err) => {
+          alert(err.error?.message || 'Impossible de démarrer le paiement.');
         },
       });
   }

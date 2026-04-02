@@ -45,4 +45,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
            "AND u.status = com.lmp.auth.domain.UserStatus.ACTIVE " +
            "AND u.registrationDate < :deadline")
     List<User> findUnverifiedExpiredUsers(@Param("deadline") LocalDateTime deadline);
+
+    @Query("SELECT COUNT(DISTINCT u.id) FROM User u JOIN u.roles r WHERE r.name = :roleName")
+    long countDistinctUsersWithRoleName(@Param("roleName") String roleName);
 }

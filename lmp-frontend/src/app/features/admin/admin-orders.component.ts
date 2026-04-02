@@ -115,7 +115,7 @@ const ORDER_STEPS = [
       <div class="flex items-center gap-2">
         <button
           hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
-          (click)="showCreateOrderModal.set(true)"
+          (click)="openCreateOrderModal()"
         >
           <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
           Créer une commande
@@ -556,7 +556,7 @@ const ORDER_STEPS = [
     @if (showCreateOrderModal()) {
       <div
         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-        (click)="showCreateOrderModal.set(false)"
+        (click)="closeCreateOrderModal()"
       >
         <div
           class="mx-4 w-full max-w-md rounded-sm border border-(--border) bg-(--card) shadow-2xl"
@@ -568,13 +568,19 @@ const ORDER_STEPS = [
             </h3>
             <button
               hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-              (click)="showCreateOrderModal.set(false)"
+              (click)="closeCreateOrderModal()"
             >
               <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
             </button>
           </div>
 
           <div class="space-y-4 px-6 py-5">
+            <label class="flex cursor-pointer items-start gap-2 text-sm text-(--foreground)">
+              <input type="checkbox" [(ngModel)]="newOrderForm.guestMode" name="guestMode" class="mt-1" />
+              <span>Client sans compte — lien sécurisé (inscription + paiement sur la page)</span>
+            </label>
+
+            @if (!newOrderForm.guestMode) {
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
                 Email de l'utilisateur *
@@ -586,6 +592,19 @@ const ORDER_STEPS = [
                 placeholder="user@example.com"
               />
             </div>
+            } @else {
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                Email du client (référence, optionnel)
+              </label>
+              <input
+                [(ngModel)]="newOrderForm.guestEmail"
+                type="email"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                placeholder="Pour vos notes — le client s’inscrira avec l’email de son choix"
+              />
+            </div>
+            }
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
                 Nom du service *
@@ -621,15 +640,34 @@ const ORDER_STEPS = [
                 placeholder="Description..."
               ></textarea>
             </div>
+
+            @if (guestPaymentLink()) {
+              <div class="rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-4">
+                <p class="text-xs font-medium text-(--foreground)">Lien à transmettre au client</p>
+                <input
+                  readonly
+                  class="mt-2 w-full rounded-sm border border-(--border) bg-(--background) px-2 py-2 font-mono text-xs text-(--foreground)"
+                  [value]="guestPaymentLink()!"
+                />
+                <button
+                  type="button"
+                  hlmBtn variant="outline" size="sm" class="mt-2 cursor-pointer"
+                  (click)="copyGuestLink()"
+                >
+                  Copier le lien
+                </button>
+              </div>
+            }
           </div>
 
           <div class="flex items-center justify-end gap-2 border-t border-(--border) px-6 py-4">
             <button
               hlmBtn variant="outline" size="sm" class="cursor-pointer"
-              (click)="showCreateOrderModal.set(false)"
+              (click)="closeCreateOrderModal()"
             >
-              Annuler
+              {{ guestPaymentLink() ? 'Fermer' : 'Annuler' }}
             </button>
+            @if (!guestPaymentLink()) {
             <button
               hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
               [disabled]="creatingOrder()"
@@ -642,6 +680,7 @@ const ORDER_STEPS = [
               }
               Créer
             </button>
+            }
           </div>
         </div>
       </div>
@@ -715,6 +754,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly orderDetail = signal<OrderDetail | null>(null);
   readonly toast = signal<{ type: 'success' | 'error'; message: string } | null>(null);
   readonly showCreateOrderModal = signal(false);
+  readonly guestPaymentLink = signal<string | null>(null);
   readonly creatingOrder = signal(false);
   readonly syncing = signal(false);
   readonly orderRefunds = signal<any[]>([]);
@@ -723,6 +763,8 @@ export class AdminOrdersComponent implements OnInit {
   readonly orderSteps = ORDER_STEPS;
 
   newOrderForm = {
+    guestMode: false,
+    guestEmail: '',
     userEmail: '',
     serviceName: '',
     amount: 0,
@@ -943,9 +985,76 @@ export class AdminOrdersComponent implements OnInit {
     return 'text-orange-500';
   }
 
+  openCreateOrderModal(): void {
+    this.guestPaymentLink.set(null);
+    this.newOrderForm = {
+      guestMode: false,
+      guestEmail: '',
+      userEmail: '',
+      serviceName: '',
+      amount: 0,
+      notes: '',
+    };
+    this.showCreateOrderModal.set(true);
+  }
+
+  closeCreateOrderModal(): void {
+    this.showCreateOrderModal.set(false);
+    this.guestPaymentLink.set(null);
+  }
+
+  copyGuestLink(): void {
+    const link = this.guestPaymentLink();
+    if (!link || typeof navigator === 'undefined' || !navigator.clipboard) {
+      return;
+    }
+    void navigator.clipboard.writeText(link).then(() => {
+      this.showToast('success', 'Lien copié dans le presse-papiers');
+    });
+  }
+
   createOrder(): void {
-    if (!this.newOrderForm.userEmail || !this.newOrderForm.serviceName || !this.newOrderForm.amount) {
-      this.showToast('error', 'Veuillez remplir tous les champs obligatoires');
+    if (!this.newOrderForm.serviceName || !this.newOrderForm.amount) {
+      this.showToast('error', 'Service et montant sont obligatoires');
+      return;
+    }
+
+    if (this.newOrderForm.guestMode) {
+      this.creatingOrder.set(true);
+      this.http
+        .post<ApiResponse<{ paymentLink?: string }>>(
+          `${environment.apiUrl}/api/v1/admin/orders/guest`,
+          {
+            serviceName: this.newOrderForm.serviceName,
+            amount: this.newOrderForm.amount,
+            currency: 'EUR',
+            notes: this.newOrderForm.notes,
+            guestEmail: this.newOrderForm.guestEmail?.trim() || undefined,
+          },
+          { withCredentials: true },
+        )
+        .subscribe({
+          next: (res) => {
+            this.creatingOrder.set(false);
+            const link = (res.data as any)?.paymentLink as string | undefined;
+            if (res.success && link) {
+              this.guestPaymentLink.set(link);
+              this.showToast('success', 'Commande invité créée — copiez le lien pour le client.');
+              this.loadOrders();
+            } else {
+              this.showToast('error', res.message || 'Erreur lors de la création');
+            }
+          },
+          error: (err) => {
+            this.creatingOrder.set(false);
+            this.showToast('error', err.error?.message || 'Erreur lors de la création');
+          },
+        });
+      return;
+    }
+
+    if (!this.newOrderForm.userEmail) {
+      this.showToast('error', 'L’email utilisateur est obligatoire');
       return;
     }
 
@@ -984,9 +1093,16 @@ export class AdminOrdersComponent implements OnInit {
             .subscribe({
               next: () => {
                 this.showToast('success', 'Commande créée pour ' + this.newOrderForm.userEmail);
-                this.showCreateOrderModal.set(false);
+                this.closeCreateOrderModal();
                 this.creatingOrder.set(false);
-                this.newOrderForm = { userEmail: '', serviceName: '', amount: 0, notes: '' };
+                this.newOrderForm = {
+                  guestMode: false,
+                  guestEmail: '',
+                  userEmail: '',
+                  serviceName: '',
+                  amount: 0,
+                  notes: '',
+                };
                 this.loadOrders();
               },
               error: (err) => {

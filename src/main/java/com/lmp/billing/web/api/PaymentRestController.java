@@ -10,7 +10,9 @@ import com.lmp.catalog.service.ServiceCatalogService;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.service.PaymentReconciliationService;
 import com.lmp.billing.service.PaymentService;
+import com.lmp.billing.service.StripePaymentIntentCheckoutService;
 import com.lmp.billing.dto.PaymentRequestDto;
+import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.dto.PaymentResponseDto;
 import com.lmp.billing.service.processor.StripeCheckoutPaymentProcessor;
 import com.lmp.auth.service.UserService;
@@ -55,6 +57,7 @@ public class PaymentRestController {
     private final PaymentService paymentService;
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
     private final PaymentReconciliationService paymentReconciliationService;
+    private final StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
@@ -62,7 +65,8 @@ public class PaymentRestController {
                                  StripeCheckoutPaymentProcessor stripeCheckoutProcessor,
                                  PaymentService paymentService,
                                  OrderRealtimeEventPublisher orderRealtimeEventPublisher,
-                                 PaymentReconciliationService paymentReconciliationService) {
+                                 PaymentReconciliationService paymentReconciliationService,
+                                 StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
@@ -70,6 +74,7 @@ public class PaymentRestController {
         this.paymentService = paymentService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.paymentReconciliationService = paymentReconciliationService;
+        this.stripePaymentIntentCheckoutService = stripePaymentIntentCheckoutService;
     }
 
     // =========================================================================
@@ -94,6 +99,12 @@ public class PaymentRestController {
             String paymentStatus,
             boolean ready,
             boolean paymentConfirmed
+    ) {}
+
+    public record PaymentElementResponse(
+            UUID orderId,
+            String clientSecret,
+            String publishableKey
     ) {}
 
     // =========================================================================
@@ -206,8 +217,93 @@ public class PaymentRestController {
                                         : "Failed to create checkout session"));
             }
 
+        } catch (PaymentProcessingException e) {
+            logger.error("Checkout (session) Stripe error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("Checkout error for offer {}: {}", request.offerId(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("An unexpected error occurred"));
+        }
+    }
+
+    @PostMapping("/checkout/payment-element")
+    @Operation(summary = "Paiement intégré (Payment Element)",
+            description = "Crée la commande et un PaymentIntent Stripe pour le formulaire embarqué (sans redirection Checkout hébergée)")
+    public ResponseEntity<ApiResponse<PaymentElementResponse>> createCheckoutPaymentElement(
+            @RequestBody CheckoutRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        if (Boolean.TRUE.equals(user.getVatReverseCharge())) {
+            String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+            if (vat.isEmpty() || !VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+        }
+
+        if (request.offerId() == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("offerId is required"));
+        }
+
+        Optional<ServiceOffer> offerOpt = catalogService.getValidOffer(request.offerId());
+        if (offerOpt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid or expired offer"));
+        }
+
+        ServiceOffer offer = offerOpt.get();
+        BigDecimal amount = offer.getPrice();
+        String serviceName = offer.getService().getTitle();
+        String currency = request.currency() != null ? request.currency() : "EUR";
+
+        try {
+            Order order = new Order();
+            order.setTotalAmount(amount);
+            order.setCurrency(currency);
+            order.setServiceName(serviceName);
+            order.setStatus(OrderStatus.PAYMENT_PENDING);
+            order.setUser(user);
+            order.setCreatedAt(LocalDateTime.now());
+            order.setUpdatedAt(LocalDateTime.now());
+            order.setLastModifiedAt(LocalDateTime.now());
+
+            applyVatSnapshotFromUser(order, user);
+            OrderProgressSync.applyMinimumForStatus(order);
+
+            Order savedOrder = orderRepository.save(order);
+            orderRealtimeEventPublisher.publishOrderCreated(savedOrder);
+
+            StripePaymentIntentCheckoutService.PaymentIntentResult pi =
+                    stripePaymentIntentCheckoutService.createOrRefreshPaymentIntent(
+                            savedOrder, user, getClientIp(httpRequest), "payment_element_offer");
+
+            savedOrder.setStripePaymentIntentId(pi.paymentIntentId());
+            savedOrder.setPaymentMethod("payment_element");
+            savedOrder.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(savedOrder);
+
+            return ResponseEntity.ok(ApiResponse.ok(new PaymentElementResponse(
+                    savedOrder.getId(),
+                    pi.clientSecret(),
+                    stripePaymentIntentCheckoutService.getPublishableKey())));
+
+        } catch (PaymentProcessingException e) {
+            logger.error("Payment Element checkout error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Payment Element checkout error for offer {}: {}", request.offerId(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("An unexpected error occurred"));
         }
@@ -306,6 +402,72 @@ public class PaymentRestController {
         }
     }
 
+    @PostMapping("/checkout-order/{orderId}/payment-element")
+    @Operation(summary = "Payer une commande existante (Payment Element)",
+            description = "Crée un PaymentIntent pour une commande PAYMENT_PENDING du client connecté")
+    public ResponseEntity<ApiResponse<PaymentElementResponse>> checkoutExistingOrderPaymentElement(
+            @PathVariable UUID orderId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .filter(o -> o.getUser() != null && o.getUser().getId().equals(user.getId()))
+                .orElse(null);
+
+        if (order == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (Boolean.TRUE.equals(user.getVatReverseCharge())) {
+            String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+            if (vat.isEmpty() || !VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+        }
+
+        if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Cette commande n'est pas en attente de paiement"));
+        }
+
+        try {
+            applyVatSnapshotFromUser(order, user);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+
+            StripePaymentIntentCheckoutService.PaymentIntentResult pi =
+                    stripePaymentIntentCheckoutService.createOrRefreshPaymentIntent(
+                            order, user, getClientIp(httpRequest), "payment_element_existing_order");
+
+            order.setStripePaymentIntentId(pi.paymentIntentId());
+            order.setPaymentMethod("payment_element");
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+
+            return ResponseEntity.ok(ApiResponse.ok(new PaymentElementResponse(
+                    order.getId(),
+                    pi.clientSecret(),
+                    stripePaymentIntentCheckoutService.getPublishableKey())));
+
+        } catch (PaymentProcessingException e) {
+            logger.error("Payment Element for order {}: {}", orderId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Payment Element for order {}: {}", orderId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("An unexpected error occurred"));
+        }
+    }
+
     @GetMapping("/status/{orderId}")
     @Operation(summary = "Statut de paiement", description = "Vérifie si le webhook Stripe a confirmé le paiement")
     public ResponseEntity<ApiResponse<PaymentStatusResponse>> getPaymentStatus(
@@ -347,7 +509,7 @@ public class PaymentRestController {
 
         Order order = orderOpt.get();
         try {
-            paymentReconciliationService.syncCheckoutSessionImmediately(order);
+            paymentReconciliationService.syncOrderPaymentImmediately(order);
         } catch (Exception e) {
             logger.warn("verify-with-stripe failed for order {}: {}", orderId, e.getMessage());
         }

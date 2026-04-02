@@ -1,6 +1,7 @@
 package com.lmp.auth.service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -127,10 +128,13 @@ public class AuthServiceImpl implements AuthService {
         user.setEmailVerified(false);
         user.setVerificationToken(generateVerificationToken());
 
-        // Assigner le rôle USER par défaut
+        // Assigner le rôle USER par défaut (HashSet : Set.of() est immuable et provoque
+        // UnsupportedOperationException quand Hibernate modifie la collection plus tard.)
         Role userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new RuntimeException("Rôle USER non trouvé"));
-        user.setRoles(Set.of(userRole));
+        Set<Role> roles = new HashSet<>();
+        roles.add(userRole);
+        user.setRoles(roles);
 
         // Sauvegarder l'utilisateur
         User savedUser = userRepository.save(user);
