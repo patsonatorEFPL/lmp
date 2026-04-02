@@ -1,4 +1,4 @@
-import { isPlatformBrowser, NgClass } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -18,11 +18,9 @@ import {
   Package,
   Calendar,
   TrendingUp,
-  RefreshCw,
   Loader2,
   ArrowRight,
 } from 'lucide-angular';
-import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminService, AdminDashboardStats, CatalogStats } from '../../core/services/admin.service';
 import { AdminSseService } from '../../core/services/admin-sse.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
@@ -37,41 +35,10 @@ type AdminDashboardPayload = {
 @Component({
   selector: 'lmp-admin-dashboard',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule, HlmButton, NgClass],
+  imports: [RouterLink, LucideAngularModule],
   template: `
-    <!-- Welcome Banner -->
-    <div
-      class="rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8"
-    >
-      <div class="flex items-center justify-between">
-        <div>
-          <h1
-            class="text-2xl font-bold text-(--foreground) sm:text-3xl"
-          >
-            Administration 🛡️
-          </h1>
-          <p class="mt-2 text-sm text-(--muted-foreground)">
-            Gérez les services, utilisateurs, commandes et plus encore.
-          </p>
-        </div>
-        <button
-          hlmBtn
-          variant="ghost"
-          size="icon"
-          class="cursor-pointer"
-          (click)="refreshStats()"
-        >
-          <lucide-icon
-            [img]="RefreshCwIcon"
-            [size]="18"
-            [ngClass]="{ 'animate-spin': statsRefreshing() }"
-          ></lucide-icon>
-        </button>
-      </div>
-    </div>
-
     @if (blockingLoader()) {
-      <div class="mt-8 flex items-center justify-center py-16">
+      <div class="flex items-center justify-center py-16">
         <lucide-icon
           [img]="Loader2Icon"
           [size]="32"
@@ -82,7 +49,7 @@ type AdminDashboardPayload = {
 
     <!-- Stats Grid -->
     @if (!blockingLoader() && stats()) {
-      <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <!-- Users -->
         <div
           class="rounded-sm border border-(--border) bg-(--card) p-5"
@@ -347,18 +314,11 @@ export class AdminDashboardComponent implements OnInit {
     () => this.dashboardResource.status() === 'loading' && !this.dashboardResource.hasValue(),
   );
 
-  readonly statsRefreshing = computed(
-    () =>
-      this.dashboardResource.status() === 'loading' ||
-      this.dashboardResource.status() === 'reloading',
-  );
-
   readonly UsersIcon = Users;
   readonly OrdersIcon = ShoppingCart;
   readonly PackageIcon = Package;
   readonly CalendarIcon = Calendar;
   readonly TrendingUpIcon = TrendingUp;
-  readonly RefreshCwIcon = RefreshCw;
   readonly Loader2Icon = Loader2;
   readonly ArrowRightIcon = ArrowRight;
 
@@ -372,7 +332,4 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  refreshStats(): void {
-    this.dashboardResource.reload();
-  }
 }
