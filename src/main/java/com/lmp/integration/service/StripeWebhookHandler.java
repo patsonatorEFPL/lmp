@@ -854,6 +854,7 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
+                        order.setCheckoutToken(null);
                         // Auto-verify user
                         if (order.getUser() != null) {
                             autoVerifyUserOnPayment(order.getUser());
@@ -919,6 +920,10 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
+                        if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
+                            order.setPaymentMethod("stripe_payment_intent");
+                        }
+                        order.setCheckoutToken(null);
                         // Auto-verify user
                         if (order.getUser() != null) {
                             autoVerifyUserOnPayment(order.getUser());
@@ -929,6 +934,10 @@ public class StripeWebhookHandler {
                     orderRepository.save(order);
 
                     orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
+
+                    if (newStatus == OrderStatus.CONFIRMED && order.getUser() != null) {
+                        sendInvoiceByEmail(order, order.getUser());
+                    }
 
                     logger.info(
                             "✅ Order status updated via PaymentIntent webhook - Order: {}, PaymentIntent: {}, Status: {} -> {}",
@@ -1390,6 +1399,7 @@ public class StripeWebhookHandler {
             if (newStatus == OrderStatus.CONFIRMED) {
                 order.setPaidAt(LocalDateTime.now());
                 order.setPaymentStatus("succeeded");
+                order.setCheckoutToken(null);
 
                 // 🆕 AUTO-VERIFY: Mark user's email as verified upon confirmed payment
                 if (order.getUser() != null) {

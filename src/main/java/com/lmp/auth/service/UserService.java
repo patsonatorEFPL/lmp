@@ -146,6 +146,16 @@ public interface UserService {
      * @return true si l'utilisateur a le rôle, false sinon
      */
     boolean hasRole(UUID userId, String roleName);
+
+    /**
+     * Accorde ou retire le rôle ADMIN (réservé aux administrateurs).
+     * Conserve le rôle USER ; empêche le retrait du dernier admin et l’auto-révocation.
+     *
+     * @param targetUserId utilisateur cible
+     * @param grantAdmin true pour ajouter ADMIN, false pour le retirer
+     * @param actingAdminId administrateur qui effectue l’action
+     */
+    void setUserAdminRole(UUID targetUserId, boolean grantAdmin, UUID actingAdminId);
     
     // Méthodes avec JOIN FETCH pour éviter LazyInitializationException
     

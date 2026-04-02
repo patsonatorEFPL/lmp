@@ -86,6 +86,20 @@ export const routes: Routes = [
         (m) => m.PaymentCancelComponent,
       ),
   },
+  {
+    path: 'payment/process',
+    loadComponent: () =>
+      import('./features/payment/payment-process.component').then(
+        (m) => m.PaymentProcessComponent,
+      ),
+  },
+  {
+    path: 'payment/guest',
+    loadComponent: () =>
+      import('./features/payment/payment-guest.component').then(
+        (m) => m.PaymentGuestComponent,
+      ),
+  },
 
   // Protected pages (user dashboard with sidebar layout)
   {

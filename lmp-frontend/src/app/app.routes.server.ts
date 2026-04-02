@@ -25,6 +25,8 @@ export const serverRoutes: ServerRoute[] = [
   // Payment callback pages — client-only
   { path: 'payment/success', renderMode: RenderMode.Client },
   { path: 'payment/cancel', renderMode: RenderMode.Client },
+  { path: 'payment/process', renderMode: RenderMode.Client },
+  { path: 'payment/guest', renderMode: RenderMode.Client },
 
   // Protected pages — client-only (require auth cookies)
   { path: 'dashboard', renderMode: RenderMode.Client },

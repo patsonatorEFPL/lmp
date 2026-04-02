@@ -113,6 +113,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      */
     Optional<Order> findByStripePaymentIntentId(String stripePaymentIntentId);
 
+    Optional<Order> findByCheckoutToken(String checkoutToken);
+
+    /**
+     * Commandes PAYMENT_PENDING avec PaymentIntent mais sans session Checkout (ex. Payment Element).
+     */
+    @Query("SELECT o FROM Order o WHERE o.status = :status AND (o.stripeSessionId IS NULL OR o.stripeSessionId = '') "
+            + "AND o.stripePaymentIntentId IS NOT NULL AND o.createdAt < :cutoff ORDER BY o.createdAt ASC")
+    List<Order> findStaleOrdersWithPaymentIntentOnly(@Param("status") OrderStatus status,
+            @Param("cutoff") LocalDateTime cutoff);
+
     /**
      * Statistiques globales des commandes
      */

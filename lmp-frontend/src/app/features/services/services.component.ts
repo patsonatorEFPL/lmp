@@ -25,6 +25,7 @@ import {
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from '../../core/services/profile.service';
+import { PaymentSessionService } from '../../core/services/payment-session.service';
 
 @Component({
   selector: 'lmp-services',
@@ -282,6 +283,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly seo = inject(SeoService);
   private readonly profileService = inject(ProfileService);
+  private readonly paymentSession = inject(PaymentSessionService);
 
   checkoutTaxForm = {
     vatReverseCharge: false,
@@ -482,10 +484,10 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.http
       .post<{
         success: boolean;
-        data?: { redirectUrl: string; sessionId: string; orderId: string };
+        data?: { clientSecret: string; publishableKey: string; orderId: string };
         message?: string;
       }>(
-        `${environment.apiUrl}/api/v1/payments/checkout`,
+        `${environment.apiUrl}/api/v1/payments/checkout/payment-element`,
         {
           offerId: service.currentOffer.id,
           currency: 'EUR',
@@ -495,8 +497,13 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe({
         next: (res) => {
           this.checkoutLoading.set(null);
-          if (res.success && res.data?.redirectUrl) {
-            window.location.href = res.data.redirectUrl;
+          if (res.success && res.data?.clientSecret && res.data.publishableKey && res.data.orderId) {
+            this.paymentSession.start({
+              clientSecret: res.data.clientSecret,
+              publishableKey: res.data.publishableKey,
+              orderId: String(res.data.orderId),
+            });
+            void this.router.navigate(['/payment/process']);
           } else {
             alert(res.message || 'Erreur lors de la création du paiement');
           }

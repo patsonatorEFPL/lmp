@@ -65,6 +65,9 @@ public class AdminRestController {
     @Value("${stripe.secret.key:${STRIPE_SECRET_KEY:}}")
     private String stripeSecretKey;
 
+    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private String frontendUrl;
+
     private final UserService userService;
     private final OrderRepository orderRepository;
     private final AppointmentRepository appointmentRepository;
@@ -165,11 +168,19 @@ public class AdminRestController {
 
     @PutMapping("/users/{id}")
     @Transactional
-    @Operation(summary = "Modifier un utilisateur", description = "Met à jour le statut, verrouillage, email ou rôle d'un utilisateur")
-    public ResponseEntity<ApiResponse<Void>> updateUser(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
+    @Operation(summary = "Modifier un utilisateur", description = "Met à jour le statut, verrouillage, email ou rôle administrateur (champ admin: true/false)")
+    public ResponseEntity<ApiResponse<Void>> updateUser(@PathVariable UUID id, @RequestBody Map<String, Object> data,
+            Authentication authentication) {
         try {
             User user = userService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+            if (data.containsKey("admin")) {
+                boolean grantAdmin = Boolean.TRUE.equals(data.get("admin"));
+                User actor = userService.findByEmail(authentication.getName())
+                        .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
+                userService.setUserAdminRole(id, grantAdmin, actor.getId());
+            }
 
             if (data.containsKey("status")) {
                 String status = (String) data.get("status");
@@ -493,6 +504,77 @@ public class AdminRestController {
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Commande créée pour " + user.getEmail(), OrderResponse.from(order)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/orders/guest")
+    @Transactional
+    @Operation(summary = "Créer une commande invité",
+            description = "Commande sans utilisateur ; un lien avec token permet au client de s'inscrire puis de payer")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createGuestOrder(@RequestBody Map<String, Object> data) {
+        try {
+            String serviceName = (String) data.get("serviceName");
+            double amount = ((Number) data.get("amount")).doubleValue();
+            String currency = data.containsKey("currency") ? (String) data.get("currency") : "EUR";
+            String notes = data.containsKey("notes") ? (String) data.get("notes") : null;
+            String guestEmail = data.containsKey("guestEmail") ? (String) data.get("guestEmail") : null;
+
+            if (serviceName == null || serviceName.isBlank()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("serviceName requis"));
+            }
+
+            Order order = new Order();
+            order.setUser(null);
+            order.setServiceName(serviceName.trim());
+            order.setTotalAmount(BigDecimal.valueOf(amount));
+            order.setCurrency(currency);
+            order.setStatus(OrderStatus.PAYMENT_PENDING);
+            StringBuilder noteBuilder = new StringBuilder();
+            if (guestEmail != null && !guestEmail.isBlank()) {
+                noteBuilder.append("[Contact invité] ").append(guestEmail.trim());
+            }
+            if (notes != null && !notes.isBlank()) {
+                if (!noteBuilder.isEmpty()) {
+                    noteBuilder.append("\n");
+                }
+                noteBuilder.append(notes);
+            }
+            order.setNotes(!noteBuilder.isEmpty() ? noteBuilder.toString() : null);
+            order.setAdminNotes("[Créée par admin — lien invité]");
+            order.setCreatedAt(LocalDateTime.now());
+            order.setUpdatedAt(LocalDateTime.now());
+            order.setLastModifiedAt(LocalDateTime.now());
+            order.setPriority(1);
+            order.setCheckoutToken(UUID.randomUUID().toString());
+
+            OrderProgressSync.applyMinimumForStatus(order);
+
+            order = orderRepository.save(order);
+
+            String base = frontendUrl != null ? frontendUrl.replaceAll("/$", "") : "http://localhost:4200";
+            String paymentLink = base + "/payment/guest?t=" + order.getCheckoutToken();
+
+            try {
+                Map<String, Object> pl = new HashMap<>();
+                pl.put(BusinessEventPayloadKeys.ORDER_ID, order.getId().toString());
+                pl.put(BusinessEventPayloadKeys.SERVICE_NAME, serviceName);
+                pl.put(BusinessEventPayloadKeys.AMOUNT, amount);
+                pl.put(BusinessEventPayloadKeys.MESSAGE, "Commande invité — lien à transmettre au client");
+                pl.put(BusinessEventPayloadKeys.NOTIFY_USER, Boolean.FALSE);
+                eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.ORDER_CREATED, "admin", order.getId(), pl));
+            } catch (Exception ignored) {
+                // Non-blocking
+            }
+
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("order", OrderResponse.from(order));
+            payload.put("checkoutToken", order.getCheckoutToken());
+            payload.put("paymentLink", paymentLink);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.ok("Commande invité créée — transmettez le lien au client", payload));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
