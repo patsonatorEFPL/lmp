@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +21,9 @@ import com.lmp.auth.domain.User;
 import com.lmp.auth.dto.RegisterDto;
 import com.lmp.auth.dto.UserResponse;
 import com.lmp.auth.service.UserService;
+import com.lmp.billing.dto.GuestCheckoutAttachRequest;
 import com.lmp.billing.dto.GuestCheckoutPrepareRequest;
+import com.lmp.billing.exception.GuestEmailAlreadyRegisteredException;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.service.GuestOrderCheckoutService;
 import com.lmp.shared.dto.ApiResponse;
@@ -41,7 +42,6 @@ import org.springframework.security.core.AuthenticationException;
  */
 @RestController
 @RequestMapping("/api/v1/payments/guest-order")
-@Transactional
 @Tag(name = "Payments", description = "Commande invité (lien sécurisé)")
 public class GuestOrderPaymentRestController {
 
@@ -120,6 +120,8 @@ public class GuestOrderPaymentRestController {
             logger.warn("guest prepare auth: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Une erreur inattendue s'est produite"));
+        } catch (GuestEmailAlreadyRegisteredException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
         } catch (IllegalArgumentException | IllegalStateException e) {
             logger.warn("guest prepare: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -132,6 +134,58 @@ public class GuestOrderPaymentRestController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Une erreur inattendue s'est produite"));
         }
+    }
+
+    @PostMapping("/attach")
+    @Operation(summary = "Rattacher la commande invité au compte connecté",
+            description = "Exige une session authentifiée. Lie la commande sans utilisateur au client ou rafraîchit le PaymentIntent si déjà liée.")
+    public ResponseEntity<ApiResponse<GuestPrepareResponse>> attachGuestOrder(
+            @Valid @RequestBody GuestCheckoutAttachRequest body,
+            Authentication authentication,
+            HttpServletRequest request) {
+
+        try {
+            User user = getAuthenticatedUser(authentication);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Authentification requise"));
+            }
+
+            GuestOrderCheckoutService.GuestPrepareResult result =
+                    guestOrderCheckoutService.attachGuestOrderToCurrentUser(
+                            body.getCheckoutToken(), user, getClientIp(request));
+
+            User refreshed = userService.findByEmailWithRoles(user.getEmail())
+                    .orElseThrow(() -> new IllegalStateException("Utilisateur introuvable"));
+
+            var payload = new GuestPrepareResponse(
+                    result.orderId(),
+                    result.clientSecret(),
+                    result.publishableKey(),
+                    UserResponse.from(refreshed));
+
+            return ResponseEntity.ok(ApiResponse.ok("Paiement prêt — procédez au règlement", payload));
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            logger.warn("guest attach: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (PaymentProcessingException e) {
+            logger.error("guest attach stripe: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("guest attach: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Une erreur inattendue s'est produite"));
+        }
+    }
+
+    private User getAuthenticatedUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            return null;
+        }
+        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
     private static String getClientIp(HttpServletRequest request) {

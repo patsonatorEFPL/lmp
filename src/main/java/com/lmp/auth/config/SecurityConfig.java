@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -92,8 +93,11 @@ public class SecurityConfig {
                                 "/api/v1/auth/resend-verification",
                                 "/api/v1/services/**",
                                 "/api/v1/contact",
-                                "/api/v1/appointments/**",
-                                "/api/v1/payments/guest-order/**")
+                                "/api/v1/appointments/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payments/guest-order/preview/**")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/guest-order/prepare")
                         .permitAll()
 
                         // Webhooks Stripe (pas d'auth)

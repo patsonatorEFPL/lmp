@@ -23,6 +23,8 @@ import {
   RefreshCcw,
   RotateCcw,
   CreditCard,
+  Link2,
+  Trash2,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -40,7 +42,8 @@ interface OrderItem {
   amount: number;
   status: string;
   createdAt: string;
-  paidAt: string | null;
+  /** Présent dans la réponse API liste admin (OrderResponse). */
+  paidAt?: string | null;
   progressPercentage?: number;
   progressStatus?: string;
   processingNotes?: string;
@@ -71,6 +74,7 @@ interface OrderDetail {
   userEmail: string | null;
   userName: string | null;
   userId: string | null;
+  guestPaymentLink?: string | null;
 }
 
 interface PageResponse<T> {
@@ -212,14 +216,28 @@ const ORDER_STEPS = [
                   {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
                 </td>
                 <td class="px-4 py-3">
-                  <button
-                    hlmBtn variant="ghost" size="icon"
-                    class="h-8 w-8 cursor-pointer"
-                    (click)="viewOrderDetail(order.id)"
-                    title="Voir les détails"
-                  >
-                    <lucide-icon [img]="EyeIcon" [size]="16" class="text-(--primary)"></lucide-icon>
-                  </button>
+                  <div class="flex items-center gap-1">
+                    <button
+                      hlmBtn variant="ghost" size="icon"
+                      class="h-8 w-8 cursor-pointer"
+                      (click)="viewOrderDetail(order.id)"
+                      title="Voir les détails"
+                    >
+                      <lucide-icon [img]="EyeIcon" [size]="16" class="text-(--primary)"></lucide-icon>
+                    </button>
+                    @if (canDeleteOrderRow(order)) {
+                      <button
+                        type="button"
+                        hlmBtn variant="ghost" size="icon"
+                        class="h-8 w-8 cursor-pointer text-red-600 hover:bg-red-500/10 hover:text-red-700"
+                        [disabled]="deletingOrder()"
+                        (click)="confirmAndDeleteOrder(order.id)"
+                        title="Supprimer la commande"
+                      >
+                        <lucide-icon [img]="Trash2Icon" [size]="16"></lucide-icon>
+                      </button>
+                    }
+                  </div>
                 </td>
               </tr>
             } @empty {
@@ -336,6 +354,28 @@ const ORDER_STEPS = [
                   </div>
                 </div>
               </div>
+
+              @if (orderDetail()!.guestPaymentLink) {
+                <div class="rounded-sm border border-emerald-500/30 bg-emerald-500/5 p-4">
+                  <p class="text-xs font-medium text-(--foreground)">Lien de paiement invité</p>
+                  <p class="mt-1 text-xs text-(--muted-foreground)">
+                    À envoyer au client tant que le paiement n’est pas confirmé.
+                  </p>
+                  <input
+                    readonly
+                    class="mt-2 w-full rounded-sm border border-(--border) bg-(--background) px-2 py-2 font-mono text-xs text-(--foreground)"
+                    [value]="orderDetail()!.guestPaymentLink!"
+                  />
+                  <button
+                    type="button"
+                    hlmBtn variant="outline" size="sm" class="mt-2 cursor-pointer gap-2"
+                    (click)="copyGuestPaymentLink(orderDetail()!.guestPaymentLink!)"
+                  >
+                    <lucide-icon [img]="Link2Icon" [size]="14"></lucide-icon>
+                    Copier le lien
+                  </button>
+                </div>
+              }
 
               <div class="h-px bg-(--border)"></div>
 
@@ -513,6 +553,20 @@ const ORDER_STEPS = [
                     Facture disponible après confirmation
                   </span>
                 }
+                @if (canDeleteOrderDetail()) {
+                  <button
+                    hlmBtn variant="destructive" size="sm" class="cursor-pointer gap-2"
+                    [disabled]="deletingOrder()"
+                    (click)="confirmAndDeleteOrder(orderDetail()!.id, { closeModal: true })"
+                  >
+                    @if (deletingOrder()) {
+                      <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                    } @else {
+                      <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                    }
+                    Supprimer
+                  </button>
+                }
                 <button
                   hlmBtn variant="outline" size="sm" class="cursor-pointer gap-2"
                   [disabled]="syncing()"
@@ -535,7 +589,7 @@ const ORDER_STEPS = [
               </button>
               <button
                 hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
-                [disabled]="savingProgress()"
+                [disabled]="savingProgress() || deletingOrder()"
                 (click)="saveOrderProgress()"
               >
                 @if (savingProgress()) {
@@ -741,6 +795,8 @@ export class AdminOrdersComponent implements OnInit {
   readonly RefreshCcwIcon = RefreshCcw;
   readonly RotateCcwIcon = RotateCcw;
   readonly CreditCardIcon = CreditCard;
+  readonly Link2Icon = Link2;
+  readonly Trash2Icon = Trash2;
 
   readonly loading = signal(false);
   private readonly listFetch = createListFetchLoading(this.loading);
@@ -758,6 +814,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly creatingOrder = signal(false);
   readonly syncing = signal(false);
   readonly orderRefunds = signal<any[]>([]);
+  readonly deletingOrder = signal(false);
 
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
@@ -804,12 +861,22 @@ export class AdminOrdersComponent implements OnInit {
       .subscribe({
         next: (res) => {
           const page = res.data!;
-          this.orders.set(page.content.map(o => ({
-            ...o,
-            customerName: (o as any).userName || (o as any).customerName || '',
-            customerEmail: (o as any).userEmail || (o as any).customerEmail || '',
-            amount: (o as any).totalAmount || (o as any).amount || 0,
-          })));
+          this.orders.set(
+            page.content.map((raw) => {
+              const o = raw as OrderItem & {
+                userName?: string;
+                userEmail?: string;
+                totalAmount?: number;
+              };
+              return {
+                ...o,
+                customerName: o.userName || o.customerName || '',
+                customerEmail: o.userEmail || o.customerEmail || '',
+                amount: o.totalAmount ?? o.amount ?? 0,
+                paidAt: o.paidAt ?? null,
+              };
+            }),
+          );
           this.totalOrders.set(page.totalElements);
           this.totalPages.set(page.totalPages);
           this.listFetch.afterFetch();
@@ -871,6 +938,54 @@ export class AdminOrdersComponent implements OnInit {
     this.showDetailModal.set(false);
     this.orderDetail.set(null);
     this.orderRefunds.set([]);
+  }
+
+  canDeleteOrderRow(order: OrderItem): boolean {
+    if (order.paidAt) {
+      return false;
+    }
+    return order.status === 'PAYMENT_PENDING' || order.status === 'CANCELLED';
+  }
+
+  canDeleteOrderDetail(): boolean {
+    const d = this.orderDetail();
+    if (!d || d.paidAt) {
+      return false;
+    }
+    if (d.status !== 'PAYMENT_PENDING' && d.status !== 'CANCELLED') {
+      return false;
+    }
+    if (this.orderRefunds().length > 0) {
+      return false;
+    }
+    return true;
+  }
+
+  confirmAndDeleteOrder(orderId: string, options?: { closeModal?: boolean }): void {
+    const msg =
+      'Supprimer définitivement cette commande et les données associées (lignes, historique) ? Cette action est irréversible.';
+    if (!confirm(msg)) {
+      return;
+    }
+    this.deletingOrder.set(true);
+    this.http
+      .delete<ApiResponse<void>>(`${environment.apiUrl}/api/v1/admin/orders/${orderId}`, {
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (res) => {
+          this.deletingOrder.set(false);
+          this.showToast('success', res.message ?? 'Commande supprimée');
+          if (options?.closeModal) {
+            this.closeDetailModal();
+          }
+          this.loadOrders();
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.deletingOrder.set(false);
+          this.showToast('error', err.error?.message ?? 'Impossible de supprimer la commande');
+        },
+      });
   }
 
   saveOrderProgress(): void {
@@ -1005,11 +1120,17 @@ export class AdminOrdersComponent implements OnInit {
 
   copyGuestLink(): void {
     const link = this.guestPaymentLink();
+    if (link) {
+      this.copyGuestPaymentLink(link);
+    }
+  }
+
+  copyGuestPaymentLink(link: string): void {
     if (!link || typeof navigator === 'undefined' || !navigator.clipboard) {
       return;
     }
     void navigator.clipboard.writeText(link).then(() => {
-      this.showToast('success', 'Lien copié dans le presse-papiers');
+      this.showToast('success', 'Lien de paiement copié dans le presse-papiers');
     });
   }
 

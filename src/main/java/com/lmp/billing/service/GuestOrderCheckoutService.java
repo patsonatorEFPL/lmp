@@ -18,6 +18,7 @@ import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.dto.GuestCheckoutPrepareRequest;
+import com.lmp.billing.exception.GuestEmailAlreadyRegisteredException;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.shared.util.VatIdentifierUtils;
@@ -105,8 +106,8 @@ public class GuestOrderCheckoutService {
         }
 
         if (authService.existsByEmail(reg.getEmail())) {
-            throw new IllegalStateException(
-                    "Cet email est déjà enregistré. Connectez-vous et payez la commande depuis votre espace.");
+            throw new GuestEmailAlreadyRegisteredException(
+                    "Cet e-mail est déjà enregistré. Connectez-vous pour finaliser le paiement.");
         }
 
         authService.validateRegistrationData(reg);
@@ -144,9 +145,54 @@ public class GuestOrderCheckoutService {
             logger.warn("Emails post-inscription invité non envoyés: {}", e.getMessage());
         }
 
+        return completePaymentIntentForGuestOrder(order, managed, customerIp, "guest_checkout");
+    }
+
+    /**
+     * Utilisateur déjà connecté : rattache la commande invité (sans utilisateur) au compte courant,
+     * ou recharge le PaymentIntent si la commande est déjà la sienne.
+     */
+    @Transactional
+    public GuestPrepareResult attachGuestOrderToCurrentUser(String token, User currentUser, String customerIp)
+            throws PaymentProcessingException {
+
+        String t = token != null ? token.trim() : "";
+        if (t.isEmpty()) {
+            throw new IllegalArgumentException("Token de commande manquant");
+        }
+
+        Order order = orderRepository.findByCheckoutToken(t)
+                .orElseThrow(() -> new IllegalArgumentException("Lien invalide ou expiré"));
+
+        if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+            throw new IllegalStateException("Cette commande n'est plus payable via ce lien");
+        }
+
+        User managed = userService.findById(currentUser.getId())
+                .orElseThrow(() -> new IllegalStateException("Utilisateur introuvable"));
+
+        if (order.getUser() != null) {
+            if (!order.getUser().getId().equals(managed.getId())) {
+                throw new IllegalStateException("Cette commande est associée à un autre compte");
+            }
+            return completePaymentIntentForGuestOrder(order, managed, customerIp, "guest_checkout_existing");
+        }
+
+        order.setUser(managed);
+        applyVatSnapshotFromUser(order, managed);
+        order.setUpdatedAt(LocalDateTime.now());
+        order.setLastModifiedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        return completePaymentIntentForGuestOrder(order, managed, customerIp, "guest_checkout_attach");
+    }
+
+    private GuestPrepareResult completePaymentIntentForGuestOrder(Order order, User managed, String customerIp,
+            String creationMode) throws PaymentProcessingException {
+
         StripePaymentIntentCheckoutService.PaymentIntentResult pi =
                 stripePaymentIntentCheckoutService.createOrRefreshPaymentIntent(
-                        order, managed, customerIp, "guest_checkout");
+                        order, managed, customerIp, creationMode);
 
         order.setStripePaymentIntentId(pi.paymentIntentId());
         order.setPaymentMethod("payment_element");
