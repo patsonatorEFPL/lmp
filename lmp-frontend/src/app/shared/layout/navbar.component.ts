@@ -11,7 +11,7 @@ import {
   viewChild,
   ElementRef,
 } from '@angular/core';
-import { isPlatformBrowser, NgClass, UpperCasePipe } from '@angular/common';
+import { isPlatformBrowser, NgClass } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideAngularModule,
@@ -27,10 +27,12 @@ import {
   Globe,
   HelpCircle,
   Check,
+  LayoutDashboard,
+  Shield,
+  LogOut,
 } from 'lucide-angular';
 import { ThemeService, type ThemePreference } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
-import { HlmButton } from '@spartan-ng/helm/button';
 
 @Component({
   selector: 'lmp-navbar',
@@ -39,9 +41,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
     RouterLink,
     RouterLinkActive,
     LucideAngularModule,
-    HlmButton,
     NgClass,
-    UpperCasePipe,
   ],
   styles: `
     :host {
@@ -106,7 +106,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
           }
         </div>
 
-        <!-- Actions : invité = menu compte sur tous les écrans ; connecté = barre desktop uniquement -->
+        <!-- Actions : invité ou connecté = menu compte seul (tableau de bord, admin, thème, langue, aide, déconnexion dans le panneau) -->
         <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           @if (authService.loading()) {
             <div
@@ -114,83 +114,182 @@ import { HlmButton } from '@spartan-ng/helm/button';
               aria-hidden="true"
             ></div>
           } @else if (authService.isAuthenticated()) {
-            <div class="hidden items-center gap-1.5 md:flex lg:gap-2">
-            <button
-              hlmBtn
-              variant="ghost"
-              size="icon"
-              (click)="themeService.toggle()"
-              class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
-              [attr.aria-label]="themeAriaLabel()"
-            >
-              @if (themeService.isDark()) {
-                <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
-              } @else {
-                <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
-              }
-            </button>
-
-            <div class="relative">
+            <div class="relative" #accountMenuHost>
               <button
                 type="button"
-                class="flex cursor-pointer items-center gap-1.5 px-2 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:text-(--foreground)"
-                (click)="langMenuOpen.set(!langMenuOpen())"
+                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--border) bg-(--muted)/35 text-(--muted-foreground) transition-colors hover:bg-(--muted)/55 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                (click)="$event.stopPropagation(); toggleAccountMenu()"
+                (keydown.enter)="$event.preventDefault(); openAccountMenuFromKeyboard()"
+                (keydown.space)="$event.preventDefault(); openAccountMenuFromKeyboard()"
+                [attr.aria-expanded]="accountMenuOpen()"
+                aria-haspopup="true"
+                aria-label="Menu compte"
               >
-                <img
-                  [src]="currentLangFlag()"
-                  [alt]="currentLangLabel()"
-                  class="h-3.5 w-5 rounded-xs object-cover"
-                />
-                <span class="text-xs font-medium">{{ selectedLangCode() | uppercase }}</span>
-                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
               </button>
-              @if (langMenuOpen()) {
+
+              @if (accountMenuOpen()) {
                 <div
-                  class="absolute right-0 z-[60] mt-1 w-40 rounded-sm border border-(--border) bg-(--card) py-1 shadow-sm"
+                  class="absolute right-0 z-[60] mt-2 flex w-max max-w-[min(calc(100vw-2rem),18.5rem)] max-h-[min(70dvh,calc(100dvh-5rem))] flex-col overflow-x-hidden overflow-y-auto overscroll-contain rounded-xl border border-(--border) bg-(--card) py-1 text-(--foreground) shadow-lg max-sm:right-1"
+                  role="menu"
                 >
-                  @for (lang of languages; track lang.code) {
+                  <div class="w-full border-b border-(--border) px-3 pb-3 pt-2">
+                    <div class="flex gap-3">
+                      <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--primary)/15 text-(--primary)"
+                      >
+                        <lucide-icon [img]="UserIcon" [size]="20"></lucide-icon>
+                      </div>
+                      <div class="min-w-0 flex-1 text-left">
+                        <p class="truncate text-sm font-semibold">{{ connectedAccountTitle() }}</p>
+                        <p class="truncate text-xs text-(--muted-foreground)">
+                          {{ connectedAccountEmail() }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="w-full py-1">
+                    <a
+                      routerLink="/dashboard"
+                      role="menuitem"
+                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="closeAccountMenu()"
+                    >
+                      <lucide-icon
+                        [img]="DashboardMenuIcon"
+                        [size]="18"
+                        class="shrink-0 opacity-80"
+                      ></lucide-icon>
+                      <span>Tableau de bord</span>
+                    </a>
+                    @if (authService.isAdmin()) {
+                      <a
+                        routerLink="/admin"
+                        role="menuitem"
+                        class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                        (click)="closeAccountMenu()"
+                      >
+                        <lucide-icon
+                          [img]="AdminMenuIcon"
+                          [size]="18"
+                          class="shrink-0 opacity-80"
+                        ></lucide-icon>
+                        <span>Administration</span>
+                      </a>
+                    }
+                  </div>
+
+                  <div class="mx-3 h-px shrink-0 bg-(--border)"></div>
+
+                  <div class="w-full py-1">
                     <button
                       type="button"
-                      class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
-                      (click)="pickLanguage(lang.code)"
+                      class="flex w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="appearanceSubOpen.update((v) => !v); langSubOpen.set(false)"
                     >
-                      <img
-                        [src]="lang.flag"
-                        [alt]="lang.label"
-                        class="h-3.5 w-5 rounded-xs object-cover"
-                      />
-                      {{ lang.label }}
+                      <lucide-icon [img]="MoonIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span class="min-w-0 flex-1 truncate"
+                        >Apparence&nbsp;: {{ appearanceSummary() }}</span
+                      >
+                      <lucide-icon
+                        [img]="ChevronRightIcon"
+                        [size]="16"
+                        class="shrink-0 opacity-60 transition-transform"
+                        [class.rotate-90]="appearanceSubOpen()"
+                      ></lucide-icon>
                     </button>
-                  }
+                    @if (appearanceSubOpen()) {
+                      <div class="border-t border-(--border) bg-(--muted)/15 px-2 py-1.5">
+                        @for (opt of themeOptions; track opt.value) {
+                          <button
+                            type="button"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors"
+                            [class.bg-(--accent)]="themeService.themePreference() === opt.value"
+                            (click)="setTheme(opt.value)"
+                          >
+                            <lucide-icon [img]="opt.icon" [size]="16" class="shrink-0 opacity-80"></lucide-icon>
+                            <span class="flex-1">{{ opt.label }}</span>
+                            @if (themeService.themePreference() === opt.value) {
+                              <lucide-icon
+                                [img]="CheckIcon"
+                                [size]="16"
+                                class="shrink-0 text-(--primary)"
+                              ></lucide-icon>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
+
+                    <button
+                      type="button"
+                      class="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="langSubOpen.update((v) => !v); appearanceSubOpen.set(false)"
+                    >
+                      <lucide-icon [img]="GlobeIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span class="min-w-0 flex-1 truncate"
+                        >Langue&nbsp;: {{ currentLangLabel() }}</span
+                      >
+                      <lucide-icon
+                        [img]="ChevronRightIcon"
+                        [size]="16"
+                        class="shrink-0 opacity-60 transition-transform"
+                        [class.rotate-90]="langSubOpen()"
+                      ></lucide-icon>
+                    </button>
+                    @if (langSubOpen()) {
+                      <div class="border-t border-(--border) bg-(--muted)/15 px-2 py-1.5">
+                        @for (lang of languages; track lang.code) {
+                          <button
+                            type="button"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors"
+                            [class.bg-(--accent)]="selectedLangCode() === lang.code"
+                            (click)="pickLanguageGuest(lang.code)"
+                          >
+                            <img
+                              [src]="lang.flag"
+                              [alt]="lang.label"
+                              class="h-3.5 w-5 shrink-0 rounded-xs object-cover"
+                            />
+                            <span class="flex-1">{{ lang.label }}</span>
+                            @if (selectedLangCode() === lang.code) {
+                              <lucide-icon
+                                [img]="CheckIcon"
+                                [size]="16"
+                                class="shrink-0 text-(--primary)"
+                              ></lucide-icon>
+                            }
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <div class="mx-3 h-px shrink-0 bg-(--border)"></div>
+
+                  <div class="w-full py-1">
+                    <a
+                      routerLink="/contact"
+                      role="menuitem"
+                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="closeAccountMenu()"
+                    >
+                      <lucide-icon [img]="HelpCircleIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span>Aide</span>
+                    </a>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="logoutFromMenu()"
+                    >
+                      <lucide-icon [img]="LogOutMenuIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
+                      <span>Se déconnecter</span>
+                    </button>
+                  </div>
                 </div>
               }
-            </div>
-
-            @if (authService.isAdmin()) {
-              <a
-                hlmBtn
-                variant="ghost"
-                routerLink="/admin"
-                class="cursor-pointer gap-1 bg-transparent text-sm text-(--muted-foreground) transition-colors hover:bg-transparent hover:text-(--foreground)"
-              >
-                Admin
-              </a>
-            }
-            <a
-              hlmBtn
-              variant="ghost"
-              routerLink="/dashboard"
-              class="cursor-pointer bg-transparent text-sm text-(--muted-foreground) transition-colors hover:bg-transparent hover:text-(--foreground)"
-            >
-              Dashboard
-            </a>
             </div>
           } @else {
             <!-- Invité : menu compte (style pro, thème + langue regroupés) -->
@@ -395,36 +494,15 @@ import { HlmButton } from '@spartan-ng/helm/button';
             }
           </div>
 
-          @if (authService.loading() || authService.isAuthenticated()) {
-            <div class="mt-3 flex w-full flex-col gap-2 border-t border-(--border) pt-3">
-              @if (authService.loading()) {
-                <div
-                  class="lmp-nav-auth-placeholder h-10 w-full shrink-0 rounded-sm animate-pulse bg-(--muted)"
-                  aria-hidden="true"
-                ></div>
-              } @else {
-                <div class="flex items-center justify-between px-3">
-                  <span class="text-sm text-(--muted-foreground)">Thème</span>
-                  <button
-                    hlmBtn
-                    variant="ghost"
-                    size="icon-sm"
-                    type="button"
-                    (click)="themeService.toggle()"
-                    class="cursor-pointer text-(--muted-foreground) hover:text-(--foreground) transition-colors bg-transparent hover:bg-transparent"
-                    [attr.aria-label]="themeAriaLabel()"
-                  >
-                    @if (themeService.isDark()) {
-                      <lucide-icon [img]="SunIcon" [size]="16"></lucide-icon>
-                    } @else {
-                      <lucide-icon [img]="MoonIcon" [size]="16"></lucide-icon>
-                    }
-                  </button>
-                </div>
-              }
+          @if (authService.loading()) {
+            <div class="mt-3 flex w-full flex-col border-t border-(--border) pt-3">
+              <div
+                class="lmp-nav-auth-placeholder h-10 w-full shrink-0 rounded-sm animate-pulse bg-(--muted)"
+                aria-hidden="true"
+              ></div>
             </div>
           }
-          <!-- Invité : pas de 2ᵉ bloc (apparence / langue / aide → menu compte uniquement, évite chevauchement plein écran) -->
+          <!-- Connecté : tableau de bord / admin uniquement dans le menu compte (icône profil), pas ici — parité invité -->
         </div>
       }
     </header>
@@ -437,7 +515,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
   readonly accountMenuHost = viewChild<ElementRef<HTMLElement>>('accountMenuHost');
 
   readonly mobileMenuOpen = signal(false);
-  readonly langMenuOpen = signal(false);
   readonly isAtTop = signal(true);
 
   readonly accountMenuOpen = signal(false);
@@ -448,7 +525,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   readonly MenuIcon = Menu;
   readonly XIcon = X;
-  readonly SunIcon = Sun;
   readonly MoonIcon = Moon;
   readonly UserIcon = User;
   readonly LogInIcon = LogIn;
@@ -458,6 +534,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   readonly GlobeIcon = Globe;
   readonly HelpCircleIcon = HelpCircle;
   readonly CheckIcon = Check;
+  readonly DashboardMenuIcon = LayoutDashboard;
+  readonly AdminMenuIcon = Shield;
+  readonly LogOutMenuIcon = LogOut;
 
   readonly themeOptions: {
     value: ThemePreference;
@@ -482,10 +561,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
     return this.languages.find((l) => l.code === code)?.label ?? 'Français';
   });
 
-  readonly currentLangFlag = computed(() => {
-    const code = this.selectedLangCode();
-    return this.languages.find((l) => l.code === code)?.flag ?? this.languages[0].flag;
+  readonly connectedAccountTitle = computed(() => {
+    const u = this.authService.user();
+    if (!u) return '';
+    const d = u.displayName?.trim();
+    if (d) return d;
+    const name = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+    if (name) return name;
+    return u.email;
   });
+
+  readonly connectedAccountEmail = computed(() => this.authService.user()?.email ?? '');
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
@@ -559,13 +645,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     return 'sombre';
   }
 
-  themeAriaLabel(): string {
-    const p = this.themeService.themePreference();
-    if (p === 'dark') return 'Passer au thème clair ou système';
-    if (p === 'light') return 'Passer au thème sombre ou système';
-    return 'Passer au thème clair';
-  }
-
   setTheme(p: ThemePreference): void {
     this.themeService.setPreference(p);
   }
@@ -577,7 +656,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.langSubOpen.set(false);
     if (next) {
       this.mobileMenuOpen.set(false);
-      this.langMenuOpen.set(false);
     }
   }
 
@@ -585,7 +663,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     const next = !this.mobileMenuOpen();
     if (next) {
       this.closeAccountMenu();
-      this.langMenuOpen.set(false);
     }
     this.mobileMenuOpen.set(next);
   }
@@ -604,14 +681,14 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.langSubOpen.set(false);
   }
 
-  pickLanguage(code: string): void {
-    this.selectedLangCode.set(code);
-    this.langMenuOpen.set(false);
-  }
-
   pickLanguageGuest(code: string): void {
     this.selectedLangCode.set(code);
     this.langSubOpen.set(false);
+  }
+
+  logoutFromMenu(): void {
+    this.closeAccountMenu();
+    this.authService.logout();
   }
 
   @HostListener('document:click', ['$event'])
@@ -631,7 +708,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.accountMenuOpen()) {
       this.closeAccountMenu();
     }
-    this.langMenuOpen.set(false);
     this.closeMobileMenu();
   }
 
@@ -641,6 +717,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.syncMdUp();
     if (this.isMdUp()) {
       this.closeMobileMenu();
+      this.closeAccountMenu();
     }
   }
 }
