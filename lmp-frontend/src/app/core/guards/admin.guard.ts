@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
 import { AuthService } from '../services/auth.service';
+import { AUTH_GUARD_LOADING_TIMEOUT_MS } from './guard-timeout';
 
 export const adminGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
@@ -28,7 +29,7 @@ export const adminGuard: CanActivateFn = () => {
       }
       return true;
     }),
-    timeout(15_000),
+    timeout(AUTH_GUARD_LOADING_TIMEOUT_MS),
     catchError(() => of(router.createUrlTree(['/login']))),
   );
 };

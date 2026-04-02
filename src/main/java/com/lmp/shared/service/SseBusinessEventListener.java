@@ -23,7 +23,13 @@ public class SseBusinessEventListener {
         this.sseNotificationService = sseNotificationService;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    /**
+     * AFTER_COMMIT : relai SSE une fois la transaction émettrice validée.
+     * {@code fallbackExecution = true} : certains modules publient l’événement après la fin du
+     * {@code @Transactional} du service (ex. inscription dans {@code AuthRestController}) — sans
+     * transaction active, sans ce flag le listener ne s’exécutait pas et aucun SSE admin n’était envoyé.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onBusinessEventCommitted(LmpBusinessEvent event) {
         try {
             sseNotificationService.dispatchFromBusinessEvent(event);

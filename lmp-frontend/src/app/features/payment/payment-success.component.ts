@@ -60,7 +60,7 @@ interface ApiResponse<T> {
 
         <!-- Success state -->
         @if (confirmed()) {
-          <div class="flex flex-col items-center gap-6 rounded-sm border border-emerald-500/20 bg-(--card) p-10 shadow-xs">
+          <div class="flex w-full flex-col items-center gap-6 rounded-sm border border-emerald-500/20 bg-(--card) p-10 shadow-xs">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-(--muted)">
               <lucide-icon
                 [img]="CheckCircleIcon"
@@ -92,13 +92,15 @@ interface ApiResponse<T> {
               </div>
             }
 
-            <div class="flex w-full flex-col gap-2 sm:flex-row">
+            <div
+              class="grid w-full max-w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-2"
+            >
               <a
                 hlmBtn
                 variant="default"
                 size="default"
                 routerLink="/dashboard"
-                class="w-full cursor-pointer gap-2"
+                class="flex w-full min-w-0 cursor-pointer justify-center gap-2"
               >
                 Mon tableau de bord
                 <lucide-icon [img]="ArrowRightIcon" [size]="16"></lucide-icon>
@@ -108,7 +110,7 @@ interface ApiResponse<T> {
                 variant="outline"
                 size="default"
                 routerLink="/services"
-                class="w-full cursor-pointer gap-2"
+                class="flex w-full min-w-0 cursor-pointer justify-center gap-2"
               >
                 <lucide-icon [img]="ShoppingCartIcon" [size]="16"></lucide-icon>
                 Nos services

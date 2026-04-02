@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, effect, untracked } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal, computed, effect, untracked } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DatePipe, CurrencyPipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +26,8 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 
 interface OrderItem {
   id: string;
@@ -388,6 +390,8 @@ export class UserOrdersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly notificationService = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
 
   constructor() {
     // Auto-reload orders when a new order-related SSE notification arrives
@@ -395,12 +399,13 @@ export class UserOrdersComponent implements OnInit {
       const hint = this.notificationService.liveOrderHint();
       // Only reload when hint changes after initial load (hint > 0)
       if (hint > 0) {
-        untracked(() => this.loadOrders());
+        untracked(() => this.loadOrders({ silent: true }));
       }
     });
   }
 
   readonly loading = signal(true);
+  private readonly listFetch = createListFetchLoading(this.loading);
   readonly allOrders = signal<OrderItem[]>([]);
   readonly filteredOrders = signal<OrderItem[]>([]);
   readonly currentPage = signal(0);
@@ -442,6 +447,11 @@ export class UserOrdersComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadOrders();
+    this.visiblePoll.subscribeWhileVisible(
+      this.destroyRef,
+      environment.dashboardPollIntervalMs,
+      () => this.loadOrders({ silent: true }),
+    );
 
     // Handle ?open=orderId deep-link
     this.route.queryParams.subscribe((params) => {
@@ -452,8 +462,9 @@ export class UserOrdersComponent implements OnInit {
     });
   }
 
-  loadOrders(): void {
-    this.loading.set(true);
+  loadOrders(options?: { silent?: boolean }): void {
+    const silent = options?.silent === true;
+    this.listFetch.beforeFetch(silent);
     this.http
       .get<ApiResponse<OrderItem[]>>(`${environment.apiUrl}/api/v1/orders`, { withCredentials: true })
       .subscribe({
@@ -461,12 +472,12 @@ export class UserOrdersComponent implements OnInit {
           const orders = res.data ?? [];
           this.allOrders.set(orders);
           this.applyFilter();
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
         error: () => {
           this.allOrders.set([]);
           this.filteredOrders.set([]);
-          this.loading.set(false);
+          this.listFetch.afterFetch();
         },
       });
   }

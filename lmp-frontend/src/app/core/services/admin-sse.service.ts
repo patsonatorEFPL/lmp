@@ -10,6 +10,21 @@ import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 
+function adminToastTitle(
+  ev: string,
+  data: Record<string, unknown>,
+): string {
+  if (ev === 'user:registered') return 'Nouvel utilisateur';
+  if (ev === 'user:updated' || ev === 'user:verified') return 'Utilisateur mis à jour';
+  if (ev.startsWith('user:')) return 'Utilisateur';
+  if (ev.startsWith('order:')) return 'Commande';
+  if (ev.startsWith('appointment:')) return 'Rendez-vous';
+  if (ev.startsWith('payment:')) return 'Paiement';
+  if (ev.startsWith('refund:')) return 'Remboursement';
+  if (ev.startsWith('review:')) return 'Avis';
+  return ev || (typeof data['type'] === 'string' ? (data['type'] as string) : 'Admin');
+}
+
 const INITIAL_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 30000;
 const TOAST_MS = 8000;
@@ -119,7 +134,7 @@ export class AdminSseService implements OnDestroy {
       this.badgeOrders.update((n) => n + 1);
     }
 
-    const title = ev || (typeof data['type'] === 'string' ? (data['type'] as string) : 'Admin');
+    const title = adminToastTitle(ev, data);
     this.showToast(title, message);
   }
 

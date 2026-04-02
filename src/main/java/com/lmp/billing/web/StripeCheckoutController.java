@@ -30,6 +30,7 @@ import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.PaymentTransactionRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.catalog.service.ServiceCatalogService;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.service.PaymentService;
 import com.lmp.billing.dto.PaymentRequestDto;
 import com.lmp.billing.dto.PaymentResponseDto;
@@ -65,6 +66,8 @@ public class StripeCheckoutController {
 
         private final ServiceCatalogService serviceCatalogService;
 
+        private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
@@ -77,13 +80,15 @@ public class StripeCheckoutController {
                            OrderRepository orderRepository,
                            PaymentTransactionRepository paymentTransactionRepository,
                            UserRepository userRepository,
-                           ServiceCatalogService serviceCatalogService) {
+                           ServiceCatalogService serviceCatalogService,
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.paymentService = paymentService;
         this.stripeCheckoutProcessor = stripeCheckoutProcessor;
         this.orderRepository = orderRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.userRepository = userRepository;
         this.serviceCatalogService = serviceCatalogService;
+        this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
     }
 
     /**
@@ -222,6 +227,7 @@ public class StripeCheckoutController {
 
             // Sauvegarder la commande dans la base de données
             Order savedOrder = orderRepository.save(persistentOrder);
+            orderRealtimeEventPublisher.publishOrderCreated(savedOrder);
             logger.info("Persistent order created with ID: {} - Service: {}, Amount: {}",
                     savedOrder.getId(), serviceName, amount, currency);
 

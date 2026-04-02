@@ -849,6 +849,7 @@ export class DashboardComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.notificationService.reset();
     this.authService.logout();
     this.router.navigate(['/']);
   }

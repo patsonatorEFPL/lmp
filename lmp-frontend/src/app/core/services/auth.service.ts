@@ -32,8 +32,8 @@ export class AuthService {
   readonly loading = this._loading.asReadonly();
 
   /**
-   * Called on app startup to restore session from JSESSIONID cookie.
-   * Returns a Promise so APP_INITIALIZER waits for completion.
+   * Restaure la session depuis le cookie (JSESSIONID).
+   * Promesse résolue après /auth/me pour que {@link provideAppInitializer} bloque le bootstrap.
    */
   checkSession(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) {
