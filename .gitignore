@@ -82,6 +82,8 @@ docs/
 git_status.txt
 preview_payment.py
 take_screenshots.py
+tmp-login.json
+tmp-payment-screenshots/
 
 ### OS Files ###
 .DS_Store

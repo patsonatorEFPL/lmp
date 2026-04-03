@@ -391,14 +391,22 @@ public class UserServiceImpl implements UserService {
         boolean hasAdmin = target.getRoles().stream()
                 .anyMatch(r -> "ADMIN".equals(r.getName()));
 
+        boolean rolesMutated = false;
+
         if (grantAdmin) {
             if (!hasAdmin) {
                 target.getRoles().add(adminRole);
+                rolesMutated = true;
             }
             if (target.getRoles().stream().noneMatch(r -> "USER".equals(r.getName()))) {
                 target.getRoles().add(userRole);
+                rolesMutated = true;
             }
-            userRepository.save(target);
+            if (rolesMutated) {
+                userRepository.save(target);
+                logSessionInvalidationAfterRoleChange(target,
+                        sessionSecurityService.invalidateAllUserSessions(target));
+            }
             return;
         }
 
@@ -411,11 +419,25 @@ public class UserServiceImpl implements UserService {
                 throw new RuntimeException("Impossible de retirer le dernier administrateur");
             }
             target.getRoles().removeIf(r -> "ADMIN".equals(r.getName()));
+            rolesMutated = true;
         }
         if (target.getRoles().stream().noneMatch(r -> "USER".equals(r.getName()))) {
             target.getRoles().add(userRole);
+            rolesMutated = true;
         }
-        userRepository.save(target);
+        if (rolesMutated) {
+            userRepository.save(target);
+            logSessionInvalidationAfterRoleChange(target,
+                    sessionSecurityService.invalidateAllUserSessions(target));
+        }
+    }
+
+    private void logSessionInvalidationAfterRoleChange(User target, int invalidatedCount) {
+        if (invalidatedCount == 0) {
+            logger.warn(
+                    "Mutation de rôles pour {} : aucune session invalidée (déjà absentes du registry ou erreur d'invalidation)",
+                    target.getEmail());
+        }
     }
 
     /**

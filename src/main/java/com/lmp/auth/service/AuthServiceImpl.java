@@ -102,12 +102,13 @@ public class AuthServiceImpl implements AuthService {
 
         // Vérifier si l'email existe déjà
         if (existsByEmail(registerDto.getEmail())) {
-            throw new RuntimeException("Un utilisateur avec cet email existe déjà");
+            throw new IllegalArgumentException("Un utilisateur avec cet email existe déjà");
         }
 
         // Vérifier si l'email est jetable
         if (isDisposableEmail(registerDto.getEmail())) {
-            throw new RuntimeException("Les adresses email temporaires/jetables ne sont pas acceptées. Veuillez utiliser une adresse email permanente.");
+            throw new IllegalArgumentException(
+                    "Les adresses email temporaires/jetables ne sont pas acceptées. Veuillez utiliser une adresse email permanente.");
         }
 
         // Créer le nouvel utilisateur
@@ -131,7 +132,7 @@ public class AuthServiceImpl implements AuthService {
         // Assigner le rôle USER par défaut (HashSet : Set.of() est immuable et provoque
         // UnsupportedOperationException quand Hibernate modifie la collection plus tard.)
         Role userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("Rôle USER non trouvé"));
+                .orElseThrow(() -> new IllegalStateException("Rôle USER non trouvé"));
         Set<Role> roles = new HashSet<>();
         roles.add(userRole);
         user.setRoles(roles);
@@ -155,23 +156,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void validateRegistrationData(RegisterDto registerDto) {
         if (registerDto == null) {
-            throw new RuntimeException("Les données d'inscription ne peuvent pas être nulles");
+            throw new IllegalArgumentException("Les données d'inscription ne peuvent pas être nulles");
         }
 
         if (!registerDto.isPasswordMatching()) {
-            throw new RuntimeException("Les mots de passe ne correspondent pas");
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas");
         }
 
         if (!registerDto.isAcceptTerms()) {
-            throw new RuntimeException("Vous devez accepter les conditions d'utilisation");
+            throw new IllegalArgumentException("Vous devez accepter les conditions d'utilisation");
         }
 
         if (registerDto.getEmail() == null || !registerDto.getEmail().contains("@")) {
-            throw new RuntimeException("Format d'email invalide");
+            throw new IllegalArgumentException("Format d'email invalide");
         }
 
         if (registerDto.getPassword() == null || registerDto.getPassword().length() < 6) {
-            throw new RuntimeException("Le mot de passe doit contenir au moins 6 caractères");
+            throw new IllegalArgumentException("Le mot de passe doit contenir au moins 6 caractères");
         }
     }
 
