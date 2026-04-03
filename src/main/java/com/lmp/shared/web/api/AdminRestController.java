@@ -129,16 +129,21 @@ public class AdminRestController {
     }
 
     @GetMapping("/users")
-    @Operation(summary = "Lister les utilisateurs", description = "Retourne les utilisateurs avec pagination")
+    @Operation(summary = "Lister les utilisateurs", description = "Retourne les utilisateurs avec pagination. "
+            + "Si le paramètre search est renseigné, filtre par email (contient, insensible à la casse).")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> getUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search) {
 
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("registrationDate").descending());
+        int safeSize = Math.clamp(size, 1, 500);
+        PageRequest pageRequest = PageRequest.of(page, safeSize, Sort.by("registrationDate").descending());
         Page<User> users;
 
-        if (status != null && !status.isEmpty()) {
+        if (search != null && !search.isBlank()) {
+            users = userService.findByEmailContaining(search.trim(), pageRequest);
+        } else if (status != null && !status.isEmpty()) {
             try {
                 users = userService.findByStatus(UserStatus.valueOf(status), pageRequest);
             } catch (IllegalArgumentException e) {
