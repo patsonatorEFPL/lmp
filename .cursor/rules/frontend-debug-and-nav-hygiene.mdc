@@ -1,0 +1,21 @@
+---
+description: Instrumentation de debug sans surcharge navigateur ; menus sans doublons de navigation
+globs: lmp-frontend/**/*.ts
+---
+
+# Front — debug et navigation (LMP)
+
+## Instrumentation / mode debug
+
+- **Interdit** d’ajouter des appels réseau (`fetch`, `XMLHttpRequest`) vers un serveur d’ingest local ou distant **dans** ou **à chaque itération** de :
+  - `requestAnimationFrame` (boucle de poll / animation),
+  - `setInterval` à haute fréquence,
+  - handlers appelés des dizaines de fois par seconde.
+- En l’absence du serveur cible, le navigateur peut enchaîner des échecs et **figer ou faire planter** l’onglet (Chrome notamment).
+- Pour du debug temporaire, préférer : `console.*` derrière `!environment.production`, ou écriture fichier côté outil **hors** la boucle chaude ; **retirer** l’instrumentation après validation.
+- Toute logique « agent debug » qui envoie des événements doit être **bornée** (échantillonnage, une fois par transition d’état) ou désactivée par défaut.
+
+## Menus compte / header (shell, navbar)
+
+- **Éviter** de dupliquer dans un menu compact (ex. menu compte) des liens déjà présents dans la **navigation principale** (sidebar, onglets) vers la même route — sauf besoin produit explicite (raccourci critique).
+- Préférer **un libellé cohérent** pour une même action (ex. retour site public) sur toutes les variantes de layout (dashboard / admin), plutôt que deux formulations différentes pour le même `routerLink`.

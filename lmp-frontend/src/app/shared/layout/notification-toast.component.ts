@@ -173,6 +173,8 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
   >();
   private lastNotificationCount = 0;
   private _rafId = 0;
+  /** RAF de {@link waitForLoadThenPoll} — doit être annulé à la déconnexion. */
+  private waitCheckRafId = 0;
 
   private readonly TOAST_DURATION = 8000; // 8 seconds
   private readonly PROGRESS_INTERVAL = 50; // update every 50ms
@@ -242,22 +244,30 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
    */
   private waitForLoadThenPoll(): void {
     const waitCheck = () => {
+      this.waitCheckRafId = 0;
+      if (!this.authService.isAuthenticated()) {
+        return;
+      }
       if (this.notificationService.loaded()) {
         // Snapshot current count — these are persisted, not new
         this.lastNotificationCount =
           this.notificationService.notifications().length;
         this.pollForNewNotifications();
       } else {
-        requestAnimationFrame(waitCheck);
+        this.waitCheckRafId = requestAnimationFrame(waitCheck);
       }
     };
-    requestAnimationFrame(waitCheck);
+    this.waitCheckRafId = requestAnimationFrame(waitCheck);
   }
 
   private pollForNewNotifications(): void {
     if (!this.isBrowser) return;
 
     const check = () => {
+      if (!this.authService.isAuthenticated()) {
+        this._rafId = 0;
+        return;
+      }
       const current = this.notificationService.notifications();
       if (current.length > this.lastNotificationCount) {
         const newOnes = current.slice(
@@ -276,6 +286,9 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
   }
 
   showToast(notification: AppNotification): void {
+    if (!this.authService.isAuthenticated()) {
+      return;
+    }
     const toastWithProgress: ToastWithProgress = {
       ...notification,
       progressPercent: 100,
@@ -526,6 +539,10 @@ export class NotificationToastComponent implements OnInit, OnDestroy {
   }
 
   private stopPolling(): void {
+    if (this.waitCheckRafId) {
+      cancelAnimationFrame(this.waitCheckRafId);
+      this.waitCheckRafId = 0;
+    }
     if (this._rafId) {
       cancelAnimationFrame(this._rafId);
       this._rafId = 0;
