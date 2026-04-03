@@ -8,8 +8,10 @@ import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.shared.dto.ApiResponse;
 import com.lmp.auth.dto.UserResponse;
+import com.lmp.auth.dto.ForgotPasswordRequest;
 import com.lmp.auth.dto.LoginDto;
 import com.lmp.auth.dto.RegisterDto;
+import com.lmp.auth.dto.ResetPasswordDto;
 import com.lmp.auth.web.session.ProgrammaticHttpSessionLogin;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -207,6 +209,34 @@ public class AuthRestController {
             authService.resendVerificationEmail(email);
             return ResponseEntity.ok(ApiResponse.ok("Verification email resent", null));
         } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Mot de passe oublié", description = "Envoie un lien de réinitialisation par e-mail si le compte existe")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.initiatePasswordReset(request.getEmail())
+                .ifPresent(authService::sendPasswordResetEmail);
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.",
+                null));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Réinitialiser le mot de passe", description = "Définit un nouveau mot de passe à partir du jeton reçu par e-mail")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordDto dto) {
+        if (!dto.isPasswordMatching()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Les mots de passe ne correspondent pas"));
+        }
+        try {
+            authService.completePasswordReset(dto);
+            return ResponseEntity.ok(ApiResponse.ok("Mot de passe mis à jour. Vous pouvez vous connecter.", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (RuntimeException e) {
+            logger.warn("Reset password failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }

@@ -70,6 +70,20 @@ export const routes: Routes = [
         (m) => m.RegisterComponent,
       ),
   },
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/auth/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent,
+      ),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/auth/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
+  },
 
   // Payment callback pages (no navbar/footer — standalone)
   {

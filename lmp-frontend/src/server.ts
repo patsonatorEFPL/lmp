@@ -13,6 +13,8 @@ import bootstrap from './main.server';
 const CLIENT_ONLY_ROUTES = [
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
   '/dashboard',
   '/admin',
   '/settings',

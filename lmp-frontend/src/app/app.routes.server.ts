@@ -21,6 +21,8 @@ export const serverRoutes: ServerRoute[] = [
   // Auth pages — client-only
   { path: 'login', renderMode: RenderMode.Client },
   { path: 'register', renderMode: RenderMode.Client },
+  { path: 'forgot-password', renderMode: RenderMode.Client },
+  { path: 'reset-password', renderMode: RenderMode.Client },
 
   // Payment callback pages — client-only
   { path: 'payment/success', renderMode: RenderMode.Client },

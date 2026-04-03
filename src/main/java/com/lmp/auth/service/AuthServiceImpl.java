@@ -3,6 +3,7 @@ package com.lmp.auth.service;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,7 +32,9 @@ import com.lmp.auth.domain.User;
 import com.lmp.auth.domain.UserStatus;
 import com.lmp.auth.repository.RoleRepository;
 import com.lmp.auth.repository.UserRepository;
+import com.lmp.auth.dto.PasswordResetEmailPayload;
 import com.lmp.auth.dto.RegisterDto;
+import com.lmp.auth.dto.ResetPasswordDto;
 
 /**
  * Implémentation du service d'authentification.
@@ -57,6 +60,10 @@ public class AuthServiceImpl implements AuthService {
 
         private final SessionRegistry sessionRegistry;
 
+        private final UserService userService;
+
+        private final SessionSecurityService sessionSecurityService;
+
     @Value("${company.name:LMP Services}")
     private String companyName;
 
@@ -80,7 +87,9 @@ public class AuthServiceImpl implements AuthService {
                            TemplateEngine templateEngine,
                            MailAddressConfig mailAddressConfig,
                            DisposableEmailBlocklist disposableEmailBlocklist,
-                           SessionRegistry sessionRegistry) {
+                           SessionRegistry sessionRegistry,
+                           UserService userService,
+                           SessionSecurityService sessionSecurityService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -89,6 +98,8 @@ public class AuthServiceImpl implements AuthService {
         this.mailAddressConfig = mailAddressConfig;
         this.disposableEmailBlocklist = disposableEmailBlocklist;
         this.sessionRegistry = sessionRegistry;
+        this.userService = userService;
+        this.sessionSecurityService = sessionSecurityService;
     }
 
     /**
@@ -309,6 +320,96 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean isDisposableEmail(String email) {
         return disposableEmailBlocklist.isDisposable(email);
+    }
+
+    @Override
+    @Transactional
+    public Optional<PasswordResetEmailPayload> initiatePasswordReset(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        String normalized = email.trim();
+        Optional<User> opt = userRepository.findByEmail(normalized);
+        if (opt.isEmpty()) {
+            logger.info("Password reset requested: no account for email");
+            return Optional.empty();
+        }
+        User user = opt.get();
+        if (Boolean.TRUE.equals(user.getAccountLocked())) {
+            logger.info("Password reset requested: account locked");
+            return Optional.empty();
+        }
+
+        String token = generateVerificationToken();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        userRepository.save(user);
+
+        String displayName = user.getDisplayName() != null ? user.getDisplayName() : user.getEmail();
+        return Optional.of(new PasswordResetEmailPayload(user.getEmail(), token, displayName));
+    }
+
+    @Async
+    @Override
+    public void sendPasswordResetEmail(PasswordResetEmailPayload payload) {
+        if (payload == null) {
+            return;
+        }
+        try {
+            String resetUrl = frontendUrl + "/reset-password?token=" + payload.token();
+
+            Context context = new Context();
+            context.setVariable("userName", payload.userDisplayName());
+            context.setVariable("companyName", companyName);
+            context.setVariable("resetUrl", resetUrl);
+            context.setVariable("companyWebsite", companyWebsite);
+
+            String htmlContent = templateEngine.process("emails/password-reset", context);
+
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
+            helper.setReplyTo(mailAddressConfig.getNoreply());
+            helper.setTo(payload.email());
+            helper.setSubject("Réinitialisation de votre mot de passe — " + companyName);
+            helper.setText(htmlContent, true);
+
+            javaMailSender.send(message);
+            logger.info("Password reset email sent to: {}", payload.email());
+
+        } catch (Exception e) {
+            logger.error("Failed to send password reset email to '{}': {}", payload.email(), e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void completePasswordReset(ResetPasswordDto dto) {
+        if (dto == null || dto.getToken() == null || dto.getToken().isBlank()) {
+            throw new IllegalArgumentException("Lien invalide ou expiré");
+        }
+        if (!dto.isPasswordMatching()) {
+            throw new IllegalArgumentException("Les mots de passe ne correspondent pas");
+        }
+
+        User user = userRepository.findByResetToken(dto.getToken().trim())
+                .orElseThrow(() -> new IllegalArgumentException("Lien invalide ou expiré"));
+
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Lien invalide ou expiré");
+        }
+
+        userService.changePassword(user.getId(), dto.getNewPassword());
+
+        User refreshed = userRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalStateException("Utilisateur introuvable après mise à jour"));
+        refreshed.setResetToken(null);
+        refreshed.setResetTokenExpiry(null);
+        userRepository.save(refreshed);
+
+        sessionSecurityService.invalidateAllUserSessions(refreshed);
+        logger.info("Password reset completed for: {}", refreshed.getEmail());
     }
 
     /**
