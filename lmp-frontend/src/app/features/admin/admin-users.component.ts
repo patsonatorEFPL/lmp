@@ -22,12 +22,16 @@ import {
   Info,
   MailWarning,
   Ban,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AdminSseService } from '../../core/services/admin-sse.service';
+import { AdminService } from '../../core/services/admin.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
 import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
@@ -473,6 +477,82 @@ interface ApiResponse<T> {
               </div>
             </div>
 
+            <!-- Changement mot de passe -->
+            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+              <div class="flex cursor-pointer items-center justify-between" (click)="showPwdSection.set(!showPwdSection())">
+                <div class="flex items-center gap-2">
+                  <lucide-icon [img]="KeyRoundIcon" [size]="16" class="text-(--primary)"></lucide-icon>
+                  <span class="text-sm font-semibold text-(--foreground)">Changer le mot de passe</span>
+                </div>
+                <span class="text-xs text-(--muted-foreground)">{{ showPwdSection() ? 'Masquer' : 'Afficher' }}</span>
+              </div>
+
+              @if (showPwdSection()) {
+                <div class="mt-4 space-y-3">
+                  @if (userPwdSuccess()) {
+                    <div class="flex items-center gap-2 rounded-sm border border-emerald-500/20 bg-(--muted) p-2.5 text-xs text-(--foreground)">
+                      <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+                      {{ userPwdSuccess() }}
+                    </div>
+                  }
+                  @if (userPwdError()) {
+                    <div class="flex items-center gap-2 rounded-sm border border-red-500/20 bg-red-500/10 p-2.5 text-xs text-red-400">
+                      <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+                      {{ userPwdError() }}
+                    </div>
+                  }
+                  <p class="text-xs text-(--muted-foreground)">
+                    Définissez un nouveau mot de passe pour cet utilisateur. Il sera déconnecté de toutes ses sessions.
+                  </p>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="text-xs font-medium text-(--foreground)">Nouveau mot de passe</label>
+                      <div class="relative mt-1">
+                        <input
+                          [type]="showUserNewPwd() ? 'text' : 'password'"
+                          [(ngModel)]="userPwdForm.newPassword"
+                          placeholder="Min. 8 caractères"
+                          autocomplete="new-password"
+                          class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 pr-9 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                        />
+                        <button
+                          type="button"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-(--muted-foreground) hover:text-(--foreground)"
+                          (click)="showUserNewPwd.set(!showUserNewPwd())"
+                        >
+                          <lucide-icon [img]="showUserNewPwd() ? EyeOffIcon : EyeIcon" [size]="14"></lucide-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="text-xs font-medium text-(--foreground)">Confirmer</label>
+                      <input
+                        [type]="showUserNewPwd() ? 'text' : 'password'"
+                        [(ngModel)]="userPwdForm.confirmPassword"
+                        placeholder="Confirmer"
+                        autocomplete="new-password"
+                        class="mt-1 w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                      />
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <button
+                      hlmBtn variant="outline" size="sm" class="cursor-pointer gap-1.5"
+                      (click)="changeUserPassword()"
+                      [disabled]="changingUserPwd()"
+                    >
+                      @if (changingUserPwd()) {
+                        <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                      } @else {
+                        <lucide-icon [img]="KeyRoundIcon" [size]="14"></lucide-icon>
+                      }
+                      Appliquer
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
             <!-- Synthèse connexion -->
             <div
               class="flex gap-3 rounded-lg border-l-4 px-4 py-3"
@@ -560,6 +640,7 @@ interface ApiResponse<T> {
 export class AdminUsersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly adminSse = inject(AdminSseService);
+  private readonly adminService = inject(AdminService);
   readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly visiblePoll = inject(VisiblePollService);
@@ -593,6 +674,9 @@ export class AdminUsersComponent implements OnInit {
   readonly InfoIcon = Info;
   readonly MailWarningIcon = MailWarning;
   readonly BanIcon = Ban;
+  readonly KeyRoundIcon = KeyRound;
+  readonly EyeIcon = Eye;
+  readonly EyeOffIcon = EyeOff;
 
   /** Segmented control : bouton actif / inactif (modale édition) */
   readonly segWrap = 'flex w-full rounded-md border border-(--border) bg-(--muted)/25 p-0.5 gap-0.5 sm:inline-flex sm:w-auto';
@@ -618,6 +702,14 @@ export class AdminUsersComponent implements OnInit {
   statusFilter = '';
   editingUser: UserItem | null = null;
   editForm = { status: 'ACTIVE', locked: false, email: '', admin: false };
+
+  // User password change (inside edit modal)
+  readonly showPwdSection = signal(false);
+  readonly changingUserPwd = signal(false);
+  readonly userPwdSuccess = signal<string | null>(null);
+  readonly userPwdError = signal<string | null>(null);
+  readonly showUserNewPwd = signal(false);
+  userPwdForm = { newPassword: '', confirmPassword: '' };
 
   ngOnInit(): void {
     this.loadUsers();
@@ -712,12 +804,22 @@ export class AdminUsersComponent implements OnInit {
       email: user.email,
       admin: user.roles?.includes('ADMIN') ?? false,
     };
+    this.resetPwdSection();
     this.showEditModal.set(true);
   }
 
   closeEditModal(): void {
     this.showEditModal.set(false);
     this.editingUser = null;
+    this.resetPwdSection();
+  }
+
+  private resetPwdSection(): void {
+    this.showPwdSection.set(false);
+    this.userPwdForm = { newPassword: '', confirmPassword: '' };
+    this.userPwdSuccess.set(null);
+    this.userPwdError.set(null);
+    this.showUserNewPwd.set(false);
   }
 
   saveUser(): void {
@@ -799,6 +901,46 @@ export class AdminUsersComponent implements OnInit {
           this.loadUsers();
         },
         error: () => this.showToast('error', 'Erreur lors de la suppression'),
+      });
+  }
+
+  changeUserPassword(): void {
+    this.userPwdSuccess.set(null);
+    this.userPwdError.set(null);
+
+    if (!this.editingUser) return;
+
+    if (!this.userPwdForm.newPassword) {
+      this.userPwdError.set('Veuillez saisir un nouveau mot de passe.');
+      return;
+    }
+    if (this.userPwdForm.newPassword !== this.userPwdForm.confirmPassword) {
+      this.userPwdError.set('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    const pwd = this.userPwdForm.newPassword;
+    if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/\d/.test(pwd) || !/[^A-Za-z0-9]/.test(pwd)) {
+      this.userPwdError.set('Le mot de passe doit contenir au moins 8 caractères, incluant majuscules, minuscules, chiffres et caractères spéciaux.');
+      return;
+    }
+
+    this.changingUserPwd.set(true);
+    this.adminService
+      .changeUserPassword(this.editingUser.id, this.userPwdForm)
+      .subscribe({
+        next: () => {
+          this.userPwdSuccess.set('Mot de passe modifié — l\'utilisateur a été déconnecté.');
+          this.userPwdForm = { newPassword: '', confirmPassword: '' };
+          this.changingUserPwd.set(false);
+          setTimeout(() => this.userPwdSuccess.set(null), 5000);
+        },
+        error: (err: any) => {
+          this.userPwdError.set(
+            err?.error?.message || err?.message || 'Erreur lors du changement de mot de passe.',
+          );
+          this.changingUserPwd.set(false);
+        },
       });
   }
 
