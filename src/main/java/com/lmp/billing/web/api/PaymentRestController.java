@@ -13,6 +13,7 @@ import com.lmp.billing.service.PaymentService;
 import com.lmp.billing.service.StripePaymentIntentCheckoutService;
 import com.lmp.billing.dto.PaymentRequestDto;
 import com.lmp.billing.exception.PaymentProcessingException;
+import com.lmp.billing.exception.PaymentProviderException;
 import com.lmp.billing.dto.PaymentResponseDto;
 import com.lmp.billing.service.processor.StripeCheckoutPaymentProcessor;
 import com.lmp.auth.service.UserService;
@@ -439,6 +440,25 @@ public class PaymentRestController {
         }
 
         try {
+            paymentReconciliationService.syncOrderPaymentImmediately(order);
+        } catch (Exception e) {
+            logger.warn("Sync Stripe avant Payment Element pour commande {} : {}", orderId, e.getMessage());
+        }
+
+        order = orderRepository.findById(orderId)
+                .filter(o -> o.getUser() != null && o.getUser().getId().equals(user.getId()))
+                .orElse(null);
+        if (order == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(
+                            "Paiement déjà pris en compte pour cette commande. La liste va se mettre à jour."));
+        }
+
+        try {
             applyVatSnapshotFromUser(order, user);
             order.setUpdatedAt(LocalDateTime.now());
             orderRepository.save(order);
@@ -459,6 +479,10 @@ public class PaymentRestController {
 
         } catch (PaymentProcessingException e) {
             logger.error("Payment Element for order {}: {}", orderId, e.getMessage());
+            if (e instanceof PaymentProviderException ppe && "ALREADY_PAID".equals(ppe.getErrorCode())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(ApiResponse.error(e.getMessage()));
+            }
             return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {

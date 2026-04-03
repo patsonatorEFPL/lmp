@@ -31,6 +31,14 @@ public class StripePaymentIntentCheckoutService {
     private static final Set<String> SUPPORTED_CURRENCIES = Set.of(
             "CAD", "USD", "EUR", "GBP", "AUD", "JPY", "CHF", "SEK", "NOK", "DKK");
 
+    /** Statuts Stripe pour lesquels on réutilise le même PI au lieu d’en créer un nouveau. */
+    private static final Set<String> REUSABLE_PAYMENT_INTENT_STATUSES = Set.of(
+            "requires_payment_method",
+            "requires_confirmation",
+            "requires_action",
+            "processing",
+            "requires_capture");
+
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
 
@@ -70,8 +78,6 @@ public class StripePaymentIntentCheckoutService {
             throw new PaymentProviderException("Montant de commande invalide", "stripe");
         }
 
-        Stripe.apiKey = stripeSecretKey;
-
         Map<String, String> metadata = new HashMap<>();
         metadata.put("order_id", order.getId().toString());
         metadata.put("orderId", order.getId().toString());
@@ -79,6 +85,34 @@ public class StripePaymentIntentCheckoutService {
         metadata.put("userEmail", user.getEmail() != null ? user.getEmail() : "");
         metadata.put("webhook_version", "v3");
         metadata.put("creation_mode", creationMode != null ? creationMode : "payment_element");
+
+        Stripe.apiKey = stripeSecretKey;
+
+        String existingPiId = order.getStripePaymentIntentId();
+        if (existingPiId != null && !existingPiId.isBlank()) {
+            try {
+                PaymentIntent existing = PaymentIntent.retrieve(existingPiId);
+                String st = existing.getStatus();
+                if ("succeeded".equals(st)) {
+                    throw new PaymentProviderException(
+                            "Le paiement a déjà été accepté par Stripe. Actualisez la liste des commandes.",
+                            "ALREADY_PAID",
+                            null,
+                            "stripe",
+                            null);
+                }
+                if (REUSABLE_PAYMENT_INTENT_STATUSES.contains(st)) {
+                    logger.info("Réutilisation du PaymentIntent {} (status={}) pour commande {}",
+                            existingPiId, st, order.getId());
+                    return new PaymentIntentResult(existing.getClientSecret(), existing.getId());
+                }
+                logger.info("PaymentIntent {} en statut « {} » : création d’un nouveau pour commande {}",
+                        existingPiId, st, order.getId());
+            } catch (StripeException e) {
+                logger.warn("Lecture du PaymentIntent {} impossible, création d’un nouveau : {}",
+                        existingPiId, e.getMessage());
+            }
+        }
 
         PaymentIntentCreateParams.Builder b = PaymentIntentCreateParams.builder()
                 .setAmount(amountCents)
