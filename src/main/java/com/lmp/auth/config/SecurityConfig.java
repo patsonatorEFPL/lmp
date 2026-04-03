@@ -20,6 +20,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -41,16 +42,16 @@ import com.lmp.auth.service.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Configuration de sécurité Spring Security pour l'application LMP.
- * 
- * Deux chaînes de filtres :
- * 1. API REST (/api/**) → JSON 401/403, CSRF cookie pour SPA Angular
- * 2. Backend routes (legacy redirects, Stripe, webhooks) → formLogin pour session auth
+ * Spring Security LMP : chaîne {@code /api/**} (JSON, CSRF SPA) et chaîne Thymeleaf (formLogin).
+ * Plafond de sessions : {@link #MAX_CONCURRENT_SESSIONS_PER_USER}, partagé avec
+ * {@link ProgrammaticLoginSessionAuthenticationStrategyFactory} (login programmatique).
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
+    private static final int MAX_CONCURRENT_SESSIONS_PER_USER = 2;
 
         private final CustomUserDetailsService userDetailsService;
 
@@ -158,7 +159,7 @@ public class SecurityConfig {
 
                 // Sessions (partage avec Thymeleaf — même JSESSIONID)
                 .sessionManagement(session -> session
-                        .maximumSessions(2)
+                        .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
                         .sessionRegistry(sessionRegistry()));
 
@@ -280,7 +281,7 @@ public class SecurityConfig {
 
                 // Sessions
                 .sessionManagement(session -> session
-                        .maximumSessions(2)
+                        .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
                         .sessionRegistry(sessionRegistry()))
@@ -341,6 +342,16 @@ public class SecurityConfig {
     @Bean
     public SessionRegistry sessionRegistry() {
         return new SessionRegistryImpl();
+    }
+
+    /**
+     * Stratégie injectée dans {@link com.lmp.auth.web.session.ProgrammaticHttpSessionLogin}.
+     * @see ProgrammaticLoginSessionAuthenticationStrategyFactory
+     */
+    @Bean(name = "programmaticLoginSessionAuthenticationStrategy")
+    public SessionAuthenticationStrategy programmaticLoginSessionAuthenticationStrategy(SessionRegistry sessionRegistry) {
+        return ProgrammaticLoginSessionAuthenticationStrategyFactory.create(
+                sessionRegistry, MAX_CONCURRENT_SESSIONS_PER_USER, false);
     }
 
     @Bean

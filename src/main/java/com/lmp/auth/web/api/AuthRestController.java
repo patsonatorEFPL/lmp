@@ -10,6 +10,7 @@ import com.lmp.shared.dto.ApiResponse;
 import com.lmp.auth.dto.UserResponse;
 import com.lmp.auth.dto.LoginDto;
 import com.lmp.auth.dto.RegisterDto;
+import com.lmp.auth.web.session.ProgrammaticHttpSessionLogin;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,13 +28,15 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * API REST d'authentification.
@@ -52,14 +55,20 @@ public class AuthRestController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final ApplicationEventPublisher eventPublisher;
+    private final SessionRegistry sessionRegistry;
+    private final ProgrammaticHttpSessionLogin programmaticHttpSessionLogin;
 
     public AuthRestController(AuthService authService, UserService userService,
                               AuthenticationManager authenticationManager,
-                              ApplicationEventPublisher eventPublisher) {
+                              ApplicationEventPublisher eventPublisher,
+                              SessionRegistry sessionRegistry,
+                              ProgrammaticHttpSessionLogin programmaticHttpSessionLogin) {
         this.authService = authService;
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.eventPublisher = eventPublisher;
+        this.sessionRegistry = sessionRegistry;
+        this.programmaticHttpSessionLogin = programmaticHttpSessionLogin;
     }
 
     @PostMapping("/login")
@@ -73,17 +82,16 @@ public class AuthRestController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
-            SecurityContext context = SecurityContextHolder.createEmptyContext();
-            context.setAuthentication(authentication);
-            SecurityContextHolder.setContext(context);
+            programmaticHttpSessionLogin.login(request, response, authentication);
 
-            // Sauvegarder le contexte dans la session HTTP
-            request.getSession(true)
-                    .setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
-
-            // Charger l'utilisateur avec ses rôles
-            User user = userService.findByEmailWithRoles(loginDto.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found after auth"));
+            Optional<User> userOpt = userService.findByEmailWithRoles(loginDto.getEmail());
+            if (userOpt.isEmpty()) {
+                logger.error("Utilisateur introuvable après authentification réussie: {}", loginDto.getEmail());
+                programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ApiResponse.error("Login failed"));
+            }
+            User user = userOpt.get();
 
             userService.updateLastLoginDate(user.getEmail());
 
@@ -93,6 +101,21 @@ public class AuthRestController {
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Invalid email or password"));
+        } catch (SessionAuthenticationException e) {
+            logger.warn("API login refusé (politique de session): {}", e.getMessage());
+            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(
+                            "Login blocked due to session policy. Close other sessions or try again."));
+        } catch (AuthenticationException e) {
+            logger.warn("API login refusé: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Invalid email or password"));
+        } catch (Exception e) {
+            logger.error("API login erreur inattendue", e);
+            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Login failed"));
         }
     }
 
@@ -134,10 +157,14 @@ public class AuthRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Registration successful — check your email for verification", UserResponse.from(user)));
 
-        } catch (Exception e) {
-            logger.error("Registration failed: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warn("Registration validation: {}", e.getMessage());
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error("Registration could not be completed"));
+        } catch (Exception e) {
+            logger.error("Registration failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Registration could not be completed"));
         }
     }
 
@@ -159,8 +186,7 @@ public class AuthRestController {
     @PostMapping("/logout")
     @Operation(summary = "Déconnexion", description = "Invalide la session HTTP")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
-        request.getSession().invalidate();
-        SecurityContextHolder.clearContext();
+        programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 

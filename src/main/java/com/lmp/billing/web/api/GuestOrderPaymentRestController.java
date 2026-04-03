@@ -7,9 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +20,7 @@ import com.lmp.auth.domain.User;
 import com.lmp.auth.dto.RegisterDto;
 import com.lmp.auth.dto.UserResponse;
 import com.lmp.auth.service.UserService;
+import com.lmp.auth.web.session.ProgrammaticHttpSessionLogin;
 import com.lmp.billing.dto.GuestCheckoutAttachRequest;
 import com.lmp.billing.dto.GuestCheckoutPrepareRequest;
 import com.lmp.billing.exception.GuestEmailAlreadyRegisteredException;
@@ -50,13 +50,19 @@ public class GuestOrderPaymentRestController {
     private final GuestOrderCheckoutService guestOrderCheckoutService;
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
+    private final ProgrammaticHttpSessionLogin programmaticHttpSessionLogin;
+    private final SessionRegistry sessionRegistry;
 
     public GuestOrderPaymentRestController(GuestOrderCheckoutService guestOrderCheckoutService,
             AuthenticationManager authenticationManager,
-            UserService userService) {
+            UserService userService,
+            ProgrammaticHttpSessionLogin programmaticHttpSessionLogin,
+            SessionRegistry sessionRegistry) {
         this.guestOrderCheckoutService = guestOrderCheckoutService;
         this.authenticationManager = authenticationManager;
         this.userService = userService;
+        this.programmaticHttpSessionLogin = programmaticHttpSessionLogin;
+        this.sessionRegistry = sessionRegistry;
     }
 
     public record GuestPreviewResponse(
@@ -89,6 +95,7 @@ public class GuestOrderPaymentRestController {
             HttpServletRequest request,
             HttpServletResponse response) {
 
+        boolean httpSessionLoginEstablished = false;
         try {
             GuestOrderCheckoutService.GuestPrepareResult result =
                     guestOrderCheckoutService.prepareCheckout(body, getClientIp(request));
@@ -97,14 +104,16 @@ public class GuestOrderPaymentRestController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(reg.getEmail(), reg.getPassword()));
 
-            SecurityContext context = SecurityContextHolder.createEmptyContext();
-            context.setAuthentication(authentication);
-            SecurityContextHolder.setContext(context);
-            request.getSession(true)
-                    .setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+            programmaticHttpSessionLogin.login(request, response, authentication);
+            httpSessionLoginEstablished = true;
 
-            User user = userService.findByEmailWithRoles(reg.getEmail())
-                    .orElseThrow(() -> new IllegalStateException("User not found after auth"));
+            User user = userService.findByEmailWithRoles(reg.getEmail()).orElse(null);
+            if (user == null) {
+                logger.error("guest prepare: utilisateur introuvable après auth: {}", reg.getEmail());
+                programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ApiResponse.error("Une erreur inattendue s'est produite"));
+            }
             userService.updateLastLoginDate(user.getEmail());
 
             var payload = new GuestPrepareResponse(
@@ -116,10 +125,16 @@ public class GuestOrderPaymentRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Compte créé — procédez au paiement", payload));
 
+        } catch (SessionAuthenticationException e) {
+            logger.warn("guest prepare session policy: {}", e.getMessage());
+            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(
+                            "Connexion impossible : limite de sessions ou politique de session."));
         } catch (AuthenticationException e) {
             logger.warn("guest prepare auth: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Une erreur inattendue s'est produite"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentification impossible"));
         } catch (GuestEmailAlreadyRegisteredException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
         } catch (IllegalArgumentException | IllegalStateException e) {
@@ -131,6 +146,9 @@ public class GuestOrderPaymentRestController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             logger.error("guest prepare: {}", e.getMessage(), e);
+            if (httpSessionLoginEstablished) {
+                programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Une erreur inattendue s'est produite"));
         }
