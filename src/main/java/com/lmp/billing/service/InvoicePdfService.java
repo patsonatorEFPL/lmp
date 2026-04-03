@@ -67,6 +67,8 @@ public class InvoicePdfService {
 
     /**
      * Génère une facture PDF premium pour une commande donnée.
+     *
+     * @param user client facturé ; {@code null} après anonymisation (hard delete) — libellé et adresse viennent alors de la commande.
      */
     public byte[] generateInvoicePdf(Order order, User user) {
         log.info("Génération de la facture PDF premium pour la commande #{}", order.getId());
@@ -236,20 +238,25 @@ public class InvoicePdfService {
         clientLabel.setSpacingAfter(6);
         clientCell.addElement(clientLabel);
 
-        String clientName = user.getDisplayName();
-        if (clientName == null || clientName.trim().isEmpty()) {
-            clientName = user.getEmail();
-        }
-        clientCell.addElement(new Paragraph(clientName, new Font(Font.HELVETICA, 10, Font.BOLD, TEXT_PRIMARY)));
-        clientCell.addElement(new Paragraph(user.getEmail(), valueFont));
+        if (user != null) {
+            String clientName = user.getDisplayName();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = user.getEmail();
+            }
+            clientCell.addElement(new Paragraph(clientName, new Font(Font.HELVETICA, 10, Font.BOLD, TEXT_PRIMARY)));
+            clientCell.addElement(new Paragraph(user.getEmail(), valueFont));
 
-        if (user.getPhone() != null && !user.getPhone().isEmpty()) {
-            Paragraph phoneLine = new Paragraph("Tél: " + user.getPhone(), valueSmallFont);
-            phoneLine.setSpacingBefore(3);
-            clientCell.addElement(phoneLine);
+            if (user.getPhone() != null && !user.getPhone().isEmpty()) {
+                Paragraph phoneLine = new Paragraph("Tél: " + user.getPhone(), valueSmallFont);
+                phoneLine.setSpacingBefore(3);
+                clientCell.addElement(phoneLine);
+            }
+        } else {
+            clientCell.addElement(new Paragraph("Client (compte supprimé)", new Font(Font.HELVETICA, 10, Font.BOLD, TEXT_PRIMARY)));
+            clientCell.addElement(new Paragraph("Facture conservée à des fins comptables. Les données personnelles ne sont plus liées au compte.", valueSmallFont));
         }
 
-        // Adresse de facturation
+        // Adresse de facturation (snapshot sur la commande) ou adresse profil utilisateur
         if (order.getBillingAddress() != null && !order.getBillingAddress().isEmpty()) {
             Paragraph addrLine = new Paragraph(order.getBillingAddress(), valueSmallFont);
             addrLine.setSpacingBefore(3);
@@ -263,7 +270,7 @@ public class InvoicePdfService {
             if (order.getBillingCountry() != null) {
                 clientCell.addElement(new Paragraph(order.getBillingCountry(), valueSmallFont));
             }
-        } else if (user.getAddress() != null && !user.getAddress().isEmpty()) {
+        } else if (user != null && user.getAddress() != null && !user.getAddress().isEmpty()) {
             Paragraph addrLine = new Paragraph(user.getAddress(), valueSmallFont);
             addrLine.setSpacingBefore(3);
             clientCell.addElement(addrLine);
