@@ -1,7 +1,11 @@
 package com.lmp.auth.service;
 
+import java.util.Optional;
+
 import com.lmp.auth.domain.User;
+import com.lmp.auth.dto.PasswordResetEmailPayload;
 import com.lmp.auth.dto.RegisterDto;
+import com.lmp.auth.dto.ResetPasswordDto;
 
 /**
  * Interface pour les services d'authentification.
@@ -57,4 +61,21 @@ public interface AuthService {
      * @return true si c'est un domaine jetable
      */
     boolean isDisposableEmail(String email);
+
+    /**
+     * Prépare un jeton de réinitialisation si un compte existe pour cet e-mail.
+     *
+     * @return les données pour l'e-mail à envoyer, ou vide si aucun compte
+     */
+    Optional<PasswordResetEmailPayload> initiatePasswordReset(String email);
+
+    /**
+     * Envoie l'e-mail contenant le lien de réinitialisation (asynchrone).
+     */
+    void sendPasswordResetEmail(PasswordResetEmailPayload payload);
+
+    /**
+     * Applique un nouveau mot de passe à partir d'un jeton valide et non expiré.
+     */
+    void completePasswordReset(ResetPasswordDto dto);
 }
