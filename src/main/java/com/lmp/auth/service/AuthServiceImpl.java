@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.session.SessionInformation;
@@ -64,6 +65,11 @@ public class AuthServiceImpl implements AuthService {
 
         private final SessionSecurityService sessionSecurityService;
 
+        /**
+         * Proxy lazy pour appeler les méthodes {@code @Async} depuis la même classe (évite l'auto-invocation).
+         */
+        private final AuthService authServiceAsync;
+
     @Value("${company.name:LMP Services}")
     private String companyName;
 
@@ -89,7 +95,8 @@ public class AuthServiceImpl implements AuthService {
                            DisposableEmailBlocklist disposableEmailBlocklist,
                            SessionRegistry sessionRegistry,
                            UserService userService,
-                           SessionSecurityService sessionSecurityService) {
+                           SessionSecurityService sessionSecurityService,
+                           @Lazy AuthService authServiceAsync) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -100,6 +107,7 @@ public class AuthServiceImpl implements AuthService {
         this.sessionRegistry = sessionRegistry;
         this.userService = userService;
         this.sessionSecurityService = sessionSecurityService;
+        this.authServiceAsync = authServiceAsync;
     }
 
     /**
@@ -363,6 +371,7 @@ public class AuthServiceImpl implements AuthService {
             context.setVariable("companyName", companyName);
             context.setVariable("resetUrl", resetUrl);
             context.setVariable("companyWebsite", companyWebsite);
+            context.setVariable("supportEmail", mailAddressConfig.getSupport());
 
             String htmlContent = templateEngine.process("emails/password-reset", context);
 
@@ -410,6 +419,41 @@ public class AuthServiceImpl implements AuthService {
 
         sessionSecurityService.invalidateAllUserSessions(refreshed);
         logger.info("Password reset completed for: {}", refreshed.getEmail());
+
+        String displayName = refreshed.getDisplayName() != null ? refreshed.getDisplayName() : refreshed.getEmail();
+        authServiceAsync.sendPasswordResetConfirmationEmail(refreshed.getEmail(), displayName);
+    }
+
+    @Async
+    @Override
+    public void sendPasswordResetConfirmationEmail(String email, String userDisplayName) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+        try {
+            Context context = new Context();
+            context.setVariable("userName", userDisplayName != null && !userDisplayName.isBlank() ? userDisplayName : email);
+            context.setVariable("companyName", companyName);
+            context.setVariable("companyWebsite", companyWebsite);
+            context.setVariable("supportEmail", mailAddressConfig.getSupport());
+
+            String htmlContent = templateEngine.process("emails/password-reset-confirmation", context);
+
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
+            helper.setReplyTo(mailAddressConfig.getNoreply());
+            helper.setTo(email);
+            helper.setSubject("Confirmation : votre mot de passe a été modifié — " + companyName);
+            helper.setText(htmlContent, true);
+
+            javaMailSender.send(message);
+            logger.info("Password reset confirmation email sent to: {}", email);
+
+        } catch (Exception e) {
+            logger.error("Failed to send password reset confirmation email to '{}': {}", email, e.getMessage(), e);
+        }
     }
 
     /**

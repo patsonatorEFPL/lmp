@@ -78,4 +78,9 @@ public interface AuthService {
      * Applique un nouveau mot de passe à partir d'un jeton valide et non expiré.
      */
     void completePasswordReset(ResetPasswordDto dto);
+
+    /**
+     * E-mail de confirmation après changement de mot de passe (asynchrone).
+     */
+    void sendPasswordResetConfirmationEmail(String email, String userDisplayName);
 }
