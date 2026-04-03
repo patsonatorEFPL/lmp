@@ -604,7 +604,10 @@ public class UserServiceImpl implements UserService {
                 }
             }
             logger.info("✅ [HARD-DELETE] {} commande(s) anonymisée(s)", anonymizedOrders);
-            
+            if (user.getOrders() != null) {
+                user.getOrders().clear();
+            }
+
             // ÉTAPE 4: Anonymiser les avis (conserver pour historique des services)
             logger.warn("📝 [HARD-DELETE] Étape 4/7 - Anonymisation des avis");
             var userReviews = reviewRepository.findByUser(user);
@@ -627,7 +630,10 @@ public class UserServiceImpl implements UserService {
                 }
             }
             logger.info("✅ [HARD-DELETE] {} avis anonymisé(s)", anonymizedReviews);
-            
+            if (user.getReviews() != null) {
+                user.getReviews().clear();
+            }
+
             // ÉTAPE 5: Anonymiser les rendez-vous (conserver pour historique des appointments)
             logger.warn("📅 [HARD-DELETE] Étape 5/7 - Anonymisation des rendez-vous");
             var userAppointments = appointmentRepository.findByUserOrderByAppointmentDateDesc(user);

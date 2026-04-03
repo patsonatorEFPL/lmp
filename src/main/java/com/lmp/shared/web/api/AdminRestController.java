@@ -692,9 +692,6 @@ public class AdminRestController {
             }
 
             User user = order.getUser();
-            if (user == null) {
-                return ResponseEntity.badRequest().build();
-            }
 
             byte[] pdf = invoicePdfService.generateInvoicePdf(order, user);
             String invoiceNumber = invoicePdfService.generateInvoiceNumber(order);

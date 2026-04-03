@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,6 +58,7 @@ public class InvoiceController {
      * @return Le PDF de la facture ou une erreur
      */
     @GetMapping("/{orderId}/invoice")
+    @Transactional(readOnly = true)
     public ResponseEntity<byte[]> downloadInvoice(@PathVariable java.util.UUID orderId, Authentication authentication) {
         log.info("Demande de téléchargement de facture pour la commande #{}", orderId);
 
@@ -110,7 +112,7 @@ public class InvoiceController {
             } else {
                 // Cache miss - générer le PDF
                 log.info("Génération de la facture pour la commande #{}", orderId);
-                pdfData = invoicePdfService.generateInvoicePdf(order, user);
+                pdfData = invoicePdfService.generateInvoicePdf(order, order.getUser());
                 invoiceNumber = invoicePdfService.generateInvoiceNumber(order);
 
                 // Mettre en cache
