@@ -1,4 +1,13 @@
-import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  OnInit,
+  signal,
+  untracked,
+} from '@angular/core';
 import { NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe } from '@angular/common';
 import {
   LucideAngularModule,
@@ -104,6 +113,13 @@ interface CreateOrderCatalogOption {
   id: string;
   title: string;
   defaultPrice: number;
+}
+
+/** Ligne utilisateur admin (liste / autocomplétion création de commande). */
+interface CreateOrderAdminUser {
+  id: string;
+  email: string;
+  displayName?: string | null;
 }
 
 // Order progress steps with thresholds
@@ -657,36 +673,47 @@ const ORDER_STEPS = [
           </div>
 
           <div class="space-y-4 px-6 py-5">
-            <label class="flex cursor-pointer items-start gap-2 text-sm text-(--foreground)">
-              <input type="checkbox" [(ngModel)]="newOrderForm.guestMode" name="guestMode" class="mt-1" />
-              <span>Client sans compte — lien sécurisé (inscription + paiement sur la page)</span>
-            </label>
-
-            @if (!newOrderForm.guestMode) {
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
-                Email de l'utilisateur *
+                Email du client *
               </label>
-              <input
-                [(ngModel)]="newOrderForm.userEmail"
-                type="email"
-                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
-                placeholder="user@example.com"
-              />
+              <p class="mb-2 text-xs text-(--muted-foreground)">
+                S’il existe un compte avec cet email, la commande y est rattachée. Sinon, une commande « invité » est créée avec un lien de paiement (et une invitation est envoyée à cette adresse si elle est valide).
+              </p>
+              <p class="mb-2 text-xs text-(--muted-foreground)">
+                Suggestions : comptes récents au chargement ; tapez au moins 2 caractères pour chercher dans la base.
+              </p>
+              <div class="relative">
+                <input
+                  [(ngModel)]="newOrderForm.userEmail"
+                  name="userEmail"
+                  (input)="onUserEmailTyped()"
+                  type="email"
+                  autocomplete="off"
+                  list="admin-create-order-user-emails"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 pr-24 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  placeholder="email@client.com"
+                />
+                @if (createOrderUsersLoading()) {
+                  <span
+                    class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-(--muted-foreground)"
+                  >
+                    Liste…
+                  </span>
+                } @else if (userEmailSuggestLoading()) {
+                  <span
+                    class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-(--muted-foreground)"
+                  >
+                    Recherche…
+                  </span>
+                }
+              </div>
+              <datalist id="admin-create-order-user-emails">
+                @for (opt of createOrderUserDatalistOptions(); track opt.email) {
+                  <option [value]="opt.email">{{ opt.label }}</option>
+                }
+              </datalist>
             </div>
-            } @else {
-            <div>
-              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
-                Email du client (optionnel — envoi du lien)
-              </label>
-              <input
-                [(ngModel)]="newOrderForm.guestEmail"
-                type="email"
-                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
-                placeholder="Si renseigné, un e-mail avec le lien de paiement est envoyé ici"
-              />
-            </div>
-            }
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
                 Service *
@@ -831,6 +858,12 @@ export class AdminOrdersComponent implements OnInit {
         untracked(() => this.loadOrders({ silent: true }));
       }
     });
+    this.destroyRef.onDestroy(() => {
+      if (this.userEmailSuggestTimer != null) {
+        clearTimeout(this.userEmailSuggestTimer);
+        this.userEmailSuggestTimer = null;
+      }
+    });
   }
 
   readonly RefreshCwIcon = RefreshCw;
@@ -879,12 +912,30 @@ export class AdminOrdersComponent implements OnInit {
   /** Exposé au template pour comparer avec la valeur du select « Autre ». */
   readonly createOrderServiceOther = CREATE_ORDER_SERVICE_OTHER;
 
+  readonly createOrderUsersList = signal<CreateOrderAdminUser[]>([]);
+  readonly createOrderUsersLoading = signal(false);
+  readonly userEmailSuggestRows = signal<CreateOrderAdminUser[]>([]);
+  readonly userEmailSuggestLoading = signal(false);
+
+  readonly createOrderUserDatalistOptions = computed(() => {
+    const byEmail = new Map<string, { email: string; label: string }>();
+    const add = (u: CreateOrderAdminUser) => {
+      const key = u.email.toLowerCase();
+      if (!byEmail.has(key)) {
+        byEmail.set(key, { email: u.email, label: this.formatCreateOrderUserLabel(u) });
+      }
+    };
+    this.createOrderUsersList().forEach(add);
+    this.userEmailSuggestRows().forEach(add);
+    return Array.from(byEmail.values());
+  });
+
+  private userEmailSuggestTimer: ReturnType<typeof setTimeout> | null = null;
+
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
 
   newOrderForm = {
-    guestMode: false,
-    guestEmail: '',
     userEmail: '',
     /** UUID du service catalogue, vide si non choisi, ou {@link CREATE_ORDER_SERVICE_OTHER}. */
     serviceSelection: '',
@@ -1167,9 +1218,12 @@ export class AdminOrdersComponent implements OnInit {
 
   openCreateOrderModal(): void {
     this.guestPaymentLink.set(null);
+    if (this.userEmailSuggestTimer != null) {
+      clearTimeout(this.userEmailSuggestTimer);
+      this.userEmailSuggestTimer = null;
+    }
+    this.userEmailSuggestRows.set([]);
     this.newOrderForm = {
-      guestMode: false,
-      guestEmail: '',
       userEmail: '',
       serviceSelection: '',
       serviceName: '',
@@ -1178,6 +1232,70 @@ export class AdminOrdersComponent implements OnInit {
     };
     this.showCreateOrderModal.set(true);
     this.loadCatalogServicesForCreateOrder();
+    this.loadCreateOrderUsersForPicker();
+  }
+
+  private loadCreateOrderUsersForPicker(): void {
+    this.createOrderUsersLoading.set(true);
+    this.http
+      .get<ApiResponse<PageResponse<CreateOrderAdminUser>>>(`${environment.apiUrl}/api/v1/admin/users`, {
+        params: { page: '0', size: '300' },
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (res) => {
+          this.createOrderUsersList.set(res.data?.content ?? []);
+          this.createOrderUsersLoading.set(false);
+        },
+        error: () => {
+          this.createOrderUsersList.set([]);
+          this.createOrderUsersLoading.set(false);
+          this.showToast('error', 'Impossible de charger la liste des utilisateurs');
+        },
+      });
+  }
+
+  formatCreateOrderUserLabel(u: CreateOrderAdminUser): string {
+    const d = (u.displayName ?? '').trim();
+    if (d.length > 0) {
+      return `${d} (${u.email})`;
+    }
+    return u.email;
+  }
+
+  onUserEmailTyped(): void {
+    const q = (this.newOrderForm.userEmail ?? '').trim();
+    if (this.userEmailSuggestTimer != null) {
+      clearTimeout(this.userEmailSuggestTimer);
+      this.userEmailSuggestTimer = null;
+    }
+    if (q.length < 2) {
+      this.userEmailSuggestRows.set([]);
+      return;
+    }
+    this.userEmailSuggestTimer = setTimeout(() => {
+      this.userEmailSuggestTimer = null;
+      this.fetchCreateOrderUserSuggestions(q);
+    }, 280);
+  }
+
+  private fetchCreateOrderUserSuggestions(q: string): void {
+    this.userEmailSuggestLoading.set(true);
+    this.http
+      .get<ApiResponse<PageResponse<CreateOrderAdminUser>>>(`${environment.apiUrl}/api/v1/admin/users`, {
+        params: { page: '0', size: '30', search: q },
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (res) => {
+          this.userEmailSuggestRows.set(res.data?.content ?? []);
+          this.userEmailSuggestLoading.set(false);
+        },
+        error: () => {
+          this.userEmailSuggestRows.set([]);
+          this.userEmailSuggestLoading.set(false);
+        },
+      });
   }
 
   private loadCatalogServicesForCreateOrder(): void {
@@ -1228,6 +1346,11 @@ export class AdminOrdersComponent implements OnInit {
   closeCreateOrderModal(): void {
     this.showCreateOrderModal.set(false);
     this.guestPaymentLink.set(null);
+    if (this.userEmailSuggestTimer != null) {
+      clearTimeout(this.userEmailSuggestTimer);
+      this.userEmailSuggestTimer = null;
+    }
+    this.userEmailSuggestRows.set([]);
   }
 
   copyGuestLink(): void {
@@ -1265,107 +1388,123 @@ export class AdminOrdersComponent implements OnInit {
       return;
     }
 
-    if (this.newOrderForm.guestMode) {
-      this.creatingOrder.set(true);
-      this.http
-        .post<ApiResponse<{ paymentLink?: string }>>(
-          `${environment.apiUrl}/api/v1/admin/orders/guest`,
-          {
-            serviceName: this.newOrderForm.serviceName.trim(),
-            amount: this.newOrderForm.amount,
-            currency: 'EUR',
-            notes: this.newOrderForm.notes,
-            guestEmail: this.newOrderForm.guestEmail?.trim() || undefined,
-          },
-          { withCredentials: true },
-        )
-        .subscribe({
-          next: (res) => {
-            this.creatingOrder.set(false);
-            const link = (res.data as any)?.paymentLink as string | undefined;
-            if (res.success && link) {
-              this.guestPaymentLink.set(link);
-              const data = res.data as {
-                guestEmailSendFailed?: boolean;
-                guestEmailInvalid?: boolean;
-              } | undefined;
-              const variant =
-                data?.guestEmailSendFailed || data?.guestEmailInvalid ? 'error' : 'success';
-              this.showToast(variant, res.message || 'Commande invité créée.');
-              this.loadOrders();
-            } else {
-              this.showToast('error', res.message || 'Erreur lors de la création');
-            }
-          },
-          error: (err) => {
-            this.creatingOrder.set(false);
-            this.showToast('error', err.error?.message || 'Erreur lors de la création');
-          },
-        });
+    const emailTrim = this.newOrderForm.userEmail.trim();
+    if (!emailTrim) {
+      this.showToast('error', 'Indiquez l’email du client');
       return;
     }
-
-    if (!this.newOrderForm.userEmail) {
-      this.showToast('error', 'L’email utilisateur est obligatoire');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+      this.showToast('error', 'Adresse e-mail invalide');
       return;
     }
 
     this.creatingOrder.set(true);
 
-    // Find user by email then create order
+    const cached = this.findCreateOrderUserByEmail(emailTrim);
+    if (cached) {
+      this.postAdminCreateOrderForUser(cached.id, cached.email);
+      return;
+    }
+
     this.http
-      .get<ApiResponse<PageResponse<{ id: string; email: string }>>>(
-        `${environment.apiUrl}/api/v1/admin/users`,
-        { params: { size: '100', page: '0' }, withCredentials: true },
+      .get<ApiResponse<PageResponse<CreateOrderAdminUser>>>(`${environment.apiUrl}/api/v1/admin/users`, {
+        params: { search: emailTrim, size: '50', page: '0' },
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (res) => {
+          const users = res.data?.content ?? [];
+          const found = users.find((u) => u.email.toLowerCase() === emailTrim.toLowerCase());
+          if (found) {
+            this.postAdminCreateOrderForUser(found.id, found.email);
+          } else {
+            this.postAdminGuestOrderForEmail(emailTrim);
+          }
+        },
+        error: () => {
+          this.showToast('error', 'Impossible de vérifier l’utilisateur');
+          this.creatingOrder.set(false);
+        },
+      });
+  }
+
+  /** Commande sans compte : lien invité ; {@code clientEmail} sert à l’invitation e-mail côté API. */
+  private postAdminGuestOrderForEmail(clientEmail: string): void {
+    this.http
+      .post<ApiResponse<{ paymentLink?: string }>>(
+        `${environment.apiUrl}/api/v1/admin/orders/guest`,
+        {
+          serviceName: this.newOrderForm.serviceName.trim(),
+          amount: this.newOrderForm.amount,
+          currency: 'EUR',
+          notes: this.newOrderForm.notes,
+          guestEmail: clientEmail,
+        },
+        { withCredentials: true },
       )
       .subscribe({
         next: (res) => {
-          const users = res.data?.content || [];
-          const found = users.find(
-            (u) => u.email.toLowerCase() === this.newOrderForm.userEmail.toLowerCase(),
-          );
-
-          if (!found) {
-            this.showToast('error', 'Utilisateur non trouvé: ' + this.newOrderForm.userEmail);
-            this.creatingOrder.set(false);
-            return;
+          this.creatingOrder.set(false);
+          const link = (res.data as { paymentLink?: string } | undefined)?.paymentLink;
+          if (res.success && link) {
+            this.guestPaymentLink.set(link);
+            const data = res.data as {
+              guestEmailSendFailed?: boolean;
+              guestEmailInvalid?: boolean;
+            } | undefined;
+            const variant =
+              data?.guestEmailSendFailed || data?.guestEmailInvalid ? 'error' : 'success';
+            this.showToast(variant, res.message || 'Commande invité créée.');
+            this.loadOrders();
+          } else {
+            this.showToast('error', res.message || 'Erreur lors de la création');
           }
-
-          this.http
-            .post<ApiResponse<any>>(
-              `${environment.apiUrl}/api/v1/admin/orders`,
-              {
-                userId: found.id,
-                serviceName: this.newOrderForm.serviceName.trim(),
-                amount: this.newOrderForm.amount,
-                notes: this.newOrderForm.notes,
-              },
-              { withCredentials: true },
-            )
-            .subscribe({
-              next: () => {
-                this.showToast('success', 'Commande créée pour ' + this.newOrderForm.userEmail);
-                this.closeCreateOrderModal();
-                this.creatingOrder.set(false);
-                this.newOrderForm = {
-                  guestMode: false,
-                  guestEmail: '',
-                  userEmail: '',
-                  serviceSelection: '',
-                  serviceName: '',
-                  amount: 0,
-                  notes: '',
-                };
-                this.loadOrders();
-              },
-              error: (err) => {
-                this.showToast('error', err.error?.message || 'Erreur lors de la création');
-                this.creatingOrder.set(false);
-              },
-            });
         },
-        error: () => {
-          this.showToast('error', 'Impossible de rechercher l\'utilisateur');
+        error: (err: { error?: { message?: string } }) => {
+          this.creatingOrder.set(false);
+          this.showToast('error', err.error?.message || 'Erreur lors de la création');
+        },
+      });
+  }
+
+  /** Correspondance exacte (insensible à la casse) dans la liste récente + dernières suggestions. */
+  private findCreateOrderUserByEmail(email: string): CreateOrderAdminUser | undefined {
+    const want = email.trim().toLowerCase();
+    if (!want) {
+      return undefined;
+    }
+    const pool = [...this.createOrderUsersList(), ...this.userEmailSuggestRows()];
+    return pool.find((u) => u.email.toLowerCase() === want);
+  }
+
+  private postAdminCreateOrderForUser(userId: string, displayEmail: string): void {
+    this.http
+      .post<ApiResponse<unknown>>(
+        `${environment.apiUrl}/api/v1/admin/orders`,
+        {
+          userId,
+          serviceName: this.newOrderForm.serviceName.trim(),
+          amount: this.newOrderForm.amount,
+          notes: this.newOrderForm.notes,
+        },
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          this.showToast('success', 'Commande créée pour ' + displayEmail);
+          this.closeCreateOrderModal();
+          this.creatingOrder.set(false);
+          this.newOrderForm = {
+            userEmail: '',
+            serviceSelection: '',
+            serviceName: '',
+            amount: 0,
+            notes: '',
+          };
+          this.loadOrders();
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.showToast('error', err.error?.message || 'Erreur lors de la création');
           this.creatingOrder.set(false);
         },
       });
