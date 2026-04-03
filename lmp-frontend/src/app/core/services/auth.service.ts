@@ -41,8 +41,8 @@ export class AuthService {
   checkSession(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) {
       // SSR : ne pas passer loading à false sans session — sinon la navbar rend
-      // « Connexion » dans le HTML, puis le client restaure l’utilisateur → flash.
-      // Garder loading à true (état initial) affiche le squelette jusqu’à l’hydratation + /me.
+      // « Connexion » dans le HTML, puis le client restaure l'utilisateur → flash.
+      // Garder loading à true (état initial) affiche le squelette jusqu'à l'hydratation + /me.
       return Promise.resolve();
     }
 
