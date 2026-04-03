@@ -1,5 +1,5 @@
 import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
-import { NgClass, DatePipe, CurrencyPipe, SlicePipe } from '@angular/common';
+import { NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe } from '@angular/common';
 import {
   LucideAngularModule,
   ShoppingCart,
@@ -91,6 +91,21 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+/** Valeur du select « Autre (saisie libre) » pour création de commande admin. */
+const CREATE_ORDER_SERVICE_OTHER = '__other__';
+
+interface AdminCatalogServiceRow {
+  id: string;
+  title: string;
+  currentOffer?: { price?: number } | null;
+}
+
+interface CreateOrderCatalogOption {
+  id: string;
+  title: string;
+  defaultPrice: number;
+}
+
 // Order progress steps with thresholds
 const ORDER_STEPS = [
   { label: 'Commande reçue', threshold: 0, status: 'PENDING' },
@@ -104,7 +119,7 @@ const ORDER_STEPS = [
 @Component({
   selector: 'lmp-admin-orders',
   standalone: true,
-  imports: [NgClass, DatePipe, CurrencyPipe, SlicePipe, FormsModule, LucideAngularModule, HlmButton],
+  imports: [NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
     <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -352,6 +367,19 @@ const ORDER_STEPS = [
                     <p class="text-sm font-medium text-(--foreground)">{{ orderDetail()!.userName || '—' }}</p>
                     <p class="text-xs text-(--muted-foreground)">{{ orderDetail()!.userEmail || '—' }}</p>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <p class="text-xs font-medium text-(--muted-foreground)">Notes (création / client)</p>
+                <div
+                  class="mt-2 rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground)"
+                >
+                  @if (orderDetail()!.notes?.trim()) {
+                    <p class="whitespace-pre-wrap">{{ orderDetail()!.notes }}</p>
+                  } @else {
+                    <p class="text-(--muted-foreground) italic">Aucune note sur cette commande.</p>
+                  }
                 </div>
               </div>
 
@@ -661,21 +689,52 @@ const ORDER_STEPS = [
             }
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
-                Nom du service *
+                Service *
               </label>
-              <input
-                [(ngModel)]="newOrderForm.serviceName"
-                type="text"
-                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
-                placeholder="Consultation SEO..."
-              />
+              <select
+                [(ngModel)]="newOrderForm.serviceSelection"
+                (ngModelChange)="onCreateOrderServiceSelectionChange($event)"
+                name="serviceSelection"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
+              >
+                <option value="">— Choisir un service —</option>
+                @for (opt of catalogServicesForCreate(); track opt.id) {
+                  <option [value]="opt.id">
+                    {{ opt.title }}
+                    @if (opt.defaultPrice > 0) {
+                      ({{ opt.defaultPrice | number: '1.2-2' }} €)
+                    }
+                  </option>
+                }
+                <option [value]="createOrderServiceOther">Autre (saisie libre)</option>
+              </select>
+              @if (newOrderForm.serviceSelection === createOrderServiceOther) {
+                <input
+                  [(ngModel)]="newOrderForm.serviceName"
+                  name="customServiceName"
+                  type="text"
+                  class="mt-2 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  placeholder="Intitulé du service ou prestation…"
+                />
+              }
+              @if (
+                newOrderForm.serviceSelection &&
+                newOrderForm.serviceSelection !== createOrderServiceOther
+              ) {
+                <p class="mt-2 text-xs text-(--muted-foreground)">
+                  Libellé facturé :
+                  <span class="font-medium text-(--foreground)">{{ newOrderForm.serviceName }}</span>
+                </p>
+              }
             </div>
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
                 Montant (EUR) *
+                <span class="block font-normal text-(--muted-foreground)">Rempli automatiquement depuis le catalogue ; vous pouvez l’ajuster.</span>
               </label>
               <input
                 [(ngModel)]="newOrderForm.amount"
+                name="orderAmount"
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -815,6 +874,10 @@ export class AdminOrdersComponent implements OnInit {
   readonly syncing = signal(false);
   readonly orderRefunds = signal<any[]>([]);
   readonly deletingOrder = signal(false);
+  /** Options catalogue pour le modal « Créer une commande » (GET /api/v1/admin/services). */
+  readonly catalogServicesForCreate = signal<CreateOrderCatalogOption[]>([]);
+  /** Exposé au template pour comparer avec la valeur du select « Autre ». */
+  readonly createOrderServiceOther = CREATE_ORDER_SERVICE_OTHER;
 
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
@@ -823,6 +886,8 @@ export class AdminOrdersComponent implements OnInit {
     guestMode: false,
     guestEmail: '',
     userEmail: '',
+    /** UUID du service catalogue, vide si non choisi, ou {@link CREATE_ORDER_SERVICE_OTHER}. */
+    serviceSelection: '',
     serviceName: '',
     amount: 0,
     notes: '',
@@ -1106,11 +1171,58 @@ export class AdminOrdersComponent implements OnInit {
       guestMode: false,
       guestEmail: '',
       userEmail: '',
+      serviceSelection: '',
       serviceName: '',
       amount: 0,
       notes: '',
     };
     this.showCreateOrderModal.set(true);
+    this.loadCatalogServicesForCreateOrder();
+  }
+
+  private loadCatalogServicesForCreateOrder(): void {
+    this.http
+      .get<ApiResponse<AdminCatalogServiceRow[]>>(
+        `${environment.apiUrl}/api/v1/admin/services`,
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          const rows = res.data ?? [];
+          const opts: CreateOrderCatalogOption[] = rows
+            .map((s) => {
+              const p = s.currentOffer?.price;
+              const defaultPrice =
+                p !== undefined && p !== null && !Number.isNaN(Number(p)) ? Number(p) : 0;
+              return { id: String(s.id), title: s.title ?? '', defaultPrice };
+            })
+            .filter((o) => o.title.length > 0)
+            .sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
+          this.catalogServicesForCreate.set(opts);
+        },
+        error: () => {
+          this.catalogServicesForCreate.set([]);
+          this.showToast('error', 'Impossible de charger le catalogue des services');
+        },
+      });
+  }
+
+  onCreateOrderServiceSelectionChange(value: string): void {
+    if (!value) {
+      this.newOrderForm.serviceName = '';
+      this.newOrderForm.amount = 0;
+      return;
+    }
+    if (value === CREATE_ORDER_SERVICE_OTHER) {
+      this.newOrderForm.serviceName = '';
+      this.newOrderForm.amount = 0;
+      return;
+    }
+    const opt = this.catalogServicesForCreate().find((o) => o.id === value);
+    if (opt) {
+      this.newOrderForm.serviceName = opt.title;
+      this.newOrderForm.amount = opt.defaultPrice > 0 ? opt.defaultPrice : 0;
+    }
   }
 
   closeCreateOrderModal(): void {
@@ -1135,8 +1247,21 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   createOrder(): void {
-    if (!this.newOrderForm.serviceName || !this.newOrderForm.amount) {
-      this.showToast('error', 'Service et montant sont obligatoires');
+    if (!this.newOrderForm.serviceSelection) {
+      this.showToast('error', 'Choisissez un service dans la liste ou « Autre »');
+      return;
+    }
+    if (this.newOrderForm.serviceSelection === CREATE_ORDER_SERVICE_OTHER) {
+      if (!this.newOrderForm.serviceName?.trim()) {
+        this.showToast('error', 'Indiquez le nom du service pour l’option « Autre »');
+        return;
+      }
+    } else if (!this.newOrderForm.serviceName?.trim()) {
+      this.showToast('error', 'Service invalide — rechargez la liste');
+      return;
+    }
+    if (!this.newOrderForm.amount || this.newOrderForm.amount <= 0) {
+      this.showToast('error', 'Montant obligatoire (supérieur à 0)');
       return;
     }
 
@@ -1146,7 +1271,7 @@ export class AdminOrdersComponent implements OnInit {
         .post<ApiResponse<{ paymentLink?: string }>>(
           `${environment.apiUrl}/api/v1/admin/orders/guest`,
           {
-            serviceName: this.newOrderForm.serviceName,
+            serviceName: this.newOrderForm.serviceName.trim(),
             amount: this.newOrderForm.amount,
             currency: 'EUR',
             notes: this.newOrderForm.notes,
@@ -1211,7 +1336,7 @@ export class AdminOrdersComponent implements OnInit {
               `${environment.apiUrl}/api/v1/admin/orders`,
               {
                 userId: found.id,
-                serviceName: this.newOrderForm.serviceName,
+                serviceName: this.newOrderForm.serviceName.trim(),
                 amount: this.newOrderForm.amount,
                 notes: this.newOrderForm.notes,
               },
@@ -1226,6 +1351,7 @@ export class AdminOrdersComponent implements OnInit {
                   guestMode: false,
                   guestEmail: '',
                   userEmail: '',
+                  serviceSelection: '',
                   serviceName: '',
                   amount: 0,
                   notes: '',
