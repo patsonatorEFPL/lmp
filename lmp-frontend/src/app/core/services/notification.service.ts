@@ -185,6 +185,10 @@ export class NotificationService implements OnDestroy {
       })
       .subscribe({
         next: (response) => {
+          // Réponse tardive après déconnexion : ne pas repeupler la liste ni débloquer waitCheck.
+          if (!this.authService.user()) {
+            return;
+          }
           if (response.success && response.data) {
             this.notifications.set(response.data);
             this.unreadCount.set(
@@ -194,6 +198,9 @@ export class NotificationService implements OnDestroy {
           this.loaded.set(true);
         },
         error: (err) => {
+          if (!this.authService.user()) {
+            return;
+          }
           console.error('Failed to load notifications from API:', err);
           this.loaded.set(true);
         },

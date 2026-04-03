@@ -19,7 +19,6 @@ import {
   ChevronRight,
   Check,
   Home,
-  Settings,
   Shield,
   HelpCircle,
   LayoutDashboard,
@@ -79,7 +78,7 @@ import { ThemeService, type ThemePreference } from '../../core/services/theme.se
               (click)="closeMenu()"
             >
               <lucide-icon [img]="HomeIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
-              <span>Retour au site</span>
+              <span>Site public</span>
             </a>
             @if (authService.isAdmin()) {
               <a
@@ -92,15 +91,6 @@ import { ThemeService, type ThemePreference } from '../../core/services/theme.se
                 <span>Administration</span>
               </a>
             }
-            <a
-              routerLink="/settings"
-              role="menuitem"
-              class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
-              (click)="closeMenu()"
-            >
-              <lucide-icon [img]="SettingsIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
-              <span>Paramètres</span>
-            </a>
           } @else {
             <a
               routerLink="/"
@@ -123,15 +113,6 @@ import { ThemeService, type ThemePreference } from '../../core/services/theme.se
                 class="shrink-0 opacity-80"
               ></lucide-icon>
               <span>Espace client</span>
-            </a>
-            <a
-              routerLink="/admin/settings"
-              role="menuitem"
-              class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
-              (click)="closeMenu()"
-            >
-              <lucide-icon [img]="SettingsIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
-              <span>Paramètres admin</span>
             </a>
           }
         </div>
@@ -224,7 +205,6 @@ export class ShellAccountMenuComponent {
   readonly ChevronRightIcon = ChevronRight;
   readonly CheckIcon = Check;
   readonly HomeIcon = Home;
-  readonly SettingsIcon = Settings;
   readonly ShieldIcon = Shield;
   readonly HelpCircleIcon = HelpCircle;
   readonly DashboardIcon = LayoutDashboard;
