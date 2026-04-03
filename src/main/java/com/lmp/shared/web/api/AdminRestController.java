@@ -2,16 +2,19 @@ package com.lmp.shared.web.api;
 
 import com.lmp.auth.domain.User;
 import com.lmp.auth.domain.UserStatus;
+import com.lmp.auth.dto.AdminChangeUserPasswordRequest;
+import com.lmp.auth.dto.UserResponse;
+import com.lmp.auth.service.SessionSecurityService;
+import com.lmp.auth.service.UserService;
 import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderProgressSync;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.domain.Refund;
 import com.lmp.billing.dto.OrderResponse;
+import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.RefundRepository;
 import com.lmp.billing.service.InvoicePdfService;
-import com.lmp.auth.dto.UserResponse;
-import com.lmp.auth.service.UserService;
 import com.lmp.crm.domain.Appointment;
 import com.lmp.crm.domain.AppointmentStatus;
 import com.lmp.crm.dto.AppointmentResponse;
@@ -19,17 +22,18 @@ import com.lmp.crm.repository.AppointmentRepository;
 import com.lmp.integration.event.BusinessEventPayloadKeys;
 import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
-import com.lmp.billing.event.OrderRealtimeEventPublisher;
+import com.lmp.notification.service.EmailService;
+import com.lmp.portal.dto.ChangePasswordRequest;
 import com.lmp.shared.dto.ApiResponse;
 
-import com.lmp.notification.service.EmailService;
 import com.stripe.Stripe;
-import jakarta.mail.internet.AddressException;
-import jakarta.mail.internet.InternetAddress;
 import com.stripe.model.PaymentIntent;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -74,16 +78,18 @@ public class AdminRestController {
     private String frontendUrl;
 
     private final UserService userService;
+    private final SessionSecurityService sessionSecurityService;
     private final OrderRepository orderRepository;
     private final AppointmentRepository appointmentRepository;
     private final RefundRepository refundRepository;
     private final InvoicePdfService invoicePdfService;
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
-
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
-    public AdminRestController(UserService userService, OrderRepository orderRepository,
+    public AdminRestController(UserService userService,
+                               SessionSecurityService sessionSecurityService,
+                               OrderRepository orderRepository,
                                AppointmentRepository appointmentRepository,
                                RefundRepository refundRepository,
                                InvoicePdfService invoicePdfService,
@@ -91,6 +97,7 @@ public class AdminRestController {
                                ApplicationEventPublisher eventPublisher,
                                OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.userService = userService;
+        this.sessionSecurityService = sessionSecurityService;
         this.orderRepository = orderRepository;
         this.appointmentRepository = appointmentRepository;
         this.refundRepository = refundRepository;
@@ -248,6 +255,103 @@ public class AdminRestController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    // ========== Admin Password Change ==========
+
+    @PutMapping("/change-password")
+    @Transactional
+    @Operation(summary = "Changer son propre mot de passe", description = "L'admin change son propre mot de passe (mot de passe actuel requis)")
+    public ResponseEntity<ApiResponse<Void>> changeOwnPassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        if (request.currentPassword() == null || request.currentPassword().isBlank()
+                || request.newPassword() == null || request.newPassword().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Tous les champs sont obligatoires"));
+        }
+
+        if (!request.isPasswordMatching()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Les mots de passe ne correspondent pas"));
+        }
+
+        if (!userService.isPasswordStrong(request.newPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Le mot de passe doit contenir au moins 8 caractères, "
+                            + "incluant majuscules, minuscules, chiffres et caractères spéciaux"));
+        }
+
+        User admin = userService.findByEmail(authentication.getName())
+                .orElse(null);
+        if (admin == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Administrateur non trouvé"));
+        }
+
+        if (!userService.checkCurrentPassword(admin.getId(), request.currentPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Le mot de passe actuel est incorrect"));
+        }
+
+        if (userService.checkCurrentPassword(admin.getId(), request.newPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Le nouveau mot de passe doit être différent du mot de passe actuel"));
+        }
+
+        userService.changePassword(admin.getId(), request.newPassword());
+
+        return ResponseEntity.ok(ApiResponse.ok("Mot de passe administrateur modifié avec succès", null));
+    }
+
+    @PutMapping("/users/{id}/change-password")
+    @Transactional
+    @Operation(summary = "Changer le mot de passe d'un utilisateur",
+            description = "L'admin change le mot de passe d'un utilisateur sans connaître l'ancien")
+    public ResponseEntity<ApiResponse<Void>> changeUserPassword(
+            @PathVariable UUID id,
+            @RequestBody AdminChangeUserPasswordRequest request,
+            Authentication authentication) {
+
+        if (request.newPassword() == null || request.newPassword().isBlank()
+                || request.confirmPassword() == null || request.confirmPassword().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Tous les champs sont obligatoires"));
+        }
+
+        if (!request.isPasswordMatching()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Les mots de passe ne correspondent pas"));
+        }
+
+        if (!userService.isPasswordStrong(request.newPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Le mot de passe doit contenir au moins 8 caractères, "
+                            + "incluant majuscules, minuscules, chiffres et caractères spéciaux"));
+        }
+
+        User admin = userService.findByEmail(authentication.getName())
+                .orElse(null);
+        if (admin == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Administrateur non trouvé"));
+        }
+
+        User targetUser = userService.findById(id).orElse(null);
+        if (targetUser == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Utilisateur non trouvé"));
+        }
+
+        if (userService.checkCurrentPassword(targetUser.getId(), request.newPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Le nouveau mot de passe est identique au mot de passe actuel de l'utilisateur"));
+        }
+
+        userService.changePasswordByAdmin(id, request.newPassword(), admin.getId());
+        sessionSecurityService.invalidateAllUserSessions(targetUser);
+
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Mot de passe de " + targetUser.getEmail() + " modifié avec succès", null));
     }
 
     // ========== Order Management ==========

@@ -9,6 +9,12 @@ import {
   Bell,
   Shield,
   Mail,
+  Eye,
+  EyeOff,
+  Check,
+  Loader2,
+  AlertCircle,
+  KeyRound,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminService, CompanyAddressPayload } from '../../core/services/admin.service';
@@ -129,6 +135,101 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
         </div>
       </div>
 
+      <!-- Admin Password Change -->
+      <div class="rounded-sm border border-(--border) bg-(--card) p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--primary)/10">
+            <lucide-icon [img]="KeyRoundIcon" [size]="18" class="text-(--primary)"></lucide-icon>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-(--foreground)">Mot de passe administrateur</h2>
+            <p class="text-xs text-(--muted-foreground)">Modifier votre mot de passe de connexion</p>
+          </div>
+        </div>
+
+        @if (pwdSuccess()) {
+          <div class="mb-4 flex items-center gap-2 rounded-sm border border-emerald-500/20 bg-(--muted) p-3 text-sm text-(--foreground)">
+            <lucide-icon [img]="CheckIcon" [size]="16"></lucide-icon>
+            {{ pwdSuccess() }}
+          </div>
+        }
+        @if (pwdError()) {
+          <div class="mb-4 flex items-center gap-2 rounded-sm border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+            <lucide-icon [img]="AlertCircleIcon" [size]="16"></lucide-icon>
+            {{ pwdError() }}
+          </div>
+        }
+
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-medium text-(--foreground)">Mot de passe actuel</label>
+            <div class="relative mt-1">
+              <input
+                [type]="showCurrentPwd() ? 'text' : 'password'"
+                [(ngModel)]="pwdForm.currentPassword"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 pr-10 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+              />
+              <button
+                type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-(--muted-foreground) hover:text-(--foreground)"
+                (click)="showCurrentPwd.set(!showCurrentPwd())"
+              >
+                <lucide-icon [img]="showCurrentPwd() ? EyeOffIcon : EyeIcon" [size]="16"></lucide-icon>
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class="text-xs font-medium text-(--foreground)">Nouveau mot de passe</label>
+              <div class="relative mt-1">
+                <input
+                  [type]="showNewPwd() ? 'text' : 'password'"
+                  [(ngModel)]="pwdForm.newPassword"
+                  placeholder="Min. 8 caractères"
+                  autocomplete="new-password"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 pr-10 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+                />
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-(--muted-foreground) hover:text-(--foreground)"
+                  (click)="showNewPwd.set(!showNewPwd())"
+                >
+                  <lucide-icon [img]="showNewPwd() ? EyeOffIcon : EyeIcon" [size]="16"></lucide-icon>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs font-medium text-(--foreground)">Confirmer le nouveau mot de passe</label>
+              <input
+                [type]="showNewPwd() ? 'text' : 'password'"
+                [(ngModel)]="pwdForm.confirmPassword"
+                placeholder="Confirmer"
+                autocomplete="new-password"
+                class="mt-1 w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+          <button
+            hlmBtn variant="outline" class="cursor-pointer gap-2"
+            (click)="changeOwnPassword()"
+            [disabled]="changingPwd()"
+          >
+            @if (changingPwd()) {
+              <lucide-icon [img]="Loader2Icon" [size]="16" class="animate-spin"></lucide-icon>
+              Modification…
+            } @else {
+              <lucide-icon [img]="ShieldIcon" [size]="16"></lucide-icon>
+              Modifier le mot de passe
+            }
+          </button>
+        </div>
+      </div>
+
       <!-- Security Settings -->
       <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
@@ -185,12 +286,26 @@ export class AdminSettingsComponent implements OnInit {
   readonly ShieldIcon = Shield;
   readonly MailIcon = Mail;
   readonly SaveIcon = Save;
+  readonly EyeIcon = Eye;
+  readonly EyeOffIcon = EyeOff;
+  readonly CheckIcon = Check;
+  readonly Loader2Icon = Loader2;
+  readonly AlertCircleIcon = AlertCircle;
+  readonly KeyRoundIcon = KeyRound;
 
   private readonly adminService = inject(AdminService);
   private readonly ngZone = inject(NgZone);
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly saving = signal(false);
+
+  // Password change
+  pwdForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  readonly changingPwd = signal(false);
+  readonly pwdSuccess = signal<string | null>(null);
+  readonly pwdError = signal<string | null>(null);
+  readonly showCurrentPwd = signal(false);
+  readonly showNewPwd = signal(false);
 
   companyAddress: CompanyAddressPayload = {
     addressLine: '',
@@ -249,5 +364,41 @@ export class AdminSettingsComponent implements OnInit {
           /* erreur validation ou réseau */
         },
       });
+  }
+
+  changeOwnPassword(): void {
+    this.pwdSuccess.set(null);
+    this.pwdError.set(null);
+
+    if (!this.pwdForm.currentPassword || !this.pwdForm.newPassword) {
+      this.pwdError.set('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (this.pwdForm.newPassword !== this.pwdForm.confirmPassword) {
+      this.pwdError.set('Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    const pwd = this.pwdForm.newPassword;
+    if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/\d/.test(pwd) || !/[^A-Za-z0-9]/.test(pwd)) {
+      this.pwdError.set('Le mot de passe doit contenir au moins 8 caractères, incluant majuscules, minuscules, chiffres et caractères spéciaux.');
+      return;
+    }
+
+    this.changingPwd.set(true);
+    this.adminService.changeOwnPassword(this.pwdForm).subscribe({
+      next: () => {
+        this.pwdSuccess.set('Mot de passe modifié avec succès.');
+        this.pwdForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        this.changingPwd.set(false);
+        setTimeout(() => this.pwdSuccess.set(null), 5000);
+      },
+      error: (err: any) => {
+        this.pwdError.set(
+          err?.error?.message || err?.message || 'Erreur lors du changement de mot de passe.',
+        );
+        this.changingPwd.set(false);
+      },
+    });
   }
 }

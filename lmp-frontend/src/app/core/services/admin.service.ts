@@ -52,6 +52,17 @@ export interface CompanyAddressPayload {
   cityRegion: string;
 }
 
+export interface AdminChangeOwnPasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface AdminChangeUserPasswordRequest {
+  newPassword: string;
+  confirmPassword: string;
+}
+
 const COMPANY_PROFILE_PATH = '/api/v1/admin/company-profile';
 
 interface ApiResponse<T> {
@@ -162,6 +173,32 @@ export class AdminService {
   deleteOffer(offerId: string): Observable<ApiResponse<void>> {
     const path = deleteOffer.PATH.replace('{offerId}', offerId);
     return this.http.delete<ApiResponse<void>>(path);
+  }
+
+  // ========== Password Management ==========
+
+  changeOwnPassword(request: AdminChangeOwnPasswordRequest): Observable<void> {
+    return this.http
+      .put<ApiResponse<void>>('/api/v1/admin/change-password', request)
+      .pipe(
+        map((res) => {
+          if (!res.success) {
+            throw new Error(res.message ?? 'Erreur lors du changement de mot de passe');
+          }
+        }),
+      );
+  }
+
+  changeUserPassword(userId: string, request: AdminChangeUserPasswordRequest): Observable<void> {
+    return this.http
+      .put<ApiResponse<void>>(`/api/v1/admin/users/${userId}/change-password`, request)
+      .pipe(
+        map((res) => {
+          if (!res.success) {
+            throw new Error(res.message ?? 'Erreur lors du changement de mot de passe');
+          }
+        }),
+      );
   }
 
   // ========== Profil entreprise (adresse facturation) ==========

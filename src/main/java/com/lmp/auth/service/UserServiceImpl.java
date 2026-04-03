@@ -247,53 +247,34 @@ public class UserServiceImpl implements UserService {
 
     /**
      * Change le mot de passe d'un utilisateur par un administrateur.
-     * 
-     * @param userId L'ID de l'utilisateur
-     * @param newPassword Le nouveau mot de passe (en clair)
-     * @param adminId L'ID de l'administrateur qui effectue l'action
+     * La validation (force, unicité) doit être faite en amont dans le contrôleur
+     * pour éviter les exceptions transactionnelles.
      */
     @Override
     @Transactional
     public void changePasswordByAdmin(UUID userId, String newPassword, UUID adminId) {
-        logger.info("🔐 DEBUG SERVICE - changePasswordByAdmin appelé: userId={}, adminId={}", userId, adminId);
-        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID: " + userId));
-        
-        logger.info("🔐 DEBUG SERVICE - Utilisateur cible trouvé: email={}", user.getEmail());
-        
+
         User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new RuntimeException("Administrateur non trouvé avec l'ID: " + adminId));
-        
-        logger.info("🔐 DEBUG SERVICE - Admin trouvé: email={}", admin.getEmail());
-        
-        // Vérifier que l'admin a bien le rôle ADMIN
-        logger.info("🔐 DEBUG SERVICE - Vérification rôle ADMIN");
-        boolean hasAdminRole = hasRole(adminId, "ADMIN");
-        logger.info("🔐 DEBUG SERVICE - Admin a rôle ADMIN: {}", hasAdminRole);
-        
-        if (!hasAdminRole) {
-            logger.warn("🔐 DEBUG SERVICE - Accès refusé: adminId {} n'a pas le rôle ADMIN", adminId);
-            throw new RuntimeException("Seuls les administrateurs peuvent changer les mots de passe des autres utilisateurs");
+
+        if (!hasRole(adminId, "ADMIN")) {
+            throw new IllegalArgumentException("Seuls les administrateurs peuvent changer les mots de passe des autres utilisateurs");
         }
-        
-        // Vérifier la force du mot de passe
-        logger.info("🔐 DEBUG SERVICE - Vérification force du mot de passe");
-        boolean isStrong = isPasswordStrong(newPassword);
-        logger.info("🔐 DEBUG SERVICE - Mot de passe suffisamment fort: {}", isStrong);
-        
-        if (!isStrong) {
-            logger.warn("🔐 DEBUG SERVICE - Mot de passe trop faible pour userId: {}", userId);
-            throw new RuntimeException("Le mot de passe doit contenir au moins 8 caractères, incluant majuscules, minuscules, chiffres et caractères spéciaux");
+
+        if (!isPasswordStrong(newPassword)) {
+            throw new IllegalArgumentException("Le mot de passe doit contenir au moins 8 caractères, incluant majuscules, minuscules, chiffres et caractères spéciaux");
         }
-        
-        // Encoder et sauvegarder
-        logger.info("🔐 DEBUG SERVICE - Encodage et sauvegarde du nouveau mot de passe");
-        String encodedPassword = passwordEncoder.encode(newPassword);
-        user.setPassword(encodedPassword);
+
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Le nouveau mot de passe est identique au mot de passe actuel de l'utilisateur");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        
-        logger.info("✅ DEBUG SERVICE - Mot de passe changé par admin avec succès: userId={}, adminId={}", userId, adminId);
+
+        logger.info("Password changed by admin {} for user {}", admin.getEmail(), user.getEmail());
     }
 
     /**
