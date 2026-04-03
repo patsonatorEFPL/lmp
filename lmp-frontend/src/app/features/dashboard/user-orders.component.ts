@@ -355,8 +355,8 @@ const ORDER_STEPS = [
             }
 
             <!-- Footer actions -->
-            <div class="border-t border-(--border) px-6 py-4 flex gap-2">
-              @if (selectedOrder()!.status === 'PAYMENT_PENDING') {
+            <div class="border-t border-(--border) px-6 py-4 flex flex-wrap gap-2">
+              @if (canStartPayment(selectedOrder()!)) {
                 <button
                   hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
                   (click)="payOrder(selectedOrder()!)"
@@ -364,6 +364,11 @@ const ORDER_STEPS = [
                   <lucide-icon [img]="CreditCardIcon" [size]="14"></lucide-icon>
                   Payer maintenant
                 </button>
+              }
+              @if (selectedOrder()!.status === 'PAYMENT_PENDING' && !canStartPayment(selectedOrder()!)) {
+                <p class="text-xs text-(--muted-foreground) self-center max-w-[20rem]">
+                  Paiement reçu côté banque ; confirmation de la commande en cours. Actualisez dans quelques instants.
+                </p>
               }
               @if (isInvoiceEligible(selectedOrder()!.status)) {
                 <button
@@ -502,8 +507,25 @@ export class UserOrdersComponent implements OnInit {
       .get<ApiResponse<OrderItem>>(`${environment.apiUrl}/api/v1/orders/${orderId}`, { withCredentials: true })
       .subscribe({
         next: (res) => {
-          this.selectedOrder.set(res.data ?? null);
+          const data = res.data ?? null;
+          this.selectedOrder.set(data);
           this.loadingDetail.set(false);
+
+          if (data?.status === 'PAYMENT_PENDING') {
+            this.http
+              .post<ApiResponse<unknown>>(
+                `${environment.apiUrl}/api/v1/payments/status/${orderId}/verify-with-stripe`,
+                {},
+                { withCredentials: true },
+              )
+              .subscribe({
+                next: () => {
+                  this.http
+                    .get<ApiResponse<OrderItem>>(`${environment.apiUrl}/api/v1/orders/${orderId}`, { withCredentials: true })
+                    .subscribe({ next: (r2) => this.selectedOrder.set(r2.data ?? null) });
+                },
+              });
+          }
 
           // Load refunds
           this.http
@@ -521,6 +543,14 @@ export class UserOrdersComponent implements OnInit {
     this.showDetail.set(false);
     this.selectedOrder.set(null);
     this.orderRefunds.set([]);
+  }
+
+  canStartPayment(order: OrderItem): boolean {
+    if (order.status !== 'PAYMENT_PENDING') {
+      return false;
+    }
+    const ps = (order.paymentStatus || '').toLowerCase();
+    return ps !== 'succeeded';
   }
 
   payOrder(order: OrderItem): void {
@@ -548,7 +578,14 @@ export class UserOrdersComponent implements OnInit {
           }
         },
         error: (err) => {
-          alert(err.error?.message || 'Impossible de démarrer le paiement.');
+          const msg = err.error?.message || 'Impossible de démarrer le paiement.';
+          if (err.status === 409) {
+            this.loadOrders({ silent: true });
+            this.http
+              .get<ApiResponse<OrderItem>>(`${environment.apiUrl}/api/v1/orders/${order.id}`, { withCredentials: true })
+              .subscribe({ next: (r) => this.selectedOrder.set(r.data ?? null) });
+          }
+          alert(msg);
         },
       });
   }
