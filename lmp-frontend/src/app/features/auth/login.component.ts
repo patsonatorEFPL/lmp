@@ -75,8 +75,10 @@ import { environment } from '../../../environments/environment';
         <!-- Centered Form -->
         <div class="flex flex-1 items-center justify-center px-4 py-8">
           <div class="w-full max-w-md">
-            <h1 class="text-2xl font-bold text-(--foreground) sm:text-3xl">
-              Bienvenue de retour
+            <h1
+              class="font-display text-[clamp(1.875rem,4.5vw,2.5rem)] font-semibold leading-[1.12] tracking-[-0.03em] text-(--foreground)"
+            >
+              Bienvenue
             </h1>
             <p class="mt-1.5 text-sm text-(--muted-foreground)">
               Veuillez entrer vos identifiants pour accéder.
