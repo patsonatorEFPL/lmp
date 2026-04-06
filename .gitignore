@@ -99,6 +99,7 @@ desktop.ini
 !*.env.example
 
 ### Deployment-Specific Config ###
+infra/
 docker-compose.coolify.yml
 docker-compose.test.yml
 lmp-frontend/Dockerfile.test
