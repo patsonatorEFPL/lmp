@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Bell,
+  ChevronDown,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminSseService } from '../../core/services/admin-sse.service';
@@ -41,103 +42,174 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
         <p class="mt-1 text-sm text-(--foreground)">{{ toast.message }}</p>
       </div>
     }
-    <div class="flex min-h-screen bg-(--background)">
-      <!-- Sidebar desktop -->
-      <aside
-        class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-(--border) bg-(--card) box-border lg:flex"
+    <!--
+      Desktop : une seule border-b sur la rangée marque + outils (pas deux traits distincts).
+      La ligne verticale = border-r sur la colonne 220px (marque puis nav) — un seul axe.
+    -->
+    <div
+      class="flex min-h-screen flex-col bg-[#eceff3] dark:bg-zinc-950 lg:h-screen lg:overflow-hidden"
+    >
+      <!-- Bandeau unique desktop : trait horizontal unique + séparation marque | titre -->
+      <div
+        class="hidden h-14 shrink-0 border-b border-zinc-200/90 dark:border-zinc-800 lg:flex lg:items-stretch"
       >
         <div
-          class="flex h-16 min-h-16 shrink-0 items-center gap-3 border-b border-(--border) px-5 box-border bg-(--card)"
+          class="flex w-[220px] shrink-0 items-center justify-between gap-2 border-r border-zinc-200/90 bg-[#f4f5f7] px-2 dark:border-zinc-800 dark:bg-zinc-900"
         >
-          <a routerLink="/" class="flex min-w-0 items-center gap-3 rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)">
-            <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto shrink-0" />
-            <div class="min-w-0">
-              <span class="block truncate text-sm font-bold text-(--foreground)">LMP</span>
-              <span
-                class="mt-0.5 inline-block rounded-md bg-(--primary)/12 px-1.5 py-0.5 text-[10px] font-semibold text-(--primary)"
-                >Admin</span
+          <a
+            routerLink="/"
+            class="flex min-w-0 flex-1 items-center gap-2 rounded-sm px-1 py-0.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
+          >
+            <img src="/images/logo-lmp.webp" alt="LMP" class="h-7 w-auto shrink-0 rounded-sm" />
+            <div class="min-w-0 text-left leading-tight">
+              <span class="block truncate text-[13px] font-medium text-zinc-900 dark:text-zinc-100"
+                >LMP Digital Services</span
+              >
+              <span class="mt-0.5 block truncate text-[11px] text-zinc-500 dark:text-zinc-400"
+                >Administrator</span
               >
             </div>
           </a>
+          <span
+            class="flex h-7 shrink-0 items-center rounded p-0.5 text-zinc-400 dark:text-zinc-500"
+            aria-hidden="true"
+          >
+            <lucide-icon [img]="ChevronDownIcon" [size]="16"></lucide-icon>
+          </span>
         </div>
+        <div
+          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-zinc-950"
+        >
+          <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+            <h1
+              class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
+            >
+              Administration
+            </h1>
+            <span
+              class="hidden shrink-0 items-center gap-1.5 text-[11px] text-zinc-500 sm:inline-flex"
+              title="Flux temps réel (SSE)"
+            >
+              <span
+                class="h-2 w-2 rounded-full"
+                [class.bg-emerald-500]="adminSse.connected()"
+                [class.bg-red-500]="!adminSse.connected()"
+              ></span>
+              Live
+            </span>
+          </div>
+          <lmp-shell-account-menu
+            variant="admin"
+            (menuOpenChange)="onAccountMenuOpenChange($event)"
+            (logoutRequest)="onLogout()"
+          />
+        </div>
+      </div>
 
-        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+      <!-- Sidebar desktop : navigation uniquement (marque dans le bandeau ci-dessus) -->
+      <aside
+        class="z-30 hidden w-[220px] shrink-0 flex-col overflow-hidden border-r border-zinc-200/90 bg-[#f4f5f7] dark:border-zinc-800 dark:bg-zinc-900 lg:z-auto lg:flex"
+      >
+        <nav
+          class="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden px-2 pb-2 pt-1 [scrollbar-gutter:stable]"
+        >
+          <button
+            type="button"
+            class="relative mx-0.5 my-[1.5px] flex h-[30px] w-full cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-left text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            (click)="onNotificationButtonClick()"
+          >
+            <lucide-icon [img]="BellIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Notifications</span>
+            @if (notificationService.unreadCount() > 0) {
+              <span
+                class="ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-zinc-600 px-1 text-[10px] font-semibold text-white dark:bg-zinc-500"
+              >
+                {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
+              </span>
+            }
+          </button>
+
+          <p
+            class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500 dark:text-zinc-500"
+          >
+            Vues
+          </p>
+
           <a
             routerLink="/admin"
-            routerLinkActive="bg-(--primary)/10 text-(--primary)"
+            [routerLinkActive]="sidebarLinkActive"
             [routerLinkActiveOptions]="{ exact: true }"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
           >
-            <lucide-icon [img]="DashboardIcon" [size]="18"></lucide-icon>
-            Tableau de bord
+            <lucide-icon [img]="DashboardIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Tableau de bord</span>
           </a>
           <a
             routerLink="/admin/services"
-            routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            [routerLinkActive]="sidebarLinkActive"
+            class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
           >
-            <lucide-icon [img]="PackageIcon" [size]="18"></lucide-icon>
-            Services
+            <lucide-icon [img]="PackageIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Services</span>
           </a>
           <a
             routerLink="/admin/users"
-            routerLinkActive="bg-(--primary)/10 text-(--primary)"
+            [routerLinkActive]="sidebarLinkActive"
             (click)="adminSse.badgeUsers.set(0)"
-            class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
           >
-            <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
-            Utilisateurs
+            <lucide-icon [img]="UsersIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Utilisateurs</span>
             @if (adminSse.badgeUsers() > 0) {
               <span
-                class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
                 >{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span
               >
             }
           </a>
           <a
             routerLink="/admin/orders"
-            routerLinkActive="bg-(--primary)/10 text-(--primary)"
+            [routerLinkActive]="sidebarLinkActive"
             (click)="adminSse.badgeOrders.set(0)"
-            class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
           >
-            <lucide-icon [img]="OrdersIcon" [size]="18"></lucide-icon>
-            Commandes
+            <lucide-icon [img]="OrdersIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Commandes</span>
             @if (adminSse.badgeOrders() > 0) {
               <span
-                class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
                 >{{ adminSse.badgeOrders() > 9 ? '9+' : adminSse.badgeOrders() }}</span
               >
             }
           </a>
           <a
             routerLink="/admin/appointments"
-            routerLinkActive="bg-(--primary)/10 text-(--primary)"
+            [routerLinkActive]="sidebarLinkActive"
             (click)="adminSse.badgeAppointments.set(0)"
-            class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
           >
-            <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
-            Rendez-vous
+            <lucide-icon [img]="CalendarIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Rendez-vous</span>
             @if (adminSse.badgeAppointments() > 0) {
               <span
-                class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
                 >{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span
               >
             }
           </a>
           <a
             routerLink="/admin/settings"
-            routerLinkActive="bg-(--primary)/10 text-(--primary)"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+            [routerLinkActive]="sidebarLinkActive"
+            class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
           >
-            <lucide-icon [img]="SettingsIcon" [size]="18"></lucide-icon>
-            Paramètres
+            <lucide-icon [img]="SettingsIcon" [size]="16" class="shrink-0"></lucide-icon>
+            <span class="truncate">Paramètres</span>
           </a>
         </nav>
 
-        <div class="shrink-0 border-t border-(--border) px-4 py-3">
-          <p class="text-center text-[10px] font-medium tracking-wide text-(--muted-foreground)">
-            Administration
-          </p>
+        <div class="shrink-0 border-t border-zinc-200/80 px-3 py-2.5 dark:border-zinc-800">
+          <p class="text-center text-[10px] text-zinc-400 dark:text-zinc-500">LMP Administration</p>
         </div>
       </aside>
 
@@ -150,15 +222,25 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
           (click)="mobileMenuOpen.set(false)"
         ></button>
         <aside
-          class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col border-r border-(--border) bg-(--card) shadow-xl lg:hidden"
+          class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col border-r border-zinc-200/90 bg-[#f4f5f7] shadow-xl dark:border-zinc-800 dark:bg-zinc-900 lg:hidden"
         >
-          <div class="flex h-16 items-center justify-between gap-2 border-b border-(--border) px-4">
+          <div
+            class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-2 dark:border-zinc-800"
+          >
             <a
               routerLink="/"
-              class="flex min-w-0 items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)"
+              class="flex min-w-0 flex-1 items-center gap-2 rounded-sm px-1 py-0.5 focus-visible:ring-2 focus-visible:ring-zinc-400"
               (click)="mobileMenuOpen.set(false)"
             >
-              <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto" />
+              <img src="/images/logo-lmp.webp" alt="LMP" class="h-7 w-auto shrink-0 rounded-sm" />
+              <div class="min-w-0 text-left leading-tight">
+                <span class="block truncate text-[13px] font-medium text-zinc-900 dark:text-zinc-100"
+                  >LMP Digital Services</span
+                >
+                <span class="mt-0.5 block truncate text-[11px] text-zinc-500 dark:text-zinc-400"
+                  >Administrator</span
+                >
+              </div>
             </a>
             <button
               hlmBtn
@@ -172,90 +254,101 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
             </button>
           </div>
-          <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          <nav class="flex flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1">
+            <button
+              type="button"
+              class="relative mx-0.5 my-[1.5px] flex h-[30px] w-full cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false); onNotificationButtonClick()"
+            >
+              <lucide-icon [img]="BellIcon" [size]="16" class="shrink-0"></lucide-icon>
+              <span class="truncate">Notifications</span>
+            </button>
+            <p class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500">Vues</p>
             <a
               routerLink="/admin"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
+              [routerLinkActive]="sidebarLinkActive"
               [routerLinkActiveOptions]="{ exact: true }"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false)"
             >
-              <lucide-icon [img]="DashboardIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="DashboardIcon" [size]="16"></lucide-icon>
               Tableau de bord
             </a>
             <a
               routerLink="/admin/services"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false)"
             >
-              <lucide-icon [img]="PackageIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="PackageIcon" [size]="16"></lucide-icon>
               Services
             </a>
             <a
               routerLink="/admin/users"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
-              class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              [routerLinkActive]="sidebarLinkActive"
+              class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false); adminSse.badgeUsers.set(0)"
             >
-              <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon>
               Utilisateurs
               @if (adminSse.badgeUsers() > 0) {
                 <span
-                  class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                  class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
                   >{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span
                 >
               }
             </a>
             <a
               routerLink="/admin/orders"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
-              class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              [routerLinkActive]="sidebarLinkActive"
+              class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false); adminSse.badgeOrders.set(0)"
             >
-              <lucide-icon [img]="OrdersIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="OrdersIcon" [size]="16"></lucide-icon>
               Commandes
               @if (adminSse.badgeOrders() > 0) {
                 <span
-                  class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                  class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
                   >{{ adminSse.badgeOrders() > 9 ? '9+' : adminSse.badgeOrders() }}</span
                 >
               }
             </a>
             <a
               routerLink="/admin/appointments"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
-              class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              [routerLinkActive]="sidebarLinkActive"
+              class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false); adminSse.badgeAppointments.set(0)"
             >
-              <lucide-icon [img]="CalendarIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
               Rendez-vous
               @if (adminSse.badgeAppointments() > 0) {
                 <span
-                  class="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-sm bg-red-500 px-1 text-[10px] font-bold text-white"
+                  class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
                   >{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span
                 >
               }
             </a>
             <a
               routerLink="/admin/settings"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false)"
             >
-              <lucide-icon [img]="SettingsIcon" [size]="18"></lucide-icon>
+              <lucide-icon [img]="SettingsIcon" [size]="16"></lucide-icon>
               Paramètres
             </a>
           </nav>
         </aside>
       }
 
-      <div class="flex flex-1 flex-col lg:ml-64">
+      <div
+        class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950 lg:min-h-0"
+      >
         <header
-          class="sticky top-0 z-20 bg-(--card)/95 backdrop-blur-sm supports-[backdrop-filter]:bg-(--card)/80"
+          class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/90 bg-white lg:hidden dark:border-zinc-800 dark:bg-zinc-950"
         >
           <div
-            class="flex h-16 min-h-16 shrink-0 items-center justify-between gap-3 border-b border-(--border) px-4 box-border sm:px-6"
+            class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-3 px-3 sm:pl-5 sm:pr-6"
           >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <button
@@ -272,12 +365,12 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               </button>
               <div class="flex min-w-0 items-center gap-2 sm:gap-3">
                 <h1
-                  class="min-w-0 truncate text-sm font-semibold tracking-tight text-(--foreground) sm:text-base"
+                  class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
                 >
                   Administration
                 </h1>
                 <span
-                  class="hidden shrink-0 items-center gap-1.5 text-[11px] text-(--muted-foreground) sm:inline-flex"
+                  class="hidden shrink-0 items-center gap-1.5 text-[11px] text-zinc-500 sm:inline-flex"
                   title="Flux temps réel (SSE)"
                 >
                   <span
@@ -291,7 +384,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             </div>
 
             <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <div class="relative" (click)="$event.stopPropagation()">
+              <div class="relative lg:hidden" (click)="$event.stopPropagation()">
                 <button
                   hlmBtn
                   variant="ghost"
@@ -304,16 +397,12 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
                   <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
                   @if (notificationService.unreadCount() > 0) {
                     <span
-                      class="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-(--card)"
+                      class="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-zinc-950"
                     >
                       {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
                     </span>
                   }
                 </button>
-                <lmp-notification-panel
-                  [isOpen]="showNotificationPanel()"
-                  (panelClosed)="showNotificationPanel.set(false)"
-                />
               </div>
 
               <lmp-shell-account-menu
@@ -325,11 +414,18 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
           </div>
         </header>
 
-        <main class="p-4 sm:p-6">
+        <main
+          class="lmp-dashboard-theme min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-white p-4 sm:p-5 dark:bg-zinc-950"
+        >
           <router-outlet />
         </main>
       </div>
+      </div>
     </div>
+    <lmp-notification-panel
+      [isOpen]="showNotificationPanel()"
+      (panelClosed)="showNotificationPanel.set(false)"
+    />
   `,
 })
 export class AdminLayoutComponent implements OnInit, OnDestroy {
@@ -352,6 +448,11 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly MenuIcon = Menu;
   readonly XIcon = X;
   readonly BellIcon = Bell;
+  readonly ChevronDownIcon = ChevronDown;
+
+  /** État actif Frappe CRM : SidebarLink (`bg-surface-selected shadow-sm`) */
+  readonly sidebarLinkActive =
+    '!bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-200/70 dark:!bg-zinc-800 dark:!text-white dark:ring-zinc-600';
 
   ngOnInit(): void {
     this.adminSse.connect();

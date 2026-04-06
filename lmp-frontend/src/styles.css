@@ -46,6 +46,52 @@
   --warning: #eab308;
 }
 
+/*
+ * Zone tableau de bord (layout admin + espace client) : mêmes tokens que le shell CRM
+ * (fond blanc / zinc, bordures cohérentes). À appliquer sur <main> admin ou colonne droite client.
+ */
+.lmp-dashboard-theme {
+  --background: #ffffff;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --border: rgb(228 228 231 / 0.9);
+  --input: rgb(228 228 231 / 0.9);
+  --ring: #a1a1aa;
+  --sidebar: #f4f5f7;
+  --sidebar-foreground: #18181b;
+  --sidebar-border: rgb(228 228 231 / 0.9);
+}
+
+.dark .lmp-dashboard-theme {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --border: rgba(63, 63, 70, 0.85);
+  --input: rgba(63, 63, 70, 0.85);
+  --ring: #a1a1aa;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-border: rgba(63, 63, 70, 0.85);
+}
+
 .dark {
   color-scheme: dark;
   --background: #111113;
