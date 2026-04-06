@@ -30,27 +30,27 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
     ShellAccountMenuComponent,
   ],
   template: `
-    <div class="flex min-h-screen bg-(--background)">
-      <!-- Sidebar desktop -->
+    <div class="flex min-h-screen bg-[#eceff3] dark:bg-zinc-950 lg:h-screen lg:overflow-hidden">
+      <!-- Sidebar desktop (même thème que l’admin CRM) -->
       <aside
-        class="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-(--border) bg-(--card) box-border lg:flex"
+        class="fixed inset-y-0 left-0 z-30 hidden w-[220px] flex-col overflow-hidden border-r border-zinc-200/90 bg-[#f4f5f7] box-border dark:border-zinc-800 dark:bg-zinc-900 lg:flex"
       >
         <div
-          class="flex h-16 min-h-16 shrink-0 items-center gap-3 border-b border-(--border) px-5 box-border bg-(--card)"
+          class="box-border flex h-14 min-h-14 shrink-0 items-center gap-3 border-b border-zinc-200/90 px-3 dark:border-zinc-800"
         >
-          <a routerLink="/" class="flex items-center rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)">
-            <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto" />
+          <a routerLink="/" class="flex items-center rounded-sm focus-visible:ring-2 focus-visible:ring-zinc-400">
+            <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-7 w-auto" />
           </a>
         </div>
 
-        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav class="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1 [scrollbar-gutter:stable]">
           @for (item of sidebarItems; track item.route) {
             <a
               [routerLink]="item.route"
-              routerLinkActive="bg-(--primary)/10 text-(--primary)"
+              [routerLinkActive]="sidebarLinkActive"
               [routerLinkActiveOptions]="{ exact: item.exact }"
               (click)="onSidebarNav(item.route)"
-              class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+              class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
             >
               <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
               {{ item.label }}
@@ -74,10 +74,8 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           }
         </nav>
 
-        <div class="shrink-0 border-t border-(--border) px-4 py-3">
-          <p class="text-center text-[10px] font-medium tracking-wide text-(--muted-foreground)">
-            LMP Digital Services
-          </p>
+        <div class="shrink-0 border-t border-zinc-200/80 px-3 py-2.5 dark:border-zinc-800">
+          <p class="text-center text-[10px] text-zinc-400 dark:text-zinc-500">LMP Digital Services</p>
         </div>
       </aside>
 
@@ -91,15 +89,17 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           (click)="mobileMenuOpen.set(false)"
         ></button>
         <aside
-          class="fixed inset-y-0 left-0 z-50 flex w-[min(17rem,calc(100vw-2.5rem))] flex-col border-r border-(--border) bg-(--card) shadow-xl lg:hidden"
+          class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col overflow-hidden border-r border-zinc-200/90 bg-[#f4f5f7] shadow-xl dark:border-zinc-800 dark:bg-zinc-900 lg:hidden"
         >
-          <div class="flex h-16 items-center justify-between gap-2 border-b border-(--border) px-4">
+          <div
+            class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-2 dark:border-zinc-800"
+          >
             <a
               routerLink="/"
-              class="flex min-w-0 items-center rounded-sm focus-visible:ring-2 focus-visible:ring-(--ring)"
+              class="flex min-w-0 items-center rounded-sm focus-visible:ring-2 focus-visible:ring-zinc-400"
               (click)="mobileMenuOpen.set(false)"
             >
-              <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-9 w-auto" />
+              <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-7 w-auto" />
             </a>
             <button
               hlmBtn
@@ -113,13 +113,13 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
               <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
             </button>
           </div>
-          <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          <nav class="flex flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1">
             @for (item of sidebarItems; track item.route) {
               <a
                 [routerLink]="item.route"
-                routerLinkActive="bg-(--primary)/10 text-(--primary)"
+                [routerLinkActive]="sidebarLinkActive"
                 [routerLinkActiveOptions]="{ exact: item.exact }"
-                class="relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-(--muted-foreground) transition-colors hover:bg-(--accent) hover:text-(--foreground)"
+                class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
                 (click)="mobileMenuOpen.set(false); onSidebarNav(item.route)"
               >
                 <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
@@ -146,12 +146,12 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
         </aside>
       }
 
-      <div class="flex flex-1 flex-col lg:ml-60">
-        <header
-          class="sticky top-0 z-20 bg-(--card)/95 backdrop-blur-sm supports-[backdrop-filter]:bg-(--card)/80"
-        >
+      <div
+        class="lmp-dashboard-theme flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white lg:ml-[220px] dark:bg-zinc-950"
+      >
+        <header class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950">
           <div
-            class="flex h-16 min-h-16 shrink-0 items-center justify-between gap-3 border-b border-(--border) px-4 box-border sm:px-6"
+            class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-3 px-3 sm:px-6"
           >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <button
@@ -167,7 +167,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                 <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
               </button>
               <h1
-                class="min-w-0 truncate text-sm font-semibold tracking-tight text-(--foreground) sm:text-base"
+                class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
               >
                 Espace client
               </h1>
@@ -187,7 +187,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                   <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
                   @if (notificationService.unreadCount() > 0) {
                     <span
-                      class="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-(--card)"
+                      class="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-zinc-950"
                     >
                       {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
                     </span>
@@ -208,7 +208,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           </div>
         </header>
 
-        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <main class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5 lg:p-6">
           <router-outlet />
         </main>
       </div>
@@ -224,6 +224,10 @@ export class DashboardLayoutComponent {
 
   readonly showNotificationPanel = signal(false);
   readonly mobileMenuOpen = signal(false);
+
+  /** Même état actif que l’admin (Frappe CRM) */
+  readonly sidebarLinkActive =
+    '!bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-200/70 dark:!bg-zinc-800 dark:!text-white dark:ring-zinc-600';
 
   readonly BellIcon = Bell;
   readonly MenuIcon = Menu;
