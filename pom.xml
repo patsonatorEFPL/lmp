@@ -101,7 +101,7 @@
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
 
-		<!-- OAuth2 Authorization Server (SSO pour external ERP) -->
+		<!-- OAuth2 Authorization Server (clients satellites OAuth2/OIDC) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
@@ -125,6 +125,13 @@
 			<groupId>com.stripe</groupId>
 			<artifactId>stripe-java</artifactId>
 			<version>24.16.0</version>
+		</dependency>
+
+		<!-- GeoIP2 (GeoLite2 Country — fichier .mmdb optionnel, voir geoip.country-db) -->
+		<dependency>
+			<groupId>com.maxmind.geoip2</groupId>
+			<artifactId>geoip2</artifactId>
+			<version>4.2.1</version>
 		</dependency>
 
 		<!-- OpenPDF pour génération de factures PDF -->

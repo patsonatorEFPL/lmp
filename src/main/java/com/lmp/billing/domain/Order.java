@@ -151,6 +151,18 @@ public class Order {
     @Column(name = "checkout_token", length = 64)
     private String checkoutToken;
 
+    /** Snapshot FX : montant en devise de base (EUR) au moment de la création de la commande. */
+    @Column(name = "amount_base_eur", precision = 10, scale = 2)
+    private BigDecimal amountBaseEur;
+
+    /** Taux de change EUR → currency appliqué (taux effectif avec marge). */
+    @Column(name = "fx_rate", precision = 18, scale = 6)
+    private BigDecimal fxRate;
+
+    /** Origine du taux : "frankfurter" ou "static". */
+    @Column(name = "fx_source", length = 32)
+    private String fxSource;
+
     public Order() {}
     
     // Getters and Setters
@@ -237,4 +249,13 @@ public class Order {
 
     public String getCheckoutToken() { return checkoutToken; }
     public void setCheckoutToken(String checkoutToken) { this.checkoutToken = checkoutToken; }
+
+    public BigDecimal getAmountBaseEur() { return amountBaseEur; }
+    public void setAmountBaseEur(BigDecimal amountBaseEur) { this.amountBaseEur = amountBaseEur; }
+
+    public BigDecimal getFxRate() { return fxRate; }
+    public void setFxRate(BigDecimal fxRate) { this.fxRate = fxRate; }
+
+    public String getFxSource() { return fxSource; }
+    public void setFxSource(String fxSource) { this.fxSource = fxSource; }
 }

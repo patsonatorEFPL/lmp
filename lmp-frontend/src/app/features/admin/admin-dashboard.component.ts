@@ -47,7 +47,7 @@ type AdminDashboardPayload = {
       </div>
     }
 
-    <!-- Stats Grid (cartes type liste CRM / external CRM) -->
+    <!-- Stats Grid (cartes type vue liste) -->
     @if (!blockingLoader() && stats()) {
       <div class="mb-2 border-b border-zinc-200/90 pb-4 dark:border-zinc-800">
         <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">

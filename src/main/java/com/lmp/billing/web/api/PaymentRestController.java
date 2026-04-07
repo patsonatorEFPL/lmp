@@ -18,7 +18,10 @@ import com.lmp.billing.dto.PaymentResponseDto;
 import com.lmp.billing.service.processor.StripeCheckoutPaymentProcessor;
 import com.lmp.auth.service.UserService;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.pricing.PricingContext;
+import com.lmp.shared.pricing.RegionalPricingService;
 import com.lmp.shared.util.VatIdentifierUtils;
+import com.lmp.shared.web.ClientIpResolver;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,6 +62,7 @@ public class PaymentRestController {
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
     private final PaymentReconciliationService paymentReconciliationService;
     private final StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService;
+    private final RegionalPricingService regionalPricingService;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
@@ -67,7 +71,8 @@ public class PaymentRestController {
                                  PaymentService paymentService,
                                  OrderRealtimeEventPublisher orderRealtimeEventPublisher,
                                  PaymentReconciliationService paymentReconciliationService,
-                                 StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService) {
+                                 StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService,
+                                 RegionalPricingService regionalPricingService) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
@@ -76,6 +81,7 @@ public class PaymentRestController {
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.paymentReconciliationService = paymentReconciliationService;
         this.stripePaymentIntentCheckoutService = stripePaymentIntentCheckoutService;
+        this.regionalPricingService = regionalPricingService;
     }
 
     // =========================================================================
@@ -149,12 +155,15 @@ public class PaymentRestController {
         }
 
         ServiceOffer offer = offerOpt.get();
-        BigDecimal amount = offer.getPrice();
+        PricingContext displayCtx = regionalPricingService.resolve(httpRequest);
+        PricingContext payCtx = regionalPricingService.resolveForPayment(displayCtx);
+        BigDecimal amountEur = offer.getPrice();
+        BigDecimal amount = regionalPricingService.convertFromEur(amountEur, payCtx);
         String serviceName = offer.getService().getTitle();
-        String currency = request.currency() != null ? request.currency() : "EUR";
+        String currency = payCtx.currency();
 
         try {
-            // Créer la commande
+            // Créer la commande avec snapshot FX figé
             Order order = new Order();
             order.setTotalAmount(amount);
             order.setCurrency(currency);
@@ -164,6 +173,9 @@ public class PaymentRestController {
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setLastModifiedAt(LocalDateTime.now());
+            order.setAmountBaseEur(amountEur);
+            order.setFxRate(payCtx.eurToTargetRate());
+            order.setFxSource(payCtx.rateSource());
 
             applyVatSnapshotFromUser(order, user);
 
@@ -189,7 +201,7 @@ public class PaymentRestController {
             metadata.put("webhook_version", "v3");
             metadata.put("creation_mode", "api_v1");
             metadata.put("order_creation", "persistent");
-            metadata.put("customer_ip", getClientIp(httpRequest));
+            metadata.put("customer_ip", ClientIpResolver.resolve(httpRequest));
 
             paymentRequest.setMetadata(metadata);
 
@@ -264,9 +276,12 @@ public class PaymentRestController {
         }
 
         ServiceOffer offer = offerOpt.get();
-        BigDecimal amount = offer.getPrice();
+        PricingContext displayCtx2 = regionalPricingService.resolve(httpRequest);
+        PricingContext payCtx2 = regionalPricingService.resolveForPayment(displayCtx2);
+        BigDecimal amountEur = offer.getPrice();
+        BigDecimal amount = regionalPricingService.convertFromEur(amountEur, payCtx2);
         String serviceName = offer.getService().getTitle();
-        String currency = request.currency() != null ? request.currency() : "EUR";
+        String currency = payCtx2.currency();
 
         try {
             Order order = new Order();
@@ -278,6 +293,9 @@ public class PaymentRestController {
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setLastModifiedAt(LocalDateTime.now());
+            order.setAmountBaseEur(amountEur);
+            order.setFxRate(payCtx2.eurToTargetRate());
+            order.setFxSource(payCtx2.rateSource());
 
             applyVatSnapshotFromUser(order, user);
             OrderProgressSync.applyMinimumForStatus(order);
@@ -287,7 +305,7 @@ public class PaymentRestController {
 
             StripePaymentIntentCheckoutService.PaymentIntentResult pi =
                     stripePaymentIntentCheckoutService.createOrRefreshPaymentIntent(
-                            savedOrder, user, getClientIp(httpRequest), "payment_element_offer");
+                            savedOrder, user, ClientIpResolver.resolve(httpRequest), "payment_element_offer");
 
             savedOrder.setStripePaymentIntentId(pi.paymentIntentId());
             savedOrder.setPaymentMethod("payment_element");
@@ -369,7 +387,7 @@ public class PaymentRestController {
             metadata.put("webhook_version", "v3");
             metadata.put("creation_mode", "admin_order_checkout");
             metadata.put("order_creation", "persistent");
-            metadata.put("customer_ip", getClientIp(httpRequest));
+            metadata.put("customer_ip", ClientIpResolver.resolve(httpRequest));
             paymentRequest.setMetadata(metadata);
 
             PaymentResponseDto response = stripeCheckoutProcessor.processPayment(order, paymentRequest);
@@ -465,7 +483,7 @@ public class PaymentRestController {
 
             StripePaymentIntentCheckoutService.PaymentIntentResult pi =
                     stripePaymentIntentCheckoutService.createOrRefreshPaymentIntent(
-                            order, user, getClientIp(httpRequest), "payment_element_existing_order");
+                            order, user, ClientIpResolver.resolve(httpRequest), "payment_element_existing_order");
 
             order.setStripePaymentIntentId(pi.paymentIntentId());
             order.setPaymentMethod("payment_element");
@@ -573,15 +591,4 @@ public class PaymentRestController {
         order.setCustomerVatNumber(reverse && !vat.isEmpty() ? vat : null);
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isEmpty()) {
-            return xff.split(",")[0].trim();
-        }
-        String xri = request.getHeader("X-Real-IP");
-        if (xri != null && !xri.isEmpty()) {
-            return xri;
-        }
-        return request.getRemoteAddr();
-    }
 }

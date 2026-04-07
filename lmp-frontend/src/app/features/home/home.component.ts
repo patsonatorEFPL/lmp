@@ -222,7 +222,14 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                 <div>
                   @if (service.currentOffer) {
                     <span class="text-lg font-bold text-(--foreground)">
-                      {{ service.currentOffer.price | currency:'EUR':'symbol':'1.2-2':'fr' }}
+                      {{
+                        service.currentOffer.price
+                          | currency
+                            : (service.currentOffer.currency || 'EUR')
+                            : 'symbol'
+                            : '1.2-2'
+                            : 'fr'
+                      }}
                     </span>
                     <span class="text-xs text-(--muted-foreground) ml-1">
                       {{ service.currentOffer.durationType === 'ONE_TIME' ? 'unique' :
@@ -675,7 +682,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       quote: 'LMP a complètement transformé notre visibilité en ligne. En seulement 3 mois, nos appels entrants ont doublé et notre chiffre d\'affaires local a augmenté de 40%. Leur approche data-driven est exactement ce qu\'il nous fallait.',
       name: 'Marie Dubois',
-      role: 'CEO, Brasserie Belge — Bruxelles',
+      role: 'CEO, Bistro du Vieux-Port — Québec',
     },
     {
       quote: 'Le service de gestion des avis m\'a fait gagner un temps précieux. Ma note est passée de 3.8 à 4.7 étoiles. Indispensable.',
@@ -771,7 +778,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       title: 'LMP Digital Services — Marketing Digital & Référencement Local',
       description: 'Propulsez votre visibilité au sommet. Expertise en marketing digital, référencement SEO, Google My Business et création de sites web. 500+ clients satisfaits.',
       url: '/',
-      keywords: 'marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, LMP, référencement local, Belgique, Bruxelles',
+      keywords: 'marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, LMP, référencement local, Canada, Québec',
     });
     this.loadFeaturedServices();
   }

@@ -9,7 +9,7 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 | Backend | Spring Boot 3.5.4, Java 21 |
 | Frontend | Angular 21 (SSR), Tailwind CSS v4 |
 | UI Components | Spartan UI / Helm, Lucide Angular |
-| Base de données | PostgreSQL 18 (prod) / Testcontainers PostgreSQL (dev) |
+| Base de données | PostgreSQL (prod) / PostgreSQL local Docker persistant en dev (`docker-compose.dev.yml`) |
 | Paiements | Stripe API (Checkout + Webhooks) |
 | Auth | Spring Security, OAuth2 (Google, Microsoft), BCrypt |
 | Emails | Thymeleaf templates |
@@ -38,7 +38,7 @@ Application fullstack de gestion des services digitaux — marketing local, réf
 - Java 21+
 - Maven 3.9+
 - Node.js 20+ et npm 10+
-- Docker (requis pour Testcontainers en dev — aucune installation PostgreSQL locale nécessaire)
+- Docker (recommandé — pour PostgreSQL de développement avec données persistantes)
 
 ### Backend
 
@@ -51,13 +51,25 @@ cd lmp
 cp src/main/resources/application-secrets.properties.sample \
    src/main/resources/application-secrets.properties
 # Remplir les valeurs : Stripe Test, OAuth, Remember-Me
+# Pour la base locale : DB_PASSWORD doit correspondre à POSTGRES_PASSWORD (défaut ci-dessous : lmp_dev_local)
 
-# 3. Lancer l'application (profil dev)
-# Testcontainers démarre automatiquement un PostgreSQL éphémère via Docker
-./mvnw spring-boot:test-run
+# 3. Démarrer PostgreSQL (données dans un volume Docker — conservées entre les redémarrages)
+#    Script recommandé : attend que Postgres soit prêt (pg_isready).
+./bin/dev-up.sh
+#    Windows PowerShell : .\bin\dev-up.ps1
+#    Équivalent manuel : docker compose -f docker-compose.dev.yml up -d
+
+# 4. Lancer l'application (profil dev par défaut)
+SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+#    Windows PowerShell : $env:SPRING_PROFILES_ACTIVE='dev'; mvn spring-boot:run
+#    Ou : exécuter com.lmp.LmpApplication depuis l'IDE
 ```
 
 API accessible sur `http://localhost:8080`.
+
+**Sans PostgreSQL persistant (CI / machine sans compose)** : lancer avec Testcontainers — `LMP_DEV_TESTCONTAINERS=true` puis `./mvnw spring-boot:test-run` ou exécuter `TestLmpApplication` (base éphémère, uniquement pour ce mode).
+
+**Dépannage — erreur d’authentification PostgreSQL (`28P01`)** : le mot de passe côté Spring doit être le même que celui du conteneur. Par défaut : `lmp_dev_local` dans `application-dev.properties` et dans `docker-compose.dev.yml` (`POSTGRES_PASSWORD`). Si `application-secrets.properties` définit un autre `DB_PASSWORD`, alignez-le ou supprimez la ligne pour utiliser la valeur du profil dev.
 
 ### Frontend
 

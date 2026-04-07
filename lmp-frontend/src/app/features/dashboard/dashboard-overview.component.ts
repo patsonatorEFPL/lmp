@@ -63,63 +63,84 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
   template: `
     @if (blockingLoader()) {
       <div class="flex items-center justify-center py-16">
-        <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
+        <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-zinc-600 dark:text-zinc-400"></lucide-icon>
       </div>
     }
 
     @if (!blockingLoader() && stats()) {
-      <!-- Quick stats -->
+      <div class="mb-6 border-b border-zinc-200/90 pb-4 dark:border-zinc-800">
+        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Vue d’ensemble</p>
+        <h2 class="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Espace client</h2>
+      </div>
+
+      <!-- Quick stats (même base que /admin : cartes zinc + ombre légère) -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
+        <div
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-(--muted-foreground)">Commandes</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
-              <lucide-icon [img]="ShoppingCartIcon" [size]="16"></lucide-icon>
+            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Commandes</span>
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
+            >
+              <lucide-icon [img]="ShoppingCartIcon" [size]="18" class="text-zinc-700 dark:text-zinc-200"></lucide-icon>
             </div>
           </div>
           <div class="mt-3">
-            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.totalOrders }}</span>
+            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.totalOrders }}</span>
           </div>
-          <p class="mt-1 text-xs text-(--muted-foreground)">{{ stats()!.completedOrders }} terminée(s)</p>
+          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ stats()!.completedOrders }} terminée(s)</p>
         </div>
 
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
+        <div
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-(--muted-foreground)">En cours</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-amber-600">
-              <lucide-icon [img]="ClockIcon" [size]="16"></lucide-icon>
+            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">En cours</span>
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
+            >
+              <lucide-icon [img]="ClockIcon" [size]="18" class="text-amber-600 dark:text-amber-500"></lucide-icon>
             </div>
           </div>
           <div class="mt-3">
-            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.inProgressOrders }}</span>
+            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.inProgressOrders }}</span>
           </div>
-          <p class="mt-1 text-xs text-(--muted-foreground)">Commandes actives</p>
+          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Commandes actives</p>
         </div>
 
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
+        <div
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-(--muted-foreground)">Rendez-vous</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
-              <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
+            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Rendez-vous</span>
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
+            >
+              <lucide-icon [img]="CalendarIcon" [size]="18" class="text-zinc-700 dark:text-zinc-200"></lucide-icon>
             </div>
           </div>
           <div class="mt-3">
-            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.upcomingAppointments }}</span>
+            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.upcomingAppointments }}</span>
           </div>
-          <p class="mt-1 text-xs text-(--muted-foreground)">À venir</p>
+          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">À venir</p>
         </div>
 
-        <div class="rounded-sm border border-(--border) bg-(--card) p-5">
+        <div
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-(--muted-foreground)">Avis</span>
-            <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-emerald-600">
-              <lucide-icon [img]="StarIcon" [size]="16"></lucide-icon>
+            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Avis</span>
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
+            >
+              <lucide-icon [img]="StarIcon" [size]="18" class="text-emerald-600 dark:text-emerald-400"></lucide-icon>
             </div>
           </div>
           <div class="mt-3">
-            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.totalReviews }}</span>
+            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.totalReviews }}</span>
           </div>
-          <p class="mt-1 text-xs text-(--muted-foreground)">Avis donnés</p>
+          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Avis donnés</p>
         </div>
       </div>
 
@@ -128,33 +149,33 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
         <!-- Recent Orders -->
         <div class="lg:col-span-2">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-(--foreground)">Commandes récentes</h2>
+            <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Commandes récentes</h2>
             <a
               routerLink="/dashboard/orders"
-              class="text-xs font-semibold text-(--primary) hover:underline"
+              class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
             >
               Voir tout →
             </a>
           </div>
-          <div class="rounded-sm border border-(--border) bg-(--card)">
+          <div class="rounded border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900/50">
             @if (stats()!.recentOrders.length === 0) {
               <div class="flex flex-col items-center justify-center py-10 text-center">
-                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-(--muted)">
-                  <lucide-icon [img]="FileTextIcon" [size]="20" class="text-(--muted-foreground)"></lucide-icon>
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <lucide-icon [img]="FileTextIcon" [size]="20" class="text-zinc-500 dark:text-zinc-400"></lucide-icon>
                 </div>
-                <p class="mt-3 text-sm font-medium text-(--foreground)">Aucune commande</p>
-                <p class="mt-1 text-xs text-(--muted-foreground)">Vos commandes apparaîtront ici.</p>
+                <p class="mt-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">Aucune commande</p>
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Vos commandes apparaîtront ici.</p>
                 <a routerLink="/services" hlmBtn variant="default" size="sm" class="mt-4 cursor-pointer">
                   Découvrir nos services
                 </a>
               </div>
             } @else {
-              <div class="divide-y divide-(--border)">
+              <div class="divide-y divide-zinc-200/90 dark:divide-zinc-800">
                 @for (order of stats()!.recentOrders; track order.id) {
                   <a
                     [routerLink]="['/dashboard/orders']"
                     [queryParams]="{ open: order.id }"
-                    class="flex items-center justify-between p-4 transition-colors hover:bg-(--muted)/50"
+                    class="flex items-center justify-between p-4 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
                   >
                     <div class="flex items-center gap-3">
                       <div
@@ -164,13 +185,13 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
                         <lucide-icon [img]="getStatusIcon(order.status)" [size]="16"></lucide-icon>
                       </div>
                       <div>
-                        <p class="text-sm font-medium text-(--foreground)">{{ order.serviceName }}</p>
-                        <p class="text-xs text-(--muted-foreground)">{{ order.createdAt | date: 'dd MMM yyyy' }}</p>
+                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ order.serviceName }}</p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ order.createdAt | date: 'dd MMM yyyy' }}</p>
                       </div>
                     </div>
                     <div class="flex items-center gap-3">
                       <div class="text-right">
-                        <p class="text-sm font-semibold text-(--foreground)">
+                        <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                           {{ order.totalAmount | currency:(order.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
                         </p>
                         <span
@@ -180,7 +201,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
                           {{ getStatusLabel(order.status) }}
                         </span>
                       </div>
-                      <lucide-icon [img]="ChevronRightIcon" [size]="16" class="text-(--muted-foreground)"></lucide-icon>
+                      <lucide-icon [img]="ChevronRightIcon" [size]="16" class="text-zinc-400 dark:text-zinc-500"></lucide-icon>
                     </div>
                   </a>
                 }
@@ -191,23 +212,25 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
 
         <!-- Quick actions -->
         <div>
-          <h2 class="mb-4 text-lg font-bold text-(--foreground)">Actions rapides</h2>
+          <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Actions rapides</h2>
           <div class="space-y-3">
             @for (action of quickActions; track action.label) {
               <a
                 [routerLink]="action.route"
-                class="group flex items-center gap-3 rounded-sm border border-(--border) bg-(--card) p-4 transition-colors hover:bg-(--accent)"
+                class="group flex items-center gap-3 rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/80"
               >
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
+                <div
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
+                >
                   <lucide-icon [img]="action.icon" [size]="18"></lucide-icon>
                 </div>
                 <div class="flex-1">
-                  <h3 class="text-sm font-semibold text-(--foreground)">{{ action.label }}</h3>
-                  <p class="text-xs text-(--muted-foreground)">{{ action.description }}</p>
+                  <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ action.label }}</h3>
+                  <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ action.description }}</p>
                 </div>
                 <lucide-icon
                   [img]="ChevronRightIcon" [size]="16"
-                  class="text-(--muted-foreground)"
+                  class="text-zinc-400 transition-transform group-hover:translate-x-0.5 dark:text-zinc-500"
                 ></lucide-icon>
               </a>
             }
@@ -219,27 +242,33 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
       @if (stats()!.upcomingAppointmentsList.length > 0) {
         <div class="mt-8">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-(--foreground)">Prochains rendez-vous</h2>
+            <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Prochains rendez-vous</h2>
             <a
               routerLink="/dashboard/appointments"
-              class="text-xs font-semibold text-(--primary) hover:underline"
+              class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
             >
               Voir tout →
             </a>
           </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (appt of stats()!.upcomingAppointmentsList; track appt.id) {
-              <div class="rounded-sm border border-(--border) bg-(--card) p-5">
+              <div
+                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+              >
                 <div class="flex items-start justify-between">
-                  <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted) text-(--primary)">
+                  <div
+                    class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
+                  >
                     <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
                   </div>
-                  <span class="rounded-xs bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
+                  <span
+                    class="rounded-xs bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+                  >
                     {{ appt.durationMinutes }} min
                   </span>
                 </div>
-                <h3 class="mt-3 text-sm font-semibold text-(--foreground)">{{ appt.subject }}</h3>
-                <p class="mt-1 text-xs text-(--muted-foreground)">
+                <h3 class="mt-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ appt.subject }}</h3>
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                   {{ appt.appointmentDate | date: 'EEEE dd MMM yyyy à HH:mm' }}
                 </p>
               </div>
@@ -251,29 +280,37 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
       <!-- Recent Reviews -->
       @if (stats()!.recentReviews.length > 0) {
         <div class="mt-8">
-          <h2 class="mb-4 text-lg font-bold text-(--foreground)">Vos avis récents</h2>
+          <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Vos avis récents</h2>
           <div class="space-y-3">
             @for (review of stats()!.recentReviews; track review.id) {
-              <div class="rounded-sm border border-(--border) bg-(--card) p-5">
+              <div
+                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+              >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-1">
                     @for (s of [1, 2, 3, 4, 5]; track s) {
                       <lucide-icon
                         [img]="StarIcon" [size]="14"
-                        [ngClass]="{ 'text-amber-400': s <= review.rating, 'text-(--muted)': s > review.rating }"
+                        [ngClass]="{ 'text-amber-400': s <= review.rating, 'text-zinc-300 dark:text-zinc-600': s > review.rating }"
                       ></lucide-icon>
                     }
                   </div>
                   @if (review.approved) {
-                    <span class="rounded-xs bg-(--muted) px-2 py-0.5 text-xs font-medium text-emerald-600">Approuvé</span>
+                    <span
+                      class="rounded-xs bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+                      >Approuvé</span
+                    >
                   } @else {
-                    <span class="rounded-xs bg-(--muted) px-2 py-0.5 text-xs font-medium text-amber-600">En attente</span>
+                    <span
+                      class="rounded-xs bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-400"
+                      >En attente</span
+                    >
                   }
                 </div>
                 @if (review.comment) {
-                  <p class="mt-2 text-sm text-(--muted-foreground)">{{ review.comment }}</p>
+                  <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{{ review.comment }}</p>
                 }
-                <p class="mt-2 text-xs text-(--muted-foreground)">{{ review.createdAt | date: 'dd MMM yyyy' }}</p>
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-500">{{ review.createdAt | date: 'dd MMM yyyy' }}</p>
               </div>
             }
           </div>
@@ -335,7 +372,7 @@ export class DashboardOverviewComponent implements OnInit {
   readonly quickActions = [
     { label: 'Voir les services', description: 'Parcourir notre catalogue', route: '/services', icon: ShoppingCart },
     { label: 'Prendre rendez-vous', description: 'Planifier une consultation', route: '/contact', icon: Calendar },
-    { label: 'Paramètres', description: 'Gérer votre compte', route: '/settings', icon: Settings },
+    { label: 'Paramètres', description: 'Gérer votre compte', route: '/dashboard/settings', icon: Settings },
   ];
 
   ngOnInit(): void {
@@ -361,17 +398,17 @@ export class DashboardOverviewComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     const classes: Record<string, string> = {
-      COMPLETED: 'bg-(--muted) text-(--foreground)',
-      DELIVERED: 'bg-(--muted) text-(--foreground)',
-      CONFIRMED: 'bg-(--muted) text-(--foreground)',
-      IN_PROGRESS: 'bg-(--muted) text-(--foreground)',
-      PROCESSING: 'bg-(--muted) text-(--foreground)',
-      PENDING: 'bg-slate-500/10 text-slate-500',
-      PAYMENT_PENDING: 'bg-orange-500/10 text-orange-500',
-      CANCELLED: 'bg-red-500/10 text-red-500',
-      REFUNDED: 'bg-(--muted) text-(--primary)',
+      COMPLETED: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
+      DELIVERED: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
+      CONFIRMED: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
+      IN_PROGRESS: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
+      PROCESSING: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
+      PENDING: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400',
+      PAYMENT_PENDING: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+      CANCELLED: 'bg-red-500/10 text-red-600 dark:text-red-400',
+      REFUNDED: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
     };
-    return classes[status] || 'bg-slate-500/10 text-slate-500';
+    return classes[status] || 'bg-zinc-500/10 text-zinc-600';
   }
 
   getStatusBgClass(status: string): string {

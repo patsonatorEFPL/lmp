@@ -145,15 +145,19 @@ export const routes: Routes = [
             (m) => m.UserAppointmentsComponent,
           ),
       },
+      {
+        path: 'settings',
+        loadComponent: () =>
+          import('./features/settings/settings.component').then(
+            (m) => m.SettingsComponent,
+          ),
+      },
     ],
   },
   {
     path: 'settings',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/settings/settings.component').then(
-        (m) => m.SettingsComponent,
-      ),
+    redirectTo: '/dashboard/settings',
+    pathMatch: 'full',
   },
 
   // Admin pages (admin layout with sidebar)
