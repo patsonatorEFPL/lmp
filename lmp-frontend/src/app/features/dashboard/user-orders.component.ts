@@ -73,11 +73,12 @@ const ORDER_STEPS = [
   standalone: true,
   imports: [DatePipe, CurrencyPipe, NgClass, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- Header -->
+    <!-- Header (aligné typo /admin) -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-(--foreground)">Mes commandes</h1>
-        <p class="mt-1 text-sm text-(--muted-foreground)">
+        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Commandes</p>
+        <h1 class="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Mes commandes</h1>
+        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           {{ allOrders().length }} commande(s) au total
         </p>
       </div>

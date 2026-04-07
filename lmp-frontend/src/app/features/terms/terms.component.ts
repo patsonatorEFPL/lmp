@@ -24,7 +24,7 @@ import { SeoService } from '../../core/services/seo.service';
         <p class="text-sm font-semibold text-(--primary)">Dernière mise à jour : {{ lastUpdated }}</p>
         <p class="mt-2 text-sm text-(--muted-foreground)">
           Ces conditions d'utilisation décrivent les règles et réglementations pour l'utilisation du site web de
-          <strong class="text-(--foreground)">LMP Local Map Profil</strong>.
+          <strong class="text-(--foreground)">LMP</strong>.
         </p>
       </div>
 
@@ -57,13 +57,13 @@ export class TermsComponent implements OnInit, AfterViewInit, OnDestroy {
       title: 'Acceptation des conditions',
       content: `En accédant à ce site web, nous supposons que vous acceptez ces conditions d'utilisation.
         Si vous n'acceptez pas toutes les conditions d'utilisation énoncées sur cette page, veuillez ne pas
-        continuer à utiliser LMP Local Map Profil.`,
+        continuer à utiliser LMP.`,
     },
     {
       title: 'Propriété intellectuelle',
-      content: `Sauf indication contraire, LMP Local Map Profil et/ou ses concédants de licence détiennent les droits
-        de propriété intellectuelle pour l'ensemble du matériel sur LMP Local Map Profil. Tous les droits de
-        propriété intellectuelle sont réservés. Vous pouvez y accéder à partir de LMP Local Map Profil pour
+      content: `Sauf indication contraire, LMP et/ou ses concédants de licence détiennent les droits
+        de propriété intellectuelle pour l'ensemble du matériel sur LMP. Tous les droits de
+        propriété intellectuelle sont réservés. Vous pouvez y accéder à partir de LMP pour
         votre usage personnel, sous réserve des restrictions définies dans ces conditions.`,
     },
     {
@@ -74,15 +74,15 @@ export class TermsComponent implements OnInit, AfterViewInit, OnDestroy {
     },
     {
       title: 'Limitation de responsabilité',
-      content: `En aucun cas, LMP Local Map Profil, ni aucun de ses dirigeants, administrateurs et employés, ne sera
+      content: `En aucun cas, LMP, ni aucun de ses dirigeants, administrateurs et employés, ne sera
         tenu responsable de quoi que ce soit découlant de ou de quelque manière que ce soit lié à votre
         utilisation de ce site web.`,
     },
     {
       title: 'Droit applicable',
-      content: `Ces conditions seront régies et interprétées conformément aux lois du Royaume de Belgique,
-        et vous vous soumettez à la juridiction non exclusive des tribunaux belges pour la résolution
-        de tout litige.`,
+      content: `Ces conditions seront régies et interprétées conformément aux lois de la province de Québec
+        et aux lois fédérales du Canada qui s'y appliquent, et vous vous soumettez à la compétence non exclusive
+        des tribunaux du Québec pour la résolution de tout litige.`,
     },
     {
       title: 'Contact',

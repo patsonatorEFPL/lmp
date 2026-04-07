@@ -24,7 +24,7 @@ import { SeoService } from '../../core/services/seo.service';
         <p class="text-sm font-semibold text-(--primary)">Dernière mise à jour : {{ lastUpdated }}</p>
         <p class="mt-2 text-sm text-(--muted-foreground)">
           Cette politique de confidentialité explique comment
-          <strong class="text-(--foreground)">LMP Local Map Profil</strong>
+          <strong class="text-(--foreground)">LMP</strong>
           collecte, utilise et protège vos informations personnelles.
         </p>
       </div>
@@ -56,16 +56,16 @@ export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly sections = [
     {
       title: 'Présentation',
-      content: `Le site web <strong class="text-(--foreground)">LMP Local Map Profil</strong> est détenu par
-        <strong class="text-(--foreground)">LMP Local Map Profil</strong>, qui est responsable du traitement de vos
+      content: `Le site web <strong class="text-(--foreground)">LMP</strong> est détenu par
+        <strong class="text-(--foreground)">LMP</strong>, qui est responsable du traitement de vos
         données personnelles. Nous avons adopté cette politique de confidentialité qui détermine comment nous traitons
-        les informations collectées par LMP Local Map Profil, et qui explique également pourquoi nous devons collecter
+        les informations collectées par LMP, et qui explique également pourquoi nous devons collecter
         certaines données personnelles vous concernant.<br/><br/>
         Nous prenons soin de vos données personnelles et nous nous engageons à garantir leur confidentialité et leur sécurité.`,
     },
     {
       title: 'Informations personnelles que nous collectons',
-      content: `Lorsque vous visitez LMP Local Map Profil, nous collectons automatiquement certaines informations sur votre
+      content: `Lorsque vous visitez LMP, nous collectons automatiquement certaines informations sur votre
         appareil, notamment des informations sur votre navigateur web, votre adresse IP, votre fuseau horaire et
         certains des cookies installés sur votre appareil. De plus, lorsque vous naviguez sur le site, nous collectons
         des informations sur les pages web individuelles ou les produits que vous consultez, les sites web ou les termes

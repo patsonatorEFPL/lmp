@@ -1,4 +1,13 @@
-import { Component, DestroyRef, inject, OnInit, signal, effect, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  signal,
+  effect,
+  untracked,
+  computed,
+} from '@angular/core';
 import { NgClass, DatePipe } from '@angular/common';
 import {
   LucideAngularModule,
@@ -25,6 +34,10 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  Filter,
+  ArrowUpDown,
+  Columns3,
+  Phone,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -73,185 +86,321 @@ interface ApiResponse<T> {
   standalone: true,
   imports: [NgClass, DatePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-(--foreground)">
-          Gestion des Utilisateurs
-        </h1>
-        <p class="mt-1 text-sm text-(--muted-foreground)">
-          {{ totalUsers() }} utilisateurs enregistrés
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <!-- En-tête type vue liste (contacts / comptes) -->
+    <div class="mb-1">
+      <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        Utilisateurs
+      </p>
+      <h2 class="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+        Comptes
+      </h2>
+      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        {{ totalUsers() }} compte{{ totalUsers() > 1 ? 's' : '' }} enregistré{{ totalUsers() > 1 ? 's' : '' }}
+      </p>
+    </div>
+
+    <!-- Barre d’outils (Filtre + actions) -->
+    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-wrap items-center gap-2">
         <button
-          hlmBtn variant="ghost" size="icon" class="cursor-pointer"
+          type="button"
+          hlmBtn
+          variant="outline"
+          size="sm"
+          class="cursor-pointer gap-2 border-zinc-200/90 bg-white text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          (click)="filterPanelOpen.set(!filterPanelOpen())"
+          [attr.aria-expanded]="filterPanelOpen()"
+        >
+          <lucide-icon [img]="FilterIcon" [size]="16" class="text-zinc-500"></lucide-icon>
+          Filtrer
+        </button>
+      </div>
+      <div class="flex items-center gap-0.5">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon"
+          type="button"
+          class="h-9 w-9 cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+          title="Actualiser"
           (click)="loadUsers()"
         >
           <lucide-icon
-            [img]="RefreshCwIcon" [size]="18"
+            [img]="RefreshCwIcon"
+            [size]="18"
             [ngClass]="{ 'animate-spin': loading() }"
           ></lucide-icon>
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon"
+          type="button"
+          class="h-9 w-9 cursor-not-allowed opacity-40"
+          disabled
+          title="Tri (bientôt)"
+        >
+          <lucide-icon [img]="ArrowUpDownIcon" [size]="18"></lucide-icon>
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon"
+          type="button"
+          class="h-9 w-9 cursor-not-allowed opacity-40"
+          disabled
+          title="Colonnes (bientôt)"
+        >
+          <lucide-icon [img]="Columns3Icon" [size]="18"></lucide-icon>
         </button>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-      <div class="relative flex-1">
-        <lucide-icon
-          [img]="SearchIcon" [size]="16"
-          class="absolute top-1/2 left-3 -translate-y-1/2 text-(--muted-foreground)"
-        ></lucide-icon>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (input)="filterUsers()"
-          placeholder="Rechercher par nom ou email..."
-          class="w-full rounded-sm border border-(--border) bg-(--background) py-2.5 pr-4 pl-10 text-sm text-(--foreground) outline-none focus:border-(--primary)/50"
-        />
-      </div>
-      <select
-        [(ngModel)]="statusFilter"
-        (change)="loadUsers()"
-        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
+    @if (filterPanelOpen()) {
+      <div
+        class="mt-3 flex flex-col gap-3 rounded-lg border border-zinc-200/80 bg-zinc-50/80 p-3 sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900/40"
       >
-        <option value="">Tous les statuts</option>
-        <option value="ACTIVE">Actifs</option>
-        <option value="INACTIVE">Inactifs</option>
-        <option value="DELETED">Supprimés (soft)</option>
-      </select>
-    </div>
+        <div class="relative min-w-0 flex-1">
+          <lucide-icon
+            [img]="SearchIcon"
+            [size]="16"
+            class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
+          ></lucide-icon>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (input)="filterUsers()"
+            placeholder="Rechercher par nom ou e-mail…"
+            class="w-full rounded-md border border-zinc-200/90 bg-white py-2.5 pr-4 pl-10 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+          />
+        </div>
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="loadUsers()"
+          class="w-full shrink-0 rounded-md border border-zinc-200/90 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 sm:w-auto"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="ACTIVE">Actifs</option>
+          <option value="INACTIVE">Inactifs</option>
+          <option value="DELETED">Supprimés (soft)</option>
+        </select>
+      </div>
+    }
 
-    <!-- Users table -->
-    <div class="mt-6 overflow-x-auto rounded-sm border border-(--border) bg-(--card)">
+    <!-- Tableau liste -->
+    <div class="mx-0 mt-4 sm:mx-1">
       @if (loading()) {
-        <div class="flex items-center justify-center py-12">
-          <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-(--muted-foreground)"></lucide-icon>
+        <div class="flex items-center justify-center rounded-lg border border-zinc-200/90 bg-white py-16 dark:border-zinc-800 dark:bg-zinc-950">
+          <lucide-icon
+            [img]="Loader2Icon"
+            [size]="28"
+            class="animate-spin text-zinc-400"
+          ></lucide-icon>
         </div>
       } @else {
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-(--border) text-left">
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Utilisateur</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Email</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Rôle</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Statut</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Inscription</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Dernière connexion</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (user of filteredUsers(); track user.id) {
-              <tr class="border-b border-(--border) last:border-0 transition-colors hover:bg-(--accent)/50">
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-3">
-                    <div
-                      class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white"
-                      [ngClass]="user.roles.includes('ADMIN') ? 'bg-zinc-700' : 'bg-blue-500'"
-                    >
-                      {{ getInitials(user) }}
-                    </div>
-                    <span class="font-medium text-(--foreground)">
-                      {{ user.displayName || (user.firstName + ' ' + user.lastName) }}
-                    </span>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-(--muted-foreground)">
-                  <div class="flex items-center gap-1.5">
-                    {{ user.email }}
-                    @if (user.emailVerified) {
-                      <span class="text-green-500" title="Email vérifié">✓</span>
-                    }
-                  </div>
-                </td>
-                <td class="px-4 py-3">
-                  @for (role of user.roles; track role) {
-                    <span
-                      class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
-                      [ngClass]="role === 'ADMIN'
-                        ? 'bg-(--muted) text-(--primary)'
-                        : 'bg-(--muted) text-(--foreground)'"
-                    >
-                      {{ role }}
-                    </span>
-                  }
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex flex-col gap-1">
-                    <div class="flex items-center gap-1.5">
-                      <span
-                        class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
-                        [ngClass]="getStatusClass(user.status)"
-                      >
-                        {{ getStatusLabel(user.status) }}
-                      </span>
-                      @if (user.accountLocked) {
-                        <span
-                          class="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500"
-                          title="Compte verrouillé pour raisons de sécurité — la connexion est bloquée"
+        <div
+          class="overflow-hidden rounded-lg border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+        >
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[640px] border-collapse text-sm">
+              <thead>
+                <tr
+                  class="border-b border-zinc-200/80 bg-zinc-100/90 text-left dark:border-zinc-800 dark:bg-zinc-800/50"
+                >
+                  <th class="w-10 py-2.5 pl-3 pr-1">
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-700 focus:ring-zinc-400"
+                      [checked]="allRowsSelected()"
+                      (change)="toggleSelectAll($event)"
+                    />
+                  </th>
+                  <th class="px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+                    E-mail
+                  </th>
+                  <th
+                    class="hidden px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase sm:table-cell dark:text-zinc-400"
+                  >
+                    Téléphone
+                  </th>
+                  <th
+                    class="hidden px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase md:table-cell dark:text-zinc-400"
+                  >
+                    Organisation
+                  </th>
+                  <th
+                    class="hidden px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase lg:table-cell dark:text-zinc-400"
+                  >
+                    Rôle / état
+                  </th>
+                  <th class="px-2 py-2.5 pr-4 text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+                    Dernière connexion
+                  </th>
+                  <th class="w-24 px-2 py-2.5 pr-3 text-right text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (user of filteredUsers(); track user.id) {
+                  <tr
+                    class="border-b border-zinc-100 transition-colors last:border-b-0 hover:bg-zinc-50/90 dark:border-zinc-800/80 dark:hover:bg-zinc-900/60"
+                  >
+                    <td class="py-2.5 pl-3 pr-1 align-middle">
+                      <input
+                        type="checkbox"
+                        class="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-700 focus:ring-zinc-400"
+                        [checked]="selectedUserIds().has(user.id)"
+                        (change)="toggleUserSelected(user.id)"
+                      />
+                    </td>
+                    <td class="max-w-[200px] px-2 py-2.5 align-middle">
+                      <div class="min-w-0">
+                        <p
+                          class="truncate font-medium text-zinc-900 dark:text-zinc-100"
+                          [title]="user.email"
                         >
-                          <lucide-icon [img]="LockIcon" [size]="10"></lucide-icon>
-                          Verrouillé
-                        </span>
-                      }
-                    </div>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-(--muted-foreground)">
-                  {{ user.registrationDate | date:'dd/MM/yyyy' }}
-                </td>
-                <td class="px-4 py-3 text-(--muted-foreground)">
-                  {{ user.lastLoginDate ? (user.lastLoginDate | date:'dd/MM/yyyy HH:mm') : '—' }}
-                </td>
-                <td class="px-4 py-3">
-                  <button
-                    hlmBtn variant="ghost" size="icon"
-                    class="h-8 w-8 cursor-pointer"
-                    (click)="openEditUser(user)"
-                    title="Modifier"
-                  >
-                    <lucide-icon [img]="PencilIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
-                  </button>
-                  <button
-                    hlmBtn variant="ghost" size="icon"
-                    class="h-8 w-8 cursor-pointer"
-                    (click)="softDeleteUser(user)"
-                    title="Désactiver"
-                  >
-                    <lucide-icon [img]="Trash2Icon" [size]="14" class="text-(--foreground)"></lucide-icon>
-                  </button>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="7" class="px-4 py-12 text-center text-(--muted-foreground)">
-                  Aucun utilisateur trouvé
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+                          {{ user.email }}
+                        </p>
+                        @if (user.displayName || user.firstName || user.lastName) {
+                          <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                            {{ user.displayName || (user.firstName + ' ' + user.lastName) }}
+                          </p>
+                        }
+                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                          @if (user.emailVerified) {
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400" title="E-mail vérifié"
+                              >✓ Vérifié</span
+                            >
+                          }
+                          @if (user.accountLocked) {
+                            <span
+                              class="inline-flex items-center gap-0.5 rounded bg-red-500/10 px-1.5 py-0 text-[10px] font-medium text-red-600 dark:text-red-400"
+                            >
+                              <lucide-icon [img]="LockIcon" [size]="10"></lucide-icon>
+                              Verrouillé
+                            </span>
+                          }
+                        </div>
+                        <div class="mt-1.5 flex flex-wrap gap-1 lg:hidden">
+                          @for (role of user.roles; track role) {
+                            <span
+                              class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-zinc-200/80 dark:ring-zinc-600"
+                              [ngClass]="
+                                role === 'ADMIN'
+                                  ? 'bg-zinc-200/80 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
+                                  : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300'
+                              "
+                              >{{ role }}</span
+                            >
+                          }
+                          <span
+                            class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium"
+                            [ngClass]="getStatusClass(user.status)"
+                            >{{ getStatusLabel(user.status) }}</span
+                          >
+                        </div>
+                      </div>
+                    </td>
+                    <td class="hidden px-2 py-2.5 align-middle text-zinc-700 sm:table-cell dark:text-zinc-300">
+                      <div class="flex min-w-0 items-center gap-1.5">
+                        @if (user.phone) {
+                          <lucide-icon [img]="PhoneIcon" [size]="14" class="shrink-0 text-zinc-400"></lucide-icon>
+                          <span class="truncate">{{ user.phone }}</span>
+                        } @else {
+                          <span class="text-zinc-400">—</span>
+                        }
+                      </div>
+                    </td>
+                    <td class="hidden max-w-[160px] px-2 py-2.5 align-middle text-zinc-700 md:table-cell dark:text-zinc-300">
+                      <span class="truncate" [title]="organizationLabel(user)">{{
+                        organizationLabel(user)
+                      }}</span>
+                    </td>
+                    <td class="hidden px-2 py-2.5 align-middle lg:table-cell">
+                      <div class="flex flex-wrap gap-1">
+                        @for (role of user.roles; track role) {
+                          <span
+                            class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-zinc-200/80 dark:ring-zinc-600"
+                            [ngClass]="
+                              role === 'ADMIN'
+                                ? 'bg-zinc-200/80 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
+                                : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300'
+                            "
+                            >{{ role }}</span
+                          >
+                        }
+                        <span
+                          class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium"
+                          [ngClass]="getStatusClass(user.status)"
+                          >{{ getStatusLabel(user.status) }}</span
+                        >
+                      </div>
+                    </td>
+                    <td class="whitespace-nowrap px-2 py-2.5 pr-4 align-middle text-zinc-600 dark:text-zinc-400">
+                      <span [title]="user.lastLoginDate || ''">{{
+                        formatRelativeTimeFr(user.lastLoginDate)
+                      }}</span>
+                    </td>
+                    <td class="px-2 py-2.5 pr-3 text-right align-middle">
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        class="h-8 w-8 cursor-pointer text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        (click)="openEditUser(user)"
+                        title="Modifier"
+                      >
+                        <lucide-icon [img]="PencilIcon" [size]="16"></lucide-icon>
+                      </button>
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        class="h-8 w-8 cursor-pointer text-zinc-500 hover:text-red-600 dark:hover:text-red-400"
+                        (click)="softDeleteUser(user)"
+                        title="Désactiver"
+                      >
+                        <lucide-icon [img]="Trash2Icon" [size]="16"></lucide-icon>
+                      </button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="px-4 py-14 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                      Aucun utilisateur trouvé
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
       }
     </div>
 
-    <!-- Pagination -->
     @if (totalPages() > 1) {
-      <div class="mt-4 flex items-center justify-between">
-        <p class="text-xs text-(--muted-foreground)">
+      <div class="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <p class="text-xs text-zinc-500 dark:text-zinc-400">
           Page {{ currentPage() + 1 }} sur {{ totalPages() }}
         </p>
         <div class="flex items-center gap-1">
           <button
-            hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8 cursor-pointer"
             [disabled]="currentPage() === 0"
             (click)="changePage(currentPage() - 1)"
           >
             <lucide-icon [img]="ChevronLeftIcon" [size]="16"></lucide-icon>
           </button>
           <button
-            hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+            hlmBtn
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8 cursor-pointer"
             [disabled]="currentPage() >= totalPages() - 1"
             (click)="changePage(currentPage() + 1)"
           >
@@ -677,6 +826,10 @@ export class AdminUsersComponent implements OnInit {
   readonly KeyRoundIcon = KeyRound;
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
+  readonly FilterIcon = Filter;
+  readonly ArrowUpDownIcon = ArrowUpDown;
+  readonly Columns3Icon = Columns3;
+  readonly PhoneIcon = Phone;
 
   /** Segmented control : bouton actif / inactif (modale édition) */
   readonly segWrap = 'flex w-full rounded-md border border-(--border) bg-(--muted)/25 p-0.5 gap-0.5 sm:inline-flex sm:w-auto';
@@ -741,6 +894,7 @@ export class AdminUsersComponent implements OnInit {
           this.filteredUsers.set(page.content);
           this.totalUsers.set(page.totalElements);
           this.totalPages.set(page.totalPages);
+          this.selectedUserIds.set(new Set());
           this.listFetch.afterFetch();
         },
         error: () => {
@@ -767,7 +921,58 @@ export class AdminUsersComponent implements OnInit {
 
   changePage(page: number): void {
     this.currentPage.set(page);
+    this.selectedUserIds.set(new Set());
     this.loadUsers();
+  }
+
+  /** Sélection multiple (cases à cocher) */
+  readonly selectedUserIds = signal<Set<string>>(new Set());
+  readonly filterPanelOpen = signal(true);
+
+  readonly allRowsSelected = computed(() => {
+    const list = this.filteredUsers();
+    if (list.length === 0) return false;
+    const sel = this.selectedUserIds();
+    return list.every((u) => sel.has(u.id));
+  });
+
+  toggleSelectAll(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    const list = this.filteredUsers();
+    if (checked) {
+      this.selectedUserIds.set(new Set(list.map((u) => u.id)));
+    } else {
+      this.selectedUserIds.set(new Set());
+    }
+  }
+
+  toggleUserSelected(id: string): void {
+    const next = new Set(this.selectedUserIds());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selectedUserIds.set(next);
+  }
+
+  organizationLabel(user: UserItem): string {
+    if (user.companyName?.trim()) return user.companyName.trim();
+    const parts = [user.city, user.country].filter(Boolean);
+    return parts.length ? parts.join(', ') : '—';
+  }
+
+  formatRelativeTimeFr(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    const diffMs = Date.now() - d.getTime();
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 45) return 'À l’instant';
+    const min = Math.floor(sec / 60);
+    const hours = Math.floor(min / 60);
+    const days = Math.floor(hours / 24);
+    if (min < 60) return min <= 1 ? 'Il y a 1 min' : `Il y a ${min} min`;
+    if (hours < 24) return hours <= 1 ? 'Il y a 1 h' : `Il y a ${hours} h`;
+    if (days < 7) return days === 1 ? 'Il y a 1 jour' : `Il y a ${days} j`;
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   getInitials(user: UserItem): string {

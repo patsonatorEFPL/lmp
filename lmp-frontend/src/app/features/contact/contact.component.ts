@@ -67,7 +67,7 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
               </div>
               <div>
                 <p class="text-sm font-medium text-(--foreground)">Bureau</p>
-                <p class="text-sm text-(--muted-foreground)">Rue Gatti De Gamond 97, 1180 Uccle</p>
+                <p class="text-sm text-(--muted-foreground)">1085 Rue de la Rivière, Québec, QC G1Y 2A3</p>
               </div>
             </div>
 
@@ -274,7 +274,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       title: 'Contactez-nous — Consultation SEO Gratuite',
       description: 'Contactez LMP Digital Services pour une consultation SEO gratuite et sans engagement.',
       url: '/contact',
-      keywords: 'contact LMP, consultation SEO gratuite, marketing digital contact, devis référencement, Uccle Bruxelles',
+      keywords: 'contact LMP, consultation SEO gratuite, marketing digital contact, devis référencement, Québec Canada',
     });
   }
 

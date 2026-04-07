@@ -1,0 +1,5 @@
+{
+  "terminal.integrated.env.windows": {
+    "SPRING_DATASOURCE_URL": "jdbc:postgresql://127.0.0.1:5433/lmp_db"
+  }
+}

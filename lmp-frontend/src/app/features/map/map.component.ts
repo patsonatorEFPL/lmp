@@ -61,9 +61,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.seo.updateMeta({
       title: 'Carte Interactive — Solutions Locales',
-      description: 'Explorez notre carte interactive pour découvrir les solutions locales et services de marketing digital près de chez vous. LMP Digital Services à Uccle, Bruxelles.',
+      description: 'Explorez notre carte interactive pour découvrir les solutions locales et services de marketing digital près de chez vous. LMP Digital Services à Québec.',
       url: '/map',
-      keywords: 'carte interactive, solutions locales, marketing digital Bruxelles, services locaux Uccle',
+      keywords: 'carte interactive, solutions locales, marketing digital Québec, services locaux Capitale-Nationale',
     });
   }
 
@@ -100,8 +100,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private createMap(): void {
-    // Center on Uccle, Belgium (LMP office location)
-    this.map = L.map('map').setView([50.8012, 4.3388], 14);
+    // Center on Québec, QC (LMP office location)
+    this.map = L.map('map').setView([46.7715, -71.2965], 14);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -109,12 +109,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     }).addTo(this.map);
 
     // Add LMP office marker
-    L.marker([50.8012, 4.3388])
+    L.marker([46.7715, -71.2965])
       .addTo(this.map)
       .bindPopup(`
         <div style="font-family: sans-serif; min-width: 200px;">
           <strong style="font-size: 14px;">LMP Digital Services</strong><br/>
-          <span style="color: #666; font-size: 12px;">Rue Gatti De Gamond 97<br/>1180 Uccle, Belgique</span><br/>
+          <span style="color: #666; font-size: 12px;">1085 Rue de la Rivière<br/>Québec, QC G1Y 2A3, Canada</span><br/>
           <a href="mailto:lmp.assistance@gmail.com" style="color: #10b981; font-size: 12px;">lmp.assistance@gmail.com</a>
         </div>
       `);

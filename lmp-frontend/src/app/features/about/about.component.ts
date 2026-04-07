@@ -35,9 +35,9 @@ import { signal } from '@angular/core';
               Connecter les entreprises locales à leur audience
             </h2>
             <p class="mt-4 text-sm leading-relaxed text-(--muted-foreground)">
-              <strong class="text-(--foreground)">LMP</strong> (Local Map Profil) est une plateforme innovante qui
-              connecte les utilisateurs aux meilleures solutions locales. Notre mission est de faciliter
-              la découverte et l'accès aux services, entreprises et opportunités qui vous entourent.
+              <strong class="text-(--foreground)">LMP</strong> est une plateforme qui relie les utilisateurs aux
+              solutions et aux acteurs les plus pertinents pour leurs besoins, partout dans le monde. Notre mission est
+              de faciliter la découverte et l'accès aux services, aux entreprises et aux opportunités qui comptent pour eux.
             </p>
 
             <div class="mt-10">
@@ -46,7 +46,7 @@ import { signal } from '@angular/core';
               </h2>
               <p class="mt-4 text-sm leading-relaxed text-(--muted-foreground)">
                 Nous imaginons un monde où chaque personne peut facilement trouver et accéder
-                aux ressources locales qui répondent à ses besoins, créant ainsi des communautés
+                aux ressources qui répondent à ses besoins, créant ainsi des communautés
                 plus connectées et prospères.
               </p>
             </div>
@@ -196,7 +196,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       title: 'À Propos — Expertise Marketing Local depuis 10 ans',
       description: 'Découvrez LMP Digital Services : notre mission, notre vision et notre équipe d\'experts en marketing digital et référencement local. 500+ clients satisfaits en Europe.',
       url: '/about',
-      keywords: 'à propos LMP, marketing local, expertise SEO, équipe marketing digital, référencement local Belgique',
+      keywords: 'à propos LMP, marketing local, expertise SEO, équipe marketing digital, référencement local Québec, Canada',
     });
   }
 

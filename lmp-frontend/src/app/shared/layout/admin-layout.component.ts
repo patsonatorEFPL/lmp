@@ -98,11 +98,37 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               Live
             </span>
           </div>
-          <lmp-shell-account-menu
-            variant="admin"
-            (menuOpenChange)="onAccountMenuOpenChange($event)"
-            (logoutRequest)="onLogout()"
-          />
+          <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div class="relative hidden lg:block" (click)="$event.stopPropagation()">
+              <button
+                hlmBtn
+                variant="ghost"
+                size="icon"
+                type="button"
+                class="relative cursor-pointer rounded-full"
+                (click)="onNotificationButtonClick()"
+                aria-label="Notifications"
+              >
+                <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+                @if (notificationService.unreadCount() > 0) {
+                  <span
+                    class="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-zinc-950"
+                  >
+                    {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
+                  </span>
+                }
+              </button>
+              <lmp-notification-panel
+                [isOpen]="showNotificationPanel()"
+                (panelClosed)="showNotificationPanel.set(false)"
+              />
+            </div>
+            <lmp-shell-account-menu
+              variant="admin"
+              (menuOpenChange)="onAccountMenuOpenChange($event)"
+              (logoutRequest)="onLogout()"
+            />
+          </div>
         </div>
       </div>
 
@@ -114,22 +140,6 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
         <nav
           class="flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden px-2 pb-2 pt-1 [scrollbar-gutter:stable]"
         >
-          <button
-            type="button"
-            class="relative mx-0.5 my-[1.5px] flex h-[30px] w-full cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-left text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-            (click)="onNotificationButtonClick()"
-          >
-            <lucide-icon [img]="BellIcon" [size]="16" class="shrink-0"></lucide-icon>
-            <span class="truncate">Notifications</span>
-            @if (notificationService.unreadCount() > 0) {
-              <span
-                class="ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-zinc-600 px-1 text-[10px] font-semibold text-white dark:bg-zinc-500"
-              >
-                {{ notificationService.unreadCount() > 9 ? '9+' : notificationService.unreadCount() }}
-              </span>
-            }
-          </button>
-
           <p
             class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500 dark:text-zinc-500"
           >
@@ -255,14 +265,6 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             </button>
           </div>
           <nav class="flex flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1">
-            <button
-              type="button"
-              class="relative mx-0.5 my-[1.5px] flex h-[30px] w-full cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false); onNotificationButtonClick()"
-            >
-              <lucide-icon [img]="BellIcon" [size]="16" class="shrink-0"></lucide-icon>
-              <span class="truncate">Notifications</span>
-            </button>
             <p class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500">Vues</p>
             <a
               routerLink="/admin"
@@ -403,6 +405,10 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
                     </span>
                   }
                 </button>
+                <lmp-notification-panel
+                  [isOpen]="showNotificationPanel()"
+                  (panelClosed)="showNotificationPanel.set(false)"
+                />
               </div>
 
               <lmp-shell-account-menu
@@ -422,10 +428,6 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
       </div>
       </div>
     </div>
-    <lmp-notification-panel
-      [isOpen]="showNotificationPanel()"
-      (panelClosed)="showNotificationPanel.set(false)"
-    />
   `,
 })
 export class AdminLayoutComponent implements OnInit, OnDestroy {
@@ -450,7 +452,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly BellIcon = Bell;
   readonly ChevronDownIcon = ChevronDown;
 
-  /** État actif Frappe CRM : SidebarLink (`bg-surface-selected shadow-sm`) */
+  /** Lien actif : fond blanc, léger relief (style liste / navigation) */
   readonly sidebarLinkActive =
     '!bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-200/70 dark:!bg-zinc-800 dark:!text-white dark:ring-zinc-600';
 

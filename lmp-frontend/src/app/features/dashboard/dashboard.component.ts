@@ -813,7 +813,7 @@ export class DashboardComponent implements OnInit {
     {
       label: 'Paramètres',
       description: 'Gérer votre compte',
-      route: '/settings',
+      route: '/dashboard/settings',
       icon: Settings,
     },
   ];
