@@ -7,6 +7,7 @@ import {
   Inject,
   PLATFORM_ID,
   inject,
+  afterNextRender,
 } from '@angular/core';
 import { isPlatformBrowser, CurrencyPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -630,6 +631,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
+    // Ne pas appeler l’API catalogue pendant le SSR : la requête HTTP part du serveur
+    // (IP du conteneur / boucle), pas du visiteur — la devise resterait figée (ex. EUR).
+    afterNextRender(() => this.loadFeaturedServices());
   }
 
   readonly partners = [
@@ -780,7 +784,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       url: '/',
       keywords: 'marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, LMP, référencement local, Canada, Québec',
     });
-    this.loadFeaturedServices();
   }
 
   private loadFeaturedServices(): void {

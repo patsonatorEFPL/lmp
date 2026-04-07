@@ -9,6 +9,7 @@ import {
   signal,
   computed,
   effect,
+  afterNextRender,
 } from '@angular/core';
 import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -340,6 +341,8 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
 
+    afterNextRender(() => this.loadServices());
+
     effect(() => {
       this.filteredServices();
       if (this.isBrowser) {
@@ -355,8 +358,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       url: '/services',
       keywords: 'services marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, gestion avis, présence locale',
     });
-
-    this.loadServices();
 
     const u = this.authService.user();
     if (u) {
