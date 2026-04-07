@@ -205,14 +205,28 @@ import { PaymentSessionService } from '../../core/services/payment-session.servi
                   <div>
                     @if (service.currentOffer) {
                       <span class="text-lg font-bold text-(--foreground)">
-                        {{ service.currentOffer.price | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
+                        {{
+                          service.currentOffer.price
+                            | currency
+                              : (service.currentOffer.currency || 'EUR')
+                              : 'symbol'
+                              : '1.2-2'
+                              : 'fr'
+                        }}
                       </span>
                       @if (
                         service.currentOffer.originalPrice &&
                         service.currentOffer.originalPrice > service.currentOffer.price
                       ) {
                         <span class="ml-1.5 text-sm text-(--muted-foreground) line-through">
-                          {{ service.currentOffer.originalPrice | currency: 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
+                          {{
+                            service.currentOffer.originalPrice
+                              | currency
+                                : (service.currentOffer.currency || 'EUR')
+                                : 'symbol'
+                                : '1.2-2'
+                                : 'fr'
+                          }}
                         </span>
                       }
                       <div class="text-xs text-(--muted-foreground)">
@@ -490,7 +504,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
         `${environment.apiUrl}/api/v1/payments/checkout/payment-element`,
         {
           offerId: service.currentOffer.id,
-          currency: 'EUR',
+          currency: service.currentOffer.currency || 'EUR',
         },
         { withCredentials: true },
       )

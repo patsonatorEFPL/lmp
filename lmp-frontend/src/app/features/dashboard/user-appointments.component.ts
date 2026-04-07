@@ -38,11 +38,12 @@ interface ApiResponse<T> {
   standalone: true,
   imports: [DatePipe, NgClass, LucideAngularModule, HlmButton],
   template: `
-    <!-- Header -->
+    <!-- Header (aligné typo /admin) -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-(--foreground)">Mes rendez-vous</h1>
-        <p class="mt-1 text-sm text-(--muted-foreground)">
+        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Agenda</p>
+        <h1 class="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Mes rendez-vous</h1>
+        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           {{ appointments().length }} rendez-vous au total
         </p>
       </div>

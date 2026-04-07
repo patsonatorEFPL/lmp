@@ -25,6 +25,7 @@ import com.lmp.billing.repository.OrderRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.catalog.service.ServiceCatalogService;
 import com.lmp.auth.dto.PurchaseIntent;
+import com.lmp.shared.pricing.RegionalPricingService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -49,13 +50,17 @@ public class OrderController {
 
         private final ServiceCatalogService serviceCatalogService;
 
+        private final RegionalPricingService regionalPricingService;
+
 
     public OrderController(OrderRepository orderRepository,
                            UserRepository userRepository,
-                           ServiceCatalogService serviceCatalogService) {
+                           ServiceCatalogService serviceCatalogService,
+                           RegionalPricingService regionalPricingService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.serviceCatalogService = serviceCatalogService;
+        this.regionalPricingService = regionalPricingService;
     }
 
     /**
@@ -107,9 +112,11 @@ public class OrderController {
                 }
 
                 ServiceOffer offer = offerOpt.get();
-                amount = offer.getPrice();
+                var pricingContext = regionalPricingService.resolve(httpRequest);
+                amount = regionalPricingService.convertFromEur(offer.getPrice(), pricingContext);
+                currency = pricingContext.currency();
                 serviceName = offer.getService().getTitle();
-                logger.info("SECURE_CHECKOUT - offerId={}, price={}, service='{}'", offerId, amount, serviceName);
+                logger.info("SECURE_CHECKOUT - offerId={}, price={}, currency={}, service='{}'", offerId, amount, currency, serviceName);
             } else {
                 // Legacy: accepter le montant du frontend (rétrocompatibilité)
                 logger.warn("LEGACY_CHECKOUT - create-temp sans offerId");
@@ -141,7 +148,7 @@ public class OrderController {
                 }
             }
 
-            if (currency == null || currency.trim().isEmpty()) {
+            if (offerIdObj == null && (currency == null || currency.trim().isEmpty())) {
                 currency = "EUR";
             }
 

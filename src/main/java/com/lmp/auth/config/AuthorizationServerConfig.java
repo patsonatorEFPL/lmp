@@ -40,16 +40,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
+import org.springframework.util.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Configuration du Spring Authorization Server (SSO OAuth2 pour ERPNext).
- * 
- * Spring Boot = Identity Provider unique.
- * ERPNext, n8n et autres satellites s'authentifient via OAuth2/OIDC.
- * 
+ * Configuration du Spring Authorization Server (OAuth2 / OIDC).
+ *
+ * Spring Boot = fournisseur d’identité. Les applications satellites (n8n, outils internes, etc.)
+ * s’authentifient via OAuth2/OIDC lorsque leurs identifiants et l’URI de redirection sont configurés.
+ *
  * Tables JDBC : oauth2_registered_client, oauth2_authorization, oauth2_authorization_consent
  * (créées par V2__oauth2_authorization_server.sql)
  */
@@ -58,14 +59,14 @@ public class AuthorizationServerConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthorizationServerConfig.class);
 
-    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erpnext.client-id:erpnext-client}")
-    private String erpnextClientId;
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.external.client-id:oauth-external-client}")
+    private String externalOAuthClientId;
 
-    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erpnext.client-secret:}")
-    private String erpnextClientSecret;
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.external.client-secret:}")
+    private String externalOAuthClientSecret;
 
-    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erpnext.redirect-uri:http://localhost:8069/api/method/frappe.integrations.oauth2_logins.login_via_oauth2}")
-    private String erpnextRedirectUri;
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.external.redirect-uri:}")
+    private String externalOAuthRedirectUri;
 
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
     private String issuerUri;
@@ -97,16 +98,17 @@ public class AuthorizationServerConfig {
                                                                   PasswordEncoder passwordEncoder) {
         JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
-        // Enregistrer le client ERPNext si absent
-        if (repository.findByClientId(erpnextClientId) == null) {
-            RegisteredClient erpnextClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                    .clientId(erpnextClientId)
-                    .clientSecret(passwordEncoder.encode(erpnextClientSecret))
-                    .clientName("ERPNext Back-Office")
+        if (repository.findByClientId(externalOAuthClientId) == null
+                && StringUtils.hasText(externalOAuthRedirectUri)
+                && StringUtils.hasText(externalOAuthClientSecret)) {
+            RegisteredClient externalClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                    .clientId(externalOAuthClientId)
+                    .clientSecret(passwordEncoder.encode(externalOAuthClientSecret))
+                    .clientName("Client OAuth externe")
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                     .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                    .redirectUri(erpnextRedirectUri)
+                    .redirectUri(externalOAuthRedirectUri)
                     .scope(OidcScopes.OPENID)
                     .scope(OidcScopes.PROFILE)
                     .scope(OidcScopes.EMAIL)
@@ -119,8 +121,11 @@ public class AuthorizationServerConfig {
                             .build())
                     .build();
 
-            repository.save(erpnextClient);
-            logger.info("✅ OAuth2 client 'erpnext-client' registered");
+            repository.save(externalClient);
+            logger.info("OAuth2 client satellite enregistré (client_id={})", externalOAuthClientId);
+        } else if (repository.findByClientId(externalOAuthClientId) == null) {
+            logger.debug(
+                    "Enregistrement OAuth2 satellite ignoré : définir OAUTH2_EXTERNAL_REDIRECT_URI et OAUTH2_EXTERNAL_CLIENT_SECRET pour créer le client au démarrage.");
         }
 
         return repository;

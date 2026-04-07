@@ -138,6 +138,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
                   </div>
                   <select class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer">
                     <option value="">Sélectionner...</option>
+                    <option value="CA">Canada</option>
                     <option value="BE">Belgique</option>
                     <option value="FR">France</option>
                     <option value="LU">Luxembourg</option>
