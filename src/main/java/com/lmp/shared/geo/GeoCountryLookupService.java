@@ -23,15 +23,19 @@ import jakarta.servlet.http.HttpServletRequest;
  * <h3>Chaîne de résolution (dans l'ordre)</h3>
  * <ol>
  *   <li><b>Override de test</b> {@code geoip.country-test-override} (dev/test uniquement)</li>
- *   <li><b>ipwho.is</b> — HTTPS, gratuit, sans clé, retourne pays + devise</li>
+ *   <li><b>ipwho.is</b> — HTTPS, gratuit, retourne pays (devise = plan Premium uniquement !)</li>
  *   <li><b>ip-api.com</b> — HTTP (gratuit) ou HTTPS (clé {@code ipapi.com.key}),
  *       retourne pays + devise ; 45 req/min sur le plan gratuit</li>
+ *   <li>Si une API retourne le pays sans devise, on garde ce pays en fallback</li>
  *   <li><b>CF-IPCountry</b> — en-tête Cloudflare, pays uniquement (devise = null)</li>
  *   <li><b>GeoLite2</b> — base locale {@code geoip.country-db}, pays uniquement (devise = null)</li>
  *   <li><b>Vide</b> → le service appelant utilise son {@code pricing.fallback-country}</li>
  * </ol>
  *
- * <p>Quand seul le pays est disponible (étapes 4-5), c'est {@link com.lmp.shared.pricing.RegionalPricingService}
+ * <p><b>Note :</b> ipwho.is plan gratuit ne retourne PAS la devise. ip-api.com est donc
+ * prioritaire pour la devise si ipwho.is n'en fournit pas.
+ *
+ * <p>Quand seul le pays est disponible, c'est {@link com.lmp.shared.pricing.RegionalPricingService}
  * qui gère le fallback devise (configuration {@code pricing.region} ou devise de base EUR).
  */
 @Service
@@ -93,16 +97,32 @@ public class GeoCountryLookupService {
 
         String ip = ClientIpResolver.resolve(request);
 
-        // ── 2. ipwho.is — HTTPS, gratuit, retourne pays + devise ─────────────
-        Optional<GeoResolution> result = ipWhoIsGeoService.lookup(ip);
-        if (result.isPresent()) {
-            return result;
+        // ── 2. ipwho.is — HTTPS, gratuit, retourne pays (devise = plan Premium uniquement) ─
+        Optional<GeoResolution> ipWhoIsResult = ipWhoIsGeoService.lookup(ip);
+        if (ipWhoIsResult.isPresent() && ipWhoIsResult.get().currencyCode() != null) {
+            // ipwho.is a retourné pays ET devise → on utilise ce résultat
+            return ipWhoIsResult;
         }
 
         // ── 3. ip-api.com — retourne pays + devise ────────────────────────────
-        result = ipApiComGeoService.lookup(ip);
-        if (result.isPresent()) {
-            return result;
+        // Prioritaire si ipwho.is n'a pas fourni de devise (plan gratuit ipwho.is)
+        Optional<GeoResolution> ipApiResult = ipApiComGeoService.lookup(ip);
+        if (ipApiResult.isPresent() && ipApiResult.get().currencyCode() != null) {
+            return ipApiResult;
+        }
+
+        // Si ipwho.is avait un pays (sans devise), on le garde en fallback
+        if (ipWhoIsResult.isPresent()) {
+            logger.debug("[GeoIP] ipwho.is returned country {} without currency — using it as fallback", 
+                    ipWhoIsResult.get().countryCode());
+            return ipWhoIsResult;
+        }
+
+        // Si ip-api.com avait un pays (sans devise), on le garde en fallback
+        if (ipApiResult.isPresent()) {
+            logger.debug("[GeoIP] ip-api.com returned country {} without currency — using it as fallback", 
+                    ipApiResult.get().countryCode());
+            return ipApiResult;
         }
 
         logger.debug("[GeoIP] Both IP APIs unavailable for {} — falling back to headers/local DB", ip);
