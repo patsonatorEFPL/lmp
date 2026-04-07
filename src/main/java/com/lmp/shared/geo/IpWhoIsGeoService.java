@@ -23,8 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * <ul>
  *   <li>Gratuit, sans clé API</li>
  *   <li>HTTPS natif</li>
- *   <li>Pas de limite documentée (fair use) — usage commercial non restreint</li>
- *   <li>Retourne pays <strong>et</strong> devise dans un seul appel</li>
+ *   <li>1 req/sec max (fair use) — usage commercial non autorisé sur le plan gratuit</li>
+ *   <li><b>ATTENTION :</b> Le plan gratuit retourne le pays mais <b>PAS la devise</b>.
+ *       La devise (currency) n'est disponible que sur le plan Premium payant.</li>
  * </ul>
  *
  * <p>Les résultats sont mis en cache en mémoire pendant {@value CACHE_TTL_SECONDS} secondes
