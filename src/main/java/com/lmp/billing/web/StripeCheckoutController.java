@@ -31,6 +31,7 @@ import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.PaymentTransactionRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.catalog.service.ServiceCatalogService;
+import com.lmp.shared.pricing.RegionalPricingService;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.service.PaymentService;
 import com.lmp.billing.dto.PaymentRequestDto;
@@ -69,6 +70,8 @@ public class StripeCheckoutController {
 
         private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
+        private final RegionalPricingService regionalPricingService;
+
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
@@ -82,7 +85,8 @@ public class StripeCheckoutController {
                            PaymentTransactionRepository paymentTransactionRepository,
                            UserRepository userRepository,
                            ServiceCatalogService serviceCatalogService,
-                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                           RegionalPricingService regionalPricingService) {
         this.paymentService = paymentService;
         this.stripeCheckoutProcessor = stripeCheckoutProcessor;
         this.orderRepository = orderRepository;
@@ -90,6 +94,7 @@ public class StripeCheckoutController {
         this.userRepository = userRepository;
         this.serviceCatalogService = serviceCatalogService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.regionalPricingService = regionalPricingService;
     }
 
     /**
@@ -140,9 +145,13 @@ public class StripeCheckoutController {
                 }
 
                 ServiceOffer offer = offerOpt.get();
-                amount = offer.getPrice();
+                var displayCtx = regionalPricingService.resolve(request);
+                var payCtx = regionalPricingService.resolveForPayment(displayCtx);
+                BigDecimal offerEurAmount = offer.getPrice();
+                amount = regionalPricingService.convertFromEur(offerEurAmount, payCtx);
+                currency = payCtx.currency();
                 serviceName = offer.getService().getTitle();
-                logger.info("SECURE_CHECKOUT - offerId={}, price={}, service='{}'", offerId, amount, serviceName);
+                logger.info("SECURE_CHECKOUT - offerId={}, price={}, currency={}, service='{}'", offerId, amount, currency, serviceName);
 
             } else {
                 // Legacy: accepter le montant du frontend (rétrocompatibilité)
@@ -175,8 +184,8 @@ public class StripeCheckoutController {
                 }
             }
 
-            if (currency == null || currency.trim().isEmpty()) {
-                currency = "EUR"; // Devise par défaut
+            if (offerIdObj == null && (currency == null || currency.trim().isEmpty())) {
+                currency = "EUR"; // Devise par défaut (parcours legacy sans offerId)
             }
 
             java.util.UUID userId;
@@ -206,6 +215,13 @@ public class StripeCheckoutController {
             persistentOrder.setCreatedAt(java.time.LocalDateTime.now());
             persistentOrder.setUpdatedAt(java.time.LocalDateTime.now());
             persistentOrder.setLastModifiedAt(java.time.LocalDateTime.now());
+            if (offerIdObj != null) {
+                var pricingCtx = regionalPricingService.resolve(request);
+                persistentOrder.setAmountBaseEur(
+                        regionalPricingService.toBaseEur(amount, pricingCtx));
+                persistentOrder.setFxRate(pricingCtx.eurToTargetRate());
+                persistentOrder.setFxSource(pricingCtx.rateSource());
+            }
 
             // Récupérer l'utilisateur réel de la base de données
             Optional<com.lmp.auth.domain.User> userOpt = userRepository.findById(userId);

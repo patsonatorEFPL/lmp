@@ -29,6 +29,7 @@ import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.auth.service.AuthService;
 import com.lmp.catalog.service.ServiceCatalogService;
+import com.lmp.shared.pricing.RegionalPricingService;
 import com.lmp.auth.service.UserService;
 import com.lmp.auth.dto.RegisterDto;
 import com.lmp.auth.dto.RegisterWithOrderDto;
@@ -53,6 +54,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final ServiceCatalogService serviceCatalogService;
 
+    private final RegionalPricingService regionalPricingService;
+
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
@@ -60,12 +63,14 @@ public class AuthController {
                            UserService userService,
                            OrderRepository orderRepository,
                            AuthenticationManager authenticationManager,
-                           ServiceCatalogService serviceCatalogService) {
+                           ServiceCatalogService serviceCatalogService,
+                           RegionalPricingService regionalPricingService) {
         this.authService = authService;
         this.userService = userService;
         this.orderRepository = orderRepository;
         this.authenticationManager = authenticationManager;
         this.serviceCatalogService = serviceCatalogService;
+        this.regionalPricingService = regionalPricingService;
     }
 
     /**
@@ -149,6 +154,10 @@ public class AuthController {
             // Sécurisation prix : si offerId fourni, le prix vient de la DB
             java.math.BigDecimal validatedAmount = registerWithOrderDto.getAmount();
             String validatedServiceName = registerWithOrderDto.getServiceName();
+            String orderCurrency = registerWithOrderDto.getCurrency();
+            java.math.BigDecimal orderFxRate = null;
+            String orderFxSource = null;
+            java.math.BigDecimal orderAmountBaseEur = null;
 
             if (registerWithOrderDto.getOfferId() != null) {
                 java.util.Optional<ServiceOffer> offerOpt = serviceCatalogService
@@ -159,8 +168,14 @@ public class AuthController {
                             "message", "L'offre demandée n'existe pas, est inactive ou a expiré"));
                 }
                 ServiceOffer offer = offerOpt.get();
-                validatedAmount = offer.getPrice();
+                var pricingContext = regionalPricingService.resolve(request);
+                java.math.BigDecimal offerEurAmt = offer.getPrice();
+                validatedAmount = regionalPricingService.convertFromEur(offerEurAmt, pricingContext);
+                orderCurrency = pricingContext.currency();
                 validatedServiceName = offer.getService().getTitle();
+                orderFxRate = pricingContext.eurToTargetRate();
+                orderFxSource = pricingContext.rateSource();
+                orderAmountBaseEur = offerEurAmt;
             } else {
                 if (validatedAmount == null ||
                         validatedAmount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
@@ -168,6 +183,10 @@ public class AuthController {
                             "error", "INVALID_AMOUNT",
                             "message", "Le montant doit être supérieur à 0"));
                 }
+            }
+
+            if (orderCurrency == null || orderCurrency.isBlank()) {
+                orderCurrency = "EUR";
             }
 
             // Créer l'utilisateur
@@ -178,15 +197,18 @@ public class AuthController {
             authenticateUser(registerWithOrderDto.getEmail(),
                     registerWithOrderDto.getPassword(), request, response);
 
-            // Créer la commande avec statut PAYMENT_PENDING
+            // Créer la commande avec snapshot FX figé
             Order order = new Order();
             order.setUser(newUser);
             order.setServiceName(validatedServiceName);
-            order.setCurrency(registerWithOrderDto.getCurrency());
+            order.setCurrency(orderCurrency);
             order.setStatus(OrderStatus.PAYMENT_PENDING);
             order.setTotalAmount(validatedAmount);
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
+            if (orderAmountBaseEur != null) order.setAmountBaseEur(orderAmountBaseEur);
+            if (orderFxRate != null) order.setFxRate(orderFxRate);
+            if (orderFxSource != null) order.setFxSource(orderFxSource);
             OrderProgressSync.applyMinimumForStatus(order);
             order = orderRepository.save(order);
 

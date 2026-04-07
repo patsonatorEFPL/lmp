@@ -30,7 +30,8 @@ build/
 !**/src/test/**/build/
 
 ### VS Code ###
-.vscode/
+.vscode/*
+!.vscode/settings.json
 
 ### Ignore vscode rules ###
 .github\instructions\codacy.instructions.md
@@ -73,8 +74,11 @@ lmp-frontend/src/app/generated/
 .claude/
 .gemini/
 
-### Tool Documentation & Scripts ###
+### Documentation locale, brouillons et scripts (non versionnés) ###
 docs/
+plans/
+notes/
+scratch/
 /scripts/
 /LMP/
 

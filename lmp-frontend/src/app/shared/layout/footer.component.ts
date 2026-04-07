@@ -90,8 +90,8 @@ import { RouterLink } from '@angular/router';
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
                 <span>
-                  Rue Gatti De Gamond 97,<br />
-                  1180 Uccle, Belgique
+                  1085 Rue de la Rivière,<br />
+                  Québec, QC G1Y 2A3, Canada
                 </span>
               </li>
               <li class="flex items-center gap-2 text-sm text-(--muted-foreground)">
@@ -107,7 +107,7 @@ import { RouterLink } from '@angular/router';
         <!-- Bottom strip -->
         <div class="mt-8 flex flex-col items-center justify-between gap-3 border-t border-(--border) pt-6 sm:flex-row">
           <p class="text-xs text-(--muted-foreground)">
-            © 2026 LMP (Local Map Profil). Tous droits réservés.
+            © 2026 LMP. Tous droits réservés.
           </p>
           <div class="flex gap-6">
             <a

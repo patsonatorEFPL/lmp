@@ -8,24 +8,26 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * Configuration Testcontainers pour le développement et les tests.
  * 
- * Fournit un conteneur PostgreSQL 16 éphémère qui est automatiquement :
+ * Fournit un conteneur PostgreSQL 18 éphémère qui est automatiquement :
  * - Démarré au lancement de l'application (2-3 secondes)
  * - Configuré comme datasource via @ServiceConnection
  * - Détruit à l'arrêt de l'application
  * 
  * Utilisation :
- * - Dev : exécuter TestLmpApplication.main() depuis l'IDE ou mvn spring-boot:test-run
- * - Tests : @Import(TestcontainersConfiguration.class) ou @SpringBootTest + @Import
+ * - Dev optionnel : {@code LMP_DEV_TESTCONTAINERS=true} + {@link com.lmp.TestLmpApplication}
+ * - Tests : {@code @Import(TestcontainersConfiguration.class)}
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 
+    private static final String EPHEMERAL_PG_PASSWORD = "lmp_testcontainers_dev";
+
     @Bean
     @ServiceConnection
     PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>("postgres:16-alpine")
+        return new PostgreSQLContainer<>("postgres:18-alpine")
                 .withDatabaseName("lmp_db")
                 .withUsername("lmp_dev")
-                .withPassword("***DB_PASSWORD_REMOVED***");
+                .withPassword(EPHEMERAL_PG_PASSWORD);
     }
 }

@@ -13,6 +13,9 @@ export interface ServiceOffer {
   originalPrice: number | null;
   durationType: string | null;
   isDefault: boolean;
+  /** ISO 4217 — renvoyé par l’API selon l’IP */
+  currency?: string;
+  priceEur?: number;
 }
 
 export interface ServiceItem {

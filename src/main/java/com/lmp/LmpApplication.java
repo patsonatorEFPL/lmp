@@ -7,9 +7,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.lmp.notification.config.MailAddressConfig;
+import com.lmp.shared.pricing.RegionalPricingProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({MailAddressConfig.class})
+@EnableConfigurationProperties({MailAddressConfig.class, RegionalPricingProperties.class})
 @EnableScheduling // Pour l'auto-répondeur noreply
 @EnableAsync // Pour le bus d'événements vers l’ERP (traitement asynchrone)
 public class LmpApplication {
