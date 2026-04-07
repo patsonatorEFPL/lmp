@@ -33,6 +33,8 @@ export function app(): ReturnType<typeof express> {
   const indexHtml = join(serverDistFolder, 'index.server.html');
 
   const server = express();
+  // Pour que req.ip reflète X-Forwarded-For / X-Real-IP derrière Traefik, Caddy, etc.
+  server.set('trust proxy', true);
   const commonEngine = new CommonEngine({
     allowedHosts: [
       'localhost',

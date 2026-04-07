@@ -12,6 +12,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.web.InetRoutability;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -53,7 +54,7 @@ public class IpWhoIsGeoService {
      * @return {@link GeoResolution} ou vide si l'API est indisponible / IP privée.
      */
     public Optional<GeoResolution> lookup(String ip) {
-        if (ip == null || ip.isBlank() || isPrivateOrLoopback(ip)) {
+        if (ip == null || ip.isBlank() || InetRoutability.isPrivateOrNonRoutable(ip)) {
             return Optional.empty();
         }
 
@@ -91,13 +92,6 @@ public class IpWhoIsGeoService {
     }
 
     // -------------------------------------------------------------------------
-
-    private static boolean isPrivateOrLoopback(String ip) {
-        return ip.startsWith("127.") || ip.startsWith("10.")
-                || ip.startsWith("192.168.") || ip.equals("::1")
-                || ip.startsWith("172.1") || ip.startsWith("172.2")
-                || ip.startsWith("172.3");
-    }
 
     private static final class CachedResult {
         final Optional<GeoResolution> value;

@@ -26,6 +26,7 @@ import com.lmp.auth.repository.UserRepository;
 import com.lmp.catalog.service.ServiceCatalogService;
 import com.lmp.auth.dto.PurchaseIntent;
 import com.lmp.shared.pricing.RegionalPricingService;
+import com.lmp.shared.web.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -79,7 +80,7 @@ public class OrderController {
                 request.get("serviceName"), request.get("amount"), request.get("currency"));
         auditLogger.info("Service data preparation initiated - Service: {}, Amount: {} {}, IP: {}",
                 request.get("serviceName"), request.get("amount"), request.get("currency"),
-                getClientIpAddress(httpRequest));
+                ClientIpResolver.resolve(httpRequest));
 
         try {
             // Valider les données de la requête
@@ -258,7 +259,7 @@ public class OrderController {
         logger.info("DEBUG - Session ID: {}", session.getId());
         auditLogger.info("Purchase intent save initiated - Service: {}, Amount: {} {}, IP: {}",
                 request.get("serviceName"), request.get("amount"), request.get("currency"),
-                getClientIpAddress(httpRequest));
+                ClientIpResolver.resolve(httpRequest));
 
         try {
             // Valider les données de la requête
@@ -438,23 +439,6 @@ public class OrderController {
                     "error", "INTERNAL_ERROR",
                     "message", "Erreur lors de la suppression de l'intention de paiement"));
         }
-    }
-
-    /**
-     * Utilitaire pour récupérer l'adresse IP du client
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-
-        return request.getRemoteAddr();
     }
 
     /**
