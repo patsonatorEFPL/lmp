@@ -27,6 +27,7 @@ import com.lmp.billing.exception.GuestEmailAlreadyRegisteredException;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.service.GuestOrderCheckoutService;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.web.ClientIpResolver;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -98,7 +99,7 @@ public class GuestOrderPaymentRestController {
         boolean httpSessionLoginEstablished = false;
         try {
             GuestOrderCheckoutService.GuestPrepareResult result =
-                    guestOrderCheckoutService.prepareCheckout(body, getClientIp(request));
+                    guestOrderCheckoutService.prepareCheckout(body, ClientIpResolver.resolve(request));
 
             RegisterDto reg = body.getRegistration();
             Authentication authentication = authenticationManager.authenticate(
@@ -171,7 +172,7 @@ public class GuestOrderPaymentRestController {
 
             GuestOrderCheckoutService.GuestPrepareResult result =
                     guestOrderCheckoutService.attachGuestOrderToCurrentUser(
-                            body.getCheckoutToken(), user, getClientIp(request));
+                            body.getCheckoutToken(), user, ClientIpResolver.resolve(request));
 
             User refreshed = userService.findByEmailWithRoles(user.getEmail())
                     .orElseThrow(() -> new IllegalStateException("Utilisateur introuvable"));
@@ -206,15 +207,4 @@ public class GuestOrderPaymentRestController {
         return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
-    private static String getClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isEmpty()) {
-            return xff.split(",")[0].trim();
-        }
-        String xri = request.getHeader("X-Real-IP");
-        if (xri != null && !xri.isEmpty()) {
-            return xri;
-        }
-        return request.getRemoteAddr();
-    }
 }

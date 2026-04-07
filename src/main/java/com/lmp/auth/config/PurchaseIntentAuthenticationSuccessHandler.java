@@ -3,6 +3,7 @@ package com.lmp.auth.config;
 import com.lmp.auth.domain.User;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.auth.dto.PurchaseIntent;
+import com.lmp.shared.web.ClientIpResolver;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -50,7 +51,7 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
         
         logger.info("Authentication success for user: {}", userEmail);
         auditLogger.info("User authenticated successfully - Email: {}, IP: {}", 
-                        userEmail, getClientIpAddress(request));
+                        userEmail, ClientIpResolver.resolve(request));
 
         // Mettre à jour la date de dernière connexion
         try {
@@ -105,22 +106,5 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
         String defaultRedirectUrl = "/dashboard";
         logger.info("Standard authentication redirect for user {} to {}", userEmail, defaultRedirectUrl);
         response.sendRedirect(defaultRedirectUrl);
-    }
-    
-    /**
-     * Utilitaire pour récupérer l'adresse IP du client
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        
-        return request.getRemoteAddr();
     }
 }
