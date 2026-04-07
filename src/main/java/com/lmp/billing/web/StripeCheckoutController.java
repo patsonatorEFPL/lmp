@@ -37,6 +37,7 @@ import com.lmp.billing.service.PaymentService;
 import com.lmp.billing.dto.PaymentRequestDto;
 import com.lmp.billing.dto.PaymentResponseDto;
 import com.lmp.billing.service.processor.StripeCheckoutPaymentProcessor;
+import com.lmp.shared.web.ClientIpResolver;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -111,7 +112,7 @@ public class StripeCheckoutController {
         logger.info("Creating direct Stripe Checkout session - Service: {}", serviceData.get("serviceName"));
         auditLogger.info("Direct Stripe Checkout session creation initiated - Service: {}, Amount: {} {}, IP: {}",
                 serviceData.get("serviceName"), serviceData.get("amount"), serviceData.get("currency"),
-                getClientIpAddress(request));
+                ClientIpResolver.resolve(request));
 
         try {
             // Valider les données du service
@@ -261,7 +262,7 @@ public class StripeCheckoutController {
             Map<String, Object> metadata = new HashMap<>();
 
             // Métadonnées de contexte
-            metadata.put("customer_ip", getClientIpAddress(request));
+            metadata.put("customer_ip", ClientIpResolver.resolve(request));
             metadata.put("user_agent", request.getHeader("User-Agent"));
             metadata.put("source_page", request.getHeader("Referer"));
 
@@ -353,7 +354,7 @@ public class StripeCheckoutController {
 
         logger.info("Creating Stripe Checkout session for existing order: {}", orderId);
         auditLogger.info("Legacy Stripe Checkout session creation initiated - Order: {}, IP: {}",
-                orderId, getClientIpAddress(request));
+                orderId, ClientIpResolver.resolve(request));
 
         try {
             // Récupérer la commande
@@ -406,7 +407,7 @@ public class StripeCheckoutController {
 
             // Métadonnées existantes
             metadata.put("order_id", orderId);
-            metadata.put("customer_ip", getClientIpAddress(request));
+            metadata.put("customer_ip", ClientIpResolver.resolve(request));
             metadata.put("user_agent", request.getHeader("User-Agent"));
 
             // Langue de l'utilisateur pour Stripe Checkout (depuis cookie googtrans)
@@ -791,20 +792,4 @@ public class StripeCheckoutController {
         return "fr";
     }
 
-    /**
-     * Utilitaire pour récupérer l'adresse IP du client
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-
-        return request.getRemoteAddr();
-    }
 }
