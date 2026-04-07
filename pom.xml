@@ -127,12 +127,18 @@
 			<version>24.16.0</version>
 		</dependency>
 
-		<!-- GeoIP2 (GeoLite2 Country — fichier .mmdb optionnel, voir geoip.country-db) -->
-		<dependency>
-			<groupId>com.maxmind.geoip2</groupId>
-			<artifactId>geoip2</artifactId>
-			<version>4.2.1</version>
-		</dependency>
+	<!-- GeoIP2 (GeoLite2 Country — fichier .mmdb optionnel, voir geoip.country-db) -->
+	<dependency>
+		<groupId>com.maxmind.geoip2</groupId>
+		<artifactId>geoip2</artifactId>
+		<version>4.2.1</version>
+	</dependency>
+
+	<!-- Caffeine — Cache haute performance pour géolocalisation IP -->
+	<dependency>
+		<groupId>com.github.ben-manes.caffeine</groupId>
+		<artifactId>caffeine</artifactId>
+	</dependency>
 
 		<!-- OpenPDF pour génération de factures PDF -->
 		<dependency>

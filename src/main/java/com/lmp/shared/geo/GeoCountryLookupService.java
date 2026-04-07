@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.lmp.shared.web.ClientIpResolver;
@@ -20,9 +21,22 @@ import jakarta.servlet.http.HttpServletRequest;
 /**
  * Résout le pays <strong>et la devise</strong> du client depuis son adresse IP.
  *
+ * <h3>Cache Caffeine</h3>
+ * <ul>
+ *   <li><b>Clé</b> : Adresse IP (String)</li>
+ *   <li><b>Valeur</b> : {@link GeoResolution} (pays + devise)</li>
+ *   <li><b>TTL</b> : Configurable via {@code geoip.cache.ttl-minutes} (défaut 15 min)</li>
+ *   <li><b>Taille max</b> : Configurable via {@code geoip.cache.max-size} (défaut 10 000 IPs)</li>
+ *   <li><b>Éviction</b> : LRU automatique quand taille max atteinte</li>
+ * </ul>
+ *
+ * <p><b>Note :</b> Changement d'IP = détection immédiate (nouvelle clé = cache miss).
+ * Le TTL sert à rafraîchir les données et libérer la mémoire des IPs inactives.
+ *
  * <h3>Chaîne de résolution (dans l'ordre)</h3>
  * <ol>
  *   <li><b>Override de test</b> {@code geoip.country-test-override} (dev/test uniquement)</li>
+ *   <li><b>Cache Caffeine</b> — lookup IP en cache (hit = pas d'appel API)</li>
  *   <li><b>ipwho.is</b> — HTTPS, gratuit, retourne pays (devise = plan Premium uniquement !)</li>
  *   <li><b>ip-api.com</b> — HTTP (gratuit) ou HTTPS (clé {@code ipapi.com.key}),
  *       retourne pays + devise ; 45 req/min sur le plan gratuit</li>
@@ -47,16 +61,19 @@ public class GeoCountryLookupService {
     private final DatabaseReader databaseReader;
     private final IpWhoIsGeoService ipWhoIsGeoService;
     private final IpApiComGeoService ipApiComGeoService;
+    private final Cache<String, GeoResolution> geoIpCache;
 
     public GeoCountryLookupService(
             Environment environment,
             @Value("${geoip.country-db:}") String geoDbPath,
             IpWhoIsGeoService ipWhoIsGeoService,
-            IpApiComGeoService ipApiComGeoService) {
+            IpApiComGeoService ipApiComGeoService,
+            Cache<String, GeoResolution> geoIpCache) {
 
         this.environment = environment;
         this.ipWhoIsGeoService = ipWhoIsGeoService;
         this.ipApiComGeoService = ipApiComGeoService;
+        this.geoIpCache = geoIpCache;
 
         DatabaseReader reader = null;
         if (geoDbPath != null && !geoDbPath.isBlank()) {
@@ -77,6 +94,7 @@ public class GeoCountryLookupService {
 
     /**
      * Résout le pays et, si possible, la devise du client.
+     * Utilise le cache Caffeine pour éviter les appels API répétés sur la même IP.
      *
      * @return {@link GeoResolution} ou vide si aucune source ne répond.
      */
@@ -96,51 +114,80 @@ public class GeoCountryLookupService {
         }
 
         String ip = ClientIpResolver.resolve(request);
+        if (ip == null || ip.isBlank()) {
+            logger.debug("[GeoIP] IP non résolue depuis la requête");
+            return Optional.empty();
+        }
 
-        // ── 2. ipwho.is — HTTPS, gratuit, retourne pays (devise = plan Premium uniquement) ─
+        // ── 2. Cache Caffeine — évite les appels API répétés ──────────────────
+        GeoResolution cached = geoIpCache.getIfPresent(ip);
+        if (cached != null) {
+            logger.debug("[GeoIP] Cache HIT pour IP {} → {}/{}", ip, cached.countryCode(), cached.currencyCode());
+            return Optional.of(cached);
+        }
+
+        logger.debug("[GeoIP] Cache MISS pour IP {} — lookup API", ip);
+
+        // ── 3. ipwho.is — HTTPS, gratuit, retourne pays (devise = plan Premium uniquement) ─
         Optional<GeoResolution> ipWhoIsResult = ipWhoIsGeoService.lookup(ip);
         if (ipWhoIsResult.isPresent() && ipWhoIsResult.get().currencyCode() != null) {
             // ipwho.is a retourné pays ET devise → on utilise ce résultat
+            GeoResolution result = ipWhoIsResult.get();
+            geoIpCache.put(ip, result);
+            logger.debug("[GeoIP] ipwho.is → {}/{} (mis en cache)", result.countryCode(), result.currencyCode());
             return ipWhoIsResult;
         }
 
-        // ── 3. ip-api.com — retourne pays + devise ────────────────────────────
+        // ── 4. ip-api.com — retourne pays + devise ────────────────────────────
         // Prioritaire si ipwho.is n'a pas fourni de devise (plan gratuit ipwho.is)
         Optional<GeoResolution> ipApiResult = ipApiComGeoService.lookup(ip);
         if (ipApiResult.isPresent() && ipApiResult.get().currencyCode() != null) {
+            GeoResolution result = ipApiResult.get();
+            geoIpCache.put(ip, result);
+            logger.debug("[GeoIP] ip-api.com → {}/{} (mis en cache)", result.countryCode(), result.currencyCode());
             return ipApiResult;
         }
 
         // Si ipwho.is avait un pays (sans devise), on le garde en fallback
         if (ipWhoIsResult.isPresent()) {
-            logger.debug("[GeoIP] ipwho.is returned country {} without currency — using it as fallback", 
-                    ipWhoIsResult.get().countryCode());
+            GeoResolution result = ipWhoIsResult.get();
+            geoIpCache.put(ip, result);
+            logger.debug("[GeoIP] ipwho.is returned country {} without currency — using it as fallback (mis en cache)", 
+                    result.countryCode());
             return ipWhoIsResult;
         }
 
         // Si ip-api.com avait un pays (sans devise), on le garde en fallback
         if (ipApiResult.isPresent()) {
-            logger.debug("[GeoIP] ip-api.com returned country {} without currency — using it as fallback", 
-                    ipApiResult.get().countryCode());
+            GeoResolution result = ipApiResult.get();
+            geoIpCache.put(ip, result);
+            logger.debug("[GeoIP] ip-api.com returned country {} without currency — using it as fallback (mis en cache)", 
+                    result.countryCode());
             return ipApiResult;
         }
 
         logger.debug("[GeoIP] Both IP APIs unavailable for {} — falling back to headers/local DB", ip);
 
-        // ── 4. En-tête Cloudflare (pays uniquement, devise non fournie) ───────
+        // ── 5. En-tête Cloudflare (pays uniquement, devise non fournie) ───────
         String cf = request.getHeader("CF-IPCountry");
         if (cf != null && !cf.isBlank() && !"XX".equalsIgnoreCase(cf)) {
-            return Optional.of(GeoResolution.countryOnly(cf.trim().toUpperCase()));
+            GeoResolution result = GeoResolution.countryOnly(cf.trim().toUpperCase());
+            geoIpCache.put(ip, result);
+            logger.debug("[GeoIP] Cloudflare header → {} (mis en cache)", result.countryCode());
+            return Optional.of(result);
         }
 
-        // ── 5. Base GeoLite2 locale (pays uniquement, devise non fournie) ─────
+        // ── 6. Base GeoLite2 locale (pays uniquement, devise non fournie) ─────
         if (databaseReader != null && ip != null && !ip.isBlank()) {
             try {
                 InetAddress addr = InetAddress.getByName(ip);
                 if (!addr.isLoopbackAddress() && !addr.isAnyLocalAddress()) {
                     String code = databaseReader.country(addr).getCountry().getIsoCode();
                     if (code != null && !code.isBlank()) {
-                        return Optional.of(GeoResolution.countryOnly(code));
+                        GeoResolution result = GeoResolution.countryOnly(code);
+                        geoIpCache.put(ip, result);
+                        logger.debug("[GeoIP] GeoLite2 → {} (mis en cache)", result.countryCode());
+                        return Optional.of(result);
                     }
                 }
             } catch (IOException | GeoIp2Exception e) {
