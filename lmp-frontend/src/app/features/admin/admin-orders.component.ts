@@ -34,6 +34,8 @@ import {
   CreditCard,
   Link2,
   Trash2,
+  Filter,
+  ArrowUpDown,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -137,176 +139,140 @@ const ORDER_STEPS = [
   standalone: true,
   imports: [NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-(--foreground)">
-          Gestion des Commandes
-        </h1>
-        <p class="mt-1 text-sm text-(--muted-foreground)">
-          {{ totalOrders() }} commandes au total
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <div class="crm-list-view flex h-full flex-col overflow-hidden bg-white">
+    <!-- Barre de filtres inline (style CRM) -->
+    <div class="flex items-center justify-between gap-2 px-5 py-4">
+      <div class="flex items-center"></div>
+      <!-- Actions droite -->
+      <div class="flex items-center gap-0.5">
         <button
-          hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+          hlmBtn variant="ghost" size="icon" type="button"
+          class="h-7 w-7 cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          title="Actualiser"
+          (click)="loadOrders()"
+        >
+          <lucide-icon [img]="RefreshCwIcon" [size]="15" [ngClass]="{ 'animate-spin': loading() }"></lucide-icon>
+        </button>
+        <button
+          hlmBtn variant="ghost" size="sm" type="button"
+          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+        >
+          <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Filtre</span>
+        </button>
+        <button
+          hlmBtn variant="ghost" size="sm" type="button"
+          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+        >
+          <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Sort</span>
+        </button>
+        <button
+          hlmBtn variant="default" size="sm" type="button"
+          class="ml-1 h-7 cursor-pointer gap-1.5 px-2.5"
           (click)="openCreateOrderModal()"
         >
-          <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
-          Créer une commande
+          <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Créer</span>
         </button>
-      <button
-        hlmBtn variant="ghost" size="icon" class="cursor-pointer"
-        (click)="loadOrders()"
-      >
-        <lucide-icon
-          [img]="RefreshCwIcon" [size]="18"
-          [ngClass]="{ 'animate-spin': loading() }"
-        ></lucide-icon>
-      </button>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="mt-6 flex items-center gap-3">
-      <select
-        [(ngModel)]="statusFilter"
-        (change)="currentPage.set(0); loadOrders()"
-        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
-      >
-        <option value="">Tous les statuts</option>
-        <option value="PAYMENT_PENDING">Paiement en attente</option>
-        <option value="PENDING">En attente</option>
-        <option value="CONFIRMED">Confirmées</option>
-        <option value="PROCESSING">En traitement</option>
-        <option value="IN_PROGRESS">En cours</option>
-        <option value="SHIPPED">Expédiées</option>
-        <option value="COMPLETED">Terminées</option>
-        <option value="CANCELLED">Annulées</option>
-        <option value="REFUNDED">Remboursées</option>
-      </select>
-    </div>
-
-    <!-- Orders table -->
-    <div class="mt-6 overflow-x-auto rounded-sm border border-(--border) bg-(--card)">
+    <!-- Liste (style CRM) -->
+    <div class="flex-1 overflow-auto px-3 sm:px-5">
       @if (loading()) {
-        <div class="flex items-center justify-center py-12">
-          <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-(--muted-foreground)"></lucide-icon>
+        <div class="flex items-center justify-center py-16">
+          <lucide-icon [img]="Loader2Icon" [size]="24" class="animate-spin text-zinc-400"></lucide-icon>
         </div>
       } @else {
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-(--border) text-left">
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">ID</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Client</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Service</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Montant</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Statut</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Progression</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Date</th>
-              <th class="px-4 py-3 font-medium text-(--muted-foreground)">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (order of orders(); track order.id) {
-              <tr class="border-b border-(--border) last:border-0 transition-colors hover:bg-(--accent)/50">
-                <td class="px-4 py-3 font-mono text-xs text-(--muted-foreground)">
-                  {{ order.id | slice:0:8 }}...
-                </td>
-                <td class="px-4 py-3">
-                  <div>
-                    <p class="font-medium text-(--foreground)">{{ order.customerName || '—' }}</p>
-                    <p class="text-xs text-(--muted-foreground)">{{ order.customerEmail || '—' }}</p>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-(--foreground)">{{ order.serviceName }}</td>
-                <td class="px-4 py-3 font-semibold text-(--foreground)">
-                  {{ order.amount | currency:'EUR':'symbol':'1.2-2' }}
-                </td>
-                <td class="px-4 py-3">
-                  <span
-                    class="inline-flex rounded-xs px-2 py-0.5 text-xs font-medium"
-                    [ngClass]="getStatusClass(order.status)"
-                  >
-                    {{ getStatusLabel(order.status) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-2">
-                    <div class="h-1.5 w-16 overflow-hidden rounded-full bg-(--muted)">
-                      <div
-                        class="h-full rounded-full transition-all"
-                        [ngClass]="getProgressBarClass(order.progressPercentage || 0)"
-                        [style.width.%]="order.progressPercentage || 0"
-                      ></div>
-                    </div>
-                    <span class="text-xs text-(--muted-foreground)">{{ order.progressPercentage || 0 }}%</span>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-(--muted-foreground)">
-                  {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-1">
-                    <button
-                      hlmBtn variant="ghost" size="icon"
-                      class="h-8 w-8 cursor-pointer"
-                      (click)="viewOrderDetail(order.id)"
-                      title="Voir les détails"
-                    >
-                      <lucide-icon [img]="EyeIcon" [size]="16" class="text-(--primary)"></lucide-icon>
-                    </button>
-                    @if (canDeleteOrderRow(order)) {
-                      <button
-                        type="button"
-                        hlmBtn variant="ghost" size="icon"
-                        class="h-8 w-8 cursor-pointer text-red-600 hover:bg-red-500/10 hover:text-red-700"
-                        [disabled]="deletingOrder()"
-                        (click)="confirmAndDeleteOrder(order.id)"
-                        title="Supprimer la commande"
-                      >
-                        <lucide-icon [img]="Trash2Icon" [size]="16"></lucide-icon>
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="8" class="px-4 py-12 text-center text-(--muted-foreground)">
-                  Aucune commande trouvée
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <!-- En-tête colonnes (style CRM - fond gris arrondi, mb-2) -->
+        <div class="mb-2 flex items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+          <div class="flex w-10 shrink-0 items-center justify-center">
+            <input
+              type="checkbox"
+              class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
+              [checked]="allRowsSelected()"
+              (change)="toggleSelectAll($event)"
+            />
+          </div>
+          <div class="w-64 shrink-0 px-2">Email</div>
+          <div class="hidden w-40 shrink-0 px-2 sm:block">Service</div>
+          <div class="hidden w-28 shrink-0 px-2 sm:block">Montant</div>
+          <div class="hidden w-32 shrink-0 px-2 md:block">Statut</div>
+          <div class="w-32 shrink-0 px-2 text-right">Last Modified</div>
+        </div>
+
+        <!-- Lignes (style CRM - cliquables, sans bordures visibles entre les lignes) -->
+        <div>
+          @for (order of filteredOrders(); track order.id) {
+            <div
+              class="group flex h-10 cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
+              (click)="viewOrderDetail(order.id)"
+            >
+              <div class="flex w-10 shrink-0 items-center justify-center" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
+                  [checked]="selectedOrderIds().has(order.id)"
+                  (change)="toggleOrderSelected(order.id)"
+                />
+              </div>
+              <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
+                {{ order.customerEmail || '—' }}
+              </div>
+              <div class="hidden w-40 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+                {{ order.serviceName }}
+              </div>
+              <div class="hidden w-28 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+                {{ order.amount | currency:'EUR':'symbol':'1.2-2' }}
+              </div>
+              <div class="hidden w-32 shrink-0 px-2 md:block">
+                <span
+                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                  [ngClass]="getStatusClass(order.status)"
+                >
+                  {{ getStatusLabel(order.status) }}
+                </span>
+              </div>
+              <div class="w-32 shrink-0 px-2 text-right text-sm leading-none text-zinc-500 dark:text-zinc-400">
+                {{ formatRelativeTimeFr(order.createdAt) }}
+              </div>
+            </div>
+          } @empty {
+            <div class="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+              Aucune commande trouvée
+            </div>
+          }
+        </div>
       }
     </div>
 
-    <!-- Pagination -->
-    @if (totalPages() > 1) {
-      <div class="mt-4 flex items-center justify-between">
-        <p class="text-xs text-(--muted-foreground)">
-          Page {{ currentPage() + 1 }} sur {{ totalPages() }}
-        </p>
-        <div class="flex items-center gap-1">
+    <!-- Footer pagination (style CRM) -->
+    <div class="flex items-center justify-between border-t border-zinc-200 px-3 py-2 sm:px-5 dark:border-zinc-800">
+      <div class="inline-flex rounded-md border border-zinc-200 dark:border-zinc-700">
+        @for (size of pageSizes; track size; let first = $first; let last = $last) {
           <button
-            hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-            [disabled]="currentPage() === 0"
-            (click)="changePage(currentPage() - 1)"
+            type="button"
+            class="h-7 min-w-[2.25rem] px-2.5 text-sm font-normal transition-colors"
+            [ngClass]="{
+              'rounded-l-md': first,
+              'rounded-r-md': last,
+              'border-r border-zinc-200 dark:border-zinc-700': !last,
+              'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': pageSize() === size,
+              'bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200': pageSize() !== size
+            }"
+            (click)="changePageSize(size)"
           >
-            <lucide-icon [img]="ChevronLeftIcon" [size]="16"></lucide-icon>
+            {{ size }}
           </button>
-          <button
-            hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-            [disabled]="currentPage() >= totalPages() - 1"
-            (click)="changePage(currentPage() + 1)"
-          >
-            <lucide-icon [img]="ChevronRightIcon" [size]="16"></lucide-icon>
-          </button>
-        </div>
+        }
       </div>
-    }
+      <div class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ filteredOrders().length }}</span>
+        <span>of</span>
+        <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ totalOrders() }}</span>
+      </div>
+    </div>
 
     <!-- Order Detail Modal -->
     @if (showDetailModal()) {
@@ -843,6 +809,7 @@ const ORDER_STEPS = [
         <span class="text-sm font-medium">{{ toast()!.message }}</span>
       </div>
     }
+    </div>
   `,
 })
 export class AdminOrdersComponent implements OnInit {
@@ -889,12 +856,16 @@ export class AdminOrdersComponent implements OnInit {
   readonly CreditCardIcon = CreditCard;
   readonly Link2Icon = Link2;
   readonly Trash2Icon = Trash2;
+  readonly FilterIcon = Filter;
+  readonly ArrowUpDownIcon = ArrowUpDown;
+
 
   readonly loading = signal(false);
   private readonly listFetch = createListFetchLoading(this.loading);
   readonly loadingDetail = signal(false);
   readonly savingProgress = signal(false);
   readonly orders = signal<OrderItem[]>([]);
+  readonly filteredOrders = signal<OrderItem[]>([]);
   readonly totalOrders = signal(0);
   readonly totalPages = signal(0);
   readonly currentPage = signal(0);
@@ -907,6 +878,19 @@ export class AdminOrdersComponent implements OnInit {
   readonly syncing = signal(false);
   readonly orderRefunds = signal<any[]>([]);
   readonly deletingOrder = signal(false);
+  readonly selectedOrderIds = signal<Set<string>>(new Set());
+
+  readonly pageSizes = [20, 50, 100];
+  readonly pageSize = signal(20);
+
+  emailFilter = '';
+
+  readonly allRowsSelected = computed(() => {
+    const list = this.filteredOrders();
+    if (list.length === 0) return false;
+    const sel = this.selectedOrderIds();
+    return list.every((o) => sel.has(o.id));
+  });
   /** Options catalogue pour le modal « Créer une commande » (GET /api/v1/admin/services). */
   readonly catalogServicesForCreate = signal<CreateOrderCatalogOption[]>([]);
   /** Exposé au template pour comparer avec la valeur du select « Autre ». */
@@ -965,7 +949,7 @@ export class AdminOrdersComponent implements OnInit {
     this.listFetch.beforeFetch(silent);
     const params: Record<string, string> = {
       page: this.currentPage().toString(),
-      size: '20',
+      size: this.pageSize().toString(),
     };
     if (this.statusFilter) params['status'] = this.statusFilter;
 
@@ -977,22 +961,23 @@ export class AdminOrdersComponent implements OnInit {
       .subscribe({
         next: (res) => {
           const page = res.data!;
-          this.orders.set(
-            page.content.map((raw) => {
-              const o = raw as OrderItem & {
-                userName?: string;
-                userEmail?: string;
-                totalAmount?: number;
-              };
-              return {
-                ...o,
-                customerName: o.userName || o.customerName || '',
-                customerEmail: o.userEmail || o.customerEmail || '',
-                amount: o.totalAmount ?? o.amount ?? 0,
-                paidAt: o.paidAt ?? null,
-              };
-            }),
-          );
+          const mapped = page.content.map((raw) => {
+            const o = raw as OrderItem & {
+              userName?: string;
+              userEmail?: string;
+              totalAmount?: number;
+            };
+            return {
+              ...o,
+              customerName: o.userName || o.customerName || '',
+              customerEmail: o.userEmail || o.customerEmail || '',
+              amount: o.totalAmount ?? o.amount ?? 0,
+              paidAt: o.paidAt ?? null,
+            };
+          });
+          this.orders.set(mapped);
+          this.selectedOrderIds.set(new Set());
+          this.filterOrders();
           this.totalOrders.set(page.totalElements);
           this.totalPages.set(page.totalPages);
           this.listFetch.afterFetch();
@@ -1001,6 +986,60 @@ export class AdminOrdersComponent implements OnInit {
           this.listFetch.afterFetch();
         },
       });
+  }
+
+  filterOrders(): void {
+    const q = this.emailFilter.toLowerCase();
+    if (!q) {
+      this.filteredOrders.set(this.orders());
+      return;
+    }
+    this.filteredOrders.set(
+      this.orders().filter(
+        (o) =>
+          (o.customerEmail || '').toLowerCase().includes(q) ||
+          (o.customerName || '').toLowerCase().includes(q),
+      ),
+    );
+  }
+
+  changePageSize(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(0);
+    this.loadOrders();
+  }
+
+  toggleSelectAll(ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    const list = this.filteredOrders();
+    if (checked) {
+      this.selectedOrderIds.set(new Set(list.map((o) => o.id)));
+    } else {
+      this.selectedOrderIds.set(new Set());
+    }
+  }
+
+  toggleOrderSelected(id: string): void {
+    const next = new Set(this.selectedOrderIds());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selectedOrderIds.set(next);
+  }
+
+  formatRelativeTimeFr(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    const diffMs = Date.now() - d.getTime();
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 45) return 'À l\'instant';
+    const min = Math.floor(sec / 60);
+    const hours = Math.floor(min / 60);
+    const days = Math.floor(hours / 24);
+    if (min < 60) return min <= 1 ? 'Il y a 1 min' : `Il y a ${min} min`;
+    if (hours < 24) return hours <= 1 ? 'Il y a 1 h' : `Il y a ${hours} h`;
+    if (days < 7) return days === 1 ? 'Il y a 1 jour' : `Il y a ${days} j`;
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   changePage(page: number): void {

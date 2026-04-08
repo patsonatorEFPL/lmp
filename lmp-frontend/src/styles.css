@@ -228,3 +228,96 @@
   .notification-toast-exit { animation: none; }
   .ticker-track { animation: none; }
 }
+
+/* === external CRM Theme Adaptation === */
+.crm-theme {
+  --background: #ffffff;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --muted: #f4f5f7;
+  --muted-foreground: #71717a;
+  --accent: #f0f1f3;
+  --accent-foreground: #18181b;
+  --secondary: #f4f5f7;
+  --secondary-foreground: #18181b;
+  --border: #e4e5e7;
+  --input: #e4e5e7;
+  --ring: #8b99a8;
+  --sidebar-bg: #fcfcfd;
+  --sidebar-menu-bg: #f8f9fa;
+  --sidebar-foreground: #384250;
+  --sidebar-border: #e4e5e7;
+  --sidebar-hover: #f0f1f3;
+  --sidebar-active: #e8e9ec;
+  --header-bg: #ffffff;
+  --header-border: #e4e5e7;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+}
+
+.dark .crm-theme {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #1a1a1a;
+  --card-foreground: #fafafa;
+  --popover: #1a1a1a;
+  --popover-foreground: #fafafa;
+  --muted: #1f1f1f;
+  --muted-foreground: #a1a1aa;
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --secondary: #1f1f1f;
+  --secondary-foreground: #fafafa;
+  --border: #2d2d2d;
+  --input: #2d2d2d;
+  --ring: #71717a;
+  --sidebar-bg: #0f0f0f;
+  --sidebar-menu-bg: #1a1a1a;
+  --sidebar-foreground: #d4d4d8;
+  --sidebar-border: #2d2d2d;
+  --sidebar-hover: #262626;
+  --sidebar-active: #2d2d2d;
+  --header-bg: #0f0f0f;
+  --header-border: #2d2d2d;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+}
+
+/* external CRM color surfaces */
+.bg-surface-white {
+  @apply bg-white dark:bg-zinc-950;
+}
+
+.bg-surface-menu-bar {
+  @apply bg-[#fcfcfd] dark:bg-zinc-900;
+}
+
+.bg-surface-gray-1 {
+  @apply bg-zinc-50 dark:bg-zinc-900;
+}
+
+.bg-surface-gray-2 {
+  @apply bg-zinc-100 dark:bg-zinc-800;
+}
+
+/* external CRM text colors */
+.text-ink-gray-5 {
+  @apply text-zinc-500 dark:text-zinc-400;
+}
+
+.text-ink-gray-7 {
+  @apply text-zinc-700 dark:text-zinc-300;
+}
+
+.text-ink-gray-9 {
+  @apply text-zinc-900 dark:text-zinc-100;
+}
+
+/* external CRM borders */
+.border-outline-gray-2 {
+  @apply border-zinc-200 dark:border-zinc-700;
+}
+

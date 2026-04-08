@@ -65,6 +65,7 @@ ${project.build.directory}/
 lmp-frontend/src/app/generated/
 
 ### Third-party Tool Directories ###
+.kilo/
 .kilocode/
 .qwen/
 .roo/

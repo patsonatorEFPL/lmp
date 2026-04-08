@@ -24,16 +24,9 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
   standalone: true,
   imports: [FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <div>
-      <h1 class="text-2xl font-bold text-(--foreground)">
-        Paramètres du système
-      </h1>
-      <p class="mt-1 text-sm text-(--muted-foreground)">
-        Configurez les paramètres globaux de la plateforme.
-      </p>
-    </div>
-
-    <div class="mt-8 space-y-6">
+    <div class="p-4 sm:p-5">
+    <!-- Titre dans lmp-admin-layout -->
+    <div class="space-y-6">
       <!-- General Settings -->
       <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">
@@ -273,6 +266,7 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
           {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
       </div>
+    </div>
     </div>
   `,
 })

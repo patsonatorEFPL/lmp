@@ -68,11 +68,6 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
     }
 
     @if (!blockingLoader() && stats()) {
-      <div class="mb-6 border-b border-zinc-200/90 pb-4 dark:border-zinc-800">
-        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Vue d’ensemble</p>
-        <h2 class="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Espace client</h2>
-      </div>
-
       <!-- Quick stats (même base que /admin : cartes zinc + ombre légère) -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div
