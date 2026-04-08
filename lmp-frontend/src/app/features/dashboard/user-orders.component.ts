@@ -73,17 +73,13 @@ const ORDER_STEPS = [
   standalone: true,
   imports: [DatePipe, CurrencyPipe, NgClass, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- Header (aligné typo /admin) -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Commandes</p>
-        <h1 class="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Mes commandes</h1>
-        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          {{ allOrders().length }} commande(s) au total
-        </p>
-      </div>
+    <!-- Résumé + action (titre dans lmp-dashboard-layout) -->
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        {{ allOrders().length }} commande(s) au total
+      </p>
       <button
-        hlmBtn variant="ghost" size="icon" class="cursor-pointer"
+        hlmBtn variant="ghost" size="icon" class="cursor-pointer sm:ml-auto"
         (click)="loadOrders()"
       >
         <lucide-icon
@@ -94,7 +90,7 @@ const ORDER_STEPS = [
     </div>
 
     <!-- Filters -->
-    <div class="mt-6 flex items-center gap-3">
+    <div class="mt-2 flex items-center gap-3">
       <select
         [(ngModel)]="statusFilter"
         (change)="applyFilter()"
@@ -113,7 +109,7 @@ const ORDER_STEPS = [
     </div>
 
     <!-- Orders list -->
-    <div class="mt-6 space-y-3">
+    <div class="mt-4 space-y-3">
       @if (loading()) {
         <div class="flex items-center justify-center py-16">
           <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>

@@ -38,6 +38,8 @@ import {
   ArrowUpDown,
   Columns3,
   Phone,
+  MoreHorizontal,
+  Plus,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -86,329 +88,150 @@ interface ApiResponse<T> {
   standalone: true,
   imports: [NgClass, DatePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- En-tête type vue liste (contacts / comptes) -->
-    <div class="mb-1">
-      <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-        Utilisateurs
-      </p>
-      <h2 class="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-        Comptes
-      </h2>
-      <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        {{ totalUsers() }} compte{{ totalUsers() > 1 ? 's' : '' }} enregistré{{ totalUsers() > 1 ? 's' : '' }}
-      </p>
-    </div>
-
-    <!-- Barre d’outils (Filtre + actions) -->
-    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          hlmBtn
-          variant="outline"
-          size="sm"
-          class="cursor-pointer gap-2 border-zinc-200/90 bg-white text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-          (click)="filterPanelOpen.set(!filterPanelOpen())"
-          [attr.aria-expanded]="filterPanelOpen()"
-        >
-          <lucide-icon [img]="FilterIcon" [size]="16" class="text-zinc-500"></lucide-icon>
-          Filtrer
-        </button>
-      </div>
+    <div class="crm-list-view flex h-full flex-col overflow-hidden bg-white">
+    <!-- Barre de filtres inline (style CRM) -->
+    <div class="flex items-center justify-between gap-2 px-5 py-4">
+      <div class="flex items-center"></div>
+      <!-- Actions droite -->
       <div class="flex items-center gap-0.5">
         <button
           hlmBtn
           variant="ghost"
           size="icon"
           type="button"
-          class="h-9 w-9 cursor-pointer text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+          class="h-7 w-7 cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
           title="Actualiser"
           (click)="loadUsers()"
         >
           <lucide-icon
             [img]="RefreshCwIcon"
-            [size]="18"
+            [size]="15"
             [ngClass]="{ 'animate-spin': loading() }"
           ></lucide-icon>
         </button>
         <button
           hlmBtn
           variant="ghost"
-          size="icon"
+          size="sm"
           type="button"
-          class="h-9 w-9 cursor-not-allowed opacity-40"
-          disabled
-          title="Tri (bientôt)"
+          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
         >
-          <lucide-icon [img]="ArrowUpDownIcon" [size]="18"></lucide-icon>
+          <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Filtre</span>
         </button>
         <button
           hlmBtn
           variant="ghost"
-          size="icon"
+          size="sm"
           type="button"
-          class="h-9 w-9 cursor-not-allowed opacity-40"
-          disabled
-          title="Colonnes (bientôt)"
+          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
         >
-          <lucide-icon [img]="Columns3Icon" [size]="18"></lucide-icon>
+          <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Sort</span>
+        </button>
+        <button
+          hlmBtn
+          variant="default"
+          size="sm"
+          type="button"
+          class="ml-1 h-7 cursor-pointer gap-1.5 px-2.5"
+        >
+          <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Ajouter</span>
         </button>
       </div>
     </div>
 
-    @if (filterPanelOpen()) {
-      <div
-        class="mt-3 flex flex-col gap-3 rounded-lg border border-zinc-200/80 bg-zinc-50/80 p-3 sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900/40"
-      >
-        <div class="relative min-w-0 flex-1">
-          <lucide-icon
-            [img]="SearchIcon"
-            [size]="16"
-            class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
-          ></lucide-icon>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            (input)="filterUsers()"
-            placeholder="Rechercher par nom ou e-mail…"
-            class="w-full rounded-md border border-zinc-200/90 bg-white py-2.5 pr-4 pl-10 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400/30 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500"
-          />
-        </div>
-        <select
-          [(ngModel)]="statusFilter"
-          (change)="loadUsers()"
-          class="w-full shrink-0 rounded-md border border-zinc-200/90 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 sm:w-auto"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="ACTIVE">Actifs</option>
-          <option value="INACTIVE">Inactifs</option>
-          <option value="DELETED">Supprimés (soft)</option>
-        </select>
-      </div>
-    }
-
-    <!-- Tableau liste -->
-    <div class="mx-0 mt-4 sm:mx-1">
+    <!-- Liste (style CRM - pas de bordure extérieure) -->
+    <div class="flex-1 overflow-auto px-3 sm:px-5">
       @if (loading()) {
-        <div class="flex items-center justify-center rounded-lg border border-zinc-200/90 bg-white py-16 dark:border-zinc-800 dark:bg-zinc-950">
+        <div class="flex items-center justify-center py-16">
           <lucide-icon
             [img]="Loader2Icon"
-            [size]="28"
+            [size]="24"
             class="animate-spin text-zinc-400"
           ></lucide-icon>
         </div>
       } @else {
-        <div
-          class="overflow-hidden rounded-lg border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-        >
-          <div class="overflow-x-auto">
-            <table class="w-full min-w-[640px] border-collapse text-sm">
-              <thead>
-                <tr
-                  class="border-b border-zinc-200/80 bg-zinc-100/90 text-left dark:border-zinc-800 dark:bg-zinc-800/50"
-                >
-                  <th class="w-10 py-2.5 pl-3 pr-1">
-                    <input
-                      type="checkbox"
-                      class="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-700 focus:ring-zinc-400"
-                      [checked]="allRowsSelected()"
-                      (change)="toggleSelectAll($event)"
-                    />
-                  </th>
-                  <th class="px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
-                    E-mail
-                  </th>
-                  <th
-                    class="hidden px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase sm:table-cell dark:text-zinc-400"
-                  >
-                    Téléphone
-                  </th>
-                  <th
-                    class="hidden px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase md:table-cell dark:text-zinc-400"
-                  >
-                    Organisation
-                  </th>
-                  <th
-                    class="hidden px-2 py-2.5 text-xs font-medium tracking-wide text-zinc-500 uppercase lg:table-cell dark:text-zinc-400"
-                  >
-                    Rôle / état
-                  </th>
-                  <th class="px-2 py-2.5 pr-4 text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
-                    Dernière connexion
-                  </th>
-                  <th class="w-24 px-2 py-2.5 pr-3 text-right text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (user of filteredUsers(); track user.id) {
-                  <tr
-                    class="border-b border-zinc-100 transition-colors last:border-b-0 hover:bg-zinc-50/90 dark:border-zinc-800/80 dark:hover:bg-zinc-900/60"
-                  >
-                    <td class="py-2.5 pl-3 pr-1 align-middle">
-                      <input
-                        type="checkbox"
-                        class="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-700 focus:ring-zinc-400"
-                        [checked]="selectedUserIds().has(user.id)"
-                        (change)="toggleUserSelected(user.id)"
-                      />
-                    </td>
-                    <td class="max-w-[200px] px-2 py-2.5 align-middle">
-                      <div class="min-w-0">
-                        <p
-                          class="truncate font-medium text-zinc-900 dark:text-zinc-100"
-                          [title]="user.email"
-                        >
-                          {{ user.email }}
-                        </p>
-                        @if (user.displayName || user.firstName || user.lastName) {
-                          <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                            {{ user.displayName || (user.firstName + ' ' + user.lastName) }}
-                          </p>
-                        }
-                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                          @if (user.emailVerified) {
-                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400" title="E-mail vérifié"
-                              >✓ Vérifié</span
-                            >
-                          }
-                          @if (user.accountLocked) {
-                            <span
-                              class="inline-flex items-center gap-0.5 rounded bg-red-500/10 px-1.5 py-0 text-[10px] font-medium text-red-600 dark:text-red-400"
-                            >
-                              <lucide-icon [img]="LockIcon" [size]="10"></lucide-icon>
-                              Verrouillé
-                            </span>
-                          }
-                        </div>
-                        <div class="mt-1.5 flex flex-wrap gap-1 lg:hidden">
-                          @for (role of user.roles; track role) {
-                            <span
-                              class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-zinc-200/80 dark:ring-zinc-600"
-                              [ngClass]="
-                                role === 'ADMIN'
-                                  ? 'bg-zinc-200/80 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                                  : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300'
-                              "
-                              >{{ role }}</span
-                            >
-                          }
-                          <span
-                            class="inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium"
-                            [ngClass]="getStatusClass(user.status)"
-                            >{{ getStatusLabel(user.status) }}</span
-                          >
-                        </div>
-                      </div>
-                    </td>
-                    <td class="hidden px-2 py-2.5 align-middle text-zinc-700 sm:table-cell dark:text-zinc-300">
-                      <div class="flex min-w-0 items-center gap-1.5">
-                        @if (user.phone) {
-                          <lucide-icon [img]="PhoneIcon" [size]="14" class="shrink-0 text-zinc-400"></lucide-icon>
-                          <span class="truncate">{{ user.phone }}</span>
-                        } @else {
-                          <span class="text-zinc-400">—</span>
-                        }
-                      </div>
-                    </td>
-                    <td class="hidden max-w-[160px] px-2 py-2.5 align-middle text-zinc-700 md:table-cell dark:text-zinc-300">
-                      <span class="truncate" [title]="organizationLabel(user)">{{
-                        organizationLabel(user)
-                      }}</span>
-                    </td>
-                    <td class="hidden px-2 py-2.5 align-middle lg:table-cell">
-                      <div class="flex flex-wrap gap-1">
-                        @for (role of user.roles; track role) {
-                          <span
-                            class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-zinc-200/80 dark:ring-zinc-600"
-                            [ngClass]="
-                              role === 'ADMIN'
-                                ? 'bg-zinc-200/80 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
-                                : 'bg-zinc-50 text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-300'
-                            "
-                            >{{ role }}</span
-                          >
-                        }
-                        <span
-                          class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium"
-                          [ngClass]="getStatusClass(user.status)"
-                          >{{ getStatusLabel(user.status) }}</span
-                        >
-                      </div>
-                    </td>
-                    <td class="whitespace-nowrap px-2 py-2.5 pr-4 align-middle text-zinc-600 dark:text-zinc-400">
-                      <span [title]="user.lastLoginDate || ''">{{
-                        formatRelativeTimeFr(user.lastLoginDate)
-                      }}</span>
-                    </td>
-                    <td class="px-2 py-2.5 pr-3 text-right align-middle">
-                      <button
-                        hlmBtn
-                        variant="ghost"
-                        size="icon"
-                        type="button"
-                        class="h-8 w-8 cursor-pointer text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                        (click)="openEditUser(user)"
-                        title="Modifier"
-                      >
-                        <lucide-icon [img]="PencilIcon" [size]="16"></lucide-icon>
-                      </button>
-                      <button
-                        hlmBtn
-                        variant="ghost"
-                        size="icon"
-                        type="button"
-                        class="h-8 w-8 cursor-pointer text-zinc-500 hover:text-red-600 dark:hover:text-red-400"
-                        (click)="softDeleteUser(user)"
-                        title="Désactiver"
-                      >
-                        <lucide-icon [img]="Trash2Icon" [size]="16"></lucide-icon>
-                      </button>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="7" class="px-4 py-14 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                      Aucun utilisateur trouvé
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+        <!-- En-tête colonnes (style CRM - fond gris arrondi, mb-2) -->
+        <div class="mb-2 flex items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+          <div class="flex w-10 shrink-0 items-center justify-center">
+            <input
+              type="checkbox"
+              class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
+              [checked]="allRowsSelected()"
+              (change)="toggleSelectAll($event)"
+            />
           </div>
+          <div class="w-64 shrink-0 px-2">Email</div>
+          <div class="hidden w-48 shrink-0 px-2 sm:block">Phone</div>
+          <div class="hidden w-48 shrink-0 px-2 md:block">Organisation</div>
+          <div class="w-32 shrink-0 px-2 text-right">Last Modified</div>
+        </div>
+
+        <!-- Lignes (style CRM - cliquables, sans bordures visibles entre les lignes) -->
+        <div>
+          @for (user of filteredUsers(); track user.id) {
+            <div
+              class="group flex h-10 cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
+              (click)="openEditUser(user)"
+            >
+              <div class="flex w-10 shrink-0 items-center justify-center" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
+                  [checked]="selectedUserIds().has(user.id)"
+                  (change)="toggleUserSelected(user.id)"
+                />
+              </div>
+              <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
+                {{ user.email }}
+              </div>
+              <div class="hidden w-48 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+                {{ user.phone || '' }}
+              </div>
+              <div class="hidden w-48 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
+                {{ organizationLabel(user) !== '—' ? organizationLabel(user) : '' }}
+              </div>
+              <div class="w-32 shrink-0 px-2 text-right text-sm leading-none text-zinc-500 dark:text-zinc-400">
+                {{ formatRelativeTimeFr(user.lastLoginDate) }}
+              </div>
+            </div>
+          } @empty {
+            <div class="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+              Aucun utilisateur trouvé
+            </div>
+          }
         </div>
       }
     </div>
 
-    @if (totalPages() > 1) {
-      <div class="mt-4 flex items-center justify-between border-t border-zinc-100 pt-3 dark:border-zinc-800">
-        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-          Page {{ currentPage() + 1 }} sur {{ totalPages() }}
-        </p>
-        <div class="flex items-center gap-1">
+    <!-- Footer pagination (style CRM - bordered button group) -->
+    <div class="flex items-center justify-between border-t border-zinc-200 px-3 py-2 sm:px-5 dark:border-zinc-800">
+      <div class="inline-flex rounded-md border border-zinc-200 dark:border-zinc-700">
+        @for (size of pageSizes; track size; let first = $first; let last = $last) {
           <button
-            hlmBtn
-            variant="ghost"
-            size="icon"
-            class="h-8 w-8 cursor-pointer"
-            [disabled]="currentPage() === 0"
-            (click)="changePage(currentPage() - 1)"
+            type="button"
+            class="h-7 min-w-[2.25rem] px-2.5 text-sm font-normal transition-colors"
+            [ngClass]="{
+              'rounded-l-md': first,
+              'rounded-r-md': last,
+              'border-r border-zinc-200 dark:border-zinc-700': !last,
+              'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': pageSize() === size,
+              'bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200': pageSize() !== size
+            }"
+            (click)="changePageSize(size)"
           >
-            <lucide-icon [img]="ChevronLeftIcon" [size]="16"></lucide-icon>
+            {{ size }}
           </button>
-          <button
-            hlmBtn
-            variant="ghost"
-            size="icon"
-            class="h-8 w-8 cursor-pointer"
-            [disabled]="currentPage() >= totalPages() - 1"
-            (click)="changePage(currentPage() + 1)"
-          >
-            <lucide-icon [img]="ChevronRightIcon" [size]="16"></lucide-icon>
-          </button>
-        </div>
+        }
       </div>
-    }
+      <div class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ filteredUsers().length }}</span>
+        <span>of</span>
+        <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ totalUsers() }}</span>
+      </div>
+    </div>
 
     <!-- Edit User Modal -->
     @if (showEditModal()) {
@@ -469,7 +292,7 @@ interface ApiResponse<T> {
           <!-- Modal Body -->
           <div class="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
             <!-- Profil (lecture seule) -->
-            <div class="rounded-lg border border-(--border)/80 bg-(--muted)/20 px-4 py-3">
+            <div class="rounded-lg border border-outline-gray-2 border-(--border)/80 bg-(--muted)/20 px-4 py-3">
               <p class="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
                 Profil
               </p>
@@ -557,7 +380,7 @@ interface ApiResponse<T> {
             </div>
 
             <!-- Statut + verrouillage (carte unique) -->
-            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+            <div class="rounded-lg border border-outline-gray-2 border-(--border) bg-(--background) p-4">
               <p class="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
                 État du compte
               </p>
@@ -627,7 +450,7 @@ interface ApiResponse<T> {
             </div>
 
             <!-- Changement mot de passe -->
-            <div class="rounded-lg border border-(--border) bg-(--background) p-4">
+            <div class="rounded-lg border border-outline-gray-2 border-(--border) bg-(--background) p-4">
               <div class="flex cursor-pointer items-center justify-between" (click)="showPwdSection.set(!showPwdSection())">
                 <div class="flex items-center gap-2">
                   <lucide-icon [img]="KeyRoundIcon" [size]="16" class="text-(--primary)"></lucide-icon>
@@ -704,7 +527,7 @@ interface ApiResponse<T> {
 
             <!-- Synthèse connexion -->
             <div
-              class="flex gap-3 rounded-lg border-l-4 px-4 py-3"
+              class="flex gap-3 rounded-lg border border-outline-gray-2-l-4 px-4 py-3"
               [ngClass]="accessSummary().boxClass"
               role="status"
             >
@@ -830,6 +653,8 @@ export class AdminUsersComponent implements OnInit {
   readonly ArrowUpDownIcon = ArrowUpDown;
   readonly Columns3Icon = Columns3;
   readonly PhoneIcon = Phone;
+  readonly MoreHorizontalIcon = MoreHorizontal;
+  readonly PlusIcon = Plus;
 
   /** Segmented control : bouton actif / inactif (modale édition) */
   readonly segWrap = 'flex w-full rounded-md border border-(--border) bg-(--muted)/25 p-0.5 gap-0.5 sm:inline-flex sm:w-auto';
@@ -851,8 +676,14 @@ export class AdminUsersComponent implements OnInit {
   readonly showEditModal = signal(false);
   readonly toast = signal<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // CRM-style pagination
+  readonly pageSizes = [20, 50, 100];
+  readonly pageSize = signal(20);
+
   searchQuery = '';
   statusFilter = '';
+  phoneFilter = '';
+  orgFilter = '';
   editingUser: UserItem | null = null;
   editForm = { status: 'ACTIVE', locked: false, email: '', admin: false };
 
@@ -878,7 +709,7 @@ export class AdminUsersComponent implements OnInit {
     this.listFetch.beforeFetch(silent);
     const params: Record<string, string> = {
       page: this.currentPage().toString(),
-      size: '20',
+      size: this.pageSize().toString(),
     };
     if (this.statusFilter) params['status'] = this.statusFilter;
 
@@ -905,23 +736,44 @@ export class AdminUsersComponent implements OnInit {
 
   filterUsers(): void {
     const q = this.searchQuery.toLowerCase();
-    if (!q) {
-      this.filteredUsers.set(this.users());
-      return;
-    }
-    this.filteredUsers.set(
-      this.users().filter(
+    const phone = this.phoneFilter.toLowerCase();
+    
+    let filtered = this.users();
+    
+    if (q) {
+      filtered = filtered.filter(
         (u) =>
           u.email.toLowerCase().includes(q) ||
           (u.firstName + ' ' + u.lastName).toLowerCase().includes(q) ||
           (u.displayName || '').toLowerCase().includes(q),
-      ),
-    );
+      );
+    }
+    
+    if (phone) {
+      filtered = filtered.filter(
+        (u) => (u.phone || '').toLowerCase().includes(phone),
+      );
+    }
+
+    const org = this.orgFilter.toLowerCase();
+    if (org) {
+      filtered = filtered.filter(
+        (u) => this.organizationLabel(u).toLowerCase().includes(org),
+      );
+    }
+
+    this.filteredUsers.set(filtered);
   }
 
   changePage(page: number): void {
     this.currentPage.set(page);
     this.selectedUserIds.set(new Set());
+    this.loadUsers();
+  }
+
+  changePageSize(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(0);
     this.loadUsers();
   }
 
