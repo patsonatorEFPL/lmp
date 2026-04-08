@@ -37,46 +37,37 @@ type ModalMode = 'create' | 'edit';
   standalone: true,
   imports: [FormsModule, LucideAngularModule, HlmButton, CurrencyPipe, NgClass],
   template: `
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-(--foreground)">
-          Gestion des Services
-        </h1>
-        <p class="mt-1 text-sm text-(--muted-foreground)">
-          Créez, modifiez et gérez votre catalogue de services.
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button
-          hlmBtn
-          variant="ghost"
-          size="icon"
-          class="cursor-pointer"
-          (click)="loadData()"
-        >
-          <lucide-icon
-            [img]="RefreshCwIcon"
-            [size]="18"
-            [ngClass]="{ 'animate-spin': loading() }"
-          ></lucide-icon>
-        </button>
-        <button
-          hlmBtn
-          variant="default"
-          size="sm"
-          class="cursor-pointer gap-2"
-          (click)="openCreateService()"
-        >
-          <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
-          Nouveau service
-        </button>
-      </div>
+    <div class="p-4 sm:p-5">
+    <!-- Actions (titre dans lmp-admin-layout) -->
+    <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        class="cursor-pointer"
+        (click)="loadData()"
+      >
+        <lucide-icon
+          [img]="RefreshCwIcon"
+          [size]="18"
+          [ngClass]="{ 'animate-spin': loading() }"
+        ></lucide-icon>
+      </button>
+      <button
+        hlmBtn
+        variant="default"
+        size="sm"
+        class="cursor-pointer gap-2"
+        (click)="openCreateService()"
+      >
+        <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
+        Nouveau service
+      </button>
     </div>
 
     <!-- Stats -->
     @if (stats()) {
-      <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div
           class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
         >
@@ -848,6 +839,7 @@ type ModalMode = 'create' | 'edit';
         <span class="text-sm font-medium">{{ toast()!.message }}</span>
       </div>
     }
+    </div>
   `,
 })
 export class AdminServicesComponent implements OnInit {
