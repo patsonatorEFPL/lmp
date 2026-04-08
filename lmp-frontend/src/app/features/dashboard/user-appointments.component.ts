@@ -38,17 +38,13 @@ interface ApiResponse<T> {
   standalone: true,
   imports: [DatePipe, NgClass, LucideAngularModule, HlmButton],
   template: `
-    <!-- Header (aligné typo /admin) -->
-    <div class="flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Agenda</p>
-        <h1 class="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Mes rendez-vous</h1>
-        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          {{ appointments().length }} rendez-vous au total
-        </p>
-      </div>
+    <!-- Résumé + action (titre dans lmp-dashboard-layout) -->
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        {{ appointments().length }} rendez-vous au total
+      </p>
       <button
-        hlmBtn variant="ghost" size="icon" class="cursor-pointer"
+        hlmBtn variant="ghost" size="icon" class="cursor-pointer sm:ml-auto"
         (click)="loadAppointments()"
       >
         <lucide-icon
@@ -59,11 +55,11 @@ interface ApiResponse<T> {
     </div>
 
     @if (loading()) {
-      <div class="mt-8 flex items-center justify-center py-16">
+      <div class="mt-4 flex items-center justify-center py-16">
         <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
       </div>
     } @else if (appointments().length === 0) {
-      <div class="mt-8 flex flex-col items-center justify-center py-16 text-center rounded-sm border border-(--border) bg-(--card)">
+      <div class="mt-4 flex flex-col items-center justify-center py-16 text-center rounded-sm border border-(--border) bg-(--card)">
         <div class="flex h-14 w-14 items-center justify-center rounded-full bg-(--muted)">
           <lucide-icon [img]="CalendarIcon" [size]="24" class="text-(--muted-foreground)"></lucide-icon>
         </div>
@@ -73,7 +69,7 @@ interface ApiResponse<T> {
     } @else {
       <!-- Upcoming -->
       @if (upcomingAppointments().length > 0) {
-        <div class="mt-8">
+        <div class="mt-6">
           <h2 class="mb-4 text-lg font-bold text-(--foreground)">
             Rendez-vous à venir
             <span class="ml-2 rounded-full bg-(--primary)/10 px-2 py-0.5 text-xs font-medium text-(--primary)">

@@ -1,9 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
-  ArrowLeft,
   Save,
   User,
   Shield,
@@ -25,43 +23,18 @@ import { ProfileService } from '../../core/services/profile.service';
   standalone: true,
   imports: [
     FormsModule,
-    RouterLink,
     LucideAngularModule,
     HlmButton,
     HlmInput,
     HlmLabel,
   ],
   template: `
-    <div class="min-h-screen bg-(--background)">
-      <!-- Header -->
-      <header
-        class="border-b border-(--border) bg-(--card)"
-      >
-        <div
-          class="mx-auto flex h-16 max-w-4xl items-center gap-4 px-4 sm:px-6"
-        >
-          <a
-            routerLink="/dashboard"
-            class="flex items-center gap-2 text-sm text-(--muted-foreground) transition-colors hover:text-(--foreground)"
-          >
-            <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
-            Retour au dashboard
-          </a>
-        </div>
-      </header>
-
-      <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-        <h1 class="text-2xl font-bold text-(--foreground)">
-          Paramètres du compte
-        </h1>
-        <p class="mt-1 text-sm text-(--muted-foreground)">
-          Gérez vos informations personnelles et préférences.
-        </p>
-
+    <!-- Titre dans lmp-dashboard-layout -->
+    <div class="mx-auto max-w-4xl">
         <!-- Success / Error Messages -->
         @if (profileSuccess()) {
           <div
-            class="mt-4 flex items-center gap-2 rounded-sm border border-emerald-500/20 bg-(--muted) p-3 text-sm text-(--foreground)"
+            class="mb-4 flex items-center gap-2 rounded-sm border border-emerald-500/20 bg-(--muted) p-3 text-sm text-(--foreground)"
           >
             <lucide-icon [img]="CheckIcon" [size]="16"></lucide-icon>
             {{ profileSuccess() }}
@@ -69,7 +42,7 @@ import { ProfileService } from '../../core/services/profile.service';
         }
         @if (profileError()) {
           <div
-            class="mt-4 flex items-center gap-2 rounded-sm border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+            class="mb-4 flex items-center gap-2 rounded-sm border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
           >
             <lucide-icon [img]="AlertCircleIcon" [size]="16"></lucide-icon>
             {{ profileError() }}
@@ -77,7 +50,7 @@ import { ProfileService } from '../../core/services/profile.service';
         }
 
         <!-- Profile Section -->
-        <div class="mt-8 rounded-sm border border-(--border) bg-(--card) p-6">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-6">
           <div class="mb-6 flex items-center gap-3">
             <div
               class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary)"
@@ -354,15 +327,12 @@ import { ProfileService } from '../../core/services/profile.service';
             </div>
           </div>
         </div>
-      </main>
     </div>
   `,
 })
 export class SettingsComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
-
-  readonly ArrowLeftIcon = ArrowLeft;
   readonly SaveIcon = Save;
   readonly UserIcon = User;
   readonly ShieldIcon = Shield;

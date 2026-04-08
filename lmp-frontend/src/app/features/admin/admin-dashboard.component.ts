@@ -37,6 +37,7 @@ type AdminDashboardPayload = {
   standalone: true,
   imports: [RouterLink, LucideAngularModule],
   template: `
+    <div class="p-4 sm:p-5">
     @if (blockingLoader()) {
       <div class="flex items-center justify-center py-16">
         <lucide-icon
@@ -49,12 +50,6 @@ type AdminDashboardPayload = {
 
     <!-- Stats Grid (cartes type vue liste) -->
     @if (!blockingLoader() && stats()) {
-      <div class="mb-2 border-b border-zinc-200/90 pb-4 dark:border-zinc-800">
-        <p class="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          Vue d’ensemble
-        </p>
-        <h2 class="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Tableau de bord</h2>
-      </div>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <!-- Users -->
         <div
@@ -269,6 +264,7 @@ type AdminDashboardPayload = {
         </div>
       </div>
     }
+    </div>
   `,
 })
 export class AdminDashboardComponent implements OnInit {
