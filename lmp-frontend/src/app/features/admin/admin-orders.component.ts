@@ -155,18 +155,46 @@ const ORDER_STEPS = [
         </button>
         <button
           hlmBtn variant="ghost" size="sm" type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          class="h-7 cursor-pointer gap-1.5 px-2"
+          [ngClass]="showFilterPanel() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+          (click)="showFilterPanel.set(!showFilterPanel())"
         >
           <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
           <span class="text-sm">Filtre</span>
         </button>
-        <button
-          hlmBtn variant="ghost" size="sm" type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-        >
-          <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
-          <span class="text-sm">Sort</span>
-        </button>
+        <div class="relative">
+          <button
+            hlmBtn variant="ghost" size="sm" type="button"
+            class="h-7 cursor-pointer gap-1.5 px-2"
+            [ngClass]="showSortMenu() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+            (click)="showSortMenu.set(!showSortMenu())"
+          >
+            <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
+            <span class="text-sm">Sort</span>
+          </button>
+          @if (showSortMenu()) {
+            <div class="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              @for (opt of orderSortOptions; track opt.key) {
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  [ngClass]="currentSort() === opt.key ? 'text-zinc-900 font-medium dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'"
+                  (click)="applySort(opt.key)"
+                >
+                  @if (currentSort() === opt.key) {
+                    <lucide-icon [img]="CheckIcon" [size]="14" class="text-zinc-900 dark:text-zinc-100"></lucide-icon>
+                  } @else {
+                    <span class="w-3.5"></span>
+                  }
+                  {{ opt.label }}
+                  @if (currentSort() === opt.key) {
+                    <span class="ml-auto text-xs text-zinc-400">{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
         <button
           hlmBtn variant="default" size="sm" type="button"
           class="ml-1 h-7 cursor-pointer gap-1.5 px-2.5"
@@ -177,6 +205,45 @@ const ORDER_STEPS = [
         </button>
       </div>
     </div>
+
+    <!-- Panneau de filtres (toggle) -->
+    @if (showFilterPanel()) {
+      <div class="flex items-center gap-2 border-b border-zinc-100 px-5 pb-3 dark:border-zinc-800">
+        <input
+          type="text"
+          [(ngModel)]="emailFilter"
+          (input)="filterOrders()"
+          placeholder="Rechercher par email…"
+          class="h-8 w-56 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        />
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="currentPage.set(0); loadOrders()"
+          class="h-8 w-44 cursor-pointer rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="PAYMENT_PENDING">Paiement en attente</option>
+          <option value="PENDING">En attente</option>
+          <option value="CONFIRMED">Confirmées</option>
+          <option value="PROCESSING">En traitement</option>
+          <option value="IN_PROGRESS">En cours</option>
+          <option value="SHIPPED">Expédiées</option>
+          <option value="COMPLETED">Terminées</option>
+          <option value="CANCELLED">Annulées</option>
+          <option value="REFUNDED">Remboursées</option>
+        </select>
+        @if (hasActiveOrderFilters()) {
+          <button
+            type="button"
+            class="flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+            (click)="clearOrderFilters()"
+          >
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            Effacer
+          </button>
+        }
+      </div>
+    }
 
     <!-- Liste (style CRM) -->
     <div class="flex-1 overflow-auto px-3 sm:px-5">
@@ -292,7 +359,7 @@ const ORDER_STEPS = [
             <!-- Modal Header -->
             <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
               <div>
-                <h3 class="text-lg font-bold text-(--foreground)">
+                <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
                   Détail de la commande
                 </h3>
                 <p class="font-mono text-xs text-(--muted-foreground)">{{ orderDetail()!.id }}</p>
@@ -627,7 +694,7 @@ const ORDER_STEPS = [
           (click)="$event.stopPropagation()"
         >
           <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
-            <h3 class="text-lg font-bold text-(--foreground)">
+            <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
               Créer une commande
             </h3>
             <button
@@ -882,6 +949,19 @@ export class AdminOrdersComponent implements OnInit {
 
   readonly pageSizes = [20, 50, 100];
   readonly pageSize = signal(20);
+
+  // Filter & Sort
+  readonly showFilterPanel = signal(false);
+  readonly showSortMenu = signal(false);
+  readonly currentSort = signal<string>('createdAt');
+  readonly sortDirection = signal<'asc' | 'desc'>('desc');
+  readonly orderSortOptions = [
+    { key: 'customerEmail', label: 'Email' },
+    { key: 'serviceName', label: 'Service' },
+    { key: 'amount', label: 'Montant' },
+    { key: 'status', label: 'Statut' },
+    { key: 'createdAt', label: 'Date de création' },
+  ];
 
   emailFilter = '';
 
@@ -1597,6 +1677,52 @@ export class AdminOrdersComponent implements OnInit {
         },
         error: () => this.showToast('error', 'Impossible de télécharger la facture'),
       });
+  }
+
+  // ========== Filter helpers ==========
+
+  hasActiveOrderFilters(): boolean {
+    return !!(this.emailFilter || this.statusFilter);
+  }
+
+  clearOrderFilters(): void {
+    this.emailFilter = '';
+    this.statusFilter = '';
+    this.currentPage.set(0);
+    this.loadOrders();
+  }
+
+  // ========== Sort ==========
+
+  applySort(key: string): void {
+    if (this.currentSort() === key) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.currentSort.set(key);
+      this.sortDirection.set('asc');
+    }
+    this.showSortMenu.set(false);
+    this.applySortToOrders();
+  }
+
+  private applySortToOrders(): void {
+    const key = this.currentSort();
+    const dir = this.sortDirection() === 'asc' ? 1 : -1;
+    const sorted = [...this.filteredOrders()].sort((a, b) => {
+      if (key === 'amount') {
+        return ((a.amount || 0) - (b.amount || 0)) * dir;
+      }
+      let va = '';
+      let vb = '';
+      switch (key) {
+        case 'customerEmail': va = a.customerEmail || ''; vb = b.customerEmail || ''; break;
+        case 'serviceName': va = a.serviceName || ''; vb = b.serviceName || ''; break;
+        case 'status': va = a.status || ''; vb = b.status || ''; break;
+        case 'createdAt': va = a.createdAt || ''; vb = b.createdAt || ''; break;
+      }
+      return va.localeCompare(vb, 'fr', { sensitivity: 'base' }) * dir;
+    });
+    this.filteredOrders.set(sorted);
   }
 
   private showToast(type: 'success' | 'error', message: string): void {

@@ -86,7 +86,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
         >
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <h1
-              class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
+              class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
             >
               {{ dashboardPageTitle() }}
             </h1>
@@ -315,7 +315,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                   <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
                 </button>
                 <h1
-                  class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
+                  class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
                 >
                   {{ dashboardPageTitle() }}
                 </h1>

@@ -153,7 +153,7 @@ type AdminDashboardPayload = {
       <!-- Quick Actions -->
       <div class="mt-8">
         <h2
-          class="text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+          class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
         >
           Accès rapides
         </h2>

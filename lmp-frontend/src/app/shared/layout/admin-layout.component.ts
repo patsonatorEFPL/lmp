@@ -101,7 +101,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
         >
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <h1
-              class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
+              class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
             >
               {{ adminPageTitle() }}
             </h1>
@@ -477,7 +477,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               </button>
               <div class="flex min-w-0 items-center gap-2 sm:gap-3">
                 <h1
-                  class="min-w-0 truncate text-sm font-medium tracking-tight text-zinc-800 dark:text-zinc-100 sm:text-[15px]"
+                  class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
                 >
                   {{ adminPageTitle() }}
                 </h1>

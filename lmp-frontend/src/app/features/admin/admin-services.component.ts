@@ -67,38 +67,58 @@ type ModalMode = 'create' | 'edit';
 
     <!-- Stats -->
     @if (stats()) {
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div
-          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
         >
-          <p class="text-2xl font-bold text-(--foreground)">
-            {{ stats()!.totalCategories }}
-          </p>
-          <p class="text-xs text-(--muted-foreground)">Catégories</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-(--muted-foreground)">Catégories</span>
+            <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+              <lucide-icon [img]="FolderOpenIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
+            </div>
+          </div>
+          <div class="mt-3">
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.totalCategories }}</span>
+          </div>
         </div>
         <div
-          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
         >
-          <p class="text-2xl font-bold text-(--foreground)">
-            {{ stats()!.totalServices }}
-          </p>
-          <p class="text-xs text-(--muted-foreground)">Services</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-(--muted-foreground)">Services</span>
+            <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+              <lucide-icon [img]="PackageIcon" [size]="18" class="text-(--primary)"></lucide-icon>
+            </div>
+          </div>
+          <div class="mt-3">
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.totalServices }}</span>
+          </div>
         </div>
         <div
-          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
         >
-          <p class="text-2xl font-bold text-(--foreground)">
-            {{ stats()!.activeServices }}
-          </p>
-          <p class="text-xs text-(--muted-foreground)">Actifs</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-(--muted-foreground)">Actifs</span>
+            <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+              <lucide-icon [img]="EyeIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
+            </div>
+          </div>
+          <div class="mt-3">
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.activeServices }}</span>
+          </div>
         </div>
         <div
-          class="rounded-sm border border-(--border) bg-(--card) px-4 py-3 text-center"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
         >
-          <p class="text-2xl font-bold text-(--foreground)">
-            {{ stats()!.featuredServices }}
-          </p>
-          <p class="text-xs text-(--muted-foreground)">En vedette</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-(--muted-foreground)">En vedette</span>
+            <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+              <lucide-icon [img]="StarIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
+            </div>
+          </div>
+          <div class="mt-3">
+            <span class="text-2xl font-bold text-(--foreground)">{{ stats()!.featuredServices }}</span>
+          </div>
         </div>
       </div>
     }
@@ -119,7 +139,7 @@ type ModalMode = 'create' | 'edit';
       <!-- Categories management -->
       <div class="mt-8">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-(--foreground)">
+          <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
             Catégories
           </h2>
           <button
@@ -193,7 +213,7 @@ type ModalMode = 'create' | 'edit';
       <!-- Services list -->
       <div class="mt-8">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-(--foreground)">
+          <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
             Services ({{ services().length }})
           </h2>
           <span class="text-xs text-(--muted-foreground)">Triés par ordre d'affichage</span>
@@ -394,7 +414,7 @@ type ModalMode = 'create' | 'edit';
           <div
             class="flex items-center justify-between border-b border-(--border) px-6 py-4"
           >
-            <h3 class="text-lg font-bold text-(--foreground)">
+            <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
               {{
                 serviceModalMode() === 'create'
                   ? 'Nouveau service'
@@ -571,7 +591,7 @@ type ModalMode = 'create' | 'edit';
           <div
             class="flex items-center justify-between border-b border-(--border) px-6 py-4"
           >
-            <h3 class="text-lg font-bold text-(--foreground)">
+            <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
               {{
                 categoryModalMode() === 'create'
                   ? 'Nouvelle catégorie'
@@ -878,6 +898,7 @@ export class AdminServicesComponent implements OnInit {
   readonly RefreshCwIcon = RefreshCw;
   readonly PackageIcon = Package;
   readonly FolderIcon = FolderOpen;
+  readonly FolderOpenIcon = FolderOpen;
   readonly StarIcon = Star;
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
