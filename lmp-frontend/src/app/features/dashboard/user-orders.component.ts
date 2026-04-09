@@ -22,6 +22,10 @@ import {
   ChevronRight,
   FileText,
   RefreshCw,
+  Filter,
+  ArrowUpDown,
+  Check,
+  AlertTriangle,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
@@ -73,40 +77,93 @@ const ORDER_STEPS = [
   standalone: true,
   imports: [DatePipe, CurrencyPipe, NgClass, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- Résumé + action (titre dans lmp-dashboard-layout) -->
-    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-sm text-zinc-500 dark:text-zinc-400">
-        {{ allOrders().length }} commande(s) au total
-      </p>
-      <button
-        hlmBtn variant="ghost" size="icon" class="cursor-pointer sm:ml-auto"
-        (click)="loadOrders()"
-      >
-        <lucide-icon
-          [img]="RefreshCwIcon" [size]="18"
-          [ngClass]="{ 'animate-spin': loading() }"
-        ></lucide-icon>
-      </button>
+    <!-- Toolbar -->
+    <div class="flex items-center justify-between gap-2 pb-4">
+      <div class="flex items-center"></div>
+      <div class="flex items-center gap-0.5">
+        <button
+          hlmBtn variant="ghost" size="icon" type="button"
+          class="h-7 w-7 cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          title="Actualiser"
+          (click)="loadOrders()"
+        >
+          <lucide-icon [img]="RefreshCwIcon" [size]="15" [ngClass]="{ 'animate-spin': loading() }"></lucide-icon>
+        </button>
+        <button
+          hlmBtn variant="ghost" size="sm" type="button"
+          class="h-7 cursor-pointer gap-1.5 px-2"
+          [ngClass]="showFilterPanel() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+          (click)="showFilterPanel.set(!showFilterPanel())"
+        >
+          <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Filtre</span>
+        </button>
+        <div class="relative">
+          <button
+            hlmBtn variant="ghost" size="sm" type="button"
+            class="h-7 cursor-pointer gap-1.5 px-2"
+            [ngClass]="showSortMenu() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+            (click)="showSortMenu.set(!showSortMenu())"
+          >
+            <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
+            <span class="text-sm">Sort</span>
+          </button>
+          @if (showSortMenu()) {
+            <div class="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              @for (opt of sortOptions; track opt.key) {
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  [ngClass]="currentSort() === opt.key ? 'text-zinc-900 font-medium dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'"
+                  (click)="applySort(opt.key)"
+                >
+                  @if (currentSort() === opt.key) {
+                    <lucide-icon [img]="CheckIcon" [size]="14" class="text-zinc-900 dark:text-zinc-100"></lucide-icon>
+                  } @else {
+                    <span class="w-3.5"></span>
+                  }
+                  {{ opt.label }}
+                  @if (currentSort() === opt.key) {
+                    <span class="ml-auto text-xs text-zinc-400">{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
     </div>
 
-    <!-- Filters -->
-    <div class="mt-2 flex items-center gap-3">
-      <select
-        [(ngModel)]="statusFilter"
-        (change)="applyFilter()"
-        class="rounded-sm border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none cursor-pointer"
-      >
-        <option value="">Tous les statuts</option>
-        <option value="PAYMENT_PENDING">Paiement en attente</option>
-        <option value="PENDING">En attente</option>
-        <option value="CONFIRMED">Confirmées</option>
-        <option value="PROCESSING">En traitement</option>
-        <option value="IN_PROGRESS">En cours</option>
-        <option value="COMPLETED">Terminées</option>
-        <option value="CANCELLED">Annulées</option>
-        <option value="REFUNDED">Remboursées</option>
-      </select>
-    </div>
+    <!-- Panneau de filtres (toggle) -->
+    @if (showFilterPanel()) {
+      <div class="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800">
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="applyFilter()"
+          class="h-8 w-44 cursor-pointer rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="PAYMENT_PENDING">Paiement en attente</option>
+          <option value="PENDING">En attente</option>
+          <option value="CONFIRMED">Confirmées</option>
+          <option value="PROCESSING">En traitement</option>
+          <option value="IN_PROGRESS">En cours</option>
+          <option value="COMPLETED">Terminées</option>
+          <option value="CANCELLED">Annulées</option>
+          <option value="REFUNDED">Remboursées</option>
+        </select>
+        @if (statusFilter) {
+          <button
+            type="button"
+            class="flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+            (click)="statusFilter = ''; applyFilter()"
+          >
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            Effacer
+          </button>
+        }
+      </div>
+    }
 
     <!-- Orders list -->
     <div class="mt-4 space-y-3">
@@ -185,40 +242,26 @@ const ORDER_STEPS = [
         }
 
         <!-- Pagination -->
-        @if (totalPages() > 1) {
-          <div class="mt-4 flex items-center justify-between">
-            <p class="text-xs text-(--muted-foreground)">
-              Page {{ currentPage() + 1 }} sur {{ totalPages() }}
-            </p>
-            <div class="flex items-center gap-1">
-              <button
-                hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-                [disabled]="currentPage() === 0"
-                (click)="currentPage.set(currentPage() - 1)"
-              >
-                <lucide-icon [img]="ChevronLeftIcon" [size]="16"></lucide-icon>
-              </button>
-              <button
-                hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-                [disabled]="currentPage() >= totalPages() - 1"
-                (click)="currentPage.set(currentPage() + 1)"
-              >
-                <lucide-icon [img]="ChevronRightIcon" [size]="16"></lucide-icon>
-              </button>
-            </div>
+        <div class="mt-4 flex items-center justify-end">
+          <div class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ filteredOrders().length }}</span>
+            <span>of</span>
+            <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ allOrders().length }}</span>
           </div>
-        }
+        </div>
       }
     </div>
 
     <!-- Order Detail Modal -->
     @if (showDetail()) {
       <div
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
         (click)="closeDetail()"
+        role="dialog"
+        aria-modal="true"
       >
         <div
-          class="mx-4 w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) shadow-2xl"
+          class="flex max-h-[min(92dvh,760px)] w-full max-w-xl flex-col rounded-t-lg border border-(--border) bg-(--card) shadow-2xl sm:rounded-lg"
           (click)="$event.stopPropagation()"
         >
           @if (loadingDetail()) {
@@ -227,20 +270,24 @@ const ORDER_STEPS = [
             </div>
           } @else if (selectedOrder()) {
             <!-- Header -->
-            <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
-              <div>
-                <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Détail de la commande</h3>
-                <p class="text-xs text-(--muted-foreground)">{{ selectedOrder()!.serviceName }}</p>
+            <div class="shrink-0 border-b border-(--border) px-5 py-4 sm:px-6">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Détail de la commande</h3>
+                  <p class="truncate text-xs text-(--muted-foreground)">{{ selectedOrder()!.serviceName }}</p>
+                </div>
+                <button
+                  hlmBtn variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer"
+                  type="button"
+                  (click)="closeDetail()"
+                  aria-label="Fermer"
+                >
+                  <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
+                </button>
               </div>
-              <button
-                hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-                (click)="closeDetail()"
-              >
-                <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
-              </button>
             </div>
 
-            <div class="px-6 py-5 space-y-5">
+            <div class="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
               <!-- Summary -->
               <div class="grid grid-cols-3 gap-3">
                 <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
@@ -352,7 +399,7 @@ const ORDER_STEPS = [
             }
 
             <!-- Footer actions -->
-            <div class="border-t border-(--border) px-6 py-4 flex flex-wrap gap-2">
+            <div class="shrink-0 border-t border-(--border) bg-(--card) px-5 py-4 sm:px-6 flex flex-wrap gap-2">
               @if (canStartPayment(selectedOrder()!)) {
                 <button
                   hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
@@ -442,6 +489,22 @@ export class UserOrdersComponent implements OnInit {
   readonly ChevronRightIcon = ChevronRight;
   readonly FileTextIcon = FileText;
   readonly RefreshCwIcon = RefreshCw;
+  readonly FilterIcon = Filter;
+  readonly ArrowUpDownIcon = ArrowUpDown;
+  readonly CheckIcon = Check;
+  readonly AlertTriangleIcon = AlertTriangle;
+
+  // Filter & Sort
+  readonly showFilterPanel = signal(false);
+  readonly showSortMenu = signal(false);
+  readonly currentSort = signal<string>('createdAt');
+  readonly sortDirection = signal<'asc' | 'desc'>('desc');
+  readonly sortOptions = [
+    { key: 'serviceName', label: 'Service' },
+    { key: 'createdAt', label: 'Date de création' },
+    { key: 'totalAmount', label: 'Montant' },
+    { key: 'status', label: 'Statut' },
+  ];
 
   readonly totalPages = computed(() => Math.ceil(this.filteredOrders().length / this.pageSize) || 1);
 
@@ -661,5 +724,37 @@ export class UserOrdersComponent implements OnInit {
     if (pct >= 60) return 'text-(--foreground)';
     if (pct >= 30) return 'text-(--foreground)';
     return 'text-orange-500';
+  }
+
+  // ========== Sort ==========
+
+  applySort(key: string): void {
+    if (this.currentSort() === key) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.currentSort.set(key);
+      this.sortDirection.set('asc');
+    }
+    this.showSortMenu.set(false);
+    this.applySortToList();
+  }
+
+  private applySortToList(): void {
+    const key = this.currentSort();
+    const dir = this.sortDirection() === 'asc' ? 1 : -1;
+    const sorted = [...this.filteredOrders()].sort((a, b) => {
+      if (key === 'totalAmount') {
+        return ((a.totalAmount || 0) - (b.totalAmount || 0)) * dir;
+      }
+      let va = '';
+      let vb = '';
+      switch (key) {
+        case 'serviceName': va = a.serviceName || ''; vb = b.serviceName || ''; break;
+        case 'createdAt': va = a.createdAt || ''; vb = b.createdAt || ''; break;
+        case 'status': va = a.status || ''; vb = b.status || ''; break;
+      }
+      return va.localeCompare(vb, 'fr', { sensitivity: 'base' }) * dir;
+    });
+    this.filteredOrders.set(sorted);
   }
 }
