@@ -95,52 +95,111 @@ interface ApiResponse<T> {
       <!-- Actions droite -->
       <div class="flex items-center gap-0.5">
         <button
-          hlmBtn
-          variant="ghost"
-          size="icon"
-          type="button"
+          hlmBtn variant="ghost" size="icon" type="button"
           class="h-7 w-7 cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
           title="Actualiser"
           (click)="loadUsers()"
         >
-          <lucide-icon
-            [img]="RefreshCwIcon"
-            [size]="15"
-            [ngClass]="{ 'animate-spin': loading() }"
-          ></lucide-icon>
+          <lucide-icon [img]="RefreshCwIcon" [size]="15" [ngClass]="{ 'animate-spin': loading() }"></lucide-icon>
         </button>
         <button
-          hlmBtn
-          variant="ghost"
-          size="sm"
-          type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          hlmBtn variant="ghost" size="sm" type="button"
+          class="h-7 cursor-pointer gap-1.5 px-2"
+          [ngClass]="showFilterPanel() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+          (click)="showFilterPanel.set(!showFilterPanel())"
         >
           <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
           <span class="text-sm">Filtre</span>
         </button>
+        <div class="relative">
+          <button
+            hlmBtn variant="ghost" size="sm" type="button"
+            class="h-7 cursor-pointer gap-1.5 px-2"
+            [ngClass]="showSortMenu() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+            (click)="showSortMenu.set(!showSortMenu())"
+          >
+            <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
+            <span class="text-sm">Sort</span>
+          </button>
+          @if (showSortMenu()) {
+            <div class="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              @for (opt of sortOptions; track opt.key) {
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  [ngClass]="currentSort() === opt.key ? 'text-zinc-900 font-medium dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'"
+                  (click)="applySort(opt.key)"
+                >
+                  @if (currentSort() === opt.key) {
+                    <lucide-icon [img]="CheckIcon" [size]="14" class="text-zinc-900 dark:text-zinc-100"></lucide-icon>
+                  } @else {
+                    <span class="w-3.5"></span>
+                  }
+                  {{ opt.label }}
+                  @if (currentSort() === opt.key) {
+                    <span class="ml-auto text-xs text-zinc-400">{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
         <button
-          hlmBtn
-          variant="ghost"
-          size="sm"
-          type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-        >
-          <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
-          <span class="text-sm">Sort</span>
-        </button>
-        <button
-          hlmBtn
-          variant="default"
-          size="sm"
-          type="button"
+          hlmBtn variant="default" size="sm" type="button"
           class="ml-1 h-7 cursor-pointer gap-1.5 px-2.5"
+          (click)="openCreateUserModal()"
         >
           <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
           <span class="text-sm">Ajouter</span>
         </button>
       </div>
     </div>
+
+    <!-- Panneau de filtres (toggle) -->
+    @if (showFilterPanel()) {
+      <div class="flex items-center gap-2 border-b border-zinc-100 px-5 pb-3 dark:border-zinc-800">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="filterUsers()"
+          placeholder="Rechercher par email ou nom…"
+          class="h-8 w-56 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        />
+        <input
+          type="text"
+          [(ngModel)]="phoneFilter"
+          (input)="filterUsers()"
+          placeholder="Téléphone"
+          class="hidden h-8 w-40 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none focus:border-zinc-300 focus:bg-white sm:block dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        />
+        <input
+          type="text"
+          [(ngModel)]="orgFilter"
+          (input)="filterUsers()"
+          placeholder="Organisation"
+          class="hidden h-8 w-40 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none focus:border-zinc-300 focus:bg-white md:block dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        />
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="currentPage.set(0); loadUsers()"
+          class="h-8 w-36 cursor-pointer rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="ACTIVE">Actif</option>
+          <option value="INACTIVE">Inactif</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button
+            type="button"
+            class="flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+            (click)="clearFilters()"
+          >
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            Effacer
+          </button>
+        }
+      </div>
+    }
 
     <!-- Liste (style CRM - pas de bordure extérieure) -->
     <div class="flex-1 overflow-auto px-3 sm:px-5">
@@ -257,7 +316,7 @@ interface ApiResponse<T> {
                   {{ editingUser ? getInitials(editingUser) : '' }}
                 </div>
                 <div class="min-w-0">
-                  <h3 id="edit-user-title" class="text-lg font-semibold tracking-tight text-(--foreground)">
+                  <h3 id="edit-user-title" class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
                     Modifier l'utilisateur
                   </h3>
                   <p class="truncate text-xs text-(--muted-foreground)">{{ editingUser?.email }}</p>
@@ -590,6 +649,108 @@ interface ApiResponse<T> {
       </div>
     }
 
+    <!-- Create User Modal -->
+    @if (showCreateUserModal()) {
+      <div
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        (click)="closeCreateUserModal()"
+      >
+        <div
+          class="mx-4 w-full max-w-md rounded-sm border border-(--border) bg-(--card) shadow-2xl"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
+            <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Ajouter un utilisateur</h3>
+            <button
+              hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
+              (click)="closeCreateUserModal()"
+            >
+              <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+            </button>
+          </div>
+
+          <div class="space-y-4 px-6 py-5">
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Email *</label>
+              <input
+                [(ngModel)]="newUserForm.email"
+                type="email"
+                autocomplete="off"
+                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                placeholder="email&#64;example.com"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Prénom</label>
+                <input
+                  [(ngModel)]="newUserForm.firstName"
+                  type="text"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  placeholder="Prénom"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Nom</label>
+                <input
+                  [(ngModel)]="newUserForm.lastName"
+                  type="text"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  placeholder="Nom"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Mot de passe *</label>
+              <div class="relative">
+                <input
+                  [(ngModel)]="newUserForm.password"
+                  [type]="showCreatePwd() ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 pr-9 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                  placeholder="Min. 8 caractères"
+                />
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-(--muted-foreground) hover:text-(--foreground)"
+                  (click)="showCreatePwd.set(!showCreatePwd())"
+                >
+                  <lucide-icon [img]="showCreatePwd() ? EyeOffIcon : EyeIcon" [size]="14"></lucide-icon>
+                </button>
+              </div>
+              <p class="mt-1 text-xs text-(--muted-foreground)">Majuscule, minuscule, chiffre, caractère spécial</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                [(ngModel)]="newUserForm.admin"
+                class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
+              />
+              <label class="text-sm text-(--foreground)">Rôle administrateur</label>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 border-t border-(--border) px-6 py-4">
+            <button hlmBtn variant="outline" size="sm" class="cursor-pointer" (click)="closeCreateUserModal()">
+              Annuler
+            </button>
+            <button
+              hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
+              [disabled]="creatingUser()"
+              (click)="createUser()"
+            >
+              @if (creatingUser()) {
+                <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+              } @else {
+                <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+              }
+              Créer
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- Toast -->
     @if (toast()) {
       <div
@@ -679,6 +840,24 @@ export class AdminUsersComponent implements OnInit {
   // CRM-style pagination
   readonly pageSizes = [20, 50, 100];
   readonly pageSize = signal(20);
+
+  // Filter & Sort
+  readonly showFilterPanel = signal(false);
+  readonly showSortMenu = signal(false);
+  readonly currentSort = signal<string>('lastLoginDate');
+  readonly sortDirection = signal<'asc' | 'desc'>('desc');
+  readonly sortOptions = [
+    { key: 'email', label: 'Email' },
+    { key: 'registrationDate', label: 'Date d\'inscription' },
+    { key: 'lastLoginDate', label: 'Dernière connexion' },
+    { key: 'displayName', label: 'Nom' },
+  ];
+
+  // Create user
+  readonly showCreateUserModal = signal(false);
+  readonly creatingUser = signal(false);
+  readonly showCreatePwd = signal(false);
+  newUserForm = { email: '', firstName: '', lastName: '', password: '', admin: false };
 
   searchQuery = '';
   statusFilter = '';
@@ -1035,6 +1214,110 @@ export class AdminUsersComponent implements OnInit {
       iconClass: 'text-emerald-600 dark:text-emerald-400',
       icon: this.CheckIcon,
     };
+  }
+
+  // ========== Filter helpers ==========
+
+  hasActiveFilters(): boolean {
+    return !!(this.searchQuery || this.phoneFilter || this.orgFilter || this.statusFilter);
+  }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.phoneFilter = '';
+    this.orgFilter = '';
+    this.statusFilter = '';
+    this.currentPage.set(0);
+    this.loadUsers();
+  }
+
+  // ========== Sort ==========
+
+  applySort(key: string): void {
+    if (this.currentSort() === key) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.currentSort.set(key);
+      this.sortDirection.set('asc');
+    }
+    this.showSortMenu.set(false);
+    this.applySortToList();
+  }
+
+  private applySortToList(): void {
+    const key = this.currentSort();
+    const dir = this.sortDirection() === 'asc' ? 1 : -1;
+    const sorted = [...this.filteredUsers()].sort((a, b) => {
+      let va = '';
+      let vb = '';
+      switch (key) {
+        case 'email': va = a.email || ''; vb = b.email || ''; break;
+        case 'displayName': va = a.displayName || ''; vb = b.displayName || ''; break;
+        case 'registrationDate': va = a.registrationDate || ''; vb = b.registrationDate || ''; break;
+        case 'lastLoginDate': va = a.lastLoginDate || ''; vb = b.lastLoginDate || ''; break;
+      }
+      return va.localeCompare(vb, 'fr', { sensitivity: 'base' }) * dir;
+    });
+    this.filteredUsers.set(sorted);
+  }
+
+  // ========== Create User ==========
+
+  openCreateUserModal(): void {
+    this.newUserForm = { email: '', firstName: '', lastName: '', password: '', admin: false };
+    this.showCreatePwd.set(false);
+    this.showCreateUserModal.set(true);
+  }
+
+  closeCreateUserModal(): void {
+    this.showCreateUserModal.set(false);
+  }
+
+  createUser(): void {
+    const email = this.newUserForm.email.trim();
+    if (!email) {
+      this.showToast('error', 'L\'adresse email est obligatoire');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.showToast('error', 'Adresse email invalide');
+      return;
+    }
+    const pwd = this.newUserForm.password;
+    if (!pwd || pwd.length < 8) {
+      this.showToast('error', 'Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+    if (!/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/\d/.test(pwd) || !/[^A-Za-z0-9]/.test(pwd)) {
+      this.showToast('error', 'Le mot de passe doit contenir majuscules, minuscules, chiffres et caractères spéciaux');
+      return;
+    }
+
+    this.creatingUser.set(true);
+    this.http
+      .post<ApiResponse<unknown>>(
+        `${environment.apiUrl}/api/v1/admin/users`,
+        {
+          email,
+          firstName: this.newUserForm.firstName.trim() || null,
+          lastName: this.newUserForm.lastName.trim() || null,
+          password: pwd,
+          admin: this.newUserForm.admin,
+        },
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: () => {
+          this.showToast('success', 'Utilisateur créé : ' + email);
+          this.closeCreateUserModal();
+          this.creatingUser.set(false);
+          this.loadUsers();
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.showToast('error', err.error?.message || 'Erreur lors de la création');
+          this.creatingUser.set(false);
+        },
+      });
   }
 
   private showToast(type: 'success' | 'error', message: string): void {

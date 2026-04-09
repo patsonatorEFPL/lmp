@@ -70,7 +70,7 @@ interface ApiResponse<T> {
       <!-- Upcoming -->
       @if (upcomingAppointments().length > 0) {
         <div class="mt-6">
-          <h2 class="mb-4 text-lg font-bold text-(--foreground)">
+          <h2 class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
             Rendez-vous à venir
             <span class="ml-2 rounded-full bg-(--primary)/10 px-2 py-0.5 text-xs font-medium text-(--primary)">
               {{ upcomingAppointments().length }}
@@ -112,7 +112,7 @@ interface ApiResponse<T> {
       <!-- Past -->
       @if (pastAppointments().length > 0) {
         <div class="mt-8">
-          <h2 class="mb-4 text-lg font-bold text-(--foreground)">
+          <h2 class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
             Rendez-vous passés
             <span class="ml-2 rounded-full bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
               {{ pastAppointments().length }}
