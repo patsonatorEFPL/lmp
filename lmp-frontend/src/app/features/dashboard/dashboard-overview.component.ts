@@ -144,7 +144,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
         <!-- Recent Orders -->
         <div class="lg:col-span-2">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Commandes récentes</h2>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Commandes récentes</h2>
             <a
               routerLink="/dashboard/orders"
               class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -207,7 +207,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
 
         <!-- Quick actions -->
         <div>
-          <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Actions rapides</h2>
+          <h2 class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Actions rapides</h2>
           <div class="space-y-3">
             @for (action of quickActions; track action.label) {
               <a
@@ -237,7 +237,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
       @if (stats()!.upcomingAppointmentsList.length > 0) {
         <div class="mt-8">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Prochains rendez-vous</h2>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Prochains rendez-vous</h2>
             <a
               routerLink="/dashboard/appointments"
               class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -275,7 +275,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
       <!-- Recent Reviews -->
       @if (stats()!.recentReviews.length > 0) {
         <div class="mt-8">
-          <h2 class="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Vos avis récents</h2>
+          <h2 class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Vos avis récents</h2>
           <div class="space-y-3">
             @for (review of stats()!.recentReviews; track review.id) {
               <div

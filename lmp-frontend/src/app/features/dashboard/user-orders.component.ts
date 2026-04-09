@@ -229,7 +229,7 @@ const ORDER_STEPS = [
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
               <div>
-                <h3 class="text-lg font-bold text-(--foreground)">Détail de la commande</h3>
+                <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Détail de la commande</h3>
                 <p class="text-xs text-(--muted-foreground)">{{ selectedOrder()!.serviceName }}</p>
               </div>
               <button

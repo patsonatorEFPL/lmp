@@ -34,7 +34,7 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
             <lucide-icon [img]="GlobeIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-(--foreground)">Général</h2>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Général</h2>
             <p class="text-xs text-(--muted-foreground)">Paramètres de base de la plateforme</p>
           </div>
         </div>
@@ -104,7 +104,7 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
             <lucide-icon [img]="BellIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-(--foreground)">Notifications</h2>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Notifications</h2>
             <p class="text-xs text-(--muted-foreground)">Configurer les notifications email</p>
           </div>
         </div>
@@ -135,7 +135,7 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
             <lucide-icon [img]="KeyRoundIcon" [size]="18" class="text-(--primary)"></lucide-icon>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-(--foreground)">Mot de passe administrateur</h2>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Mot de passe administrateur</h2>
             <p class="text-xs text-(--muted-foreground)">Modifier votre mot de passe de connexion</p>
           </div>
         </div>
@@ -230,7 +230,7 @@ import { AdminService, CompanyAddressPayload } from '../../core/services/admin.s
             <lucide-icon [img]="ShieldIcon" [size]="18" class="text-red-500"></lucide-icon>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-(--foreground)">Sécurité</h2>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Sécurité</h2>
             <p class="text-xs text-(--muted-foreground)">Paramètres de sécurité et d'accès</p>
           </div>
         </div>

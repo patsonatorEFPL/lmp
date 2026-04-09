@@ -3,7 +3,9 @@ package com.lmp.shared.web.api;
 import com.lmp.auth.domain.User;
 import com.lmp.auth.domain.UserStatus;
 import com.lmp.auth.dto.AdminChangeUserPasswordRequest;
+import com.lmp.auth.dto.RegisterDto;
 import com.lmp.auth.dto.UserResponse;
+import com.lmp.auth.service.AuthService;
 import com.lmp.auth.service.SessionSecurityService;
 import com.lmp.auth.service.UserService;
 import com.lmp.billing.domain.Order;
@@ -78,6 +80,7 @@ public class AdminRestController {
     private String frontendUrl;
 
     private final UserService userService;
+    private final AuthService authService;
     private final SessionSecurityService sessionSecurityService;
     private final OrderRepository orderRepository;
     private final AppointmentRepository appointmentRepository;
@@ -88,6 +91,7 @@ public class AdminRestController {
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
     public AdminRestController(UserService userService,
+                               AuthService authService,
                                SessionSecurityService sessionSecurityService,
                                OrderRepository orderRepository,
                                AppointmentRepository appointmentRepository,
@@ -97,6 +101,7 @@ public class AdminRestController {
                                ApplicationEventPublisher eventPublisher,
                                OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
         this.userService = userService;
+        this.authService = authService;
         this.sessionSecurityService = sessionSecurityService;
         this.orderRepository = orderRepository;
         this.appointmentRepository = appointmentRepository;
@@ -183,6 +188,61 @@ public class AdminRestController {
     }
 
     // ========== User Management ==========
+
+    @PostMapping("/users")
+    @Transactional
+    @Operation(summary = "Créer un utilisateur", description = "L'admin crée un utilisateur avec email et mot de passe")
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody Map<String, Object> data,
+            Authentication authentication) {
+        String email = data.get("email") != null ? ((String) data.get("email")).trim().toLowerCase() : null;
+        String firstName = data.get("firstName") != null ? ((String) data.get("firstName")).trim() : null;
+        String lastName = data.get("lastName") != null ? ((String) data.get("lastName")).trim() : null;
+        String password = data.get("password") != null ? (String) data.get("password") : null;
+        boolean admin = Boolean.TRUE.equals(data.get("admin"));
+
+        // --- Validation AVANT toute opération transactionnelle ---
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("L'adresse email est obligatoire"));
+        }
+        if (password == null || password.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Le mot de passe est obligatoire"));
+        }
+        if (!userService.isPasswordStrong(password)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Le mot de passe doit contenir au moins 8 caractères, incluant majuscules, minuscules, chiffres et caractères spéciaux"));
+        }
+        if (userService.findByEmail(email).isPresent()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Un utilisateur avec cet email existe déjà"));
+        }
+        if (authService.isDisposableEmail(email)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(
+                    "Adresse email jetable détectée. Même un administrateur ne peut pas créer de compte avec une adresse temporaire."));
+        }
+
+        try {
+            RegisterDto registerDto = new RegisterDto();
+            registerDto.setEmail(email);
+            registerDto.setPassword(password);
+            registerDto.setConfirmPassword(password);
+            registerDto.setFirstName(firstName != null ? firstName : "");
+            registerDto.setLastName(lastName != null ? lastName : "");
+            registerDto.setAcceptTerms(true);
+
+            User newUser = authService.registerUser(registerDto);
+
+            // Grant admin role if requested
+            if (admin) {
+                User actor = userService.findByEmail(authentication.getName())
+                        .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
+                userService.setUserAdminRole(newUser.getId(), true, actor.getId());
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.ok("Utilisateur créé : " + email, UserResponse.from(newUser)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 
     @PutMapping("/users/{id}")
     @Transactional
