@@ -10,7 +10,10 @@ import {
   RefreshCw,
   MapPin,
   Video,
+  Filter,
+  X,
 } from 'lucide-angular';
+import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -36,23 +39,59 @@ interface ApiResponse<T> {
 @Component({
   selector: 'lmp-user-appointments',
   standalone: true,
-  imports: [DatePipe, NgClass, LucideAngularModule, HlmButton],
+  imports: [DatePipe, NgClass, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <!-- Résumé + action (titre dans lmp-dashboard-layout) -->
-    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-sm text-zinc-500 dark:text-zinc-400">
-        {{ appointments().length }} rendez-vous au total
-      </p>
-      <button
-        hlmBtn variant="ghost" size="icon" class="cursor-pointer sm:ml-auto"
-        (click)="loadAppointments()"
-      >
-        <lucide-icon
-          [img]="RefreshCwIcon" [size]="18"
-          [ngClass]="{ 'animate-spin': loading() }"
-        ></lucide-icon>
-      </button>
+    <!-- Toolbar -->
+    <div class="flex items-center justify-between gap-2 pb-4">
+      <div class="flex items-center"></div>
+      <div class="flex items-center gap-0.5">
+        <button
+          hlmBtn variant="ghost" size="icon" type="button"
+          class="h-7 w-7 cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          title="Actualiser"
+          (click)="loadAppointments()"
+        >
+          <lucide-icon [img]="RefreshCwIcon" [size]="15" [ngClass]="{ 'animate-spin': loading() }"></lucide-icon>
+        </button>
+        <button
+          hlmBtn variant="ghost" size="sm" type="button"
+          class="h-7 cursor-pointer gap-1.5 px-2"
+          [ngClass]="showFilterPanel() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+          (click)="showFilterPanel.set(!showFilterPanel())"
+        >
+          <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
+          <span class="text-sm">Filtre</span>
+        </button>
+      </div>
     </div>
+
+    <!-- Panneau de filtres (toggle) -->
+    @if (showFilterPanel()) {
+      <div class="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800">
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="filterAppointments()"
+          class="h-8 w-44 cursor-pointer rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="PENDING">En attente</option>
+          <option value="CONFIRMED">Confirmés</option>
+          <option value="COMPLETED">Terminés</option>
+          <option value="CANCELLED">Annulés</option>
+          <option value="NO_SHOW">Absences</option>
+        </select>
+        @if (statusFilter) {
+          <button
+            type="button"
+            class="flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+            (click)="statusFilter = ''; filterAppointments()"
+          >
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            Effacer
+          </button>
+        }
+      </div>
+    }
 
     @if (loading()) {
       <div class="mt-4 flex items-center justify-center py-16">
@@ -175,6 +214,12 @@ export class UserAppointmentsComponent implements OnInit {
   readonly RefreshCwIcon = RefreshCw;
   readonly MapPinIcon = MapPin;
   readonly VideoIcon = Video;
+  readonly FilterIcon = Filter;
+  readonly XIcon = X;
+
+  // Filter
+  readonly showFilterPanel = signal(false);
+  statusFilter = '';
 
   ngOnInit(): void {
     this.loadAppointments();
@@ -206,6 +251,13 @@ export class UserAppointmentsComponent implements OnInit {
           this.listFetch.afterFetch();
         },
       });
+  }
+
+  filterAppointments(): void {
+    const filtered = this.statusFilter
+      ? this.appointments().filter((a) => a.status === this.statusFilter)
+      : this.appointments();
+    this.splitAppointments(filtered);
   }
 
   private splitAppointments(appts: Appointment[]): void {
