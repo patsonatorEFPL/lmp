@@ -21,8 +21,7 @@ import {
   Trash2,
   Filter,
   ArrowUpDown,
-  Columns3,
-  MoreHorizontal,
+  AlertTriangle,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -89,32 +88,9 @@ interface ApiResponse<T> {
   imports: [NgClass, DatePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
     <div class="crm-list-view flex h-full flex-col overflow-hidden bg-white">
-    <!-- Barre de filtres inline (style CRM) -->
-    <div class="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-5">
-      <div class="flex items-center gap-2">
-        <!-- Status dropdown -->
-        <select
-          [(ngModel)]="statusFilter"
-          (change)="currentPage.set(0); loadAppointments()"
-          class="h-7 cursor-pointer rounded border-none bg-transparent px-2 text-sm text-zinc-600 outline-none hover:bg-zinc-50 focus:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:focus:bg-zinc-800"
-        >
-          <option value="">Statut</option>
-          <option value="PENDING">En attente</option>
-          <option value="CONFIRMED">Confirmés</option>
-          <option value="IN_PROGRESS">En cours</option>
-          <option value="COMPLETED">Terminés</option>
-          <option value="CANCELLED">Annulés</option>
-          <option value="NO_SHOW">Absences</option>
-        </select>
-        <!-- Email search -->
-        <input
-          type="text"
-          [(ngModel)]="emailFilter"
-          (input)="filterAppointments()"
-          placeholder="Adresse électronique"
-          class="h-7 w-44 rounded border-none bg-transparent px-2 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none hover:bg-zinc-50 focus:bg-zinc-50 dark:text-zinc-300 dark:placeholder:text-zinc-500 dark:hover:bg-zinc-800 dark:focus:bg-zinc-800"
-        />
-      </div>
+    <!-- Toolbar -->
+    <div class="flex items-center justify-between gap-2 px-5 py-4">
+      <div class="flex items-center"></div>
       <!-- Actions droite -->
       <div class="flex items-center gap-0.5">
         <button
@@ -127,35 +103,93 @@ interface ApiResponse<T> {
         </button>
         <button
           hlmBtn variant="ghost" size="sm" type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          class="h-7 cursor-pointer gap-1.5 px-2"
+          [ngClass]="showFilterPanel() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+          (click)="showFilterPanel.set(!showFilterPanel())"
         >
           <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
           <span class="text-sm">Filtre</span>
         </button>
-        <button
-          hlmBtn variant="ghost" size="sm" type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-        >
-          <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
-          <span class="text-sm">Sort</span>
-        </button>
-        <button
-          hlmBtn variant="ghost" size="sm" type="button"
-          class="h-7 cursor-pointer gap-1.5 px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-        >
-          <lucide-icon [img]="Columns3Icon" [size]="14"></lucide-icon>
-          <span class="text-sm">Columns</span>
-        </button>
-        <button
-          hlmBtn variant="ghost" size="icon" type="button"
-          class="h-7 w-7 cursor-pointer text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-        >
-          <lucide-icon [img]="MoreHorizontalIcon" [size]="15"></lucide-icon>
-        </button>
+        <div class="relative">
+          <button
+            hlmBtn variant="ghost" size="sm" type="button"
+            class="h-7 cursor-pointer gap-1.5 px-2"
+            [ngClass]="showSortMenu() ? 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'"
+            (click)="showSortMenu.set(!showSortMenu())"
+          >
+            <lucide-icon [img]="ArrowUpDownIcon" [size]="14"></lucide-icon>
+            <span class="text-sm">Sort</span>
+          </button>
+          @if (showSortMenu()) {
+            <div class="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              @for (opt of sortOptions; track opt.key) {
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  [ngClass]="currentSort() === opt.key ? 'text-zinc-900 font-medium dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400'"
+                  (click)="applySort(opt.key)"
+                >
+                  @if (currentSort() === opt.key) {
+                    <lucide-icon [img]="CheckIcon" [size]="14" class="text-zinc-900 dark:text-zinc-100"></lucide-icon>
+                  } @else {
+                    <span class="w-3.5"></span>
+                  }
+                  {{ opt.label }}
+                  @if (currentSort() === opt.key) {
+                    <span class="ml-auto text-xs text-zinc-400">{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </div>
       </div>
     </div>
 
-    <!-- Liste (style CRM) -->
+    <!-- Panneau de filtres (toggle) -->
+    @if (showFilterPanel()) {
+      <div class="flex items-center gap-2 border-b border-zinc-100 px-5 pb-3 dark:border-zinc-800">
+        <input
+          type="text"
+          [(ngModel)]="emailFilter"
+          (input)="filterAppointments()"
+          placeholder="Rechercher par email ou nom…"
+          class="h-8 w-56 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        />
+        <input
+          type="text"
+          [(ngModel)]="subjectFilter"
+          (input)="filterAppointments()"
+          placeholder="Service / sujet"
+          class="hidden h-8 w-40 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 placeholder:text-zinc-400 outline-none focus:border-zinc-300 focus:bg-white sm:block dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        />
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="currentPage.set(0); loadAppointments()"
+          class="h-8 w-36 cursor-pointer rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-sm text-zinc-700 outline-none focus:border-zinc-300 focus:bg-white dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:focus:border-zinc-600 dark:focus:bg-zinc-900"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="PENDING">En attente</option>
+          <option value="CONFIRMED">Confirmés</option>
+          <option value="IN_PROGRESS">En cours</option>
+          <option value="COMPLETED">Terminés</option>
+          <option value="CANCELLED">Annulés</option>
+          <option value="NO_SHOW">Absences</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button
+            type="button"
+            class="flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+            (click)="clearFilters()"
+          >
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            Effacer
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Liste -->
     <div class="flex-1 overflow-auto px-3 sm:px-5">
       @if (loading()) {
         <div class="flex items-center justify-center py-16">
@@ -163,47 +197,47 @@ interface ApiResponse<T> {
         </div>
       } @else {
         <!-- En-tête colonnes -->
-        <div class="flex items-center border-b border-zinc-100 py-2.5 text-sm font-normal text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          <div class="w-10 shrink-0 pl-1">
+        <div class="mb-2 flex items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+          <div class="flex w-10 shrink-0 items-center justify-center">
             <input
               type="checkbox"
-              class="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-600 focus:ring-zinc-400"
+              class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
               [checked]="allRowsSelected()"
               (change)="toggleSelectAll($event)"
             />
           </div>
-          <div class="min-w-[220px] flex-1 px-2">Email</div>
-          <div class="hidden w-44 px-2 sm:block">Service</div>
-          <div class="hidden w-40 px-2 md:block">Date</div>
-          <div class="hidden w-28 px-2 md:block">Statut</div>
-          <div class="w-32 px-2 text-right">Last Modified</div>
+          <div class="w-64 shrink-0 px-2">Email</div>
+          <div class="hidden w-48 shrink-0 px-2 sm:block">Service</div>
+          <div class="hidden w-40 shrink-0 px-2 md:block">Date</div>
+          <div class="hidden w-28 shrink-0 px-2 md:block">Statut</div>
+          <div class="w-32 shrink-0 px-2 text-right">Last Modified</div>
         </div>
 
         <!-- Lignes -->
         <div>
           @for (appt of filteredAppointments(); track appt.id) {
             <div
-              class="group flex cursor-pointer items-center border-b border-zinc-50 py-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
+              class="group flex h-10 cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
               (click)="viewDetail(appt.id)"
             >
-              <div class="w-10 shrink-0 pl-1" (click)="$event.stopPropagation()">
+              <div class="flex w-10 shrink-0 items-center justify-center" (click)="$event.stopPropagation()">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 cursor-pointer rounded border-zinc-300 text-zinc-600 focus:ring-zinc-400"
+                  class="h-3.5 w-3.5 cursor-pointer rounded-xs border-zinc-400 text-zinc-600 focus:ring-zinc-400"
                   [checked]="selectedApptIds().has(appt.id)"
                   (change)="toggleApptSelected(appt.id)"
                 />
               </div>
-              <div class="min-w-[220px] flex-1 truncate px-2 text-base text-zinc-900 dark:text-zinc-100">
+              <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ appt.clientEmail || '—' }}
               </div>
-              <div class="hidden w-44 truncate px-2 text-base text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="hidden w-48 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
                 {{ appt.subject }}
               </div>
-              <div class="hidden w-40 truncate px-2 text-base text-zinc-600 md:block dark:text-zinc-400">
+              <div class="hidden w-40 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
                 {{ appt.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
               </div>
-              <div class="hidden w-28 px-2 md:block">
+              <div class="hidden w-28 shrink-0 px-2 md:block">
                 <span
                   class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                   [ngClass]="getStatusClass(appt.status)"
@@ -211,7 +245,7 @@ interface ApiResponse<T> {
                   {{ getStatusLabel(appt.status) }}
                 </span>
               </div>
-              <div class="w-32 px-2 text-right text-base text-zinc-500 dark:text-zinc-400">
+              <div class="w-32 shrink-0 px-2 text-right text-sm leading-none text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(appt.createdAt) }}
               </div>
             </div>
@@ -224,7 +258,7 @@ interface ApiResponse<T> {
       }
     </div>
 
-    <!-- Footer pagination (style CRM) -->
+    <!-- Footer pagination -->
     <div class="flex items-center justify-between border-t border-zinc-200 px-3 py-2 sm:px-5 dark:border-zinc-800">
       <div class="inline-flex rounded-md border border-zinc-200 dark:border-zinc-700">
         @for (size of pageSizes; track size; let first = $first; let last = $last) {
@@ -244,43 +278,24 @@ interface ApiResponse<T> {
           </button>
         }
       </div>
-      <div class="flex items-center gap-2">
-        @if (totalPages() > 1) {
-          <button
-            type="button"
-            class="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-            [disabled]="currentPage() === 0"
-            (click)="changePage(currentPage() - 1)"
-          >
-            <lucide-icon [img]="ChevronLeftIcon" [size]="14"></lucide-icon>
-          </button>
-        }
-        <div class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
-          <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ filteredAppointments().length }}</span>
-          <span>of</span>
-          <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ totalAppointments() }}</span>
-        </div>
-        @if (totalPages() > 1) {
-          <button
-            type="button"
-            class="flex h-7 w-7 cursor-pointer items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-            [disabled]="currentPage() >= totalPages() - 1"
-            (click)="changePage(currentPage() + 1)"
-          >
-            <lucide-icon [img]="ChevronRightIcon" [size]="14"></lucide-icon>
-          </button>
-        }
+      <div class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ filteredAppointments().length }}</span>
+        <span>of</span>
+        <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ totalAppointments() }}</span>
       </div>
     </div>
 
     <!-- Detail Modal -->
     @if (showDetailModal()) {
       <div
-        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
         (click)="closeDetailModal()"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-appt-title"
       >
         <div
-          class="mx-4 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-sm border border-(--border) bg-(--card) shadow-2xl"
+          class="flex max-h-[min(92dvh,760px)] w-full max-w-xl flex-col rounded-t-lg border border-(--border) bg-(--card) shadow-2xl sm:rounded-lg"
           (click)="$event.stopPropagation()"
         >
           @if (loadingDetail()) {
@@ -289,51 +304,58 @@ interface ApiResponse<T> {
             </div>
           } @else if (detail()) {
             <!-- Modal Header -->
-            <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
-              <div>
-                <h3 class="text-lg font-bold text-(--foreground)">
-                  Détail du rendez-vous
-                </h3>
-                <p class="text-xs text-(--muted-foreground)">{{ detail()!.subject }}</p>
+            <div class="shrink-0 border-b border-(--border) px-5 py-4 sm:px-6">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <h3 id="detail-appt-title" class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
+                    Détail du rendez-vous
+                  </h3>
+                  <p class="truncate text-xs text-(--muted-foreground)">{{ detail()!.subject }}</p>
+                </div>
+                <button
+                  hlmBtn variant="ghost" size="icon" class="h-9 w-9 shrink-0 cursor-pointer"
+                  type="button"
+                  (click)="closeDetailModal()"
+                  aria-label="Fermer"
+                >
+                  <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
+                </button>
               </div>
-              <button
-                hlmBtn variant="ghost" size="icon" class="h-8 w-8 cursor-pointer"
-                (click)="closeDetailModal()"
-              >
-                <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
-              </button>
             </div>
 
-            <div class="px-6 py-5 space-y-5">
+            <!-- Modal Body -->
+            <div class="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
               <!-- Client info -->
-              <div class="rounded-sm border border-(--border) bg-(--background) p-4 space-y-2">
-                <p class="text-xs font-medium text-(--muted-foreground)">Client</p>
-                <div class="flex items-center gap-2">
-                  <lucide-icon [img]="UserIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
-                  <span class="text-sm font-medium text-(--foreground)">{{ detail()!.clientName || '—' }}</span>
-                  @if (detail()!.isAnonymous) {
-                    <span class="rounded-full bg-(--muted) px-2 py-0.5 text-[10px] font-medium text-(--foreground)">Anonyme</span>
-                  }
-                </div>
-                <div class="flex items-center gap-2">
-                  <lucide-icon [img]="MailIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
-                  <span class="text-sm text-(--foreground)">{{ detail()!.clientEmail || '—' }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <lucide-icon [img]="PhoneIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
-                  <span class="text-sm text-(--foreground)">{{ detail()!.clientPhone || '—' }}</span>
+              <div class="rounded-lg border border-(--border)/80 bg-(--muted)/20 px-4 py-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">Client</p>
+                <div class="mt-2 space-y-2">
+                  <div class="flex items-center gap-2">
+                    <lucide-icon [img]="UserIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
+                    <span class="text-sm font-medium text-(--foreground)">{{ detail()!.clientName || '—' }}</span>
+                    @if (detail()!.isAnonymous) {
+                      <span class="rounded-full bg-(--muted) px-2 py-0.5 text-[10px] font-medium text-(--foreground)">Anonyme</span>
+                    }
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <lucide-icon [img]="MailIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
+                    <span class="text-sm text-(--foreground)">{{ detail()!.clientEmail || '—' }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <lucide-icon [img]="PhoneIcon" [size]="14" class="text-(--muted-foreground)"></lucide-icon>
+                    <span class="text-sm text-(--foreground)">{{ detail()!.clientPhone || '—' }}</span>
+                  </div>
                 </div>
               </div>
 
-              <!-- Date + Status -->
+              <!-- Date + Durée -->
               <div class="grid grid-cols-2 gap-3">
-                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-lg border border-(--border)/80 bg-(--muted)/20 p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Date & Heure</p>
                   <p class="mt-1 text-sm font-medium text-(--foreground)">
                     {{ detail()!.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
                   </p>
                 </div>
-                <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
+                <div class="rounded-lg border border-(--border)/80 bg-(--muted)/20 p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Durée</p>
                   <p class="mt-1 text-sm font-medium text-(--foreground)">{{ detail()!.durationMinutes }} min</p>
                 </div>
@@ -342,7 +364,7 @@ interface ApiResponse<T> {
               @if (detail()!.description) {
                 <div>
                   <p class="text-xs font-medium text-(--muted-foreground) mb-1">Message du client</p>
-                  <p class="text-sm text-(--foreground) rounded-sm border border-(--border) bg-(--background) p-3">
+                  <p class="text-sm text-(--foreground) rounded-lg border border-(--border)/80 bg-(--muted)/20 p-3">
                     {{ detail()!.description }}
                   </p>
                 </div>
@@ -353,10 +375,10 @@ interface ApiResponse<T> {
               <!-- Editable fields -->
               <div class="space-y-3">
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Statut</label>
+                  <label class="mb-1.5 block text-sm font-medium text-(--foreground)">Statut</label>
                   <select
                     [(ngModel)]="editForm.status"
-                    class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) cursor-pointer"
+                    class="w-full rounded-md border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none transition-shadow focus:border-(--primary)/50 focus:ring-2 focus:ring-(--primary)/20 cursor-pointer"
                   >
                     <option value="PENDING">En attente</option>
                     <option value="CONFIRMED">Confirmé</option>
@@ -368,25 +390,25 @@ interface ApiResponse<T> {
                 </div>
 
                 <div>
-                  <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
+                  <label class="mb-1.5 block text-sm font-medium text-(--foreground)">
                     <lucide-icon [img]="MessageSquareIcon" [size]="12" class="inline mr-1"></lucide-icon>
                     Notes admin
                   </label>
                   <textarea
                     [(ngModel)]="editForm.adminNotes"
                     rows="3"
-                    class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary) focus:ring-1 focus:ring-(--primary)"
+                    class="w-full rounded-md border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none transition-shadow focus:border-(--primary)/50 focus:ring-2 focus:ring-(--primary)/20"
                     placeholder="Notes internes..."
                   ></textarea>
                 </div>
 
                 @if (editForm.status === 'CANCELLED') {
                   <div>
-                    <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Raison d'annulation</label>
+                    <label class="mb-1.5 block text-sm font-medium text-(--foreground)">Raison d'annulation</label>
                     <input
                       [(ngModel)]="editForm.cancellationReason"
                       type="text"
-                      class="w-full rounded-sm border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                      class="w-full rounded-md border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none transition-shadow focus:border-(--primary)/50 focus:ring-2 focus:ring-(--primary)/20"
                       placeholder="Raison..."
                     />
                   </div>
@@ -395,33 +417,39 @@ interface ApiResponse<T> {
             </div>
 
             <!-- Modal Footer -->
-            <div class="flex items-center justify-between border-t border-(--border) px-6 py-4">
-              <button
-                hlmBtn variant="destructive" size="sm" class="cursor-pointer gap-1.5"
-                (click)="deleteAppointment()"
-              >
-                <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
-                Supprimer
-              </button>
-              <div class="flex items-center gap-2">
+            <div class="shrink-0 border-t border-(--border) bg-(--card) px-5 py-4 sm:px-6">
+              <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
-                  hlmBtn variant="outline" size="sm" class="cursor-pointer"
-                  (click)="closeDetailModal()"
+                  hlmBtn variant="ghost" size="sm"
+                  class="cursor-pointer gap-1.5 text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  type="button"
+                  (click)="deleteAppointment()"
                 >
-                  Fermer
+                  <lucide-icon [img]="AlertTriangleIcon" [size]="14"></lucide-icon>
+                  Supprimer définitivement
                 </button>
-                <button
-                  hlmBtn variant="default" size="sm" class="cursor-pointer gap-2"
-                  [disabled]="saving()"
-                  (click)="saveAppointment()"
-                >
-                  @if (saving()) {
-                    <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
-                  } @else {
-                    <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
-                  }
-                  Enregistrer
-                </button>
+                <div class="flex w-full justify-end gap-2 sm:w-auto">
+                  <button
+                    hlmBtn variant="outline" size="sm" class="min-h-10 flex-1 cursor-pointer sm:flex-initial"
+                    type="button"
+                    (click)="closeDetailModal()"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    hlmBtn variant="default" size="sm" class="min-h-10 min-w-[7.5rem] flex-1 cursor-pointer gap-2 sm:flex-initial"
+                    type="button"
+                    [disabled]="saving()"
+                    (click)="saveAppointment()"
+                  >
+                    @if (saving()) {
+                      <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                    } @else {
+                      <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
+                    }
+                    Enregistrer
+                  </button>
+                </div>
               </div>
             </div>
           }
@@ -483,8 +511,7 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly Trash2Icon = Trash2;
   readonly FilterIcon = Filter;
   readonly ArrowUpDownIcon = ArrowUpDown;
-  readonly Columns3Icon = Columns3;
-  readonly MoreHorizontalIcon = MoreHorizontal;
+  readonly AlertTriangleIcon = AlertTriangle;
 
   readonly loading = signal(false);
   private readonly listFetch = createListFetchLoading(this.loading);
@@ -503,7 +530,21 @@ export class AdminAppointmentsComponent implements OnInit {
   readonly pageSizes = [20, 50, 100];
   readonly pageSize = signal(20);
 
+  // Filter & Sort
+  readonly showFilterPanel = signal(false);
+  readonly showSortMenu = signal(false);
+  readonly currentSort = signal<string>('appointmentDate');
+  readonly sortDirection = signal<'asc' | 'desc'>('desc');
+  readonly sortOptions = [
+    { key: 'clientEmail', label: 'Email' },
+    { key: 'subject', label: 'Service / Sujet' },
+    { key: 'appointmentDate', label: 'Date du rendez-vous' },
+    { key: 'createdAt', label: 'Date de création' },
+    { key: 'status', label: 'Statut' },
+  ];
+
   emailFilter = '';
+  subjectFilter = '';
   statusFilter = '';
   editForm = { status: 'PENDING', adminNotes: '', cancellationReason: '' };
 
@@ -555,17 +596,25 @@ export class AdminAppointmentsComponent implements OnInit {
 
   filterAppointments(): void {
     const q = this.emailFilter.toLowerCase();
-    if (!q) {
-      this.filteredAppointments.set(this.appointments());
-      return;
-    }
-    this.filteredAppointments.set(
-      this.appointments().filter(
+    const subj = this.subjectFilter.toLowerCase();
+
+    let filtered = this.appointments();
+
+    if (q) {
+      filtered = filtered.filter(
         (a) =>
           (a.clientEmail || '').toLowerCase().includes(q) ||
           (a.clientName || '').toLowerCase().includes(q),
-      ),
-    );
+      );
+    }
+
+    if (subj) {
+      filtered = filtered.filter(
+        (a) => (a.subject || '').toLowerCase().includes(subj),
+      );
+    }
+
+    this.filteredAppointments.set(filtered);
   }
 
   changePageSize(size: number): void {
@@ -721,6 +770,51 @@ export class AdminAppointmentsComponent implements OnInit {
       case 'NO_SHOW': return 'Absence';
       default: return status;
     }
+  }
+
+  // ========== Filter helpers ==========
+
+  hasActiveFilters(): boolean {
+    return !!(this.emailFilter || this.subjectFilter || this.statusFilter);
+  }
+
+  clearFilters(): void {
+    this.emailFilter = '';
+    this.subjectFilter = '';
+    this.statusFilter = '';
+    this.currentPage.set(0);
+    this.loadAppointments();
+  }
+
+  // ========== Sort ==========
+
+  applySort(key: string): void {
+    if (this.currentSort() === key) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.currentSort.set(key);
+      this.sortDirection.set('asc');
+    }
+    this.showSortMenu.set(false);
+    this.applySortToList();
+  }
+
+  private applySortToList(): void {
+    const key = this.currentSort();
+    const dir = this.sortDirection() === 'asc' ? 1 : -1;
+    const sorted = [...this.filteredAppointments()].sort((a, b) => {
+      let va = '';
+      let vb = '';
+      switch (key) {
+        case 'clientEmail': va = a.clientEmail || ''; vb = b.clientEmail || ''; break;
+        case 'subject': va = a.subject || ''; vb = b.subject || ''; break;
+        case 'appointmentDate': va = a.appointmentDate || ''; vb = b.appointmentDate || ''; break;
+        case 'createdAt': va = a.createdAt || ''; vb = b.createdAt || ''; break;
+        case 'status': va = a.status || ''; vb = b.status || ''; break;
+      }
+      return va.localeCompare(vb, 'fr', { sensitivity: 'base' }) * dir;
+    });
+    this.filteredAppointments.set(sorted);
   }
 
   private showToast(type: 'success' | 'error', message: string): void {

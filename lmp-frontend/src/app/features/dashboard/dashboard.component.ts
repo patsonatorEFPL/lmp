@@ -327,7 +327,7 @@ const USER_ORDER_STEPS = [
             <!-- Recent Orders (2/3 width) -->
             <div class="lg:col-span-2">
               <h2
-                class="mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
               >
                 Commandes récentes
               </h2>
@@ -429,7 +429,7 @@ const USER_ORDER_STEPS = [
             <!-- Quick actions (1/3 width) -->
             <div>
               <h2
-                class="mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
               >
                 Actions rapides
               </h2>
@@ -470,7 +470,7 @@ const USER_ORDER_STEPS = [
           @if (stats()!.upcomingAppointmentsList.length > 0) {
             <div class="mt-8">
               <h2
-                class="mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
               >
                 Prochains rendez-vous
               </h2>
@@ -517,7 +517,7 @@ const USER_ORDER_STEPS = [
           @if (stats()!.recentReviews.length > 0) {
             <div class="mt-8">
               <h2
-                class="mb-4 text-lg font-bold text-(--foreground)"
+                class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
               >
                 Vos avis récents
               </h2>
@@ -593,7 +593,7 @@ const USER_ORDER_STEPS = [
               <!-- Header -->
               <div class="flex items-center justify-between border-b border-(--border) px-6 py-4">
                 <div>
-                  <h3 class="text-lg font-bold text-(--foreground)">
+                  <h3 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">
                     Détail de la commande
                   </h3>
                   <p class="text-xs text-(--muted-foreground)">{{ selectedOrder()!.serviceName }}</p>
