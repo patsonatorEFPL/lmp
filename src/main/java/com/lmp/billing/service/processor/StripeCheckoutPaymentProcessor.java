@@ -25,13 +25,15 @@ import com.lmp.billing.dto.RefundResponseDto;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.exception.PaymentProviderException;
 import com.lmp.billing.exception.PaymentValidationException;
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Refund;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.Locale;
+import com.stripe.param.checkout.SessionListParams;
+import com.stripe.param.checkout.SessionRetrieveParams;
 
 /**
  * Processeur de paiement Stripe utilisant Checkout Sessions
@@ -45,8 +47,10 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         private static final Logger securityLogger = LoggerFactory
                         .getLogger("SECURITY." + StripeCheckoutPaymentProcessor.class.getName());
 
-        private static final String PROCESSOR_NAME = "stripe-checkout";
-        private static final String API_VERSION = "2023-10-16";
+	private static final String PROCESSOR_NAME = "stripe-checkout";
+	private static final String API_VERSION = "2026-03-25.dahlia";
+
+	private final StripeClient stripeClient;
 
         // Devises supportées par Stripe Checkout
         private static final Set<String> SUPPORTED_CURRENCIES = Set.of(
@@ -81,17 +85,14 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                         "pt", "Serviços de marketing digital LMP",
                         "lb", "LMP Digital Marketing Servicer");
 
-        @Value("${stripe.secret.key}")
-        private String stripeSecretKey;
+	@Value("${stripe.publishable.key}")
+	private String stripePublishableKey;
 
-        @Value("${stripe.publishable.key}")
-        private String stripePublishableKey;
+	@Value("${app.base.url}")
+	private String baseUrl;
 
-        @Value("${app.base.url}")
-        private String baseUrl;
-
-        @Value("${app.frontend.url:${app.base.url}}")
-        private String frontendUrl;
+	@Value("${app.frontend.url:${app.base.url}}")
+	private String frontendUrl;
 
         // URLs de retour par défaut (Angular frontend routes)
         @Value("${stripe.checkout.success.url:/payment/success}")
@@ -99,6 +100,10 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
 
         @Value("${stripe.checkout.cancel.url:/payment/cancel}")
         private String defaultCancelUrl;
+
+        public StripeCheckoutPaymentProcessor(StripeClient stripeClient) {
+                this.stripeClient = stripeClient;
+        }
 
         @Override
         public String getProcessorName() {
@@ -121,9 +126,6 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                                 order.getId(), paymentRequest.getAmount(), paymentRequest.getCurrency());
 
                 try {
-                        // Initialiser Stripe avec la clé secrète
-                        Stripe.apiKey = stripeSecretKey;
-
                         // Valider les données de paiement
                         validatePayment(paymentRequest);
 
@@ -202,13 +204,11 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                                 transaction.getTransactionId(), refundRequest.getAmount(), transaction.getCurrency());
 
                 try {
-                        Stripe.apiKey = stripeSecretKey;
-
                         // Pour Stripe Checkout, nous devons utiliser le payment_intent_id pour les
                         // remboursements
                         // Le transactionId dans ce cas sera le checkout session ID, nous devons
                         // récupérer le PaymentIntent
-                        Session session = Session.retrieve(transaction.getTransactionId());
+                        Session session = stripeClient.checkout().sessions().retrieve(transaction.getTransactionId());
                         String paymentIntentId = session.getPaymentIntent();
 
                         if (paymentIntentId == null) {
@@ -234,7 +234,7 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                         }
 
                         // Exécuter le remboursement
-                        Refund refund = Refund.create(paramsBuilder.build());
+                        Refund refund = stripeClient.refunds().create(paramsBuilder.build());
 
                         // Créer la réponse
                         RefundResponseDto response = RefundResponseDto.success(
@@ -309,8 +309,7 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         @Override
         public String checkTransactionStatus(String transactionId) throws PaymentProcessingException {
                 try {
-                        Stripe.apiKey = stripeSecretKey;
-                        Session session = Session.retrieve(transactionId);
+                        Session session = stripeClient.checkout().sessions().retrieve(transactionId);
                         return session.getPaymentStatus();
                 } catch (StripeException e) {
                         throw new PaymentProviderException(
@@ -332,13 +331,11 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         @Override
         public boolean isAvailable() {
                 try {
-                        Stripe.apiKey = stripeSecretKey;
                         // Test simple pour vérifier la connectivité
-                        com.stripe.param.checkout.SessionListParams params = com.stripe.param.checkout.SessionListParams
-                                        .builder()
+                        SessionListParams params = SessionListParams.builder()
                                         .setLimit(1L)
                                         .build();
-                        Session.list(params);
+                        stripeClient.checkout().sessions().list(params);
                         return true;
                 } catch (Exception e) {
                         logger.warn("Stripe Checkout service unavailable: {}", e.getMessage());
@@ -445,7 +442,7 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                                 .setExpiresAt(Instant.now().plusSeconds(3600).getEpochSecond()); // Expire dans 1 heure
 
                 // Créer la session
-                Session session = Session.create(paramsBuilder.build());
+                Session session = stripeClient.checkout().sessions().create(paramsBuilder.build());
 
                 // Créer la réponse
                 CheckoutSessionResponseDto response = CheckoutSessionResponseDto.success(

@@ -28,7 +28,7 @@ import com.lmp.notification.service.EmailService;
 import com.lmp.portal.dto.ChangePasswordRequest;
 import com.lmp.shared.dto.ApiResponse;
 
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,9 +73,6 @@ import java.util.UUID;
 @Tag(name = "Admin", description = "Endpoints d'administration (ADMIN only)")
 public class AdminRestController {
 
-    @Value("${stripe.secret.key:${STRIPE_SECRET_KEY:}}")
-    private String stripeSecretKey;
-
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
@@ -89,6 +86,7 @@ public class AdminRestController {
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
+    private final StripeClient stripeClient;
 
     public AdminRestController(UserService userService,
                                AuthService authService,
@@ -99,7 +97,8 @@ public class AdminRestController {
                                InvoicePdfService invoicePdfService,
                                EmailService emailService,
                                ApplicationEventPublisher eventPublisher,
-                               OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                               OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                               StripeClient stripeClient) {
         this.userService = userService;
         this.authService = authService;
         this.sessionSecurityService = sessionSecurityService;
@@ -110,6 +109,7 @@ public class AdminRestController {
         this.emailService = emailService;
         this.eventPublisher = eventPublisher;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.stripeClient = stripeClient;
     }
 
     @GetMapping("/stats")
@@ -903,8 +903,7 @@ public class AdminRestController {
 
             if (order.getStripePaymentIntentId() != null && !order.getStripePaymentIntentId().isEmpty()) {
                 OrderStatus statusBeforeSync = order.getStatus();
-                Stripe.apiKey = stripeSecretKey;
-                PaymentIntent pi = PaymentIntent.retrieve(order.getStripePaymentIntentId());
+                PaymentIntent pi = stripeClient.paymentIntents().retrieve(order.getStripePaymentIntentId());
 
                 syncResult.put("stripeStatus", pi.getStatus());
                 syncResult.put("stripeAmount", pi.getAmount());
@@ -940,8 +939,7 @@ public class AdminRestController {
                 syncResult.put("synced", true);
             } else if (order.getStripeSessionId() != null && !order.getStripeSessionId().isEmpty()) {
                 OrderStatus statusBeforeSync = order.getStatus();
-                Stripe.apiKey = stripeSecretKey;
-                com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(order.getStripeSessionId());
+                com.stripe.model.checkout.Session session = stripeClient.checkout().sessions().retrieve(order.getStripeSessionId());
 
                 syncResult.put("stripePaymentStatus", session.getPaymentStatus());
                 syncResult.put("stripeSessionStatus", session.getStatus());
