@@ -17,7 +17,7 @@ import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.notification.service.EmailService;
 import com.lmp.billing.service.InvoicePdfService;
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.checkout.Session;
 
@@ -42,8 +42,7 @@ public class PaymentReconciliationService {
 
         private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
-    @Value("${stripe.secret.key}")
-    private String stripeSecretKey;
+        private final StripeClient stripeClient;
 
     /**
      * Délai minimum (en minutes) avant de réconcilier une commande PAYMENT_PENDING.
@@ -63,11 +62,13 @@ public class PaymentReconciliationService {
     public PaymentReconciliationService(OrderRepository orderRepository,
                            InvoicePdfService invoicePdfService,
                            EmailService emailService,
-                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                           StripeClient stripeClient) {
         this.orderRepository = orderRepository;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.stripeClient = stripeClient;
     }
 
     /**
@@ -83,8 +84,6 @@ public class PaymentReconciliationService {
         int errorCount = 0;
 
         try {
-            Stripe.apiKey = stripeSecretKey;
-
             // 1. Réconcilier les commandes PAYMENT_PENDING
             reconciledCount = reconcilePaymentPendingOrders();
 
@@ -218,7 +217,7 @@ public class PaymentReconciliationService {
 
     private boolean reconcileCheckoutSession(Order order, String sessionId) {
         try {
-            Session session = Session.retrieve(sessionId);
+            Session session = stripeClient.checkout().sessions().retrieve(sessionId);
             String paymentStatus = session.getPaymentStatus();
 
             logger.info("🔍 RÉCONCILIATION - Commande {} (status={}), Stripe session {} → payment_status='{}'",
@@ -264,7 +263,7 @@ public class PaymentReconciliationService {
 
     private boolean reconcilePaymentIntent(Order order, String paymentIntentId) {
         try {
-            PaymentIntent pi = PaymentIntent.retrieve(paymentIntentId);
+            PaymentIntent pi = stripeClient.paymentIntents().retrieve(paymentIntentId);
             String status = pi.getStatus();
 
             logger.info("🔍 RÉCONCILIATION - Commande {} (status={}), Stripe PI {} → status='{}'",

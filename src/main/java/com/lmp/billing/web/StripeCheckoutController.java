@@ -73,11 +73,10 @@ public class StripeCheckoutController {
 
         private final RegionalPricingService regionalPricingService;
 
+        private final com.stripe.StripeClient stripeClient;
+
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
-
-    @Value("${stripe.secret.key}")
-    private String stripeSecretKey;
 
 
     public StripeCheckoutController(PaymentService paymentService,
@@ -87,7 +86,8 @@ public class StripeCheckoutController {
                            UserRepository userRepository,
                            ServiceCatalogService serviceCatalogService,
                            OrderRealtimeEventPublisher orderRealtimeEventPublisher,
-                           RegionalPricingService regionalPricingService) {
+                           RegionalPricingService regionalPricingService,
+                           com.stripe.StripeClient stripeClient) {
         this.paymentService = paymentService;
         this.stripeCheckoutProcessor = stripeCheckoutProcessor;
         this.orderRepository = orderRepository;
@@ -96,6 +96,7 @@ public class StripeCheckoutController {
         this.serviceCatalogService = serviceCatalogService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.regionalPricingService = regionalPricingService;
+        this.stripeClient = stripeClient;
     }
 
     /**
@@ -715,11 +716,8 @@ public class StripeCheckoutController {
      */
     private String getSourcePageFromStripeSession(String sessionId) {
         try {
-            // Configurer la clé API Stripe
-            com.stripe.Stripe.apiKey = stripeSecretKey;
-
             // Récupérer la session depuis Stripe
-            com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.retrieve(sessionId);
+            com.stripe.model.checkout.Session session = stripeClient.checkout().sessions().retrieve(sessionId);
 
             if (session.getMetadata() != null && session.getMetadata().containsKey("source_page")) {
                 String sourcePage = session.getMetadata().get("source_page");

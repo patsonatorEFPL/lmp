@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.model.checkout.Session;
 
 import java.time.LocalDateTime;
@@ -32,14 +32,15 @@ public class OrderCleanupService {
 
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
+    private final StripeClient stripeClient;
+
     public OrderCleanupService(OrderRepository orderRepository,
-            OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+            OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+            StripeClient stripeClient) {
         this.orderRepository = orderRepository;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.stripeClient = stripeClient;
     }
-
-    @Value("${stripe.secret.key}")
-    private String stripeSecretKey;
 
     /**
      * Durée maximale en minutes pour laisser une commande PAYMENT_PENDING avant nettoyage
@@ -288,8 +289,7 @@ public class OrderCleanupService {
         }
 
         try {
-            Stripe.apiKey = stripeSecretKey;
-            Session session = Session.retrieve(sessionId);
+            Session session = stripeClient.checkout().sessions().retrieve(sessionId);
             boolean paid = "paid".equals(session.getPaymentStatus());
 
             if (paid) {

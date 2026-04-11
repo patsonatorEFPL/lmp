@@ -26,6 +26,7 @@ import com.lmp.billing.repository.RefundRepository;
 import com.lmp.billing.dto.admin.RefundDto;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.notification.service.NotificationService;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 
@@ -47,15 +48,19 @@ public class RefundService {
 
         private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
+        private final StripeClient stripeClient;
+
 
     public RefundService(RefundRepository refundRepository,
                            OrderRepository orderRepository,
                            NotificationService notificationService,
-                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                           StripeClient stripeClient) {
         this.refundRepository = refundRepository;
         this.orderRepository = orderRepository;
         this.notificationService = notificationService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.stripeClient = stripeClient;
     }
 
     /**
@@ -327,20 +332,16 @@ public class RefundService {
 
     private com.stripe.model.Refund createStripeRefund(String paymentIntentId, Long amountCents, String reason) 
             throws StripeException {
-        
-        Map<String, Object> refundParams = new HashMap<>();
-        refundParams.put("payment_intent", paymentIntentId);
-        refundParams.put("amount", amountCents);
-        refundParams.put("reason", "requested_by_customer");
-        
-        // Métadonnées pour traçabilité
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("refund_reason", reason);
-        metadata.put("refund_created_at", LocalDateTime.now().toString());
-        metadata.put("refund_source", "admin_panel");
-        refundParams.put("metadata", metadata);
 
-        return com.stripe.model.Refund.create(refundParams);
+        com.stripe.param.RefundCreateParams params = com.stripe.param.RefundCreateParams.builder()
+                .setPaymentIntent(paymentIntentId)
+                .setAmount(amountCents)
+                .setReason(com.stripe.param.RefundCreateParams.Reason.REQUESTED_BY_CUSTOMER)
+                .putMetadata("refund_reason", reason)
+                .putMetadata("refund_created_at", LocalDateTime.now().toString())
+                .putMetadata("refund_source", "admin_panel")
+                .build();
+        return stripeClient.refunds().create(params);
     }
 
     private RefundDto convertToDto(Refund refund) {
