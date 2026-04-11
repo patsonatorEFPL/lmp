@@ -29,9 +29,8 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
-.vscode/*
-!.vscode/settings.json
+### VS Code (local uniquement, ne pas versionner) ###
+.vscode/
 
 ### Ignore vscode rules ###
 .github\instructions\codacy.instructions.md
