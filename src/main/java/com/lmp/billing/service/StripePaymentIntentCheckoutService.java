@@ -15,7 +15,7 @@ import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.exception.PaymentProviderException;
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.param.PaymentIntentCreateParams;
@@ -28,6 +28,8 @@ public class StripePaymentIntentCheckoutService {
 
     private static final Logger logger = LoggerFactory.getLogger(StripePaymentIntentCheckoutService.class);
 
+    private final StripeClient stripeClient;
+
     private static final Set<String> SUPPORTED_CURRENCIES = Set.of(
             "CAD", "USD", "EUR", "GBP", "AUD", "JPY", "CHF", "SEK", "NOK", "DKK");
 
@@ -39,11 +41,12 @@ public class StripePaymentIntentCheckoutService {
             "processing",
             "requires_capture");
 
-    @Value("${stripe.secret.key}")
-    private String stripeSecretKey;
-
     @Value("${stripe.publishable.key}")
     private String stripePublishableKey;
+
+    public StripePaymentIntentCheckoutService(StripeClient stripeClient) {
+        this.stripeClient = stripeClient;
+    }
 
     public String getPublishableKey() {
         return stripePublishableKey;
@@ -86,12 +89,10 @@ public class StripePaymentIntentCheckoutService {
         metadata.put("webhook_version", "v3");
         metadata.put("creation_mode", creationMode != null ? creationMode : "payment_element");
 
-        Stripe.apiKey = stripeSecretKey;
-
         String existingPiId = order.getStripePaymentIntentId();
         if (existingPiId != null && !existingPiId.isBlank()) {
             try {
-                PaymentIntent existing = PaymentIntent.retrieve(existingPiId);
+                PaymentIntent existing = stripeClient.paymentIntents().retrieve(existingPiId);
                 String st = existing.getStatus();
                 if ("succeeded".equals(st)) {
                     throw new PaymentProviderException(
@@ -126,7 +127,7 @@ public class StripePaymentIntentCheckoutService {
                 .putAllMetadata(metadata);
 
         try {
-            PaymentIntent pi = PaymentIntent.create(b.build());
+            PaymentIntent pi = stripeClient.paymentIntents().create(b.build());
             logger.info("PaymentIntent créé {} pour commande {}", pi.getId(), order.getId());
             return new PaymentIntentResult(pi.getClientSecret(), pi.getId());
         } catch (StripeException e) {

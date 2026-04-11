@@ -34,6 +34,7 @@ import com.lmp.billing.dto.admin.OrderSearchDto;
 import com.lmp.billing.dto.admin.OrderActionDto;
 import com.lmp.billing.dto.admin.OrderReportDto;
 import com.lmp.notification.service.NotificationService;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 
@@ -63,6 +64,8 @@ public class OrderAdminService {
 
         private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
+        private final StripeClient stripeClient;
+
 
     public OrderAdminService(OrderRepository orderRepository,
                            UserRepository userRepository,
@@ -71,7 +74,8 @@ public class OrderAdminService {
                            RefundService refundService,
                            ReportsService reportsService,
                            ApplicationEventPublisher eventPublisher,
-                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                           StripeClient stripeClient) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderStatusHistoryService = orderStatusHistoryService;
@@ -80,6 +84,7 @@ public class OrderAdminService {
         this.reportsService = reportsService;
         this.eventPublisher = eventPublisher;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.stripeClient = stripeClient;
     }
 
     // ========== CRUD et Recherche ==========
@@ -320,7 +325,7 @@ public class OrderAdminService {
         try {
             OrderStatus statusBeforeSync = order.getStatus();
             // Récupération des informations Stripe
-            PaymentIntent paymentIntent = PaymentIntent.retrieve(order.getStripePaymentIntentId());
+            PaymentIntent paymentIntent = stripeClient.paymentIntents().retrieve(order.getStripePaymentIntentId());
             
             // Mise à jour du statut de paiement
             String oldPaymentStatus = order.getPaymentStatus();

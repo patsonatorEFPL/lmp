@@ -124,7 +124,7 @@
 		<dependency>
 			<groupId>com.stripe</groupId>
 			<artifactId>stripe-java</artifactId>
-			<version>24.16.0</version>
+			<version>32.0.0</version>
 		</dependency>
 
 	<!-- GeoIP2 (GeoLite2 Country — fichier .mmdb optionnel, voir geoip.country-db) -->
