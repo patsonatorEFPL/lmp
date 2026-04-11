@@ -280,6 +280,9 @@ public class StripeWebhookHandler {
     private void handlePaymentIntentSucceeded(Event event, WebhookEventDto webhookEvent,
             StripeWebhookEventType eventType) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
+        if (paymentIntent == null) {
+            paymentIntent = parsePaymentIntentFromJson(event);
+        }
 
         if (paymentIntent != null) {
             logger.info("🔍 DEBUG WEBHOOK - handlePaymentIntentSucceeded called for PaymentIntent: {}",
@@ -344,6 +347,9 @@ public class StripeWebhookHandler {
     private void handlePaymentIntentFailed(Event event, WebhookEventDto webhookEvent,
             StripeWebhookEventType eventType) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
+        if (paymentIntent == null) {
+            paymentIntent = parsePaymentIntentFromJson(event);
+        }
 
         if (paymentIntent != null) {
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
@@ -378,6 +384,9 @@ public class StripeWebhookHandler {
     private void handlePaymentIntentRequiresAction(Event event, WebhookEventDto webhookEvent,
             StripeWebhookEventType eventType) {
         PaymentIntent paymentIntent = (PaymentIntent) event.getDataObjectDeserializer().getObject().orElse(null);
+        if (paymentIntent == null) {
+            paymentIntent = parsePaymentIntentFromJson(event);
+        }
 
         if (paymentIntent != null) {
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
@@ -1286,6 +1295,72 @@ public class StripeWebhookHandler {
 
         } catch (Exception e) {
             logger.error("❌ ÉCHEC DÉSÉRIALISATION MANUELLE - Erreur: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Désérialisation manuelle d'un PaymentIntent depuis le JSON du webhook
+     * (lorsque {@link Event#getDataObjectDeserializer()} ne fournit pas l'objet,
+     * ex. API Stripe récentes / payloads minces).
+     */
+    private PaymentIntent parsePaymentIntentFromJson(Event event) {
+        try {
+            JsonNode eventData = objectMapper.readTree(event.getData().toJson());
+            JsonNode piJson = eventData.get("object");
+
+            if (piJson == null || piJson.isNull()) {
+                logger.error("❌ JSON PARSING PI - Pas d'objet 'object' dans les données");
+                return null;
+            }
+
+            if (!piJson.has("object") || !"payment_intent".equals(piJson.get("object").asText())) {
+                logger.error("❌ JSON PARSING PI - Type inattendu: {}",
+                        piJson.has("object") ? piJson.get("object").asText() : "(absent)");
+                return null;
+            }
+
+            PaymentIntent manual = new PaymentIntent();
+            if (piJson.has("id") && !piJson.get("id").isNull()) {
+                manual.setId(piJson.get("id").asText());
+            }
+            if (piJson.has("status") && !piJson.get("status").isNull()) {
+                manual.setStatus(piJson.get("status").asText());
+            }
+            if (piJson.has("amount") && !piJson.get("amount").isNull()) {
+                manual.setAmount(piJson.get("amount").asLong());
+            }
+            if (piJson.has("currency") && !piJson.get("currency").isNull()) {
+                manual.setCurrency(piJson.get("currency").asText());
+            }
+            if (piJson.has("metadata") && piJson.get("metadata").isObject()) {
+                Map<String, String> metadata = new HashMap<>();
+                piJson.get("metadata").fields().forEachRemaining(entry -> {
+                    if (!entry.getValue().isNull()) {
+                        metadata.put(entry.getKey(), entry.getValue().asText());
+                    }
+                });
+                manual.setMetadata(metadata);
+            }
+            if (piJson.has("payment_method") && !piJson.get("payment_method").isNull()) {
+                JsonNode pm = piJson.get("payment_method");
+                if (pm.isTextual()) {
+                    manual.setPaymentMethod(pm.asText());
+                } else if (pm.isObject() && pm.has("id")) {
+                    manual.setPaymentMethod(pm.get("id").asText());
+                }
+            }
+
+            if (manual.getId() == null) {
+                logger.error("❌ JSON PARSING PI - ID manquant");
+                return null;
+            }
+
+            logger.info("✅ DÉSÉRIALISATION MANUELLE PI réussie - PaymentIntent: {}", manual.getId());
+            return manual;
+
+        } catch (Exception e) {
+            logger.error("❌ ÉCHEC DÉSÉRIALISATION MANUELLE PI - {}", e.getMessage(), e);
             return null;
         }
     }

@@ -223,9 +223,9 @@ interface ApiResponse<T> {
             />
           </div>
           <div class="w-64 shrink-0 px-2">Email</div>
-          <div class="hidden w-48 shrink-0 px-2 sm:block">Phone</div>
-          <div class="hidden w-48 shrink-0 px-2 md:block">Organisation</div>
-          <div class="w-32 shrink-0 px-2 text-right">Last Modified</div>
+          <div class="hidden w-48 shrink-0 px-2 text-center sm:block">Phone</div>
+          <div class="hidden w-48 shrink-0 px-2 text-center md:block">Organisation</div>
+          <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
         <!-- Lignes (style CRM - cliquables, sans bordures visibles entre les lignes) -->
@@ -246,13 +246,13 @@ interface ApiResponse<T> {
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ user.email }}
               </div>
-              <div class="hidden w-48 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="hidden w-48 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
                 {{ user.phone || '' }}
               </div>
-              <div class="hidden w-48 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
+              <div class="hidden w-48 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
                 {{ organizationLabel(user) !== '—' ? organizationLabel(user) : '' }}
               </div>
-              <div class="w-32 shrink-0 px-2 text-right text-sm leading-none text-zinc-500 dark:text-zinc-400">
+              <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(user.lastLoginDate) }}
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { HttpClient } from '@angular/common/http';
@@ -46,27 +46,38 @@ interface ApiResponse<T> {
             </div>
             <div>
               <h2 class="text-xl font-bold text-(--foreground)">
-                Confirmation en cours…
+                {{ statusTitle() }}
               </h2>
-              @if (stripeDirectVerify()) {
-                <p class="mt-2 text-sm text-(--muted-foreground)">
-                  La confirmation automatique prend du temps — nous interrogeons Stripe directement pour finaliser votre commande.
-                </p>
-              } @else {
-                <p class="mt-2 text-sm text-(--muted-foreground)">
-                  Nous vérifions votre paiement auprès de Stripe. Cela ne prendra que quelques secondes.
-                </p>
-              }
+              <p class="mt-2 text-sm text-(--muted-foreground)">
+                {{ statusMessage() }}
+              </p>
             </div>
-            <div class="h-1.5 w-full overflow-hidden rounded-full bg-(--muted)">
-              <div class="h-full w-1/2 animate-pulse rounded-full bg-(--primary)"></div>
+            <!-- Dynamic progress bar -->
+            <div class="w-full">
+              <div
+                class="h-2 w-full overflow-hidden rounded-full bg-(--muted)"
+                role="progressbar"
+                [attr.aria-valuenow]="progressPercent()"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-label]="statusMessage()"
+              >
+                <div
+                  class="h-full rounded-full transition-all duration-700 ease-out"
+                  [class]="progressBarColorClass()"
+                  [style.width.%]="progressPercent()"
+                ></div>
+              </div>
+              <p class="mt-2 text-xs tabular-nums text-(--muted-foreground)">
+                {{ progressPercent() }}%
+              </p>
             </div>
           </div>
         }
 
-        <!-- Success state -->
-        @if (confirmed()) {
-          <div class="flex w-full flex-col items-center gap-6 rounded-sm border border-emerald-500/20 bg-(--card) p-10 shadow-xs">
+        <!-- Success state (only after polling card is hidden) -->
+        @if (confirmed() && !polling()) {
+          <div class="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-forwards flex w-full flex-col items-center gap-6 rounded-sm border border-emerald-500/20 bg-(--card) p-10 shadow-xs">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-(--muted)">
               <lucide-icon
                 [img]="CheckCircleIcon"
@@ -125,9 +136,9 @@ interface ApiResponse<T> {
           </div>
         }
 
-        <!-- Error state -->
-        @if (error()) {
-          <div class="flex flex-col items-center gap-6 rounded-sm border border-red-500/20 bg-(--card) p-10 shadow-xs">
+        <!-- Error state (only after polling card is hidden) -->
+        @if (error() && !polling()) {
+          <div class="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-forwards flex flex-col items-center gap-6 rounded-sm border border-red-500/20 bg-(--card) p-10 shadow-xs">
             <div class="flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
               <lucide-icon
                 [img]="XCircleIcon"
@@ -177,9 +188,47 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   readonly orderId = signal<string | null>(null);
   readonly orderStatus = signal<string | null>(null);
 
-  private pollInterval: ReturnType<typeof setInterval> | null = null;
-  private pollCount = 0;
+  /** Current poll tick (0 → maxPolls). Drives the progress bar. */
+  readonly pollCount = signal(0);
   private readonly maxPolls = 30; // 30 attempts × 2s = 60s max
+
+  /** Synthetic progress: 0–90% during webhook polling, 90–95% during Stripe verify. */
+  readonly progressPercent = computed(() => {
+    if (this.confirmed()) return 100;
+    if (this.error()) return 100;
+    if (this.stripeDirectVerify()) return 92;
+    // Map pollCount 0..maxPolls to 0..90%
+    return Math.min(Math.round((this.pollCount() / this.maxPolls) * 90), 90);
+  });
+
+  /** Contextual title shown above the progress bar. */
+  readonly statusTitle = computed(() => {
+    if (this.stripeDirectVerify()) return 'Vérification Stripe…';
+    const pct = this.progressPercent();
+    if (pct < 30) return 'Connexion au serveur…';
+    if (pct < 60) return 'Vérification du paiement…';
+    return 'Confirmation en cours…';
+  });
+
+  /** Contextual message shown below the title. */
+  readonly statusMessage = computed(() => {
+    if (this.stripeDirectVerify()) {
+      return 'La confirmation automatique prend du temps — nous interrogeons Stripe directement pour finaliser votre commande.';
+    }
+    const pct = this.progressPercent();
+    if (pct < 30) return 'Nous contactons notre serveur de paiement sécurisé.';
+    if (pct < 60) return 'Nous vérifions votre paiement auprès de Stripe. Cela ne prendra que quelques secondes.';
+    return 'Attente de la confirmation du réseau bancaire…';
+  });
+
+  /** CSS class for the progress bar fill color. */
+  readonly progressBarColorClass = computed(() => {
+    if (this.error()) return 'bg-red-500';
+    if (this.confirmed()) return 'bg-emerald-500';
+    return 'bg-(--primary)';
+  });
+
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     // Payment Element (confirmPayment return_url) utilise ?orderId= ; l’ancien redirect Checkout Java utilise ?order_id=
@@ -207,8 +256,8 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
 
     // Then poll every 2 seconds
     this.pollInterval = setInterval(() => {
-      this.pollCount++;
-      if (this.pollCount >= this.maxPolls) {
+      this.pollCount.update(c => c + 1);
+      if (this.pollCount() >= this.maxPolls) {
         this.stopPolling();
         this.stripeDirectVerify.set(true);
         this.verifyWithStripeApi(orderId);
@@ -235,16 +284,19 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res.data?.ready) {
             this.stopPolling();
-            this.polling.set(false);
+            // Animate to 100% before switching state
             if (res.data.paymentConfirmed) {
               this.confirmed.set(true);
               this.orderStatus.set(res.data.status);
+              // Short delay so the user sees the bar reach 100%
+              setTimeout(() => this.polling.set(false), 600);
             } else {
               // Payment was processed but NOT confirmed (cancelled, refunded, or failed)
               this.error.set(
                 'Votre paiement n\'a pas pu être confirmé. Statut : ' +
                 res.data.status + '. Veuillez contacter le support si vous pensez qu\'il s\'agit d\'une erreur.'
               );
+              setTimeout(() => this.polling.set(false), 600);
             }
           }
         },
@@ -267,10 +319,10 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res) => {
           this.stripeDirectVerify.set(false);
-          this.polling.set(false);
           if (res.data?.ready && res.data.paymentConfirmed) {
             this.confirmed.set(true);
             this.orderStatus.set(res.data.status);
+            setTimeout(() => this.polling.set(false), 600);
             return;
           }
           if (res.data?.ready && !res.data.paymentConfirmed) {
@@ -279,6 +331,7 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
                 res.data.status +
                 '. Veuillez contacter le support si vous pensez qu\'il s\'agit d\'une erreur.',
             );
+            setTimeout(() => this.polling.set(false), 600);
             return;
           }
           this.error.set(
@@ -286,14 +339,15 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
               'Votre paiement peut avoir été reçu par Stripe, mais nous n\'avons pas pu le confirmer tout de suite. ' +
               'Vérifiez votre tableau de bord dans quelques minutes ou contactez le support si le problème persiste.',
           );
+          setTimeout(() => this.polling.set(false), 600);
         },
         error: () => {
           this.stripeDirectVerify.set(false);
-          this.polling.set(false);
           this.error.set(
             'Impossible de finaliser la vérification du paiement. ' +
               'Vérifiez votre tableau de bord ou contactez le support.',
           );
+          setTimeout(() => this.polling.set(false), 600);
         },
       });
   }
