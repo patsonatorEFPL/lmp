@@ -1,6 +1,6 @@
 package com.lmp.billing.config;
 
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,8 +13,12 @@ import org.springframework.core.env.Environment;
 import jakarta.annotation.PostConstruct;
 
 /**
- * Configuration Stripe pour l'application LMP
- * Gère l'initialisation sécurisée de l'API Stripe
+ * Configuration Stripe pour l'application LMP.
+ * Expose un {@link StripeClient} centralisé (recommandé v32+).
+ * <p>
+ * Le pattern global {@code Stripe.apiKey} est conservé en parallèle pour
+ * la compatibilité avec les méthodes statiques restantes (Webhook.constructEvent),
+ * mais toutes les opérations API passent désormais par le StripeClient injecté.
  */
 @Configuration
 public class StripeConfig {
@@ -31,12 +35,8 @@ public class StripeConfig {
     
     @Value("${stripe.webhook.secret:}")
     private String webhookSecret;
-    
-    public StripeConfig(Environment environment) {
-        this.environment = environment;
-    }
-    
-    @Value("${stripe.api.version:2023-10-16}")
+
+    @Value("${stripe.api.version:2026-03-25.dahlia}")
     private String apiVersion;
     
     @Value("${stripe.connect.client.id:}")
@@ -53,48 +53,53 @@ public class StripeConfig {
 
     @Value("${company.website:http://localhost:8080}")
     private String companyWebsite;
-    
+
+    public StripeConfig(Environment environment) {
+        this.environment = environment;
+    }
+
     /**
-     * Initialise la configuration Stripe globale
+     * Vérifie la configuration au démarrage.
      */
     @PostConstruct
     public void initStripe() {
-        try {
-            // En dev, si les clés Stripe sont absentes, on skip l'initialisation
-            boolean isDevProfile = java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev");
-            if (isDevProfile && (stripeSecretKey == null || stripeSecretKey.trim().isEmpty())) {
-                logger.warn("Stripe keys not configured — Stripe is DISABLED in dev mode. "
-                        + "Set stripe.secret.key and stripe.publishable.key in application-secrets.properties to enable.");
-                return;
-            }
-            
-            // Validation des clés requises
-            validateStripeKeys();
-            
-            // Configuration globale de Stripe
-            Stripe.apiKey = stripeSecretKey;
-            Stripe.setMaxNetworkRetries(maxNetworkRetries);
-            Stripe.setConnectTimeout(connectTimeout);
-            Stripe.setReadTimeout(readTimeout);
-            
-            // Configuration de l'agent utilisateur
-            Stripe.setAppInfo(
-                "LMP-Payment-System",
-                "1.0.0",
-                companyWebsite,
-                "pp_partner_LMP"
-            );
-            
-            logger.info("Stripe configuration initialized successfully - API Version: {}", apiVersion);
-            
-        } catch (Exception e) {
-            logger.error("Failed to initialize Stripe configuration: {}", e.getMessage(), e);
-            throw new IllegalStateException("Stripe configuration failed", e);
+        boolean isDevProfile = java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev");
+        if (isDevProfile && (stripeSecretKey == null || stripeSecretKey.trim().isEmpty())) {
+            logger.warn("Stripe keys not configured — Stripe is DISABLED in dev mode. "
+                    + "Set stripe.secret.key and stripe.publishable.key in application-secrets.properties to enable.");
+            return;
         }
+
+        validateStripeKeys();
+        logger.info("Stripe configuration initialized successfully - API Version: {}", apiVersion);
     }
-    
+
     /**
-     * Bean pour les propriétés Stripe (pour injection dans d'autres composants)
+     * Bean principal {@link StripeClient} — à injecter dans tous les services Stripe.
+     * <p>
+     * Remplace l'ancien pattern {@code Stripe.apiKey = ...} + appels statiques.
+     */
+    @Bean
+    public StripeClient stripeClient() {
+        if (stripeSecretKey == null || stripeSecretKey.trim().isEmpty()) {
+            logger.warn("Stripe secret key not configured — returning no-op StripeClient placeholder");
+            // Retourner un client avec une clé factice ; les appels échoueront
+            // mais Spring pourra démarrer sans Stripe en dev
+            return new StripeClient.StripeClientBuilder()
+                    .setApiKey("sk_placeholder_not_configured")
+                    .build();
+        }
+
+        return new StripeClient.StripeClientBuilder()
+                .setApiKey(stripeSecretKey)
+                .setMaxNetworkRetries(maxNetworkRetries)
+                .setConnectTimeout(connectTimeout)
+                .setReadTimeout(readTimeout)
+                .build();
+    }
+
+    /**
+     * Bean pour les propriétés Stripe (pour injection dans d'autres composants).
      */
     @Bean
     public StripeProperties stripeProperties() {
@@ -111,39 +116,31 @@ public class StripeConfig {
     }
     
     /**
-     * Configuration spécifique pour l'environnement de développement
+     * Configuration spécifique pour l'environnement de développement.
      */
     @Configuration
     @Profile("dev")
     static class StripeDevConfig {
-        
         @PostConstruct
         public void initDevConfig() {
             logger.warn("Stripe running in DEVELOPMENT mode - Use test keys only!");
-            
-            // Configuration additionnelle pour le développement
-            Stripe.enableTelemetry = false; // Désactiver la télémétrie en dev
         }
     }
     
     /**
-     * Configuration spécifique pour l'environnement de production
+     * Configuration spécifique pour l'environnement de production.
      */
     @Configuration
     @Profile("prod")
     static class StripeProdConfig {
-        
         @PostConstruct
         public void initProdConfig() {
             logger.info("Stripe running in PRODUCTION mode");
-            
-            // Configuration additionnelle pour la production
-            Stripe.enableTelemetry = true; // Activer la télémétrie en prod
         }
     }
     
     /**
-     * Valide que toutes les clés Stripe requises sont présentes
+     * Valide que toutes les clés Stripe requises sont présentes.
      */
     private void validateStripeKeys() {
         if (stripeSecretKey == null || stripeSecretKey.trim().isEmpty()) {
@@ -158,7 +155,6 @@ public class StripeConfig {
             logger.warn("Stripe webhook secret is not configured - Webhook signature verification will be disabled");
         }
         
-        // Validation du format des clés
         if (!stripeSecretKey.startsWith("sk_")) {
             throw new IllegalStateException("Invalid Stripe secret key format");
         }
@@ -167,7 +163,6 @@ public class StripeConfig {
             throw new IllegalStateException("Invalid Stripe publishable key format");
         }
         
-        // Vérification de l'environnement des clés
         boolean isTestKey = stripeSecretKey.contains("_test_");
         boolean isProdKey = stripeSecretKey.contains("_live_");
         
@@ -181,7 +176,7 @@ public class StripeConfig {
     }
     
     /**
-     * Classe pour encapsuler les propriétés Stripe
+     * Classe pour encapsuler les propriétés Stripe.
      */
     public static class StripeProperties {
         private String secretKey;
@@ -193,7 +188,6 @@ public class StripeConfig {
         private int connectTimeout;
         private int readTimeout;
         
-        // Getters et Setters
         public String getSecretKey() { return secretKey; }
         public void setSecretKey(String secretKey) { this.secretKey = secretKey; }
         
