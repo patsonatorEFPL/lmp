@@ -139,7 +139,7 @@ const ORDER_STEPS = [
   standalone: true,
   imports: [NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <div class="crm-list-view flex h-full flex-col overflow-hidden bg-white">
+    <div class="crm-list-view flex h-full flex-col overflow-hidden bg-(--background)">
     <!-- Barre de filtres inline (style CRM) -->
     <div class="flex items-center justify-between gap-2 px-5 py-4">
       <div class="flex items-center"></div>

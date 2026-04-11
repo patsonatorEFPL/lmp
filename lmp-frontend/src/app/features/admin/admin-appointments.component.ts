@@ -87,7 +87,7 @@ interface ApiResponse<T> {
   standalone: true,
   imports: [NgClass, DatePipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
-    <div class="crm-list-view flex h-full flex-col overflow-hidden bg-white">
+    <div class="crm-list-view flex h-full flex-col overflow-hidden bg-(--background)">
     <!-- Toolbar -->
     <div class="flex items-center justify-between gap-2 px-5 py-4">
       <div class="flex items-center"></div>
