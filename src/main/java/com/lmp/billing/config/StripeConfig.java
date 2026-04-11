@@ -16,9 +16,9 @@ import jakarta.annotation.PostConstruct;
  * Configuration Stripe pour l'application LMP.
  * Expose un {@link StripeClient} centralisé (recommandé v32+).
  * <p>
- * Le pattern global {@code Stripe.apiKey} est conservé en parallèle pour
- * la compatibilité avec les méthodes statiques restantes (Webhook.constructEvent),
- * mais toutes les opérations API passent désormais par le StripeClient injecté.
+ * Toutes les opérations Stripe passent par le {@link StripeClient} injecté.
+ * La vérification de signature webhook utilise {@code Webhook.constructEvent}
+ * qui est une méthode utilitaire statique indépendante du client.
  */
 @Configuration
 public class StripeConfig {
@@ -82,14 +82,15 @@ public class StripeConfig {
     @Bean
     public StripeClient stripeClient() {
         if (stripeSecretKey == null || stripeSecretKey.trim().isEmpty()) {
-            logger.warn("Stripe secret key not configured — returning no-op StripeClient placeholder");
-            // Retourner un client avec une clé factice ; les appels échoueront
-            // mais Spring pourra démarrer sans Stripe en dev
+            logger.warn("Stripe secret key not configured — returning placeholder StripeClient. "
+                    + "Any Stripe API call will fail at runtime. Configure stripe.secret.key to enable.");
             return new StripeClient.StripeClientBuilder()
                     .setApiKey("sk_placeholder_not_configured")
                     .build();
         }
 
+        // Note : la version d'API est définie par le SDK (v32 → 2026-03-25.dahlia).
+        // La propriété stripe.api.version est utilisée pour le logging et les métadonnées.
         return new StripeClient.StripeClientBuilder()
                 .setApiKey(stripeSecretKey)
                 .setMaxNetworkRetries(maxNetworkRetries)
