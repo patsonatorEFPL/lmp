@@ -207,10 +207,10 @@ interface ApiResponse<T> {
             />
           </div>
           <div class="w-64 shrink-0 px-2">Email</div>
-          <div class="hidden w-48 shrink-0 px-2 sm:block">Service</div>
-          <div class="hidden w-40 shrink-0 px-2 md:block">Date</div>
-          <div class="hidden w-28 shrink-0 px-2 md:block">Statut</div>
-          <div class="w-32 shrink-0 px-2 text-right">Last Modified</div>
+          <div class="hidden w-48 shrink-0 px-2 text-center sm:block">Service</div>
+          <div class="hidden w-40 shrink-0 px-2 text-center md:block">Date</div>
+          <div class="hidden w-28 shrink-0 px-2 text-center md:block">Statut</div>
+          <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
         <!-- Lignes -->
@@ -231,13 +231,13 @@ interface ApiResponse<T> {
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ appt.clientEmail || '—' }}
               </div>
-              <div class="hidden w-48 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="hidden w-48 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
                 {{ appt.subject }}
               </div>
-              <div class="hidden w-40 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
+              <div class="hidden w-40 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
                 {{ appt.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
               </div>
-              <div class="hidden w-28 shrink-0 px-2 md:block">
+              <div class="hidden w-28 shrink-0 px-2 text-center md:block">
                 <span
                   class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                   [ngClass]="getStatusClass(appt.status)"
@@ -245,7 +245,7 @@ interface ApiResponse<T> {
                   {{ getStatusLabel(appt.status) }}
                 </span>
               </div>
-              <div class="w-32 shrink-0 px-2 text-right text-sm leading-none text-zinc-500 dark:text-zinc-400">
+              <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(appt.createdAt) }}
               </div>
             </div>

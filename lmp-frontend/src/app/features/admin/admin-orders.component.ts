@@ -263,10 +263,11 @@ const ORDER_STEPS = [
             />
           </div>
           <div class="w-64 shrink-0 px-2">Email</div>
-          <div class="hidden w-40 shrink-0 px-2 sm:block">Service</div>
-          <div class="hidden w-28 shrink-0 px-2 sm:block">Montant</div>
-          <div class="hidden w-32 shrink-0 px-2 md:block">Statut</div>
-          <div class="w-32 shrink-0 px-2 text-right">Last Modified</div>
+          <div class="hidden w-40 shrink-0 px-2 text-center sm:block">Service</div>
+          <div class="hidden w-28 shrink-0 px-2 text-center sm:block">Montant</div>
+          <div class="hidden w-32 shrink-0 px-2 text-center md:block">Statut</div>
+          <div class="hidden w-36 shrink-0 px-2 text-center lg:block">Date</div>
+          <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
         <!-- Lignes (style CRM - cliquables, sans bordures visibles entre les lignes) -->
@@ -287,13 +288,13 @@ const ORDER_STEPS = [
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ order.customerEmail || '—' }}
               </div>
-              <div class="hidden w-40 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="hidden w-40 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
                 {{ order.serviceName }}
               </div>
-              <div class="hidden w-28 shrink-0 truncate px-2 text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="hidden w-28 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
                 {{ order.amount | currency:'EUR':'symbol':'1.2-2' }}
               </div>
-              <div class="hidden w-32 shrink-0 px-2 md:block">
+              <div class="hidden w-32 shrink-0 px-2 text-center md:block">
                 <span
                   class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                   [ngClass]="getStatusClass(order.status)"
@@ -301,7 +302,10 @@ const ORDER_STEPS = [
                   {{ getStatusLabel(order.status) }}
                 </span>
               </div>
-              <div class="w-32 shrink-0 px-2 text-right text-sm leading-none text-zinc-500 dark:text-zinc-400">
+              <div class="hidden w-36 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 lg:block dark:text-zinc-400">
+                {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+              <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(order.createdAt) }}
               </div>
             </div>
