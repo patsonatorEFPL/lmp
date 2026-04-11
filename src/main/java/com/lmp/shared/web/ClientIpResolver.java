@@ -1,9 +1,5 @@
 package com.lmp.shared.web;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,9 +26,6 @@ public final class ClientIpResolver {
 
     public static String resolve(HttpServletRequest request) {
         if (request == null) {
-            // #region agent log
-            agentNdjson("H5", "resolve_null_request", "", "empty", null, null, null, null, null, "");
-            // #endregion
             return "";
         }
 
@@ -64,9 +57,6 @@ public final class ClientIpResolver {
             if (InetRoutability.isPublicRoutable(candidate)) {
                 String resolved = InetRoutability.trimHostPort(candidate);
                 logger.debug("[ClientIpResolver] Resolved IP from early candidate ({}): {}", earlySources[i], candidate);
-                // #region agent log
-                agentNdjson("H3_H4", "resolved_early_public", resolved, earlySources[i], hCf, hTrue, hXReal, hXff, hFwd, hRemote);
-                // #endregion
                 return resolved;
             }
         }
@@ -74,9 +64,6 @@ public final class ClientIpResolver {
         String ip = firstPublicInXForwardedFor(hXff);
         if (!ip.isEmpty()) {
             logger.debug("[ClientIpResolver] Resolved IP from X-Forwarded-For: {}", ip);
-            // #region agent log
-            agentNdjson("H2", "resolved_xff_public", ip, "xff_first_public", hCf, hTrue, hXReal, hXff, hFwd, hRemote);
-            // #endregion
             return ip;
         }
 
@@ -84,101 +71,11 @@ public final class ClientIpResolver {
         remote = InetRoutability.trimHostPort(remote);
         if (!remote.isEmpty()) {
             logger.debug("[ClientIpResolver] Falling back to RemoteAddr: {}", remote);
-            // #region agent log
-            String hid = InetRoutability.isPrivateOrNonRoutable(remote) ? "H1" : "H5";
-            agentNdjson(hid, "resolved_remote_addr", remote, "remote_addr_fallback", hCf, hTrue, hXReal, hXff, hFwd, hRemote);
-            // #endregion
             return remote;
         }
         logger.debug("[ClientIpResolver] No client IP resolved");
-        // #region agent log
-        agentNdjson("H1", "resolved_empty", "", "empty", hCf, hTrue, hXReal, hXff, hFwd, hRemote);
-        // #endregion
         return "";
     }
-
-    /**
-     * NDJSON debug ingest (session e89717). Activé si {@code LMP_DEBUG_IP_LOG=true}.
-     * Chemin : {@code LMP_DEBUG_LOG_PATH} ou {@code user.dir/debug-e89717.log}.
-     */
-    // #region agent log
-    private static void agentNdjson(
-            String hypothesisId,
-            String message,
-            String resolvedIp,
-            String resolutionSource,
-            String hCf,
-            String hTrue,
-            String hXReal,
-            String hXff,
-            String hFwd,
-            String hRemote) {
-        if (!Boolean.parseBoolean(System.getenv().getOrDefault("LMP_DEBUG_IP_LOG", "false"))) {
-            return;
-        }
-        try {
-            boolean hasXff = hXff != null && !hXff.isBlank();
-            String xffFirst = "";
-            boolean xffFirstPrivate = false;
-            if (hasXff) {
-                String[] parts = hXff.split(",");
-                if (parts.length > 0) {
-                    xffFirst = InetRoutability.trimHostPort(parts[0].trim());
-                    xffFirstPrivate = !xffFirst.isEmpty() && InetRoutability.isPrivateOrNonRoutable(xffFirst);
-                }
-            }
-            boolean remotePrivate = hRemote != null && InetRoutability.isPrivateOrNonRoutable(InetRoutability.trimHostPort(hRemote.trim()));
-            String xffEsc = escapeJson(hasXff ? truncate(hXff, 240) : "");
-            String fwdEsc = escapeJson(hFwd != null ? truncate(hFwd, 160) : "");
-            long ts = System.currentTimeMillis();
-            String json = "{\"sessionId\":\"e89717\",\"timestamp\":" + ts
-                    + ",\"hypothesisId\":\"" + escapeJson(hypothesisId) + "\""
-                    + ",\"location\":\"ClientIpResolver.resolve\""
-                    + ",\"message\":\"" + escapeJson(message) + "\""
-                    + ",\"data\":{"
-                    + "\"resolvedIp\":\"" + escapeJson(resolvedIp) + "\""
-                    + ",\"resolutionSource\":\"" + escapeJson(resolutionSource) + "\""
-                    + ",\"hasCfHeader\":" + (hCf != null && !hCf.isBlank())
-                    + ",\"hasXRealHeader\":" + (hXReal != null && !hXReal.isBlank())
-                    + ",\"hasXff\":" + hasXff
-                    + ",\"xffFirstSegmentPrivate\":" + xffFirstPrivate
-                    + ",\"hasForwardedHeader\":" + (hFwd != null && !hFwd.isBlank())
-                    + ",\"remoteAddrPrivate\":" + remotePrivate
-                    + ",\"xffTruncated\":\"" + xffEsc + "\""
-                    + ",\"forwardedTruncated\":\"" + fwdEsc + "\""
-                    + "}}\n";
-            Path path = debugLogPath();
-            Files.writeString(path, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (Exception ignored) {
-            // never break request handling
-        }
-    }
-
-    private static Path debugLogPath() {
-        String override = System.getenv("LMP_DEBUG_LOG_PATH");
-        if (override != null && !override.isBlank()) {
-            return Path.of(override.trim());
-        }
-        return Path.of(System.getProperty("user.dir", "."), "debug-e89717.log");
-    }
-
-    private static String truncate(String s, int max) {
-        if (s == null || s.length() <= max) {
-            return s == null ? "" : s;
-        }
-        return s.substring(0, max) + "…";
-    }
-
-    private static String escapeJson(String s) {
-        if (s == null) {
-            return "";
-        }
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
-    }
-    // #endregion
 
     private static String trimHeaderValue(String h) {
         if (h == null) {
