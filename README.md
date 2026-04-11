@@ -1,149 +1,149 @@
 # LMP Digital Services
 
-Application fullstack de gestion des services digitaux — marketing local, référencement SEO, création web et campagnes publicitaires.
+Full-stack application for managing digital services — local marketing, SEO, web development, and advertising campaigns.
 
-## Stack technique
+## Tech stack
 
-| Couche | Technologie |
+| Layer | Technology |
 |---|---|
 | Backend | Spring Boot 3.5.4, Java 21 |
 | Frontend | Angular 21 (SSR), Tailwind CSS v4 |
 | UI Components | Spartan UI / Helm, Lucide Angular |
-| Base de données | PostgreSQL (prod) / PostgreSQL local Docker persistant en dev (`docker-compose.dev.yml`) |
-| Paiements | Stripe API (Checkout + Webhooks) |
+| Database | PostgreSQL (prod) / persistent local PostgreSQL via Docker in dev (`docker-compose.dev.yml`) |
+| Payments | Stripe API (Checkout + Webhooks) — stripe-java 32 |
 | Auth | Spring Security, OAuth2 (Google, Microsoft), BCrypt |
 | Emails | Thymeleaf templates |
 | Migrations | Flyway |
 | Build | Maven 3.9+, Angular CLI 21 |
-| Déploiement | Docker, Dokploy |
+| Deployment | Docker, Dokploy |
 
-## Fonctionnalités
+## Features
 
-- Authentification locale, Google et Microsoft (OAuth2)
-- Paiements Stripe avec gestion des webhooks
-- Catalogue de services géré dynamiquement via l'API
-- Prise de rendez-vous en ligne
-- Gestion des commandes et factures PDF
-- Notifications email HTML (confirmation, shipping, annulation…)
-- Dashboard administrateur complet (utilisateurs, commandes, RDV, services)
-- Dashboard client (historique commandes, rendez-vous, paramètres)
-- Landing page Angular SSR optimisée SEO
-- Support multilingue (FR, EN, ES, DE, IT, NL, PT, LB)
-- Mode clair / sombre
+- Local, Google, and Microsoft authentication (OAuth2)
+- Stripe payments with webhook handling
+- Service catalog managed dynamically through the API
+- Online appointment booking
+- Order management and PDF invoices
+- HTML email notifications (confirmation, shipping, cancellation…)
+- Full admin dashboard (users, orders, appointments, services)
+- Customer dashboard (order history, appointments, settings)
+- SEO-optimized Angular SSR landing page
+- Multilingual support (FR, EN, ES, DE, IT, NL, PT, LB)
+- Light / dark mode
 
-## Démarrage local
+## Local setup
 
-### Prérequis
+### Prerequisites
 
 - Java 21+
 - Maven 3.9+
-- Node.js 20+ et npm 10+
-- Docker (recommandé — pour PostgreSQL de développement avec données persistantes)
+- Node.js 20+ and npm 10+
+- Docker (recommended — for the development PostgreSQL with persistent data)
 
 ### Backend
 
 ```bash
-# 1. Cloner le repository
-git clone https://github.com/votre-organisation/lmp.git
+# 1. Clone the repository
+git clone https://github.com/your-organization/lmp.git
 cd lmp
 
-# 2. Configurer les secrets
+# 2. Configure secrets
 cp src/main/resources/application-secrets.properties.sample \
    src/main/resources/application-secrets.properties
-# Remplir les valeurs : Stripe Test, OAuth, Remember-Me
-# Pour la base locale : DB_PASSWORD doit correspondre à POSTGRES_PASSWORD (défaut ci-dessous : lmp_dev_local)
+# Fill in the values: Stripe Test, OAuth, Remember-Me
+# For the local database: DB_PASSWORD must match POSTGRES_PASSWORD (default below: lmp_dev_local)
 
-# 3. Démarrer PostgreSQL (données dans un volume Docker — conservées entre les redémarrages)
-#    Script recommandé : attend que Postgres soit prêt (pg_isready).
+# 3. Start PostgreSQL (data stored in a Docker volume — preserved across restarts)
+#    Recommended script: waits for Postgres to be ready (pg_isready).
 ./bin/dev-up.sh
-#    Windows PowerShell : .\bin\dev-up.ps1
-#    Équivalent manuel : docker compose -f docker-compose.dev.yml up -d
+#    Windows PowerShell: .\bin\dev-up.ps1
+#    Manual equivalent: docker compose -f docker-compose.dev.yml up -d
 
-# 4. Lancer l'application (profil dev par défaut)
+# 4. Start the application (dev profile by default)
 SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
-#    Windows PowerShell : $env:SPRING_PROFILES_ACTIVE='dev'; mvn spring-boot:run
-#    Ou : exécuter com.lmp.LmpApplication depuis l'IDE
+#    Windows PowerShell: $env:SPRING_PROFILES_ACTIVE='dev'; mvn spring-boot:run
+#    Or: run com.lmp.LmpApplication from your IDE
 ```
 
-API accessible sur `http://localhost:8080`.
+The API is available at `http://localhost:8080`.
 
-**Sans PostgreSQL persistant (CI / machine sans compose)** : lancer avec Testcontainers — `LMP_DEV_TESTCONTAINERS=true` puis `./mvnw spring-boot:test-run` ou exécuter `TestLmpApplication` (base éphémère, uniquement pour ce mode).
+**Without persistent PostgreSQL (CI / machine without Compose):** run with Testcontainers — `LMP_DEV_TESTCONTAINERS=true` then `./mvnw spring-boot:test-run` or run `TestLmpApplication` (ephemeral database, only for this mode).
 
-**Dépannage — erreur d’authentification PostgreSQL (`28P01`)** : le mot de passe côté Spring doit être le même que celui du conteneur. Par défaut : `lmp_dev_local` dans `application-dev.properties` et dans `docker-compose.dev.yml` (`POSTGRES_PASSWORD`). Si `application-secrets.properties` définit un autre `DB_PASSWORD`, alignez-le ou supprimez la ligne pour utiliser la valeur du profil dev.
+**Troubleshooting — PostgreSQL authentication error (`28P01`):** the password on the Spring side must match the one in the container. Default: `lmp_dev_local` in `application-dev.properties` and in `docker-compose.dev.yml` (`POSTGRES_PASSWORD`). If `application-secrets.properties` defines a different `DB_PASSWORD`, align it or remove the line to fall back to the dev profile value.
 
 ### Frontend
 
 ```bash
 cd lmp-frontend
 
-# Installer les dépendances
+# Install dependencies
 npm install
 
-# Lancer le serveur de développement
+# Start the development server
 npm start
 ```
 
-Application accessible sur `http://localhost:4200` (proxy vers le backend sur `:8080`).
+The app is available at `http://localhost:4200` (proxied to the backend on `:8080`).
 
 ## Architecture
 
-Le backend suit une **architecture modulaire par domaine** (package-by-feature).
+The backend follows a **domain-modular architecture** (package-by-feature).
 
 ```
 lmp/
 ├── src/main/java/com/lmp/
-│   ├── auth/            # Authentification (OAuth2, JWT, BCrypt, sessions)
+│   ├── auth/            # Authentication (OAuth2, JWT, BCrypt, sessions)
 │   │   ├── config/      # Spring Security, OAuth2
 │   │   ├── domain/      # User, Role, Token
 │   │   ├── repository/
 │   │   ├── service/
-│   │   └── web/         # API auth + admin users
-│   ├── billing/         # Commandes, paiements Stripe, factures PDF
+│   │   └── web/         # Auth + admin users API
+│   ├── billing/         # Orders, Stripe payments, PDF invoices
 │   │   ├── config/      # Stripe SDK
 │   │   ├── domain/      # Order, Invoice, Payment
-│   │   ├── service/     # Processeurs de paiement, webhooks
-│   │   └── web/         # API commandes + admin orders
-│   ├── catalog/         # Services & offres commerciales
+│   │   ├── service/     # Payment processors, webhooks
+│   │   └── web/         # Orders + admin orders API
+│   ├── catalog/         # Services & commercial offers
 │   │   ├── domain/      # Service, Offer, Category
-│   │   └── web/         # API catalogue + admin services
-│   ├── crm/             # Rendez-vous et contacts
+│   │   └── web/         # Catalog + admin services API
+│   ├── crm/             # Appointments and contacts
 │   │   ├── domain/      # Appointment, Contact
-│   │   └── web/         # API RDV + admin appointments
-│   ├── integration/     # Webhooks entrants / événements externes
-│   ├── notification/    # Emails Thymeleaf, notifications in-app
-│   ├── portal/          # Endpoints publics (landing, SEO)
-│   └── shared/          # Config globale, DTOs communs, exceptions, utils
+│   │   └── web/         # Appointments + admin appointments API
+│   ├── integration/     # Inbound webhooks / external events
+│   ├── notification/    # Thymeleaf emails, in-app notifications
+│   ├── portal/          # Public endpoints (landing, SEO)
+│   └── shared/          # Global config, shared DTOs, exceptions, utils
 ├── src/main/resources/
-│   ├── db/migration/         # Scripts Flyway (actifs)
-│   ├── db/migration-mysql-legacy/ # Historique legacy MySQL
-│   ├── db/scripts/           # Scripts SQL utilitaires
-│   ├── i18n/                 # Messages de validation (fr, en)
-│   ├── static/images/        # Assets statiques
+│   ├── db/migration/         # Flyway scripts (active)
+│   ├── db/migration-mysql-legacy/ # Legacy MySQL history
+│   ├── db/scripts/           # SQL utility scripts
+│   ├── i18n/                 # Validation messages (fr, en)
+│   ├── static/images/        # Static assets
 │   └── templates/
-│       ├── emails/           # Templates HTML Thymeleaf (15+ modèles)
-│       └── error/            # Pages d'erreur (403, 500)
-└── lmp-frontend/             # SPA Angular 21 (SSR)
+│       ├── emails/           # Thymeleaf HTML templates (15+ models)
+│       └── error/            # Error pages (403, 500)
+└── lmp-frontend/             # Angular 21 SPA (SSR)
     └── src/app/
-        ├── core/             # Guards, interceptors, services métier
+        ├── core/             # Guards, interceptors, domain services
         ├── features/         # Pages (home, services, auth, dashboard, admin…)
-        ├── generated/        # Clients API générés (OpenAPI / ng-openapi-gen)
+        ├── generated/        # Generated API clients (OpenAPI / ng-openapi-gen)
         ├── shared/           # Layouts, modals
-        └── libs/ui/          # Composants Spartan/Helm (button, card, input…)
+        └── libs/ui/          # Spartan/Helm components (button, card, input…)
 ```
 
-## Déploiement (production)
+## Deployment (production)
 
-L'application est conteneurisée et déployée via **Dokploy**. Le `Dockerfile` du frontend génère un build Angular SSR servi par Express, et le `Dockerfile` du backend produit un JAR Spring Boot optimisé.
+The application is containerized and deployed through **Dokploy**. The frontend `Dockerfile` produces an Angular SSR build served by Express, and the backend `Dockerfile` produces an optimized Spring Boot JAR.
 
-### Variables d'environnement requises
+### Required environment variables
 
 ```env
-# Base de données
-SPRING_DATASOURCE_URL=jdbc:postgresql://hote:5432/lmp_db
-SPRING_DATASOURCE_USERNAME=user_prod
-SPRING_DATASOURCE_PASSWORD=secret_prod
+# Database
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/lmp_db
+SPRING_DATASOURCE_USERNAME=prod_user
+SPRING_DATASOURCE_PASSWORD=prod_secret
 
-# Stripe (clés Live)
+# Stripe (Live keys)
 STRIPE_PUBLISHABLE_KEY=pk_live_...
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
@@ -155,34 +155,34 @@ SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MICROSOFT_CLIENT_ID=...
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MICROSOFT_CLIENT_SECRET=...
 ```
 
-## Compte administrateur par défaut
+## Default administrator account
 
-Au premier démarrage, Flyway initialise un compte admin :
+On the first run, Flyway seeds an admin account:
 
-| Champ | Valeur |
+| Field | Value |
 |---|---|
 | Email | `admin@lmp.ca` |
-| Mot de passe | `Admin@LMP-ChangeMe2026!` |
+| Password | `Admin@LMP-ChangeMe2026!` |
 
-> Changer ce mot de passe immédiatement après la première connexion via **Profil → Sécurité**.
+> Change this password immediately after the first login via **Profile → Security**.
 
 ## Tests
 
 ```bash
-# Tests backend
+# Backend tests
 ./mvnw test
 
-# Tests frontend
+# Frontend tests
 cd lmp-frontend && npm test
 ```
 
-## Contribution
+## Contributing
 
-1. Créer une branche : `git checkout -b feature/nom-de-la-feature`
-2. Committer : `git commit -m 'feat: description'`
-3. Pousser : `git push origin feature/nom-de-la-feature`
-4. Ouvrir une Pull Request
+1. Create a branch: `git checkout -b feature/feature-name`
+2. Commit: `git commit -m 'feat: description'`
+3. Push: `git push origin feature/feature-name`
+4. Open a Pull Request
 
 ---
 
-© 2026 LMP Digital Services — Tous droits réservés.
+© 2026 LMP Digital Services — All rights reserved.
