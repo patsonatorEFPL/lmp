@@ -1,10 +1,10 @@
 # LMP Frontend
 
-Application Angular 21 avec Server-Side Rendering (SSR) — interface publique et dashboard de LMP Digital Services.
+Angular 21 application with Server-Side Rendering (SSR) — public interface and dashboard for LMP Digital Services.
 
 ## Stack
 
-| Outil | Version |
+| Tool | Version |
 |---|---|
 | Angular | 21.2 |
 | Angular SSR | 21.2 |
@@ -14,23 +14,23 @@ Application Angular 21 avec Server-Side Rendering (SSR) — interface publique e
 | TypeScript | 5.9 |
 | Node.js | 20+ |
 
-## Démarrage
+## Getting started
 
 ```bash
 npm install
 npm start        # dev server → http://localhost:4200
 ```
 
-Le proxy (`proxy.conf.json`) redirige les appels `/api/**` vers `http://localhost:8080`.
+The proxy (`proxy.conf.json`) forwards `/api/**` calls to `http://localhost:8080`.
 
-## Commandes
+## Commands
 
 ```bash
-npm start              # Serveur de développement (hot reload)
-npm run build          # Build de production (SSR)
-npm run watch          # Build dev en mode watch
-npm test               # Tests unitaires (Vitest)
-npm run codegen        # Génération des clients API depuis OpenAPI
+npm start              # Development server (hot reload)
+npm run build          # Production build (SSR)
+npm run watch          # Dev build in watch mode
+npm test               # Unit tests (Vitest)
+npm run codegen        # Generate API clients from OpenAPI
 ```
 
 ## Structure
@@ -39,31 +39,31 @@ npm run codegen        # Génération des clients API depuis OpenAPI
 src/app/
 ├── core/
 │   ├── guards/        # auth.guard, admin.guard
-│   ├── interceptors/  # CSRF, gestion d'erreurs
+│   ├── interceptors/  # CSRF, error handling
 │   └── services/      # auth, catalog, dashboard, seo, theme…
 ├── features/
 │   ├── home/          # Landing page
-│   ├── services/      # Catalogue des services
+│   ├── services/      # Service catalog
 │   ├── auth/          # Login, Register
-│   ├── dashboard/     # Espace client (commandes, RDV)
-│   ├── admin/         # Back-office (users, orders, appointments…)
-│   ├── contact/       # Formulaire de contact
-│   ├── about/         # Page à propos
-│   ├── map/           # Carte interactive
-│   ├── privacy/       # Politique de confidentialité
-│   └── terms/         # Conditions d'utilisation
+│   ├── dashboard/     # Customer area (orders, appointments)
+│   ├── admin/         # Back office (users, orders, appointments…)
+│   ├── contact/       # Contact form
+│   ├── about/         # About page
+│   ├── map/           # Interactive map
+│   ├── privacy/       # Privacy policy
+│   └── terms/         # Terms of service
 ├── shared/
 │   ├── layout/        # Navbar, Footer, PublicLayout, AdminLayout
 │   └── modals/        # AppointmentModal, OrderModal
-└── libs/ui/           # Composants Spartan/Helm (button, card, input…)
+└── libs/ui/           # Spartan/Helm components (button, card, input…)
 ```
 
-## Thème
+## Theme
 
-Les variables CSS sont définies dans `src/styles.css` :
+CSS variables are defined in `src/styles.css`:
 
-- Police : **DM Sans** (Google Fonts)
-- Couleur principale : `#7c3aed` (violet, light) / `#a78bfa` (dark)
-- Fond light : `#fafafa` — Fond dark : `#111113`
-- Border radius : `0.5rem` (`rounded-sm` partout)
-- Supporte le mode clair et sombre via la classe `.dark` sur `<html>`
+- Font: **DM Sans** (Google Fonts)
+- Primary color: `#7c3aed` (violet, light) / `#a78bfa` (dark)
+- Light background: `#fafafa` — Dark background: `#111113`
+- Border radius: `0.5rem` (`rounded-sm` everywhere)
+- Supports light and dark mode via the `.dark` class on `<html>`
