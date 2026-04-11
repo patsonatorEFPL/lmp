@@ -33,7 +33,6 @@ import com.stripe.param.RefundCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionCreateParams.Locale;
 import com.stripe.param.checkout.SessionListParams;
-import com.stripe.param.checkout.SessionRetrieveParams;
 
 /**
  * Processeur de paiement Stripe utilisant Checkout Sessions
@@ -47,10 +46,9 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
         private static final Logger securityLogger = LoggerFactory
                         .getLogger("SECURITY." + StripeCheckoutPaymentProcessor.class.getName());
 
-	private static final String PROCESSOR_NAME = "stripe-checkout";
-	private static final String API_VERSION = "2026-03-25.dahlia";
+        private static final String PROCESSOR_NAME = "stripe-checkout";
 
-	private final StripeClient stripeClient;
+        private final StripeClient stripeClient;
 
         // Devises supportées par Stripe Checkout
         private static final Set<String> SUPPORTED_CURRENCIES = Set.of(
@@ -85,11 +83,14 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                         "pt", "Serviços de marketing digital LMP",
                         "lb", "LMP Digital Marketing Servicer");
 
-	@Value("${stripe.publishable.key}")
-	private String stripePublishableKey;
+        @Value("${stripe.api.version:2026-03-25.dahlia}")
+        private String stripeApiVersion;
 
-	@Value("${app.base.url}")
-	private String baseUrl;
+        @Value("${stripe.publishable.key}")
+        private String stripePublishableKey;
+
+        @Value("${app.base.url}")
+        private String baseUrl;
 
 	@Value("${app.frontend.url:${app.base.url}}")
 	private String frontendUrl;
@@ -345,7 +346,7 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
 
         @Override
         public String getApiVersion() {
-                return API_VERSION;
+                return stripeApiVersion;
         }
 
         /**
