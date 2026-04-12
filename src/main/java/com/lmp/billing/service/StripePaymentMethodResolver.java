@@ -114,6 +114,22 @@ public class StripePaymentMethodResolver {
     }
 
     /**
+     * Récupère l'objet PaymentMethod Stripe complet (pour extraction card country, etc.).
+     *
+     * @param paymentMethodId identifiant Stripe du PaymentMethod (pm_xxx)
+     * @return PaymentMethod ou {@code null} si impossible
+     */
+    public PaymentMethod retrievePaymentMethod(String paymentMethodId) {
+        if (paymentMethodId == null || paymentMethodId.isBlank()) return null;
+        try {
+            return stripeClient.paymentMethods().retrieve(paymentMethodId);
+        } catch (Exception e) {
+            logger.warn("Impossible de récupérer le PaymentMethod {} : {}", paymentMethodId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Retourne le libellé français pour un type Stripe donné (ex. "card" → "Carte bancaire").
      *
      * @param stripeType type Stripe brut
@@ -141,7 +157,17 @@ public class StripePaymentMethodResolver {
         if (order == null || session == null) return;
         try {
             Session.CustomerDetails cd = session.getCustomerDetails();
-            if (cd == null || cd.getAddress() == null) return;
+            if (cd == null) return;
+
+            // Extraire le nom de facturation (billing_details.name)
+            // Ne PAS écraser un nom personnalisé déjà renseigné par l'utilisateur (checkbox checkout)
+            String name = cd.getName();
+            if (name != null && !name.isBlank() && order.getBillingName() == null) {
+                order.setBillingName(name);
+                logger.debug("Billing name extracted from session {}: '{}'", session.getId(), name);
+            }
+
+            if (cd.getAddress() == null) return;
             Address addr = cd.getAddress();
             applyAddress(order, addr.getLine1(), addr.getLine2(), addr.getCity(),
                     addr.getPostalCode(), addr.getCountry());
@@ -166,7 +192,16 @@ public class StripePaymentMethodResolver {
         if (pmId == null || pmId.isBlank()) return;
         try {
             PaymentMethod pm = stripeClient.paymentMethods().retrieve(pmId);
-            if (pm.getBillingDetails() == null || pm.getBillingDetails().getAddress() == null) return;
+            if (pm.getBillingDetails() == null) return;
+
+            // Extraire le nom de facturation (billing_details.name)
+            String name = pm.getBillingDetails().getName();
+            if (name != null && !name.isBlank() && order.getBillingName() == null) {
+                order.setBillingName(name);
+                logger.debug("Billing name extracted from PM {}: '{}'", pmId, name);
+            }
+
+            if (pm.getBillingDetails().getAddress() == null) return;
             Address addr = pm.getBillingDetails().getAddress();
             applyAddress(order, addr.getLine1(), addr.getLine2(), addr.getCity(),
                     addr.getPostalCode(), addr.getCountry());

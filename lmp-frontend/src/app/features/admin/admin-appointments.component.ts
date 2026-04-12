@@ -197,7 +197,7 @@ interface ApiResponse<T> {
         </div>
       } @else {
         <!-- En-tête colonnes -->
-        <div class="mb-2 flex items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+        <div class="mb-2 flex min-w-max items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
           <div class="flex w-10 shrink-0 items-center justify-center">
             <input
               type="checkbox"
@@ -207,9 +207,9 @@ interface ApiResponse<T> {
             />
           </div>
           <div class="w-64 shrink-0 px-2">Email</div>
-          <div class="hidden w-48 shrink-0 px-2 text-center sm:block">Service</div>
-          <div class="hidden w-40 shrink-0 px-2 text-center md:block">Date</div>
-          <div class="hidden w-28 shrink-0 px-2 text-center md:block">Statut</div>
+          <div class="w-48 shrink-0 px-2 text-center">Service</div>
+          <div class="w-40 shrink-0 px-2 text-center">Date</div>
+          <div class="w-28 shrink-0 px-2 text-center">Statut</div>
           <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
@@ -217,7 +217,7 @@ interface ApiResponse<T> {
         <div>
           @for (appt of filteredAppointments(); track appt.id) {
             <div
-              class="group flex h-10 cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
+              class="group flex h-10 min-w-max cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
               (click)="viewDetail(appt.id)"
             >
               <div class="flex w-10 shrink-0 items-center justify-center" (click)="$event.stopPropagation()">
@@ -231,13 +231,13 @@ interface ApiResponse<T> {
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ appt.clientEmail || '—' }}
               </div>
-              <div class="hidden w-48 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="w-48 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ appt.subject }}
               </div>
-              <div class="hidden w-40 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
+              <div class="w-40 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ appt.appointmentDate | date:'dd/MM/yyyy HH:mm' }}
               </div>
-              <div class="hidden w-28 shrink-0 px-2 text-center md:block">
+              <div class="w-28 shrink-0 px-2 text-center">
                 <span
                   class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                   [ngClass]="getStatusClass(appt.status)"
@@ -245,7 +245,7 @@ interface ApiResponse<T> {
                   {{ getStatusLabel(appt.status) }}
                 </span>
               </div>
-              <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
+              <div class="w-32 shrink-0 px-2 text-center text-sm leading-normal text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(appt.createdAt) }}
               </div>
             </div>

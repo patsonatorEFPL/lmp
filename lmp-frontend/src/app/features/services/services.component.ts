@@ -69,72 +69,7 @@ import { ProfileService } from '../../core/services/profile.service';
           </div>
         }
 
-        @if (authService.user()) {
-          <div
-            class="mt-8 scroll-animate rounded-sm border border-(--border) bg-(--card) p-5 sm:p-6"
-          >
-            <h2 class="text-sm font-semibold text-(--foreground)">Facturation avant commande</h2>
-            <p class="mt-2 text-xs leading-relaxed text-(--muted-foreground)">
-              Si vous êtes assujetti à l’autoliquidation de la TVA (auto-reverse) ou à une exonération équivalente
-              pour nos prestations, cochez la case et saisissez votre numéro de TVA. Vos préférences sont
-              enregistrées sur votre compte et figureront sur la facture (mention auto-reverse). Sinon, ne cochez
-              pas : la TVA sera traitée comme d’habitude sur la facture.
-            </p>
-            <div class="mt-4 space-y-3">
-              <label class="flex cursor-pointer items-start gap-3 text-sm text-(--foreground)">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="checkoutTaxForm.vatReverseCharge"
-                  class="mt-1 rounded-sm border-(--border)"
-                />
-                <span>Autoliquidation / auto-reverse (ou exonération liée) — j’indique mon N° TVA ci-dessous</span>
-              </label>
-              @if (checkoutTaxForm.vatReverseCharge) {
-                <div class="max-w-md space-y-1">
-                  <label class="text-xs font-medium text-(--foreground)" for="svc-vat-number">Numéro de TVA</label>
-                  <input
-                    id="svc-vat-number"
-                    type="text"
-                    [(ngModel)]="checkoutTaxForm.vatNumber"
-                    placeholder="ex. FR…, BE…"
-                    class="w-full rounded-sm border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) outline-none focus:border-(--primary)"
-                    autocomplete="off"
-                  />
-                </div>
-              }
 
-              <!-- Save button + feedback -->
-              <div class="flex items-center gap-3 pt-1">
-                <button
-                  hlmBtn
-                  variant="outline"
-                  size="sm"
-                  class="cursor-pointer gap-1.5"
-                  [disabled]="vatSaveStatus() === 'saving'"
-                  (click)="saveVatPreferences()"
-                >
-                  @if (vatSaveStatus() === 'saving') {
-                    <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
-                  } @else {
-                    <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
-                  }
-                  Enregistrer
-                </button>
-                @if (vatSaveStatus() === 'saved') {
-                  <span class="flex items-center gap-1 text-xs font-medium text-green-600 animate-in fade-in duration-200">
-                    <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
-                    Préférences enregistrées
-                  </span>
-                }
-                @if (vatSaveStatus() === 'error') {
-                  <span class="text-xs font-medium text-(--destructive) animate-in fade-in duration-200">
-                    {{ vatSaveError() }}
-                  </span>
-                }
-              </div>
-            </div>
-          </div>
-        }
 
         <!-- Loading state -->
         @if (loading()) {

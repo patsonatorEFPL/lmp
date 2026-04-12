@@ -27,11 +27,27 @@ public record OrderResponse(
         String processingNotes,
         /** Lien /payment/guest?t=… pour les commandes invité encore en attente de paiement (admin uniquement). */
         String guestPaymentLink,
-        // Adresse de facturation
+        // Facturation
+        String billingName,
         String billingAddress,
         String billingCity,
         String billingPostalCode,
-        String billingCountry
+        String billingCountry,
+        // TVA snapshot
+        Boolean vatReverseCharge,
+        String customerVatNumber,
+        // FX snapshot
+        BigDecimal amountBaseEur,
+        // Fraud scoring
+        String ipCountry,
+        String ipAddress,
+        BigDecimal vpnScore,
+        String vpnSources,
+        String browserTimezone,
+        String geoCountry,
+        String cardCountry,
+        Integer fraudScore,
+        String fraudFlags
 ) {
     public static OrderResponse from(Order order) {
         return forAdmin(order, null);
@@ -61,10 +77,23 @@ public record OrderResponse(
                 order.getProgressStatus(),
                 order.getProcessingNotes(),
                 computeGuestPaymentLink(order, frontendBaseUrl),
+                order.getBillingName(),
                 order.getBillingAddress(),
                 order.getBillingCity(),
                 order.getBillingPostalCode(),
-                order.getBillingCountry());
+                order.getBillingCountry(),
+                order.getVatReverseCharge(),
+                order.getCustomerVatNumber(),
+                order.getAmountBaseEur(),
+                order.getIpCountry(),
+                order.getIpAddress(),
+                order.getVpnScore(),
+                order.getVpnSources(),
+                order.getBrowserTimezone(),
+                order.getGeoCountry(),
+                order.getCardCountry(),
+                order.getFraudScore(),
+                order.getFraudFlags());
     }
 
     /**
