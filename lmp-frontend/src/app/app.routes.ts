@@ -85,6 +85,15 @@ export const routes: Routes = [
       ),
   },
 
+  // Checkout for an existing order (must be before :offerId wildcard)
+  {
+    path: 'checkout/order/:orderId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/checkout/checkout.component').then(
+        (m) => m.CheckoutComponent,
+      ),
+  },
   // Unified checkout page (no navbar/footer — standalone)
   {
     path: 'checkout/:offerId',
@@ -108,13 +117,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/payment/payment-cancel.component').then(
         (m) => m.PaymentCancelComponent,
-      ),
-  },
-  {
-    path: 'payment/process',
-    loadComponent: () =>
-      import('./features/payment/payment-process.component').then(
-        (m) => m.PaymentProcessComponent,
       ),
   },
   {

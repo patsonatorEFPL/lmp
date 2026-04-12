@@ -34,6 +34,7 @@ import com.lmp.integration.repository.WebhookEventLogRepository;
 import com.lmp.notification.service.EmailService;
 import com.lmp.billing.service.InvoicePdfService;
 import com.lmp.billing.service.StripePaymentMethodResolver;
+import com.lmp.shared.geo.FraudScoringService;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import com.lmp.billing.dto.WebhookEventDto;
@@ -87,6 +88,8 @@ public class StripeWebhookHandler {
 
         private final StripePaymentMethodResolver paymentMethodResolver;
 
+    private final FraudScoringService fraudScoringService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -100,7 +103,8 @@ public class StripeWebhookHandler {
                            RefundRepository refundRepository,
                            ApplicationEventPublisher eventPublisher,
                            OrderRealtimeEventPublisher orderRealtimeEventPublisher,
-                           StripePaymentMethodResolver paymentMethodResolver) {
+                           StripePaymentMethodResolver paymentMethodResolver,
+                           FraudScoringService fraudScoringService) {
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -112,6 +116,7 @@ public class StripeWebhookHandler {
         this.eventPublisher = eventPublisher;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.paymentMethodResolver = paymentMethodResolver;
+        this.fraudScoringService = fraudScoringService;
     }
 
     /**
@@ -1677,4 +1682,42 @@ public class StripeWebhookHandler {
         }
         eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.PAYMENT_FAILED, "billing", entityId, pl));
     }
+
+    /**
+     * Extracts the card issuing country from the PaymentMethod and recalculates fraud score.
+     */
+    private void extractCardCountryAndRecalcFraud(Order order, PaymentIntent paymentIntent) {
+        if (paymentIntent == null) return;
+        String pmId = paymentIntent.getPaymentMethod();
+        if (pmId == null || pmId.isBlank()) return;
+        try {
+            com.stripe.model.PaymentMethod pm = paymentMethodResolver.retrievePaymentMethod(pmId);
+            if (pm != null && pm.getCard() != null && pm.getCard().getCountry() != null) {
+                String cardCountry = pm.getCard().getCountry().toUpperCase();
+                order.setCardCountry(cardCountry);
+                logger.debug("[FRAUD-DEBUG] Card country extracted: {} for order {}", cardCountry, order.getId());
+
+                // Recalculate fraud score with card country
+                if (order.getFraudScore() != null) {
+                    FraudScoringService.FraudSignals signals = new FraudScoringService.FraudSignals(
+                            order.getIpCountry(),
+                            order.getVpnScore() != null ? order.getVpnScore().doubleValue() : 0.0,
+                            order.getBrowserTimezone(),
+                            order.getGeoCountry(),
+                            order.getBillingCountry(),
+                            cardCountry,
+                            false
+                    );
+                    FraudScoringService.FraudResult result = fraudScoringService.score(signals);
+                    order.setFraudScore(result.score());
+                    order.setFraudFlags(String.join(",", result.flags()));
+                    logger.info("[FRAUD-DEBUG] Recalculated fraud score with card country: score={} flags={} for order {}",
+                            result.score(), result.flags(), order.getId());
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("[FRAUD-DEBUG] Could not extract card country for order {}: {}", order.getId(), e.getMessage());
+        }
+    }
+
 }

@@ -36,6 +36,7 @@ import {
 } from '../../core/services/dashboard.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { PaymentSessionService } from '../../core/services/payment-session.service';
 import { FormsModule } from '@angular/forms';
 import { NotificationPanelComponent } from '../../shared/layout/notification-panel.component';
@@ -964,33 +965,7 @@ export class DashboardComponent implements OnInit {
   }
 
   payOrder(order: any): void {
-    this.http
-      .post<{
-        success: boolean;
-        data?: { clientSecret: string; publishableKey: string; orderId: string };
-        message?: string;
-      }>(
-        `${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}/payment-element`,
-        {},
-        { withCredentials: true },
-      )
-      .subscribe({
-        next: (res) => {
-          if (res.success && res.data?.clientSecret && res.data.publishableKey && res.data.orderId) {
-            this.paymentSession.start({
-              clientSecret: res.data.clientSecret,
-              publishableKey: res.data.publishableKey,
-              orderId: String(res.data.orderId),
-            });
-            void this.router.navigate(['/payment/process']);
-          } else {
-            alert(res.message || 'Erreur lors de la création du paiement.');
-          }
-        },
-        error: (err) => {
-          alert(err.error?.message || 'Erreur lors de la création du paiement.');
-        },
-      });
+    void this.router.navigate(['/checkout/order', order.id]);
   }
 
   downloadInvoice(orderId: string): void {

@@ -73,6 +73,9 @@ public class Order {
     @Column(name = "stripe_charge_id")
     private String stripeChargeId;
     
+    @Column(name = "billing_name")
+    private String billingName;
+
     @Column(name = "billing_address")
     private String billingAddress;
     
@@ -163,6 +166,43 @@ public class Order {
     @Column(name = "fx_source", length = 32)
     private String fxSource;
 
+    // ── Fraud scoring fields ──────────────────────────────────────────────
+    /** Pays détecté par IP au moment du checkout. */
+    @Column(name = "ip_country", length = 2)
+    private String ipCountry;
+
+    /** Adresse IP du client au moment du checkout. */
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    /** Score VPN normalisé (0.0–1.0) consensus multi-sources. */
+    @Column(name = "vpn_score", precision = 5, scale = 3)
+    private java.math.BigDecimal vpnScore;
+
+    /** Sources VPN consultées avec résultats (ex: "ip-api:true,getipintel:0.99,iphub:1"). */
+    @Column(name = "vpn_sources", length = 255)
+    private String vpnSources;
+
+    /** Timezone du navigateur (ex: "Europe/Paris"). */
+    @Column(name = "browser_timezone", length = 64)
+    private String browserTimezone;
+
+    /** Pays via géolocalisation navigateur (reverse geocode). */
+    @Column(name = "geo_country", length = 2)
+    private String geoCountry;
+
+    /** Pays de la carte bancaire (post-paiement, depuis Stripe PaymentMethod). */
+    @Column(name = "card_country", length = 2)
+    private String cardCountry;
+
+    /** Score de fiabilité anti-fraude 0–100 (100 = fiable). */
+    @Column(name = "fraud_score")
+    private Integer fraudScore;
+
+    /** Flags anti-fraude déclenchés (JSON array). */
+    @Column(name = "fraud_flags", columnDefinition = "TEXT")
+    private String fraudFlags;
+
     public Order() {}
     
     // Getters and Setters
@@ -206,6 +246,8 @@ public class Order {
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public String getStripeChargeId() { return stripeChargeId; }
     public void setStripeChargeId(String stripeChargeId) { this.stripeChargeId = stripeChargeId; }
+    public String getBillingName() { return billingName; }
+    public void setBillingName(String billingName) { this.billingName = billingName; }
     public String getBillingAddress() { return billingAddress; }
     public void setBillingAddress(String billingAddress) { this.billingAddress = billingAddress; }
     public String getBillingCity() { return billingCity; }
@@ -258,4 +300,31 @@ public class Order {
 
     public String getFxSource() { return fxSource; }
     public void setFxSource(String fxSource) { this.fxSource = fxSource; }
+
+    public String getIpCountry() { return ipCountry; }
+    public void setIpCountry(String ipCountry) { this.ipCountry = ipCountry; }
+
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+
+    public java.math.BigDecimal getVpnScore() { return vpnScore; }
+    public void setVpnScore(java.math.BigDecimal vpnScore) { this.vpnScore = vpnScore; }
+
+    public String getVpnSources() { return vpnSources; }
+    public void setVpnSources(String vpnSources) { this.vpnSources = vpnSources; }
+
+    public String getBrowserTimezone() { return browserTimezone; }
+    public void setBrowserTimezone(String browserTimezone) { this.browserTimezone = browserTimezone; }
+
+    public String getGeoCountry() { return geoCountry; }
+    public void setGeoCountry(String geoCountry) { this.geoCountry = geoCountry; }
+
+    public String getCardCountry() { return cardCountry; }
+    public void setCardCountry(String cardCountry) { this.cardCountry = cardCountry; }
+
+    public Integer getFraudScore() { return fraudScore; }
+    public void setFraudScore(Integer fraudScore) { this.fraudScore = fraudScore; }
+
+    public String getFraudFlags() { return fraudFlags; }
+    public void setFraudFlags(String fraudFlags) { this.fraudFlags = fraudFlags; }
 }

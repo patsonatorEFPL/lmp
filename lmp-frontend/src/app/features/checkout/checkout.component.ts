@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   computed,
+  effect,
 } from '@angular/core';
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,6 +27,7 @@ import {
 } from 'lucide-angular';
 
 import { environment } from '../../../environments/environment';
+import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
 
@@ -52,6 +54,36 @@ interface PaymentElementResult {
   orderId: string;
   clientSecret: string;
   publishableKey: string;
+}
+
+/** Shape of GET /api/v1/orders/:id response */
+interface OrderDetail {
+  id: string;
+  serviceName: string;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  billingName: string | null;
+  billingAddress: string | null;
+  billingCity: string | null;
+  billingPostalCode: string | null;
+  billingCountry: string | null;
+  vatReverseCharge: boolean | null;
+  customerVatNumber: string | null;
+  amountBaseEur: number | null;
+}
+
+interface GeoCheckResult {
+  ipCountry: string | null;
+  vpnScore: number;
+  vpnDetected: boolean;
+  vpnSources: string;
+}
+
+interface FraudCheckResult {
+  score: number;
+  alert: boolean;
+  flags: string[];
 }
 
 @Component({
@@ -148,6 +180,31 @@ interface PaymentElementResult {
               </span>
             </div>
           </div>
+
+          <!-- ═══ Different billing name ═══ -->
+          <label class="mt-4 flex cursor-pointer items-center gap-3 rounded-lg border border-[#2a2a2e] bg-[#1a1a1d] px-5 py-4 text-sm text-[#ccc] transition-colors hover:border-[#3a3a3e]">
+            <input
+              type="checkbox"
+              [checked]="useDifferentBillingName()"
+              (change)="onDifferentBillingNameToggle($event)"
+              class="h-4 w-4 cursor-pointer rounded border-[#444] bg-transparent accent-blue-500"
+            />
+            <span>Utiliser un nom différent sur les factures</span>
+          </label>
+
+          @if (useDifferentBillingName()) {
+            <div class="mt-2 rounded-lg border border-[#2a2a2e] bg-[#1a1a1d] px-5 py-4">
+              <label class="mb-1 block text-xs font-medium text-[#999]">Nom sur la facture</label>
+              <input
+                type="text"
+                [ngModel]="customBillingName()"
+                (ngModelChange)="customBillingName.set($event)"
+                placeholder="ex. Nom de l'entreprise ou nom complet"
+                class="w-full rounded-lg border border-[#333] bg-[#111] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#555] focus:border-blue-500/60"
+                autocomplete="organization"
+              />
+            </div>
+          }
 
           <!-- ═══ Tax ID / Reverse Charge (optional) ═══ -->
           <div class="mt-4 rounded-lg border border-[#2a2a2e] bg-[#1a1a1d] p-5">
@@ -285,6 +342,9 @@ export class CheckoutComponent implements OnDestroy {
   readonly loadError = signal<string | null>(null);
   readonly preview = signal<CheckoutPreview | null>(null);
 
+  readonly useDifferentBillingName = signal(false);
+  readonly customBillingName = signal('');
+
   readonly vatReverseCharge = signal(false);
   readonly vatNumber = signal('');
   readonly vatError = signal<string | null>(null);
@@ -294,19 +354,27 @@ export class CheckoutComponent implements OnDestroy {
   readonly stripeReady = signal(false);
   readonly submitting = signal(false);
 
+  // ── Fraud / geo signals ─────────────────────────────
+  private geoCheck = signal<GeoCheckResult | null>(null);
+  private geoCountry = signal<string | null>(null);
+  private geoLocationDenied = signal(false);
+  private autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private beforeUnloadHandler: (() => void) | null = null;
+
   private stripe: Stripe | null = null;
   private elements: StripeElements | null = null;
   private paymentElement: StripePaymentElement | null = null;
   private addressElement: StripeAddressElement | null = null;
   private orderId: string | null = null;
-  private offerId: string | null = null;
+
+  /** true when paying an existing order (route /checkout/order/:orderId) */
+  private existingOrderMode = false;
 
   // ── Computed ─────────────────────────────────────────
   readonly displayVatAmount = computed(() => {
     const p = this.preview();
     if (!p) return 0;
     if (this.vatReverseCharge()) return 0;
-    // Compute client-side: amountHt × vatRate / 100
     return Math.round(p.amountHt * p.vatRate) / 100;
   });
 
@@ -314,7 +382,6 @@ export class CheckoutComponent implements OnDestroy {
     const p = this.preview();
     if (!p) return 0;
     if (this.vatReverseCharge()) return p.amountHt;
-    // HT + TVA computed client-side
     return Math.round((p.amountHt + p.amountHt * p.vatRate / 100) * 100) / 100;
   });
 
@@ -340,37 +407,53 @@ export class CheckoutComponent implements OnDestroy {
   });
 
   readonly canSubmit = computed(() =>
-    this.stripeReady() && !this.submitting() && !this.stripeError()
+    this.stripeReady() && !this.submitting()
   );
 
   constructor() {
     afterNextRender(() => {
-      this.offerId = this.route.snapshot.paramMap.get('offerId');
-      if (!this.offerId) {
-        this.loadError.set('Offre introuvable.');
-        this.loading.set(false);
-        return;
-      }
+      // Detect mode: /checkout/order/:orderId  vs  /checkout/:offerId
+      const existingOrderId = this.route.snapshot.paramMap.get('orderId');
+      const offerId = this.route.snapshot.paramMap.get('offerId');
 
-      // Init VAT from user profile
+      // Init VAT from user profile as default
       const user = this.authService.user();
       if (user) {
         this.vatReverseCharge.set(!!user.vatReverseCharge);
         this.vatNumber.set(user.vatNumber ?? '');
       }
 
-      this.loadPreview(this.offerId);
+      if (existingOrderId) {
+        // ── Existing order mode ──
+        this.existingOrderMode = true;
+        this.orderId = existingOrderId;
+        this.loadExistingOrder(existingOrderId);
+      } else if (offerId) {
+        // ── New order mode ──
+        this.loadPreview(offerId);
+      } else {
+        this.loadError.set('Offre introuvable.');
+        this.loading.set(false);
+      }
+
+      // ── Geo check (VPN detection) ──
+      this.runGeoCheck();
+
+      // ── Auto-save setup ──
+      this.setupAutoSave();
     });
   }
 
   // ── Data Loading ─────────────────────────────────────
+
+  /** Load checkout preview for a new order from an offer */
   private loadPreview(offerId: string): void {
     this.loading.set(true);
     this.loadError.set(null);
 
     this.http
       .get<ApiResponse<CheckoutPreview>>(
-        `${environment.apiUrl}/api/v1/payments/checkout-preview`,
+        paymentApiUrls.checkoutPreview(),
         { params: { offerId }, withCredentials: true },
       )
       .subscribe({
@@ -378,7 +461,7 @@ export class CheckoutComponent implements OnDestroy {
           if (res.success && res.data) {
             this.preview.set(res.data);
             this.loading.set(false);
-            this.initPayment(offerId);
+            this.initNewOrderPayment(offerId);
           } else {
             this.loadError.set(res.message ?? 'Offre introuvable.');
             this.loading.set(false);
@@ -393,13 +476,91 @@ export class CheckoutComponent implements OnDestroy {
       });
   }
 
-  private initPayment(offerId: string): void {
+  /** Load an existing order's data and restore all form fields */
+  private loadExistingOrder(orderId: string): void {
+    this.loading.set(true);
+    this.loadError.set(null);
+
+    this.http
+      .get<ApiResponse<OrderDetail>>(
+        `${environment.apiUrl}/api/v1/orders/${orderId}`,
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.success && res.data) {
+            const order = res.data;
+
+            if (order.status !== 'PAYMENT_PENDING') {
+              this.loadError.set('Cette commande n\'est pas en attente de paiement.');
+              this.loading.set(false);
+              return;
+            }
+
+            // Restore form fields from order snapshot
+            this.restoreFormFromOrder(order);
+
+            // Restore draft from localStorage (overrides order data with latest user input)
+            this.restoreDraft();
+
+            // Build a preview from the order data
+            const amountHt = order.amountBaseEur ?? order.totalAmount;
+            const vatRate = (order.vatReverseCharge) ? 0 : 20;
+            this.preview.set({
+              serviceName: order.serviceName,
+              amountHt,
+              vatAmount: order.vatReverseCharge ? 0 : Math.round(amountHt * vatRate) / 100,
+              totalAmount: order.totalAmount,
+              vatRate,
+              reverseCharge: !!order.vatReverseCharge,
+              currency: order.currency ?? 'EUR',
+              durationType: 'ONE_TIME',
+              offerId: '',
+            });
+
+            this.loading.set(false);
+            this.initExistingOrderPayment(orderId);
+          } else {
+            this.loadError.set(res.message ?? 'Commande introuvable.');
+            this.loading.set(false);
+          }
+        },
+        error: (err) => {
+          this.loadError.set(
+            err.error?.message ?? 'Erreur lors du chargement de la commande.',
+          );
+          this.loading.set(false);
+        },
+      });
+  }
+
+  /** Restore all user-entered data from order fields */
+  private restoreFormFromOrder(order: OrderDetail): void {
+    // Billing name
+    if (order.billingName) {
+      this.useDifferentBillingName.set(true);
+      this.customBillingName.set(order.billingName);
+    }
+
+    // VAT / Reverse charge — prefer order snapshot, fall back to user profile
+    if (order.vatReverseCharge != null) {
+      this.vatReverseCharge.set(order.vatReverseCharge);
+    }
+    if (order.customerVatNumber) {
+      this.vatNumber.set(order.customerVatNumber);
+    }
+  }
+
+  // ── Payment init ────────────────────────────────────
+
+  /** Create a PaymentIntent for a new order (from offer) */
+  private initNewOrderPayment(offerId: string): void {
     this.stripeLoading.set(true);
     const currency = this.preview()?.currency ?? 'EUR';
 
     this.http
       .post<ApiResponse<PaymentElementResult>>(
-        `${environment.apiUrl}/api/v1/payments/checkout/payment-element`,
+        paymentApiUrls.checkoutPaymentElement(),
         { offerId, currency },
         { withCredentials: true },
       )
@@ -414,6 +575,39 @@ export class CheckoutComponent implements OnDestroy {
           }
         },
         error: (err) => {
+          this.stripeError.set(
+            err.error?.message ?? 'Erreur lors de la préparation du paiement.',
+          );
+          this.stripeLoading.set(false);
+        },
+      });
+  }
+
+  /** Create/refresh a PaymentIntent for an existing order */
+  private initExistingOrderPayment(orderId: string): void {
+    this.stripeLoading.set(true);
+
+    this.http
+      .post<ApiResponse<PaymentElementResult>>(
+        paymentApiUrls.checkoutOrderPaymentElement(orderId),
+        {},
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.success && res.data) {
+            void this.mountStripe(res.data.clientSecret, res.data.publishableKey);
+          } else {
+            this.stripeError.set(res.message ?? 'Impossible de préparer le paiement.');
+            this.stripeLoading.set(false);
+          }
+        },
+        error: (err) => {
+          if (err.status === 409) {
+            this.loadError.set('Paiement déjà pris en compte pour cette commande.');
+            this.stripeLoading.set(false);
+            return;
+          }
           this.stripeError.set(
             err.error?.message ?? 'Erreur lors de la préparation du paiement.',
           );
@@ -463,9 +657,11 @@ export class CheckoutComponent implements OnDestroy {
       });
 
       // Address Element — always collects billing address
+      const addressDefaults = this.getRestoredAddressDefaults();
       this.addressElement = this.elements.create('address', {
         mode: 'billing',
-      });
+        ...(addressDefaults ? { defaultValues: addressDefaults } : {}),
+      } as any);
       this.addressElement.mount(this.addressHost.nativeElement);
 
       // Payment Element — address handled by Address Element above
@@ -488,7 +684,239 @@ export class CheckoutComponent implements OnDestroy {
     }
   }
 
-  // ── Actions ──────────────────────────────────────────
+  // ── Geo / Fraud ─────────────────────────────────────
+
+  private runGeoCheck(): void {
+    this.http
+      .get<ApiResponse<GeoCheckResult>>(
+        paymentApiUrls.geoCheck(),
+        { withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.success && res.data) {
+            this.geoCheck.set(res.data);
+            console.debug('[FRAUD-DEBUG] geo-check result:', res.data);
+            if (res.data.vpnDetected) {
+              this.requestGeolocation();
+            }
+          }
+        },
+        error: (err) => console.warn('[FRAUD-DEBUG] geo-check failed:', err),
+      });
+  }
+
+  private requestGeolocation(): void {
+    if (!navigator.geolocation) {
+      this.geoLocationDenied.set(true);
+      console.debug('[FRAUD-DEBUG] Geolocation API not available');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        console.debug('[FRAUD-DEBUG] Geolocation granted:', pos.coords.latitude, pos.coords.longitude);
+        // Reverse geocode via Nominatim (free, no key)
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+          .then(r => r.json())
+          .then(data => {
+            const cc = data?.address?.country_code?.toUpperCase() ?? null;
+            this.geoCountry.set(cc);
+            console.debug('[FRAUD-DEBUG] Reverse geocode country:', cc);
+          })
+          .catch(err => console.warn('[FRAUD-DEBUG] Reverse geocode failed:', err));
+      },
+      (err) => {
+        this.geoLocationDenied.set(true);
+        console.debug('[FRAUD-DEBUG] Geolocation denied:', err.message);
+      },
+      { timeout: 10000, enableHighAccuracy: false },
+    );
+  }
+
+  private async sendFraudSignals(): Promise<void> {
+    if (!this.orderId) return;
+
+    // Get billing country from Stripe Address Element
+    let billingCountry: string | null = null;
+    if (this.addressElement) {
+      try {
+        const addrValue = await this.addressElement.getValue();
+        billingCountry = addrValue?.value?.address?.country ?? null;
+        console.debug('[FRAUD-DEBUG] Stripe address country:', billingCountry);
+      } catch (err) {
+        console.warn('[FRAUD-DEBUG] Could not get address value:', err);
+      }
+    }
+
+    const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.debug('[FRAUD-DEBUG] Sending fraud signals: tz=%s geo=%s billing=%s geoDenied=%s',
+      browserTimezone, this.geoCountry(), billingCountry, this.geoLocationDenied());
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        this.http
+          .patch<ApiResponse<FraudCheckResult>>(
+            paymentApiUrls.updateFraudSignals(this.orderId!),
+            {
+              browserTimezone,
+              geoCountry: this.geoCountry(),
+              billingCountry,
+              geoLocationDenied: this.geoLocationDenied(),
+            },
+            { withCredentials: true },
+          )
+          .subscribe({
+            next: (res) => {
+              console.debug('[FRAUD-DEBUG] Fraud signals result:', res.data);
+              resolve();
+            },
+            error: (err) => {
+              console.warn('[FRAUD-DEBUG] Fraud signals failed:', err);
+              resolve(); // Non-blocking
+            },
+          });
+      });
+    } catch {
+      // Non-blocking
+    }
+  }
+
+  // ── LocalStorage Auto-save ──────────────────────────
+
+  private get draftKey(): string {
+    return this.orderId ? `checkout-draft:${this.orderId}` : '';
+  }
+
+  private setupAutoSave(): void {
+    // Debounced auto-save via effect
+    effect(() => {
+      // Track all form signals
+      const _bn = this.useDifferentBillingName();
+      const _cn = this.customBillingName();
+      const _vr = this.vatReverseCharge();
+      const _vn = this.vatNumber();
+
+      // Debounce
+      if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
+      this.autoSaveTimer = setTimeout(() => this.saveDraft(), 1500);
+    });
+
+    // Also save on beforeunload
+    this.beforeUnloadHandler = () => this.saveDraft();
+    window.addEventListener('beforeunload', this.beforeUnloadHandler);
+  }
+
+  private saveDraft(): void {
+    if (!this.draftKey) return;
+    try {
+      const draft: Record<string, unknown> = {
+        useDifferentBillingName: this.useDifferentBillingName(),
+        customBillingName: this.customBillingName(),
+        vatReverseCharge: this.vatReverseCharge(),
+        vatNumber: this.vatNumber(),
+        timestamp: Date.now(),
+      };
+
+      // Try to get Stripe address values synchronously (best effort)
+      if (this.addressElement) {
+        this.addressElement.getValue().then(v => {
+          if (v?.value) {
+            draft["addressName"] = v.value.name;
+            draft["addressCountry"] = v.value.address?.country;
+            draft["addressLine1"] = v.value.address?.line1;
+            draft["addressLine2"] = v.value.address?.line2;
+            draft["addressCity"] = v.value.address?.city;
+            draft["addressPostal"] = v.value.address?.postal_code;
+            draft["addressState"] = v.value.address?.state;
+          }
+          localStorage.setItem(this.draftKey, JSON.stringify(draft));
+          console.debug('[CHECKOUT-DRAFT] Saved draft:', this.draftKey);
+        }).catch(() => {
+          localStorage.setItem(this.draftKey, JSON.stringify(draft));
+        });
+      } else {
+        localStorage.setItem(this.draftKey, JSON.stringify(draft));
+      }
+    } catch (e) {
+      console.warn('[CHECKOUT-DRAFT] Save failed:', e);
+    }
+  }
+
+  private restoreDraft(): void {
+    if (!this.draftKey) return;
+    try {
+      const raw = localStorage.getItem(this.draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+
+      // Check staleness (7 days)
+      if (draft.timestamp && Date.now() - draft.timestamp > 7 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(this.draftKey);
+        console.debug('[CHECKOUT-DRAFT] Removed stale draft');
+        return;
+      }
+
+      // Restore form fields
+      if (draft.useDifferentBillingName != null) this.useDifferentBillingName.set(draft.useDifferentBillingName);
+      if (draft.customBillingName) this.customBillingName.set(draft.customBillingName);
+      if (draft.vatReverseCharge != null) this.vatReverseCharge.set(draft.vatReverseCharge);
+      if (draft.vatNumber) this.vatNumber.set(draft.vatNumber);
+
+      console.debug('[CHECKOUT-DRAFT] Restored draft:', this.draftKey, draft);
+    } catch (e) {
+      console.warn('[CHECKOUT-DRAFT] Restore failed:', e);
+    }
+  }
+
+  private getRestoredAddressDefaults(): Record<string, unknown> | null {
+    if (!this.draftKey) return null;
+    try {
+      const raw = localStorage.getItem(this.draftKey);
+      if (!raw) return null;
+      const draft = JSON.parse(raw);
+      if (!draft.addressCountry) return null;
+
+      // Check if IP country changed (don't restore geo-dependent data)
+      const geoCheck = this.geoCheck();
+      if (geoCheck?.ipCountry && draft.addressCountry
+          && geoCheck.ipCountry !== draft.addressCountry) {
+        console.debug('[CHECKOUT-DRAFT] IP country changed (%s -> %s), skipping address restore',
+          draft.addressCountry, geoCheck.ipCountry);
+        return null;
+      }
+
+      return {
+        name: draft.addressName ?? '',
+        address: {
+          country: draft.addressCountry,
+          line1: draft.addressLine1 ?? '',
+          line2: draft.addressLine2 ?? '',
+          city: draft.addressCity ?? '',
+          postal_code: draft.addressPostal ?? '',
+          state: draft.addressState ?? '',
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private clearDraft(): void {
+    if (this.draftKey) {
+      localStorage.removeItem(this.draftKey);
+      console.debug('[CHECKOUT-DRAFT] Cleared draft:', this.draftKey);
+    }
+  }
+
+    // ── Actions ──────────────────────────────────────────
+  onDifferentBillingNameToggle(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.useDifferentBillingName.set(checked);
+    if (!checked) {
+      this.customBillingName.set('');
+    }
+  }
+
   onReverseChargeToggle(event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     this.vatReverseCharge.set(checked);
@@ -507,17 +935,17 @@ export class CheckoutComponent implements OnDestroy {
         this.vatError.set('Veuillez saisir votre numéro de TVA.');
         return;
       }
-      // Basic EU VAT format check: 2 letters + digits
       if (!/^[A-Z]{2}\d{4,}/.test(vat.toUpperCase())) {
         this.vatError.set('Format de TVA invalide (ex: FR12345678901).');
         return;
       }
     }
     this.vatError.set(null);
+    this.stripeError.set(null);
 
-    // Save VAT preferences before payment
     this.submitting.set(true);
 
+    // Save VAT preferences before payment
     try {
       await new Promise<void>((resolve, reject) => {
         this.profileService
@@ -531,6 +959,26 @@ export class CheckoutComponent implements OnDestroy {
       // Non-blocking — VAT save failure shouldn't block payment
     }
 
+    // Save custom billing name on the order before confirming payment
+    if (this.orderId && this.useDifferentBillingName() && this.customBillingName().trim()) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          this.http
+            .patch(
+              paymentApiUrls.updateBillingName(this.orderId!),
+              { billingName: this.customBillingName().trim() },
+              { withCredentials: true },
+            )
+            .subscribe({ next: () => resolve(), error: reject });
+        });
+      } catch {
+        // Non-blocking — billing name save failure shouldn't block payment
+      }
+    }
+
+    // Send fraud signals (non-blocking)
+    await this.sendFraudSignals();
+
     const origin = window.location.origin;
     const { error } = await this.stripe.confirmPayment({
       elements: this.elements,
@@ -542,14 +990,22 @@ export class CheckoutComponent implements OnDestroy {
     this.submitting.set(false);
     if (error) {
       this.stripeError.set(error.message ?? 'Le paiement a échoué.');
+    } else {
+      this.clearDraft();
     }
   }
 
   goBack(): void {
-    void this.router.navigate(['/services']);
+    if (this.existingOrderMode) {
+      void this.router.navigate(['/dashboard/orders']);
+    } else {
+      void this.router.navigate(['/services']);
+    }
   }
 
   ngOnDestroy(): void {
+    if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
+    if (this.beforeUnloadHandler) window.removeEventListener('beforeunload', this.beforeUnloadHandler);
     this.addressElement?.unmount();
     this.addressElement = null;
     this.paymentElement?.unmount();

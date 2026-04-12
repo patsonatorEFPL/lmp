@@ -24,10 +24,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'forgot-password', renderMode: RenderMode.Client },
   { path: 'reset-password', renderMode: RenderMode.Client },
 
-  // Payment callback pages — client-only
+  // Payment / checkout pages — client-only
+  { path: 'checkout/**', renderMode: RenderMode.Client },
   { path: 'payment/success', renderMode: RenderMode.Client },
   { path: 'payment/cancel', renderMode: RenderMode.Client },
-  { path: 'payment/process', renderMode: RenderMode.Client },
   { path: 'payment/guest', renderMode: RenderMode.Client },
 
   // Protected pages — client-only (require auth cookies)

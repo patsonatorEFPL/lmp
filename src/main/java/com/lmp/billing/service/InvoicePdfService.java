@@ -243,7 +243,11 @@ public class InvoicePdfService {
         clientCell.addElement(clientLabel);
 
         if (user != null) {
-            String clientName = user.getDisplayName();
+            // Priorité : 1. billingName (Stripe) → 2. displayName (LMP) → 3. email
+            String clientName = order.getBillingName();
+            if (clientName == null || clientName.trim().isEmpty()) {
+                clientName = user.getDisplayName();
+            }
             if (clientName == null || clientName.trim().isEmpty()) {
                 clientName = user.getEmail();
             }

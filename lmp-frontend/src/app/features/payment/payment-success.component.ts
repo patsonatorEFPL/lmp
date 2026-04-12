@@ -11,7 +11,7 @@ import {
   ShoppingCart,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { environment } from '../../../environments/environment';
+import { paymentApiUrls } from '../../core/api/payment-api.paths';
 
 interface PaymentStatusResponse {
   orderId: string;
@@ -182,7 +182,8 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   readonly ShoppingCartIcon = ShoppingCart;
 
   readonly polling = signal(true);
-  readonly stripeDirectVerify = signal(false);
+  /** True pendant l’appel de secours au backend (réconciliation prestataire). */
+  readonly reconcilePending = signal(false);
   readonly confirmed = signal(false);
   readonly error = signal<string | null>(null);
   readonly orderId = signal<string | null>(null);
@@ -192,18 +193,18 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   readonly pollCount = signal(0);
   private readonly maxPolls = 30; // 30 attempts × 2s = 60s max
 
-  /** Synthetic progress: 0–90% during webhook polling, 90–95% during Stripe verify. */
+  /** Synthetic progress: 0–90% during polling, 90–95% during réconciliation prestataire. */
   readonly progressPercent = computed(() => {
     if (this.confirmed()) return 100;
     if (this.error()) return 100;
-    if (this.stripeDirectVerify()) return 92;
+    if (this.reconcilePending()) return 92;
     // Map pollCount 0..maxPolls to 0..90%
     return Math.min(Math.round((this.pollCount() / this.maxPolls) * 90), 90);
   });
 
   /** Contextual title shown above the progress bar. */
   readonly statusTitle = computed(() => {
-    if (this.stripeDirectVerify()) return 'Vérification Stripe…';
+    if (this.reconcilePending()) return 'Finalisation du paiement…';
     const pct = this.progressPercent();
     if (pct < 30) return 'Connexion au serveur…';
     if (pct < 60) return 'Vérification du paiement…';
@@ -212,12 +213,12 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
 
   /** Contextual message shown below the title. */
   readonly statusMessage = computed(() => {
-    if (this.stripeDirectVerify()) {
-      return 'La confirmation automatique prend du temps — nous interrogeons Stripe directement pour finaliser votre commande.';
+    if (this.reconcilePending()) {
+      return 'La confirmation automatique prend du temps — nous synchronisons votre paiement avec notre prestataire pour finaliser la commande.';
     }
     const pct = this.progressPercent();
     if (pct < 30) return 'Nous contactons notre serveur de paiement sécurisé.';
-    if (pct < 60) return 'Nous vérifions votre paiement auprès de Stripe. Cela ne prendra que quelques secondes.';
+    if (pct < 60) return 'Nous vérifions votre paiement auprès de notre prestataire. Cela ne prendra que quelques secondes.';
     return 'Attente de la confirmation du réseau bancaire…';
   });
 
@@ -231,7 +232,7 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   private pollInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
-    // Payment Element (confirmPayment return_url) utilise ?orderId= ; l’ancien redirect Checkout Java utilise ?order_id=
+    // Retour paiement intégré : ?orderId= ; redirection checkout hébergé côté app : ?order_id=
     const q = this.route.snapshot.queryParamMap;
     const orderIdParam =
       q.get('orderId')?.trim() || q.get('order_id')?.trim() || null;
@@ -259,8 +260,8 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
       this.pollCount.update(c => c + 1);
       if (this.pollCount() >= this.maxPolls) {
         this.stopPolling();
-        this.stripeDirectVerify.set(true);
-        this.verifyWithStripeApi(orderId);
+        this.reconcilePending.set(true);
+        this.reconcilePaymentViaBackend(orderId);
         return;
       }
       this.checkPaymentStatus(orderId);
@@ -277,7 +278,7 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   private checkPaymentStatus(orderId: string): void {
     this.http
       .get<ApiResponse<PaymentStatusResponse>>(
-        `${environment.apiUrl}/api/v1/payments/status/${orderId}`,
+        paymentApiUrls.paymentStatus(orderId),
         { withCredentials: true },
       )
       .subscribe({
@@ -307,18 +308,18 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Après timeout du polling webhook : interroge le backend qui appelle l'API Stripe (session Checkout).
+   * Après timeout du polling : le backend réconcilie avec le prestataire de paiement (sans exposer son nom côté UI).
    */
-  private verifyWithStripeApi(orderId: string): void {
+  private reconcilePaymentViaBackend(orderId: string): void {
     this.http
       .post<ApiResponse<PaymentStatusResponse>>(
-        `${environment.apiUrl}/api/v1/payments/status/${orderId}/verify-with-stripe`,
+        paymentApiUrls.paymentReconcile(orderId),
         {},
         { withCredentials: true },
       )
       .subscribe({
         next: (res) => {
-          this.stripeDirectVerify.set(false);
+          this.reconcilePending.set(false);
           if (res.data?.ready && res.data.paymentConfirmed) {
             this.confirmed.set(true);
             this.orderStatus.set(res.data.status);
@@ -336,13 +337,13 @@ export class PaymentSuccessComponent implements OnInit, OnDestroy {
           }
           this.error.set(
             'La confirmation de votre paiement prend plus de temps que prévu. ' +
-              'Votre paiement peut avoir été reçu par Stripe, mais nous n\'avons pas pu le confirmer tout de suite. ' +
+              'Votre paiement a peut-être bien été enregistré, mais nous n\'avons pas pu le confirmer immédiatement. ' +
               'Vérifiez votre tableau de bord dans quelques minutes ou contactez le support si le problème persiste.',
           );
           setTimeout(() => this.polling.set(false), 600);
         },
         error: () => {
-          this.stripeDirectVerify.set(false);
+          this.reconcilePending.set(false);
           this.error.set(
             'Impossible de finaliser la vérification du paiement. ' +
               'Vérifiez votre tableau de bord ou contactez le support.',

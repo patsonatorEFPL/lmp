@@ -30,6 +30,7 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
 import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 import { PaymentSessionService } from '../../core/services/payment-session.service';
@@ -574,7 +575,7 @@ export class UserOrdersComponent implements OnInit {
           if (data?.status === 'PAYMENT_PENDING') {
             this.http
               .post<ApiResponse<unknown>>(
-                `${environment.apiUrl}/api/v1/payments/status/${orderId}/verify-with-stripe`,
+                paymentApiUrls.paymentReconcile(orderId),
                 {},
                 { withCredentials: true },
               )
@@ -614,40 +615,7 @@ export class UserOrdersComponent implements OnInit {
   }
 
   payOrder(order: OrderItem): void {
-    this.http
-      .post<{
-        success: boolean;
-        data?: { clientSecret: string; publishableKey: string; orderId: string };
-        message?: string;
-      }>(
-        `${environment.apiUrl}/api/v1/payments/checkout-order/${order.id}/payment-element`,
-        {},
-        { withCredentials: true },
-      )
-      .subscribe({
-        next: (res) => {
-          if (res.success && res.data?.clientSecret && res.data.publishableKey && res.data.orderId) {
-            this.paymentSession.start({
-              clientSecret: res.data.clientSecret,
-              publishableKey: res.data.publishableKey,
-              orderId: String(res.data.orderId),
-            });
-            void this.router.navigate(['/payment/process']);
-          } else {
-            alert(res.message || 'Impossible de démarrer le paiement.');
-          }
-        },
-        error: (err) => {
-          const msg = err.error?.message || 'Impossible de démarrer le paiement.';
-          if (err.status === 409) {
-            this.loadOrders({ silent: true });
-            this.http
-              .get<ApiResponse<OrderItem>>(`${environment.apiUrl}/api/v1/orders/${order.id}`, { withCredentials: true })
-              .subscribe({ next: (r) => this.selectedOrder.set(r.data ?? null) });
-          }
-          alert(msg);
-        },
-      });
+    void this.router.navigate(['/checkout/order', order.id]);
   }
 
   downloadInvoice(orderId: string): void {

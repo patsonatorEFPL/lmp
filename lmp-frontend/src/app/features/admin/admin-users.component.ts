@@ -213,7 +213,7 @@ interface ApiResponse<T> {
         </div>
       } @else {
         <!-- En-tête colonnes (style CRM - fond gris arrondi, mb-2) -->
-        <div class="mb-2 flex items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+        <div class="mb-2 flex min-w-max items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
           <div class="flex w-10 shrink-0 items-center justify-center">
             <input
               type="checkbox"
@@ -223,8 +223,8 @@ interface ApiResponse<T> {
             />
           </div>
           <div class="w-64 shrink-0 px-2">Email</div>
-          <div class="hidden w-48 shrink-0 px-2 text-center sm:block">Phone</div>
-          <div class="hidden w-48 shrink-0 px-2 text-center md:block">Organisation</div>
+          <div class="w-48 shrink-0 px-2 text-center">Phone</div>
+          <div class="w-48 shrink-0 px-2 text-center">Organisation</div>
           <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
@@ -232,7 +232,7 @@ interface ApiResponse<T> {
         <div>
           @for (user of filteredUsers(); track user.id) {
             <div
-              class="group flex h-10 cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
+              class="group flex h-10 min-w-max cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
               (click)="openEditUser(user)"
             >
               <div class="flex w-10 shrink-0 items-center justify-center" (click)="$event.stopPropagation()">
@@ -246,13 +246,13 @@ interface ApiResponse<T> {
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ user.email }}
               </div>
-              <div class="hidden w-48 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="w-48 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ user.phone || '' }}
               </div>
-              <div class="hidden w-48 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 md:block dark:text-zinc-400">
+              <div class="w-48 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ organizationLabel(user) !== '—' ? organizationLabel(user) : '' }}
               </div>
-              <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
+              <div class="w-32 shrink-0 px-2 text-center text-sm leading-normal text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(user.lastLoginDate) }}
               </div>
             </div>

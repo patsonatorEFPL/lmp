@@ -7,11 +7,17 @@ package com.lmp.shared.geo;
  * @param currencyCode Code devise ISO 4217 tel que renvoyé par l'API géo (ex. «&nbsp;XOF&nbsp;»).
  *                     Peut être {@code null} si la source utilisée ne fournit pas la devise
  *                     (CF-IPCountry, GeoLite2) — la résolution FX prendra le relais.
+ * @param vpnDetected  {@code true} si l'IP a été détectée comme VPN/proxy/Tor par au moins une source.
  */
-public record GeoResolution(String countryCode, String currencyCode) {
+public record GeoResolution(String countryCode, String currencyCode, boolean vpnDetected) {
+
+    /** Rétrocompatibilité : construction sans info VPN. */
+    public GeoResolution(String countryCode, String currencyCode) {
+        this(countryCode, currencyCode, false);
+    }
 
     /** Construction sans devise (sources ne fournissant que le pays). */
     public static GeoResolution countryOnly(String countryCode) {
-        return new GeoResolution(countryCode, null);
+        return new GeoResolution(countryCode, null, false);
     }
 }

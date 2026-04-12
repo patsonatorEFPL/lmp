@@ -18,6 +18,10 @@ import com.lmp.billing.dto.PaymentResponseDto;
 import com.lmp.billing.service.processor.StripeCheckoutPaymentProcessor;
 import com.lmp.auth.service.UserService;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.geo.FraudScoringService;
+import com.lmp.shared.geo.GeoCountryLookupService;
+import com.lmp.shared.geo.GeoResolution;
+import com.lmp.shared.geo.VpnDetectionService;
 import com.lmp.shared.pricing.PricingContext;
 import com.lmp.shared.pricing.RegionalPricingService;
 import com.lmp.shared.pricing.VatCalculationService;
@@ -65,6 +69,9 @@ public class PaymentRestController {
     private final StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService;
     private final RegionalPricingService regionalPricingService;
     private final VatCalculationService vatCalculationService;
+    private final GeoCountryLookupService geoCountryLookupService;
+    private final VpnDetectionService vpnDetectionService;
+    private final FraudScoringService fraudScoringService;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
@@ -75,7 +82,10 @@ public class PaymentRestController {
                                  PaymentReconciliationService paymentReconciliationService,
                                  StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService,
                                  RegionalPricingService regionalPricingService,
-                                 VatCalculationService vatCalculationService) {
+                                 VatCalculationService vatCalculationService,
+                                 GeoCountryLookupService geoCountryLookupService,
+                                 VpnDetectionService vpnDetectionService,
+                                 FraudScoringService fraudScoringService) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
@@ -86,6 +96,9 @@ public class PaymentRestController {
         this.stripePaymentIntentCheckoutService = stripePaymentIntentCheckoutService;
         this.regionalPricingService = regionalPricingService;
         this.vatCalculationService = vatCalculationService;
+        this.geoCountryLookupService = geoCountryLookupService;
+        this.vpnDetectionService = vpnDetectionService;
+        this.fraudScoringService = fraudScoringService;
     }
 
     // =========================================================================
@@ -118,6 +131,10 @@ public class PaymentRestController {
             String publishableKey
     ) {}
 
+    public record UpdateBillingNameRequest(
+            String billingName
+    ) {}
+
     public record CheckoutPreviewResponse(
             String serviceName,
             BigDecimal amountHt,
@@ -128,6 +145,26 @@ public class PaymentRestController {
             String currency,
             String durationType,
             UUID offerId
+    ) {}
+
+    public record GeoCheckResponse(
+            String ipCountry,
+            double vpnScore,
+            boolean vpnDetected,
+            String vpnSources
+    ) {}
+
+    public record FraudSignalsRequest(
+            String browserTimezone,
+            String geoCountry,
+            String billingCountry,
+            boolean geoLocationDenied
+    ) {}
+
+    public record FraudCheckResponse(
+            int score,
+            boolean alert,
+            java.util.List<String> flags
     ) {}
 
     // =========================================================================
@@ -400,6 +437,37 @@ public class PaymentRestController {
         }
     }
 
+    @PatchMapping("/orders/{orderId}/billing-name")
+    @Operation(summary = "Mettre à jour le nom de facturation personnalisé",
+            description = "Permet de définir un nom personnalisé sur la facture avant la confirmation du paiement")
+    public ResponseEntity<ApiResponse<Void>> updateBillingName(
+            @PathVariable UUID orderId,
+            @RequestBody UpdateBillingNameRequest request,
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getUser() == null || !order.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Commande introuvable"));
+        }
+
+        if (request.billingName() != null && !request.billingName().isBlank()) {
+            order.setBillingName(request.billingName().trim());
+        } else {
+            order.setBillingName(null);
+        }
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @PostMapping("/checkout-order/{orderId}")
     @Operation(summary = "Payer une commande existante",
                description = "Crée une session Stripe Checkout pour une commande en attente de paiement (ex: commande créée par admin)")
@@ -583,7 +651,7 @@ public class PaymentRestController {
     }
 
     @GetMapping("/status/{orderId}")
-    @Operation(summary = "Statut de paiement", description = "Vérifie si le webhook Stripe a confirmé le paiement")
+    @Operation(summary = "Statut de paiement", description = "Indique si le paiement a été confirmé côté serveur (ex. après webhook prestataire)")
     public ResponseEntity<ApiResponse<PaymentStatusResponse>> getPaymentStatus(
             @PathVariable UUID orderId,
             Authentication authentication) {
@@ -600,11 +668,18 @@ public class PaymentRestController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/status/{orderId}/verify-with-stripe")
-    @Operation(summary = "Vérifier le paiement auprès de Stripe",
-               description = "Interroge l'API Stripe (session Checkout) et met à jour la commande si le paiement est confirmé. "
-                       + "À utiliser lorsque le webhook n'a pas encore été reçu.")
-    public ResponseEntity<ApiResponse<PaymentStatusResponse>> verifyPaymentWithStripe(
+    /**
+     * Réconciliation immédiate avec le prestataire de paiement (implémentation actuelle : Stripe).
+     * {@code verify-with-stripe} reste exposé pour compatibilité ; préférer {@code reconcile}.
+     */
+    @PostMapping(value = {
+            "/status/{orderId}/reconcile",
+            "/status/{orderId}/verify-with-stripe"
+    })
+    @Operation(summary = "Réconcilier le paiement",
+               description = "Interroge le prestataire de paiement et met à jour la commande si le paiement est confirmé. "
+                       + "Utile lorsque la notification asynchrone n'a pas encore été traitée.")
+    public ResponseEntity<ApiResponse<PaymentStatusResponse>> reconcilePaymentStatus(
             @PathVariable UUID orderId,
             Authentication authentication) {
 
@@ -625,7 +700,7 @@ public class PaymentRestController {
         try {
             paymentReconciliationService.syncOrderPaymentImmediately(order);
         } catch (Exception e) {
-            logger.warn("verify-with-stripe failed for order {}: {}", orderId, e.getMessage());
+            logger.warn("payment reconcile failed for order {}: {}", orderId, e.getMessage());
         }
 
         return orderRepository.findById(orderId)
@@ -633,6 +708,100 @@ public class PaymentRestController {
                 .map(o -> ResponseEntity.ok(ApiResponse.ok(toPaymentStatusResponse(orderId, o))))
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/geo-check")
+    @Operation(summary = "Geo + VPN check",
+            description = "Returns IP country and VPN score for the connected client")
+    public ResponseEntity<ApiResponse<GeoCheckResponse>> geoCheck(
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        String ip = ClientIpResolver.resolve(httpRequest);
+        logger.debug("[FRAUD-DEBUG] geo-check -> IP={}", ip);
+
+        String ipCountry = geoCountryLookupService.resolve(httpRequest)
+                .map(GeoResolution::countryCode).orElse(null);
+        logger.debug("[FRAUD-DEBUG] geo-check -> ipCountry={}", ipCountry);
+
+        VpnDetectionService.VpnCheckResult vpnResult = vpnDetectionService.check(ip);
+        logger.debug("[FRAUD-DEBUG] geo-check -> vpnScore={} vpnDetected={} sources={}",
+                vpnResult.normalizedScore(), vpnResult.vpnDetected(), vpnResult.sources());
+
+        return ResponseEntity.ok(ApiResponse.ok(new GeoCheckResponse(
+                ipCountry,
+                vpnResult.normalizedScore(),
+                vpnResult.vpnDetected(),
+                vpnResult.sources())));
+    }
+
+    @PatchMapping("/orders/{orderId}/fraud-signals")
+    @Operation(summary = "Record fraud signals",
+            description = "Receives frontend signals (timezone, geolocation, billing country) and computes fraud score")
+    public ResponseEntity<ApiResponse<FraudCheckResponse>> updateFraudSignals(
+            @PathVariable UUID orderId,
+            @RequestBody FraudSignalsRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getUser() == null || !order.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Commande introuvable"));
+        }
+
+        String ip = ClientIpResolver.resolve(httpRequest);
+        logger.debug("[FRAUD-DEBUG] fraud-signals -> orderId={} IP={}", orderId, ip);
+
+        String ipCountry = geoCountryLookupService.resolve(httpRequest)
+                .map(GeoResolution::countryCode).orElse(null);
+
+        VpnDetectionService.VpnCheckResult vpnResult = vpnDetectionService.check(ip);
+
+        order.setIpCountry(ipCountry);
+        order.setIpAddress(ip);
+        order.setVpnScore(BigDecimal.valueOf(vpnResult.normalizedScore()));
+        order.setVpnSources(vpnResult.sources());
+        order.setBrowserTimezone(request.browserTimezone());
+        order.setGeoCountry(request.geoCountry() != null ? request.geoCountry().trim().toUpperCase() : null);
+        logger.debug("[FRAUD-DEBUG] fraud-signals -> persisted: ipCountry={} vpnScore={} tz={} geo={} billing={}",
+                ipCountry, vpnResult.normalizedScore(), request.browserTimezone(),
+                request.geoCountry(), request.billingCountry());
+
+        FraudScoringService.FraudSignals signals = new FraudScoringService.FraudSignals(
+                ipCountry,
+                vpnResult.normalizedScore(),
+                request.browserTimezone(),
+                request.geoCountry() != null ? request.geoCountry().trim().toUpperCase() : null,
+                request.billingCountry() != null ? request.billingCountry().trim().toUpperCase() : null,
+                null,
+                request.geoLocationDenied()
+        );
+        FraudScoringService.FraudResult result = fraudScoringService.score(signals);
+
+        order.setFraudScore(result.score());
+        order.setFraudFlags(String.join(",", result.flags()));
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        logger.info("[FRAUD-DEBUG] fraud-signals -> orderId={} score={} alert={} flags={}",
+                orderId, result.score(), result.alert(), result.flags());
+
+        return ResponseEntity.ok(ApiResponse.ok(new FraudCheckResponse(
+                result.score(), result.alert(), result.flags())));
+    }
+
 
     // =========================================================================
     // Helpers
