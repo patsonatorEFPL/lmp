@@ -320,6 +320,7 @@ public class PaymentReconciliationService {
         } else if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
             order.setPaymentMethod("Paiement Stripe");
         }
+        paymentMethodResolver.extractBillingAddress(order, pi);
 
         OrderProgressSync.applyMinimumForStatus(order);
 
@@ -392,6 +393,7 @@ public class PaymentReconciliationService {
         if (order.getPaymentMethod() == null) {
             order.setPaymentMethod("Paiement Stripe");
         }
+        StripePaymentMethodResolver.extractBillingAddress(order, session);
 
         OrderProgressSync.applyMinimumForStatus(order);
 
