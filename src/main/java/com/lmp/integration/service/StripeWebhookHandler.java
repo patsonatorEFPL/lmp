@@ -940,6 +940,7 @@ public class StripeWebhookHandler {
                         } else if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
                             order.setPaymentMethod("Paiement Stripe");
                         }
+                        paymentMethodResolver.extractBillingAddress(order, paymentIntent);
                         order.setCheckoutToken(null);
                         // Auto-verify user
                         if (order.getUser() != null) {
@@ -1450,6 +1451,9 @@ public class StripeWebhookHandler {
         if (order.getPaymentMethod() == null) {
             order.setPaymentMethod("Paiement Stripe");
         }
+
+        // Extraction de l'adresse de facturation depuis la session
+        StripePaymentMethodResolver.extractBillingAddress(order, session);
 
         // Mise à jour des informations de facturation si disponibles
         if (session.getCustomerEmail() != null) {

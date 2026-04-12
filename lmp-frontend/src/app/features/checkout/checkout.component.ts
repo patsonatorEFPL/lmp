@@ -445,6 +445,11 @@ export class CheckoutComponent implements OnDestroy {
 
       this.paymentElement = this.elements.create('payment', {
         layout: 'tabs',
+        fields: {
+          billingDetails: {
+            address: 'auto',
+          },
+        },
       });
       this.paymentElement.on('ready', () => {
         this.stripeLoading.set(false);

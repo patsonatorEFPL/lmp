@@ -453,6 +453,12 @@ public class AdminRestController {
                     detail.put("stripePaymentIntentId", order.getStripePaymentIntentId());
                     detail.put("cancellationReason", order.getCancellationReason());
 
+                    // Adresse de facturation
+                    detail.put("billingAddress", order.getBillingAddress());
+                    detail.put("billingCity", order.getBillingCity());
+                    detail.put("billingPostalCode", order.getBillingPostalCode());
+                    detail.put("billingCountry", order.getBillingCountry());
+
                     if (order.getUser() != null) {
                         detail.put("userEmail", order.getUser().getEmail());
                         detail.put("userName", order.getUser().getDisplayName());

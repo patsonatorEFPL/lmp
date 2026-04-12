@@ -6,9 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.lmp.billing.domain.Order;
 import com.stripe.StripeClient;
+import com.stripe.model.Address;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.PaymentMethod;
+import com.stripe.model.checkout.Session;
 
 /**
  * Résout le type de moyen de paiement Stripe en libellé lisible
@@ -119,6 +122,73 @@ public class StripePaymentMethodResolver {
     public static String labelFor(String stripeType) {
         if (stripeType == null) return null;
         return LABELS.getOrDefault(stripeType, stripeType);
+    }
+
+    // =========================================================================
+    // Billing address extraction
+    // =========================================================================
+
+    /**
+     * Extrait l'adresse de facturation depuis une Checkout Session Stripe
+     * et peuple les champs billing de la commande.
+     *
+     * <p>Source : {@code session.getCustomerDetails().getAddress()}.
+     *
+     * @param order   la commande à peupler
+     * @param session la session Checkout Stripe
+     */
+    public static void extractBillingAddress(Order order, Session session) {
+        if (order == null || session == null) return;
+        try {
+            Session.CustomerDetails cd = session.getCustomerDetails();
+            if (cd == null || cd.getAddress() == null) return;
+            Address addr = cd.getAddress();
+            applyAddress(order, addr.getLine1(), addr.getLine2(), addr.getCity(),
+                    addr.getPostalCode(), addr.getCountry());
+        } catch (Exception e) {
+            logger.warn("Impossible d'extraire l'adresse de facturation de la session {} : {}",
+                    session.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Extrait l'adresse de facturation depuis un PaymentIntent Stripe
+     * via le PaymentMethod associé et peuple les champs billing de la commande.
+     *
+     * <p>Source : {@code paymentMethod.getBillingDetails().getAddress()}.
+     *
+     * @param order         la commande à peupler
+     * @param paymentIntent le PaymentIntent Stripe
+     */
+    public void extractBillingAddress(Order order, PaymentIntent paymentIntent) {
+        if (order == null || paymentIntent == null) return;
+        String pmId = paymentIntent.getPaymentMethod();
+        if (pmId == null || pmId.isBlank()) return;
+        try {
+            PaymentMethod pm = stripeClient.paymentMethods().retrieve(pmId);
+            if (pm.getBillingDetails() == null || pm.getBillingDetails().getAddress() == null) return;
+            Address addr = pm.getBillingDetails().getAddress();
+            applyAddress(order, addr.getLine1(), addr.getLine2(), addr.getCity(),
+                    addr.getPostalCode(), addr.getCountry());
+        } catch (Exception e) {
+            logger.warn("Impossible d'extraire l'adresse de facturation du PI {} : {}",
+                    paymentIntent.getId(), e.getMessage());
+        }
+    }
+
+    private static void applyAddress(Order order, String line1, String line2,
+                                     String city, String postalCode, String country) {
+        String fullAddress = line1 != null ? line1 : "";
+        if (line2 != null && !line2.isBlank()) {
+            fullAddress = fullAddress.isBlank() ? line2 : fullAddress + ", " + line2;
+        }
+        if (!fullAddress.isBlank()) order.setBillingAddress(fullAddress);
+        if (city != null && !city.isBlank()) order.setBillingCity(city);
+        if (postalCode != null && !postalCode.isBlank()) order.setBillingPostalCode(postalCode);
+        if (country != null && !country.isBlank()) order.setBillingCountry(country);
+
+        logger.debug("Billing address applied to order {}: {}, {}, {} {}",
+                order.getId(), fullAddress, city, postalCode, country);
     }
 
     private static String capitalize(String s) {

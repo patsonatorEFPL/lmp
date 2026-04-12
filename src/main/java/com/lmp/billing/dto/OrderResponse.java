@@ -26,7 +26,12 @@ public record OrderResponse(
         String progressStatus,
         String processingNotes,
         /** Lien /payment/guest?t=… pour les commandes invité encore en attente de paiement (admin uniquement). */
-        String guestPaymentLink
+        String guestPaymentLink,
+        // Adresse de facturation
+        String billingAddress,
+        String billingCity,
+        String billingPostalCode,
+        String billingCountry
 ) {
     public static OrderResponse from(Order order) {
         return forAdmin(order, null);
@@ -55,7 +60,11 @@ public record OrderResponse(
                 order.getProgressPercentage(),
                 order.getProgressStatus(),
                 order.getProcessingNotes(),
-                computeGuestPaymentLink(order, frontendBaseUrl));
+                computeGuestPaymentLink(order, frontendBaseUrl),
+                order.getBillingAddress(),
+                order.getBillingCity(),
+                order.getBillingPostalCode(),
+                order.getBillingCountry());
     }
 
     /**
