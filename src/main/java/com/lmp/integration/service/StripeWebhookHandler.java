@@ -33,6 +33,7 @@ import com.lmp.auth.repository.UserRepository;
 import com.lmp.integration.repository.WebhookEventLogRepository;
 import com.lmp.notification.service.EmailService;
 import com.lmp.billing.service.InvoicePdfService;
+import com.lmp.billing.service.StripePaymentMethodResolver;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import com.lmp.billing.dto.WebhookEventDto;
@@ -84,6 +85,8 @@ public class StripeWebhookHandler {
 
         private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
 
+        private final StripePaymentMethodResolver paymentMethodResolver;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -96,7 +99,8 @@ public class StripeWebhookHandler {
                            TemplateEngine templateEngine,
                            RefundRepository refundRepository,
                            ApplicationEventPublisher eventPublisher,
-                           OrderRealtimeEventPublisher orderRealtimeEventPublisher) {
+                           OrderRealtimeEventPublisher orderRealtimeEventPublisher,
+                           StripePaymentMethodResolver paymentMethodResolver) {
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
@@ -107,6 +111,7 @@ public class StripeWebhookHandler {
         this.refundRepository = refundRepository;
         this.eventPublisher = eventPublisher;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
+        this.paymentMethodResolver = paymentMethodResolver;
     }
 
     /**
@@ -929,8 +934,11 @@ public class StripeWebhookHandler {
                     if (newStatus == OrderStatus.CONFIRMED) {
                         order.setPaidAt(LocalDateTime.now());
                         order.setPaymentStatus("succeeded");
-                        if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
-                            order.setPaymentMethod("stripe_payment_intent");
+                        String resolvedPm = paymentMethodResolver.resolveFromPaymentIntent(paymentIntent);
+                        if (resolvedPm != null) {
+                            order.setPaymentMethod(resolvedPm);
+                        } else if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
+                            order.setPaymentMethod("Paiement Stripe");
                         }
                         order.setCheckoutToken(null);
                         // Auto-verify user
@@ -1430,7 +1438,18 @@ public class StripeWebhookHandler {
         // Mapper le statut Stripe vers le statut interne : "paid" → "succeeded"
         String internalPaymentStatus = "paid".equals(session.getPaymentStatus()) ? "succeeded" : session.getPaymentStatus();
         order.setPaymentStatus(internalPaymentStatus);
-        order.setPaymentMethod("stripe_checkout");
+        // Resolve the actual payment method used (Carte bancaire, Bancontact, Klarna…)
+        String piIdForPm = session.getPaymentIntent() != null
+                ? session.getPaymentIntent() : order.getStripePaymentIntentId();
+        if (piIdForPm != null && !piIdForPm.isBlank()) {
+            String resolvedPm = paymentMethodResolver.resolveFromPaymentIntentId(piIdForPm);
+            if (resolvedPm != null) {
+                order.setPaymentMethod(resolvedPm);
+            }
+        }
+        if (order.getPaymentMethod() == null) {
+            order.setPaymentMethod("Paiement Stripe");
+        }
 
         // Mise à jour des informations de facturation si disponibles
         if (session.getCustomerEmail() != null) {
