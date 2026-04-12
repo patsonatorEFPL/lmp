@@ -29,11 +29,11 @@ public class IpApiComGeoService {
 
     private static final long CACHE_TTL_SECONDS = 3600;
 
-    /** Plan gratuit — HTTP uniquement. Ajout du champ proxy pour détection VPN. */
-    private static final String FREE_URL = "http://ip-api.com/json/%s?fields=status,countryCode,currency,proxy";
+    /** Plan gratuit — HTTP uniquement. proxy + hosting pour meilleure détection VPN. */
+    private static final String FREE_URL = "http://ip-api.com/json/%s?fields=status,countryCode,currency,proxy,hosting";
 
     /** Plan Pro — HTTPS. */
-    private static final String PRO_URL = "https://pro.ip-api.com/json/%s?key=%s&fields=status,countryCode,currency,proxy";
+    private static final String PRO_URL = "https://pro.ip-api.com/json/%s?key=%s&fields=status,countryCode,currency,proxy,hosting";
 
     private final RestTemplate restTemplate;
     private final String apiKey;
@@ -85,12 +85,15 @@ public class IpApiComGeoService {
                         ? response.currency.trim().toUpperCase()
                         : null;
                 boolean proxy = Boolean.TRUE.equals(response.proxy);
+                boolean hosting = Boolean.TRUE.equals(response.hosting);
+                // proxy=true → VPN/proxy connu ; hosting=true → IP datacenter (VPN, hébergeur)
+                boolean vpnDetected = proxy || hosting;
                 GeoResolution result = new GeoResolution(
-                        response.countryCode.trim().toUpperCase(), currency, proxy);
+                        response.countryCode.trim().toUpperCase(), currency, vpnDetected);
                 Optional<GeoResolution> opt = Optional.of(result);
                 cache.put(ip, new CachedResult(opt));
-                logger.debug("[FRAUD-DEBUG] ip-api.com resolved {} → country={} currency={} proxy={}",
-                        ip, result.countryCode(), result.currencyCode(), proxy);
+                logger.debug("[FRAUD-DEBUG] ip-api.com resolved {} → country={} currency={} proxy={} hosting={} vpn={}",
+                        ip, result.countryCode(), result.currencyCode(), proxy, hosting, vpnDetected);
                 return opt;
             } else {
                 logger.debug("[FRAUD-DEBUG] ip-api.com returned non-success for {}: status={}",
@@ -130,5 +133,7 @@ public class IpApiComGeoService {
         String currency;
         @JsonProperty("proxy")
         Boolean proxy;
+        @JsonProperty("hosting")
+        Boolean hosting;
     }
 }

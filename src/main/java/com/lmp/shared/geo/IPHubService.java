@@ -34,7 +34,7 @@ public class IPHubService {
 
     private static final Logger logger = LoggerFactory.getLogger(IPHubService.class);
 
-    private static final String API_URL = "https://v2.api.iphub.info/ip/%s";
+    private static final String API_URL = "https://v2.api.iphub.info/ip/%s?v=2.2";
     private static final long CACHE_TTL_SECONDS = 3600;
 
     private final RestTemplate restTemplate;
@@ -59,11 +59,15 @@ public class IPHubService {
     /**
      * Résultat de la détection IPHub.
      *
-     * @param block 0 = safe, 1 = VPN/proxy, 2 = warning
+     * @param block       0 = safe, 1 = VPN/proxy, 2 = warning
      * @param countryCode pays de l'IP
-     * @param isp FAI
+     * @param isp         FAI
+     * @param proxy       true si proxy détecté (v2.2)
+     * @param tor         true si nœud Tor (v2.2)
+     * @param hosting     true si IP datacenter/hébergeur (v2.2)
      */
-    public record IPHubResult(int block, String countryCode, String isp) {}
+    public record IPHubResult(int block, String countryCode, String isp,
+                              boolean proxy, boolean tor, boolean hosting) {}
 
     /**
      * Retourne le résultat de détection pour une IP.
@@ -100,14 +104,18 @@ public class IPHubService {
             IPHubResponse response = responseEntity.getBody();
 
             if (response != null && response.ip != null) {
+                boolean proxy = response.proxyType != null && Boolean.TRUE.equals(response.proxyType.proxy);
+                boolean tor = response.proxyType != null && Boolean.TRUE.equals(response.proxyType.tor);
+                boolean hosting = response.proxyType != null && Boolean.TRUE.equals(response.proxyType.hosting);
                 IPHubResult result = new IPHubResult(
                         response.block != null ? response.block : 0,
                         response.countryCode,
-                        response.isp);
+                        response.isp,
+                        proxy, tor, hosting);
                 Optional<IPHubResult> opt = Optional.of(result);
                 cache.put(ip, new CachedResult(opt));
-                logger.debug("[FRAUD-DEBUG] IPHub resolved {} → block={} country={} isp={}",
-                        ip, result.block(), result.countryCode(), result.isp());
+                logger.debug("[FRAUD-DEBUG] IPHub resolved {} → block={} country={} isp={} proxy={} tor={} hosting={}",
+                        ip, result.block(), result.countryCode(), result.isp(), proxy, tor, hosting);
                 return opt;
             } else {
                 logger.debug("[FRAUD-DEBUG] IPHub returned empty body for {}", ip);
@@ -146,5 +154,21 @@ public class IPHubService {
         String isp;
         @JsonProperty("block")
         Integer block;
+        @JsonProperty("proxyType")
+        ProxyType proxyType;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class ProxyType {
+        @JsonProperty("proxy")
+        Boolean proxy;
+        @JsonProperty("tor")
+        Boolean tor;
+        @JsonProperty("hosting")
+        Boolean hosting;
+        @JsonProperty("relay")
+        Boolean relay;
+        @JsonProperty("residentialProxy")
+        Boolean residentialProxy;
     }
 }
