@@ -36,6 +36,7 @@ import {
   Trash2,
   Filter,
   ArrowUpDown,
+  MapPin,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -58,6 +59,10 @@ interface OrderItem {
   progressPercentage?: number;
   progressStatus?: string;
   processingNotes?: string;
+  billingAddress?: string | null;
+  billingCity?: string | null;
+  billingPostalCode?: string | null;
+  billingCountry?: string | null;
 }
 
 interface OrderDetail {
@@ -86,6 +91,10 @@ interface OrderDetail {
   userName: string | null;
   userId: string | null;
   guestPaymentLink?: string | null;
+  billingAddress: string | null;
+  billingCity: string | null;
+  billingPostalCode: string | null;
+  billingCountry: string | null;
 }
 
 interface PageResponse<T> {
@@ -267,6 +276,7 @@ const ORDER_STEPS = [
           <div class="hidden w-28 shrink-0 px-2 text-center sm:block">Montant</div>
           <div class="hidden w-32 shrink-0 px-2 text-center md:block">Statut</div>
           <div class="hidden w-36 shrink-0 px-2 text-center lg:block">Date</div>
+          <div class="hidden w-44 shrink-0 px-2 text-center xl:block">Facturation</div>
           <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
@@ -304,6 +314,13 @@ const ORDER_STEPS = [
               </div>
               <div class="hidden w-36 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 lg:block dark:text-zinc-400">
                 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+              <div class="hidden w-44 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+                @if (order.billingCity || order.billingCountry) {
+                  {{ order.billingPostalCode ?? '' }} {{ order.billingCity ?? '' }}{{ order.billingCountry ? ', ' + order.billingCountry : '' }}
+                } @else {
+                  <span class="text-zinc-400 dark:text-zinc-600">—</span>
+                }
               </div>
               <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(order.createdAt) }}
@@ -422,6 +439,34 @@ const ORDER_STEPS = [
                   </div>
                 </div>
               </div>
+
+              <!-- Billing Address -->
+              @if (orderDetail()!.billingAddress || orderDetail()!.billingCity || orderDetail()!.billingPostalCode || orderDetail()!.billingCountry) {
+                <div>
+                  <p class="text-xs font-medium text-(--muted-foreground)">Adresse de facturation</p>
+                  <div class="mt-2 flex items-start gap-3 rounded-sm border border-(--border) bg-(--background) p-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">
+                      <lucide-icon [img]="MapPinIcon" [size]="16"></lucide-icon>
+                    </div>
+                    <div class="text-sm text-(--foreground)">
+                      @if (orderDetail()!.billingAddress) {
+                        <p>{{ orderDetail()!.billingAddress }}</p>
+                      }
+                      <p>
+                        @if (orderDetail()!.billingPostalCode) {
+                          <span>{{ orderDetail()!.billingPostalCode }}</span>
+                        }
+                        @if (orderDetail()!.billingCity) {
+                          <span>{{ orderDetail()!.billingPostalCode ? ' ' : '' }}{{ orderDetail()!.billingCity }}</span>
+                        }
+                      </p>
+                      @if (orderDetail()!.billingCountry) {
+                        <p class="text-xs text-(--muted-foreground)">{{ orderDetail()!.billingCountry }}</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
 
               <div>
                 <p class="text-xs font-medium text-(--muted-foreground)">Notes (création / client)</p>
@@ -929,6 +974,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly Trash2Icon = Trash2;
   readonly FilterIcon = Filter;
   readonly ArrowUpDownIcon = ArrowUpDown;
+  readonly MapPinIcon = MapPin;
 
 
   readonly loading = signal(false);

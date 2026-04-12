@@ -435,6 +435,7 @@ public class StripeCheckoutPaymentProcessor implements PaymentProcessor {
                 // Configurer les options de paiement
                 paramsBuilder
                                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
+                                .setBillingAddressCollection(SessionCreateParams.BillingAddressCollection.REQUIRED)
                                 .setAllowPromotionCodes(true)
                                 .setAutomaticTax(
                                                 SessionCreateParams.AutomaticTax.builder()
