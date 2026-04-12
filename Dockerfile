@@ -67,5 +67,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Point d'entrée avec profil production pour Dokploy
-ENTRYPOINT ["java", "-Xmx1024m", "-XX:+UseG1GC", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+# Point d'entrée — le profil est piloté par la variable d'env SPRING_PROFILES_ACTIVE (défaut: prod)
+ENTRYPOINT ["java", "-Xmx1024m", "-XX:+UseG1GC", "-jar", "app.jar"]
