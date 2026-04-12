@@ -13,9 +13,8 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter } from 'lucide-angular';
+import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter, Save } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { HttpClient } from '@angular/common/http';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SeoService } from '../../core/services/seo.service';
@@ -24,9 +23,7 @@ import {
   ServiceItem,
 } from '../../core/services/catalog.service';
 import { AuthService } from '../../core/services/auth.service';
-import { environment } from '../../../environments/environment';
 import { ProfileService } from '../../core/services/profile.service';
-import { PaymentSessionService } from '../../core/services/payment-session.service';
 
 @Component({
   selector: 'lmp-services',
@@ -105,6 +102,36 @@ import { PaymentSessionService } from '../../core/services/payment-session.servi
                   />
                 </div>
               }
+
+              <!-- Save button + feedback -->
+              <div class="flex items-center gap-3 pt-1">
+                <button
+                  hlmBtn
+                  variant="outline"
+                  size="sm"
+                  class="cursor-pointer gap-1.5"
+                  [disabled]="vatSaveStatus() === 'saving'"
+                  (click)="saveVatPreferences()"
+                >
+                  @if (vatSaveStatus() === 'saving') {
+                    <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                  } @else {
+                    <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
+                  }
+                  Enregistrer
+                </button>
+                @if (vatSaveStatus() === 'saved') {
+                  <span class="flex items-center gap-1 text-xs font-medium text-green-600 animate-in fade-in duration-200">
+                    <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+                    Préférences enregistrées
+                  </span>
+                }
+                @if (vatSaveStatus() === 'error') {
+                  <span class="text-xs font-medium text-(--destructive) animate-in fade-in duration-200">
+                    {{ vatSaveError() }}
+                  </span>
+                }
+              </div>
             </div>
           </div>
         }
@@ -291,14 +318,13 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly Loader2Icon = Loader2;
   readonly ShoppingCartIcon = ShoppingCart;
   readonly FilterIcon = Filter;
+  readonly SaveIcon = Save;
 
   private readonly catalogService = inject(CatalogService);
-  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly seo = inject(SeoService);
   private readonly profileService = inject(ProfileService);
-  private readonly paymentSession = inject(PaymentSessionService);
 
   checkoutTaxForm = {
     vatReverseCharge: false,
@@ -311,6 +337,8 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly checkoutLoading = signal<string | null>(null);
   readonly highlightedSlug = signal<string | null>(null);
   readonly selectedCategory = signal<string | null>(null);
+  readonly vatSaveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  readonly vatSaveError = signal<string>('');
 
   readonly categories = computed(() => {
     const seen = new Set<string>();
@@ -445,6 +473,44 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.scrollObserver?.disconnect();
     this.fragmentSub?.unsubscribe();
+    clearTimeout(this.vatSaveTimer);
+  }
+
+  private vatSaveTimer?: ReturnType<typeof setTimeout>;
+
+  saveVatPreferences(): void {
+    if (
+      this.checkoutTaxForm.vatReverseCharge &&
+      !this.checkoutTaxForm.vatNumber.trim()
+    ) {
+      this.vatSaveStatus.set('error');
+      this.vatSaveError.set('Veuillez saisir votre numéro de TVA.');
+      return;
+    }
+
+    this.vatSaveStatus.set('saving');
+
+    this.profileService
+      .updateProfile({
+        vatReverseCharge: this.checkoutTaxForm.vatReverseCharge,
+        vatNumber: this.checkoutTaxForm.vatReverseCharge
+          ? this.checkoutTaxForm.vatNumber.trim()
+          : '',
+      })
+      .subscribe({
+        next: (updated) => {
+          this.authService.setUser(updated);
+          this.vatSaveStatus.set('saved');
+          clearTimeout(this.vatSaveTimer);
+          this.vatSaveTimer = setTimeout(() => this.vatSaveStatus.set('idle'), 4000);
+        },
+        error: (err) => {
+          this.vatSaveStatus.set('error');
+          this.vatSaveError.set(
+            err.error?.message || 'Impossible d\'enregistrer vos préférences.',
+          );
+        },
+      });
   }
 
   onCheckout(service: ServiceItem): void {
@@ -496,44 +562,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.http
-      .post<{
-        success: boolean;
-        data?: { clientSecret: string; publishableKey: string; orderId: string };
-        message?: string;
-      }>(
-        `${environment.apiUrl}/api/v1/payments/checkout/payment-element`,
-        {
-          offerId: service.currentOffer.id,
-          currency: service.currentOffer.currency || 'EUR',
-        },
-        { withCredentials: true },
-      )
-      .subscribe({
-        next: (res) => {
-          this.checkoutLoading.set(null);
-          if (res.success && res.data?.clientSecret && res.data.publishableKey && res.data.orderId) {
-            this.paymentSession.start({
-              clientSecret: res.data.clientSecret,
-              publishableKey: res.data.publishableKey,
-              orderId: String(res.data.orderId),
-            });
-            void this.router.navigate(['/payment/process']);
-          } else {
-            alert(res.message || 'Erreur lors de la création du paiement');
-          }
-        },
-        error: (err) => {
-          this.checkoutLoading.set(null);
-          if (err.status === 401) {
-            this.router.navigate(['/login']);
-          } else {
-            alert(
-              err.error?.message ||
-                'Erreur lors de la création du paiement. Veuillez réessayer.',
-            );
-          }
-        },
-      });
+    this.checkoutLoading.set(null);
+    void this.router.navigate(['/checkout', service.currentOffer.id]);
   }
 }

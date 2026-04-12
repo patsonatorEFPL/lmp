@@ -85,6 +85,16 @@ export const routes: Routes = [
       ),
   },
 
+  // Unified checkout page (no navbar/footer — standalone)
+  {
+    path: 'checkout/:offerId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/checkout/checkout.component').then(
+        (m) => m.CheckoutComponent,
+      ),
+  },
+
   // Payment callback pages (no navbar/footer — standalone)
   {
     path: 'payment/success',

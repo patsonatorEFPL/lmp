@@ -27,6 +27,7 @@ import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.notification.service.EmailService;
 import com.lmp.portal.dto.ChangePasswordRequest;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.pricing.VatCalculationService;
 
 import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
@@ -87,6 +88,7 @@ public class AdminRestController {
     private final ApplicationEventPublisher eventPublisher;
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
     private final StripeClient stripeClient;
+    private final VatCalculationService vatCalculationService;
 
     public AdminRestController(UserService userService,
                                AuthService authService,
@@ -98,7 +100,8 @@ public class AdminRestController {
                                EmailService emailService,
                                ApplicationEventPublisher eventPublisher,
                                OrderRealtimeEventPublisher orderRealtimeEventPublisher,
-                               StripeClient stripeClient) {
+                               StripeClient stripeClient,
+                               VatCalculationService vatCalculationService) {
         this.userService = userService;
         this.authService = authService;
         this.sessionSecurityService = sessionSecurityService;
@@ -110,6 +113,7 @@ public class AdminRestController {
         this.eventPublisher = eventPublisher;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.stripeClient = stripeClient;
+        this.vatCalculationService = vatCalculationService;
     }
 
     @GetMapping("/stats")
@@ -653,10 +657,15 @@ public class AdminRestController {
             User user = userService.findById(UUID.fromString(userId))
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + userId));
 
+            // Le montant admin est HT — appliquer la TVA selon le statut du client
+            BigDecimal amountHt = BigDecimal.valueOf(amount);
+            boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
+            BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, reverseCharge);
+
             Order order = new Order();
             order.setUser(user);
             order.setServiceName(serviceName);
-            order.setTotalAmount(BigDecimal.valueOf(amount));
+            order.setTotalAmount(amountCharged);
             order.setCurrency(currency);
             order.setStatus(OrderStatus.PAYMENT_PENDING);
             order.setNotes(notes);
@@ -664,6 +673,9 @@ public class AdminRestController {
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setPriority(1); // High priority — admin-created
+            order.setVatReverseCharge(reverseCharge);
+            String vat = com.lmp.shared.util.VatIdentifierUtils.normalize(user.getVatNumber());
+            order.setCustomerVatNumber(reverseCharge && !vat.isEmpty() ? vat : null);
 
             OrderProgressSync.applyMinimumForStatus(order);
 

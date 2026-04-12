@@ -20,6 +20,7 @@ import com.lmp.auth.service.UserService;
 import com.lmp.shared.dto.ApiResponse;
 import com.lmp.shared.pricing.PricingContext;
 import com.lmp.shared.pricing.RegionalPricingService;
+import com.lmp.shared.pricing.VatCalculationService;
 import com.lmp.shared.util.VatIdentifierUtils;
 import com.lmp.shared.web.ClientIpResolver;
 
@@ -63,6 +64,7 @@ public class PaymentRestController {
     private final PaymentReconciliationService paymentReconciliationService;
     private final StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService;
     private final RegionalPricingService regionalPricingService;
+    private final VatCalculationService vatCalculationService;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
@@ -72,7 +74,8 @@ public class PaymentRestController {
                                  OrderRealtimeEventPublisher orderRealtimeEventPublisher,
                                  PaymentReconciliationService paymentReconciliationService,
                                  StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService,
-                                 RegionalPricingService regionalPricingService) {
+                                 RegionalPricingService regionalPricingService,
+                                 VatCalculationService vatCalculationService) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
@@ -82,6 +85,7 @@ public class PaymentRestController {
         this.paymentReconciliationService = paymentReconciliationService;
         this.stripePaymentIntentCheckoutService = stripePaymentIntentCheckoutService;
         this.regionalPricingService = regionalPricingService;
+        this.vatCalculationService = vatCalculationService;
     }
 
     // =========================================================================
@@ -114,9 +118,67 @@ public class PaymentRestController {
             String publishableKey
     ) {}
 
+    public record CheckoutPreviewResponse(
+            String serviceName,
+            BigDecimal amountHt,
+            BigDecimal vatAmount,
+            BigDecimal totalAmount,
+            int vatRate,
+            boolean reverseCharge,
+            String currency,
+            String durationType,
+            UUID offerId
+    ) {}
+
     // =========================================================================
     // Endpoints
     // =========================================================================
+
+    @GetMapping("/checkout-preview")
+    @Operation(summary = "Aperçu du checkout",
+               description = "Retourne la décomposition HT / TVA / TTC pour une offre, sans créer de commande")
+    public ResponseEntity<ApiResponse<CheckoutPreviewResponse>> checkoutPreview(
+            @RequestParam UUID offerId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Optional<ServiceOffer> offerOpt = catalogService.getValidOffer(offerId);
+        if (offerOpt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid or expired offer"));
+        }
+
+        ServiceOffer offer = offerOpt.get();
+        PricingContext displayCtx = regionalPricingService.resolve(httpRequest);
+        PricingContext payCtx = regionalPricingService.resolveForPayment(displayCtx);
+        BigDecimal amountEur = offer.getPrice();
+        BigDecimal amountHt = regionalPricingService.convertFromEur(amountEur, payCtx);
+        boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
+        BigDecimal vatAmt = vatCalculationService.vatAmount(amountHt, reverseCharge);
+        BigDecimal total = vatCalculationService.applyVat(amountHt, reverseCharge);
+        int vatPct = vatCalculationService.getVatRate()
+                .multiply(new BigDecimal("100")).intValue();
+        String currency = payCtx.currency();
+        String durationType = offer.getDurationType() != null ? offer.getDurationType().name() : "ONE_TIME";
+
+        return ResponseEntity.ok(ApiResponse.ok(new CheckoutPreviewResponse(
+                offer.getService().getTitle(),
+                amountHt,
+                vatAmt,
+                total,
+                vatPct,
+                reverseCharge,
+                currency,
+                durationType,
+                offerId
+        )));
+    }
 
     @PostMapping("/checkout")
     @Operation(summary = "Créer une session Stripe Checkout",
@@ -157,10 +219,15 @@ public class PaymentRestController {
         ServiceOffer offer = offerOpt.get();
         PricingContext displayCtx = regionalPricingService.resolve(httpRequest);
         PricingContext payCtx = regionalPricingService.resolveForPayment(displayCtx);
-        BigDecimal amountEur = offer.getPrice();
-        BigDecimal amount = regionalPricingService.convertFromEur(amountEur, payCtx);
+        BigDecimal amountEur = offer.getPrice(); // HT en EUR
+        BigDecimal amountHt = regionalPricingService.convertFromEur(amountEur, payCtx); // HT en devise cible
+        boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
+        BigDecimal amount = vatCalculationService.applyVat(amountHt, reverseCharge); // TTC ou HT selon statut
         String serviceName = offer.getService().getTitle();
         String currency = payCtx.currency();
+
+        logger.info("VAT_CHECKOUT - Order for user {} (reverseCharge={}): amountHT={} {}, amountCharged={} {}",
+                user.getEmail(), reverseCharge, amountHt, currency, amount, currency);
 
         try {
             // Créer la commande avec snapshot FX figé
@@ -278,10 +345,15 @@ public class PaymentRestController {
         ServiceOffer offer = offerOpt.get();
         PricingContext displayCtx2 = regionalPricingService.resolve(httpRequest);
         PricingContext payCtx2 = regionalPricingService.resolveForPayment(displayCtx2);
-        BigDecimal amountEur = offer.getPrice();
-        BigDecimal amount = regionalPricingService.convertFromEur(amountEur, payCtx2);
+        BigDecimal amountEur = offer.getPrice(); // HT en EUR
+        BigDecimal amountHt = regionalPricingService.convertFromEur(amountEur, payCtx2); // HT en devise cible
+        boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
+        BigDecimal amount = vatCalculationService.applyVat(amountHt, reverseCharge); // TTC ou HT selon statut
         String serviceName = offer.getService().getTitle();
         String currency = payCtx2.currency();
+
+        logger.info("VAT_PAYMENT_ELEMENT - Order for user {} (reverseCharge={}): amountHT={} {}, amountCharged={} {}",
+                user.getEmail(), reverseCharge, amountHt, currency, amount, currency);
 
         try {
             Order order = new Order();

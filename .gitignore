@@ -73,6 +73,7 @@ lmp-frontend/src/app/generated/
 .cursor/
 .claude/
 .gemini/
+.mcp.json
 
 ### Documentation locale, brouillons et scripts (non versionnés) ###
 docs/

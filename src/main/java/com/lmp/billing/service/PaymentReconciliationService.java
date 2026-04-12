@@ -44,6 +44,8 @@ public class PaymentReconciliationService {
 
         private final StripeClient stripeClient;
 
+        private final StripePaymentMethodResolver paymentMethodResolver;
+
     /**
      * Délai minimum (en minutes) avant de réconcilier une commande PAYMENT_PENDING.
      * Laisse le temps au webhook Stripe d'arriver naturellement.
@@ -63,12 +65,14 @@ public class PaymentReconciliationService {
                            InvoicePdfService invoicePdfService,
                            EmailService emailService,
                            OrderRealtimeEventPublisher orderRealtimeEventPublisher,
-                           StripeClient stripeClient) {
+                           StripeClient stripeClient,
+                           StripePaymentMethodResolver paymentMethodResolver) {
         this.orderRepository = orderRepository;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.stripeClient = stripeClient;
+        this.paymentMethodResolver = paymentMethodResolver;
     }
 
     /**
@@ -310,8 +314,11 @@ public class PaymentReconciliationService {
         order.setPaidAt(now);
         order.setUpdatedAt(now);
         order.setStripePaymentIntentId(pi.getId());
-        if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
-            order.setPaymentMethod("payment_element");
+        String resolvedPm = paymentMethodResolver.resolveFromPaymentIntent(pi);
+        if (resolvedPm != null) {
+            order.setPaymentMethod(resolvedPm);
+        } else if (order.getPaymentMethod() == null || order.getPaymentMethod().isBlank()) {
+            order.setPaymentMethod("Paiement Stripe");
         }
 
         OrderProgressSync.applyMinimumForStatus(order);
@@ -368,8 +375,22 @@ public class PaymentReconciliationService {
         if (order.getStripeCustomerId() == null && session.getCustomer() != null) {
             order.setStripeCustomerId(session.getCustomer());
         }
+        // Resolve the actual payment method used (Carte bancaire, Bancontact, Klarna…)
+        String piId = order.getStripePaymentIntentId();
+        if (piId != null && !piId.isBlank()) {
+            try {
+                PaymentIntent pi = stripeClient.paymentIntents().retrieve(piId);
+                String resolvedPm = paymentMethodResolver.resolveFromPaymentIntent(pi);
+                if (resolvedPm != null) {
+                    order.setPaymentMethod(resolvedPm);
+                }
+            } catch (Exception e) {
+                logger.warn("Impossible de résoudre le moyen de paiement pour la commande {} : {}",
+                        order.getId(), e.getMessage());
+            }
+        }
         if (order.getPaymentMethod() == null) {
-            order.setPaymentMethod("stripe_checkout");
+            order.setPaymentMethod("Paiement Stripe");
         }
 
         OrderProgressSync.applyMinimumForStatus(order);
