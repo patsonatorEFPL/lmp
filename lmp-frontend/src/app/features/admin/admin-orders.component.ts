@@ -276,7 +276,10 @@ const ORDER_STEPS = [
           <div class="hidden w-28 shrink-0 px-2 text-center sm:block">Montant</div>
           <div class="hidden w-32 shrink-0 px-2 text-center md:block">Statut</div>
           <div class="hidden w-36 shrink-0 px-2 text-center lg:block">Date</div>
-          <div class="hidden w-44 shrink-0 px-2 text-center xl:block">Facturation</div>
+          <div class="hidden w-44 shrink-0 px-2 text-center xl:block">Adresse</div>
+          <div class="hidden w-28 shrink-0 px-2 text-center xl:block">Ville</div>
+          <div class="hidden w-24 shrink-0 px-2 text-center xl:block">Code postal</div>
+          <div class="hidden w-20 shrink-0 px-2 text-center xl:block">Pays</div>
           <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
@@ -316,11 +319,16 @@ const ORDER_STEPS = [
                 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
               </div>
               <div class="hidden w-44 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
-                @if (order.billingCity || order.billingCountry) {
-                  {{ order.billingPostalCode ?? '' }} {{ order.billingCity ?? '' }}{{ order.billingCountry ? ', ' + order.billingCountry : '' }}
-                } @else {
-                  <span class="text-zinc-400 dark:text-zinc-600">—</span>
-                }
+                {{ order.billingAddress || '—' }}
+              </div>
+              <div class="hidden w-28 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+                {{ order.billingCity || '—' }}
+              </div>
+              <div class="hidden w-24 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+                {{ order.billingPostalCode || '—' }}
+              </div>
+              <div class="hidden w-20 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+                {{ order.billingCountry || '—' }}
               </div>
               <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(order.createdAt) }}
