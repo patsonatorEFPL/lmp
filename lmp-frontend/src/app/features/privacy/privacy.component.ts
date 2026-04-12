@@ -72,10 +72,21 @@ export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
         de recherche qui vous ont redirigé vers le site.`,
     },
     {
+      title: 'Géolocalisation',
+      content: `Lors du processus de paiement, nous pouvons vous demander d'autoriser l'accès à votre position
+        géographique via votre navigateur. Cette demande est <strong class="text-(--foreground)">entièrement facultative</strong>
+        — vous pouvez la refuser sans aucune incidence sur votre achat.<br/><br/>
+        Si vous l'acceptez, <strong class="text-(--foreground)">seul votre pays</strong> est déterminé et enregistré.
+        Nous ne conservons ni vos coordonnées GPS, ni votre adresse exacte, ni aucune donnée de localisation précise.
+        Cette information est utilisée exclusivement pour la <strong class="text-(--foreground)">prévention de la fraude</strong>
+        et la vérification de cohérence fiscale (TVA), conformément à notre intérêt légitime au sens de l'article 6(1)(f) du RGPD.<br/><br/>
+        Le pays détecté est conservé uniquement le temps nécessaire au traitement de votre commande et à nos obligations légales.`,
+    },
+    {
       title: 'Utilisation des données',
       content: `Nous utilisons les informations que nous collectons pour optimiser notre site web, améliorer nos services,
-        et communiquer avec vous lorsque cela est nécessaire. Nous ne partageons pas vos informations personnelles
-        avec des tiers sans votre consentement explicite.`,
+        prévenir la fraude lors des paiements, et communiquer avec vous lorsque cela est nécessaire.
+        Nous ne partageons pas vos informations personnelles avec des tiers sans votre consentement explicite.`,
     },
     {
       title: 'Vos droits (RGPD)',
