@@ -103,18 +103,21 @@ public class FraudScoringService {
         List<String> flags = new ArrayList<>();
 
         // ── 1. VPN detection ──────────────────────────────────────────────────
-        if (signals.vpnScore() > 0.95) {
+        // Seuils ajustés : avec 3 sources (ip-api poids 0.25, getipintel 0.40, iphub 0.35),
+        // quand 2/3 confirment le VPN le score consensus est ~0.75 (ip-api dilue).
+        // HIGH = 2+ sources unanimes, MEDIUM = consensus clair, SUSPECTED = signal faible.
+        if (signals.vpnScore() > 0.85) {
             score -= 30;
             flags.add("VPN_DETECTED_HIGH");
             logger.debug("[FRAUD-DEBUG] Penalty -30: VPN_DETECTED_HIGH (vpnScore={})", signals.vpnScore());
-        } else if (signals.vpnScore() > 0.80) {
-            score -= 15;
+        } else if (signals.vpnScore() > 0.60) {
+            score -= 20;
             flags.add("VPN_DETECTED_MEDIUM");
-            logger.debug("[FRAUD-DEBUG] Penalty -15: VPN_DETECTED_MEDIUM (vpnScore={})", signals.vpnScore());
-        } else if (signals.vpnScore() > 0.50) {
-            score -= 5;
+            logger.debug("[FRAUD-DEBUG] Penalty -20: VPN_DETECTED_MEDIUM (vpnScore={})", signals.vpnScore());
+        } else if (signals.vpnScore() > 0.40) {
+            score -= 10;
             flags.add("VPN_SUSPECTED");
-            logger.debug("[FRAUD-DEBUG] Penalty -5: VPN_SUSPECTED (vpnScore={})", signals.vpnScore());
+            logger.debug("[FRAUD-DEBUG] Penalty -10: VPN_SUSPECTED (vpnScore={})", signals.vpnScore());
         }
 
         // ── 2. Timezone mismatch ──────────────────────────────────────────────
@@ -155,11 +158,20 @@ public class FraudScoringService {
                     signals.geoCountry(), signals.ipCountry());
         }
 
-        // ── 6. Geolocation denied + VPN detected ────────────────────────────
-        if (signals.geoLocationDenied() && signals.vpnScore() > 0.80) {
-            score -= 15;
-            flags.add("GEO_DENIED_WITH_VPN");
-            logger.debug("[FRAUD-DEBUG] Penalty -15: GEO_DENIED_WITH_VPN");
+        // ── 6. Geolocation denied ────────────────────────────────────────────
+        if (signals.geoLocationDenied()) {
+            if (signals.vpnScore() > 0.40) {
+                // Refus de géoloc + VPN suspecté/confirmé → très suspect
+                score -= 15;
+                flags.add("GEO_DENIED_WITH_VPN");
+                logger.debug("[FRAUD-DEBUG] Penalty -15: GEO_DENIED_WITH_VPN");
+            } else if (signals.ipCountry() != null && signals.billingCountry() != null
+                    && !signals.ipCountry().equalsIgnoreCase(signals.billingCountry())) {
+                // Refus de géoloc + IP et billing dans des pays différents → suspect
+                score -= 10;
+                flags.add("GEO_DENIED_WITH_MISMATCH");
+                logger.debug("[FRAUD-DEBUG] Penalty -10: GEO_DENIED_WITH_MISMATCH");
+            }
         }
 
         // ── 7. Card country vs billing country (post-payment) ───────────────
