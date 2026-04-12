@@ -2,6 +2,7 @@ package com.lmp.billing.service;
 
 import com.lmp.billing.domain.Order;
 import com.lmp.auth.domain.User;
+import com.lmp.shared.pricing.VatCalculationService;
 import com.lmp.shared.service.CompanyProfileService;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
@@ -26,6 +27,7 @@ public class InvoicePdfService {
     private static final Logger log = LoggerFactory.getLogger(InvoicePdfService.class);
 
     private final CompanyProfileService companyProfileService;
+    private final VatCalculationService vatCalculationService;
 
     // ═══════════════════════════════════════════════════════
     // PALETTE PREMIUM — Charcoal + Gold
@@ -61,8 +63,10 @@ public class InvoicePdfService {
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm");
 
-    public InvoicePdfService(CompanyProfileService companyProfileService) {
+    public InvoicePdfService(CompanyProfileService companyProfileService,
+                            VatCalculationService vatCalculationService) {
         this.companyProfileService = companyProfileService;
+        this.vatCalculationService = vatCalculationService;
     }
 
     /**
@@ -378,6 +382,11 @@ public class InvoicePdfService {
         String serviceName = order.getServiceName() != null ? order.getServiceName() : "Service LMP";
         String currency = order.getCurrency() != null ? order.getCurrency() : "EUR";
 
+        // Montant HT pour le prix unitaire et le total ligne
+        java.math.BigDecimal lineAmountHt = Boolean.TRUE.equals(order.getVatReverseCharge())
+                ? order.getTotalAmount()
+                : vatCalculationService.extractHt(order.getTotalAmount());
+
         // Description
         PdfPCell descCell = new PdfPCell();
         descCell.setPadding(12);
@@ -402,13 +411,13 @@ public class InvoicePdfService {
         PdfPCell qtyCell = createItemCell("1", itemFont, Element.ALIGN_CENTER);
         itemsTable.addCell(qtyCell);
 
-        // Prix unitaire
-        PdfPCell priceCell = createItemCell(formatPrice(order.getTotalAmount(), currency), itemFont,
+        // Prix unitaire HT
+        PdfPCell priceCell = createItemCell(formatPrice(lineAmountHt, currency), itemFont,
                 Element.ALIGN_RIGHT);
         itemsTable.addCell(priceCell);
 
-        // Total
-        PdfPCell totalCell = createItemCell(formatPrice(order.getTotalAmount(), currency), itemBoldFont,
+        // Total ligne HT
+        PdfPCell totalCell = createItemCell(formatPrice(lineAmountHt, currency), itemBoldFont,
                 Element.ALIGN_RIGHT);
         itemsTable.addCell(totalCell);
 
@@ -461,11 +470,11 @@ public class InvoicePdfService {
             tvaLabel = "TVA — autoliquidation (auto-reverse)";
             totalLabel = "TOTAL";
         } else {
-            java.math.BigDecimal tvaRate = new java.math.BigDecimal("0.21");
-            htAmount = totalAmount.divide(tvaRate.add(java.math.BigDecimal.ONE), 2,
-                    java.math.RoundingMode.HALF_UP);
+            htAmount = vatCalculationService.extractHt(totalAmount);
             tvaAmount = totalAmount.subtract(htAmount);
-            tvaLabel = "TVA (21%)";
+            int vatPct = vatCalculationService.getVatRate()
+                    .multiply(new java.math.BigDecimal("100")).intValue();
+            tvaLabel = "TVA (" + vatPct + "%)";
             totalLabel = "TOTAL TTC";
         }
 
@@ -549,7 +558,7 @@ public class InvoicePdfService {
         cell.addElement(title);
 
         String paymentMethod = order.getPaymentMethod() != null ? order.getPaymentMethod()
-                : "Carte bancaire via Stripe";
+                : "Paiement Stripe";
         cell.addElement(new Paragraph("Méthode : " + paymentMethod, infoFont));
 
         if (order.getPaidAt() != null) {

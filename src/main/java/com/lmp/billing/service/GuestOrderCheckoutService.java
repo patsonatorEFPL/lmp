@@ -1,5 +1,6 @@
 package com.lmp.billing.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ import com.lmp.billing.dto.GuestCheckoutPrepareRequest;
 import com.lmp.billing.exception.GuestEmailAlreadyRegisteredException;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.repository.OrderRepository;
+import com.lmp.shared.pricing.VatCalculationService;
 import com.lmp.shared.util.VatIdentifierUtils;
 
 /**
@@ -35,15 +37,18 @@ public class GuestOrderCheckoutService {
     private final AuthService authService;
     private final UserService userService;
     private final StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService;
+    private final VatCalculationService vatCalculationService;
 
     public GuestOrderCheckoutService(OrderRepository orderRepository,
             AuthService authService,
             UserService userService,
-            StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService) {
+            StripePaymentIntentCheckoutService stripePaymentIntentCheckoutService,
+            VatCalculationService vatCalculationService) {
         this.orderRepository = orderRepository;
         this.authService = authService;
         this.userService = userService;
         this.stripePaymentIntentCheckoutService = stripePaymentIntentCheckoutService;
+        this.vatCalculationService = vatCalculationService;
     }
 
     @Transactional(readOnly = true)
@@ -131,9 +136,18 @@ public class GuestOrderCheckoutService {
         userService.save(managed);
 
         order.setUser(managed);
-        // Conserver checkout_token jusqu’au paiement confirmé (webhook) pour que le lien ?t=… reste
+        // Conserver checkout_token jusqu'au paiement confirmé (webhook) pour que le lien ?t=… reste
         // résolvable après rechargement (étape paiement), pour un client déjà connecté.
         applyVatSnapshotFromUser(order, managed);
+
+        // Appliquer la TVA : le montant admin est HT, on ajoute la TVA si le client n'est pas en autoliquidation.
+        boolean isReverse = Boolean.TRUE.equals(managed.getVatReverseCharge());
+        BigDecimal amountHt = order.getTotalAmount(); // Montant HT fixé par l'admin
+        BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, isReverse);
+        order.setTotalAmount(amountCharged);
+        logger.info("VAT_GUEST_CHECKOUT - Guest order {} (reverseCharge={}): amountHT={}, amountCharged={}",
+                order.getId(), isReverse, amountHt, amountCharged);
+
         order.setUpdatedAt(LocalDateTime.now());
         order.setLastModifiedAt(LocalDateTime.now());
         orderRepository.save(order);
@@ -180,6 +194,15 @@ public class GuestOrderCheckoutService {
 
         order.setUser(managed);
         applyVatSnapshotFromUser(order, managed);
+
+        // Appliquer la TVA : le montant admin est HT, on ajoute la TVA si le client n'est pas en autoliquidation.
+        boolean isReverse = Boolean.TRUE.equals(managed.getVatReverseCharge());
+        BigDecimal amountHt = order.getTotalAmount();
+        BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, isReverse);
+        order.setTotalAmount(amountCharged);
+        logger.info("VAT_GUEST_ATTACH - Guest order {} (reverseCharge={}): amountHT={}, amountCharged={}",
+                order.getId(), isReverse, amountHt, amountCharged);
+
         order.setUpdatedAt(LocalDateTime.now());
         order.setLastModifiedAt(LocalDateTime.now());
         orderRepository.save(order);

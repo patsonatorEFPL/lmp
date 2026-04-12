@@ -34,12 +34,16 @@ public class OrderCleanupService {
 
     private final StripeClient stripeClient;
 
+    private final StripePaymentMethodResolver paymentMethodResolver;
+
     public OrderCleanupService(OrderRepository orderRepository,
             OrderRealtimeEventPublisher orderRealtimeEventPublisher,
-            StripeClient stripeClient) {
+            StripeClient stripeClient,
+            StripePaymentMethodResolver paymentMethodResolver) {
         this.orderRepository = orderRepository;
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.stripeClient = stripeClient;
+        this.paymentMethodResolver = paymentMethodResolver;
     }
 
     /**
@@ -91,7 +95,17 @@ public class OrderCleanupService {
                         order.setPaymentStatus("succeeded");
                         order.setPaidAt(LocalDateTime.now());
                         order.setUpdatedAt(LocalDateTime.now());
-                        order.setPaymentMethod("stripe_checkout");
+                        // Resolve actual payment method (Carte bancaire, Bancontact…)
+                        String piId = order.getStripePaymentIntentId();
+                        if (piId != null && !piId.isBlank()) {
+                            String resolvedPm = paymentMethodResolver.resolveFromPaymentIntentId(piId);
+                            if (resolvedPm != null) {
+                                order.setPaymentMethod(resolvedPm);
+                            }
+                        }
+                        if (order.getPaymentMethod() == null) {
+                            order.setPaymentMethod("Paiement Stripe");
+                        }
                         OrderProgressSync.applyMinimumForStatus(order);
                         orderRepository.save(order);
                         orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previous,
