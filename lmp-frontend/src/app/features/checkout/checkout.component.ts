@@ -308,6 +308,47 @@ interface FraudCheckResult {
           </p>
         }
       </div>
+
+      <!-- ═══ Geolocation prompt modal ═══ -->
+      @if (showGeoPrompt()) {
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+             (click)="onGeoPromptDecline()">
+          <div class="mx-4 w-full max-w-sm rounded-xl border border-[#2a2a2e] bg-[#1a1a1d] p-6 shadow-2xl"
+               (click)="$event.stopPropagation()">
+            <div class="mb-4 flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
+                <lucide-icon [img]="MapPinIcon" [size]="20" class="text-blue-400"></lucide-icon>
+              </div>
+              <h3 class="text-base font-semibold text-white">Vérification de localisation</h3>
+            </div>
+            <p class="text-sm leading-relaxed text-[#aaa]">
+              Pour sécuriser votre paiement, nous souhaitons vérifier votre localisation.
+              <strong class="text-[#ccc]">Seul votre pays</strong> sera utilisé — nous ne conservons
+              ni vos coordonnées GPS ni votre adresse exacte.
+            </p>
+            <p class="mt-3 text-xs text-[#777]">
+              Cette information nous aide à protéger votre compte contre les transactions non autorisées.
+              Vous pouvez refuser sans que cela n'empêche votre paiement.
+            </p>
+            <div class="mt-5 flex gap-3">
+              <button
+                type="button"
+                class="flex-1 cursor-pointer rounded-lg border border-[#333] bg-transparent px-4 py-2.5 text-sm text-[#ccc] transition-colors hover:bg-[#222]"
+                (click)="onGeoPromptDecline()"
+              >
+                Non merci
+              </button>
+              <button
+                type="button"
+                class="flex-1 cursor-pointer rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+                (click)="onGeoPromptAccept()"
+              >
+                Autoriser
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: `
@@ -358,6 +399,7 @@ export class CheckoutComponent implements OnDestroy {
   private geoCheck = signal<GeoCheckResult | null>(null);
   private geoCountry = signal<string | null>(null);
   private geoLocationDenied = signal(false);
+  readonly showGeoPrompt = signal(false);
   private autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   private beforeUnloadHandler: (() => void) | null = null;
 
@@ -712,6 +754,12 @@ export class CheckoutComponent implements OnDestroy {
       console.debug('[FRAUD-DEBUG] Geolocation API not available');
       return;
     }
+    // Show our custom prompt before triggering the browser's native permission
+    this.showGeoPrompt.set(true);
+  }
+
+  onGeoPromptAccept(): void {
+    this.showGeoPrompt.set(false);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         console.debug('[FRAUD-DEBUG] Geolocation granted:', pos.coords.latitude, pos.coords.longitude);
@@ -731,6 +779,12 @@ export class CheckoutComponent implements OnDestroy {
       },
       { timeout: 10000, enableHighAccuracy: false },
     );
+  }
+
+  onGeoPromptDecline(): void {
+    this.showGeoPrompt.set(false);
+    this.geoLocationDenied.set(true);
+    console.debug('[FRAUD-DEBUG] Geolocation declined via custom prompt');
   }
 
   private async sendFraudSignals(): Promise<void> {
