@@ -13,7 +13,7 @@ import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
+import { loadStripe, Stripe, StripeElements, StripePaymentElement, StripeAddressElement } from '@stripe/stripe-js';
 import {
   LucideAngularModule,
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
   CreditCard,
   Building2,
   Check,
+  MapPin,
 } from 'lucide-angular';
 
 import { environment } from '../../../environments/environment';
@@ -186,6 +187,21 @@ interface PaymentElementResult {
             }
           </div>
 
+          <!-- ═══ Billing Address ═══ -->
+          <div class="mt-4 rounded-lg border border-[#2a2a2e] bg-[#1a1a1d] p-5">
+            <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+              <lucide-icon [img]="MapPinIcon" [size]="16" class="text-[#777]"></lucide-icon>
+              Adresse de facturation
+            </div>
+
+            <div
+              #addressHost
+              class="min-h-[1px] transition-opacity duration-300"
+              [class.opacity-0]="stripeLoading()"
+              [class.opacity-100]="!stripeLoading()"
+            ></div>
+          </div>
+
           <!-- ═══ Payment Form ═══ -->
           <div class="mt-4 rounded-lg border border-[#2a2a2e] bg-[#1a1a1d] p-5">
             <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
@@ -259,8 +275,10 @@ export class CheckoutComponent implements OnDestroy {
   readonly CreditCardIcon = CreditCard;
   readonly Building2Icon = Building2;
   readonly CheckIcon = Check;
+  readonly MapPinIcon = MapPin;
 
   @ViewChild('stripeHost') stripeHost!: ElementRef<HTMLDivElement>;
+  @ViewChild('addressHost') addressHost!: ElementRef<HTMLDivElement>;
 
   // ── State ────────────────────────────────────────────
   readonly loading = signal(true);
@@ -279,6 +297,7 @@ export class CheckoutComponent implements OnDestroy {
   private stripe: Stripe | null = null;
   private elements: StripeElements | null = null;
   private paymentElement: StripePaymentElement | null = null;
+  private addressElement: StripeAddressElement | null = null;
   private orderId: string | null = null;
   private offerId: string | null = null;
 
@@ -443,11 +462,18 @@ export class CheckoutComponent implements OnDestroy {
         },
       });
 
+      // Address Element — always collects billing address
+      this.addressElement = this.elements.create('address', {
+        mode: 'billing',
+      });
+      this.addressElement.mount(this.addressHost.nativeElement);
+
+      // Payment Element — address handled by Address Element above
       this.paymentElement = this.elements.create('payment', {
         layout: 'tabs',
         fields: {
           billingDetails: {
-            address: 'auto',
+            address: 'never',
           },
         },
       });
@@ -524,6 +550,8 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.addressElement?.unmount();
+    this.addressElement = null;
     this.paymentElement?.unmount();
     this.paymentElement = null;
     this.elements = null;
