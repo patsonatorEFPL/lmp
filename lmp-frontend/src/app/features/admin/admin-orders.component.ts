@@ -37,6 +37,8 @@ import {
   Filter,
   ArrowUpDown,
   MapPin,
+  ShieldAlert,
+  ChevronDown,
 } from 'lucide-angular';
 import { FormsModule } from '@angular/forms';
 import { HlmButton } from '@spartan-ng/helm/button';
@@ -59,10 +61,14 @@ interface OrderItem {
   progressPercentage?: number;
   progressStatus?: string;
   processingNotes?: string;
+  billingName?: string | null;
   billingAddress?: string | null;
   billingCity?: string | null;
   billingPostalCode?: string | null;
   billingCountry?: string | null;
+  ipCountry?: string | null;
+  ipAddress?: string | null;
+  fraudScore?: number | null;
 }
 
 interface OrderDetail {
@@ -91,10 +97,20 @@ interface OrderDetail {
   userName: string | null;
   userId: string | null;
   guestPaymentLink?: string | null;
+  billingName: string | null;
   billingAddress: string | null;
   billingCity: string | null;
   billingPostalCode: string | null;
   billingCountry: string | null;
+  ipCountry: string | null;
+  ipAddress: string | null;
+  vpnScore: number | null;
+  vpnSources: string | null;
+  browserTimezone: string | null;
+  geoCountry: string | null;
+  cardCountry: string | null;
+  fraudScore: number | null;
+  fraudFlags: string | null;
 }
 
 interface PageResponse<T> {
@@ -262,7 +278,7 @@ const ORDER_STEPS = [
         </div>
       } @else {
         <!-- En-tête colonnes (style CRM - fond gris arrondi, mb-2) -->
-        <div class="mb-2 flex items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
+        <div class="mb-2 flex min-w-max items-center rounded-lg bg-zinc-100 py-1.5 text-sm font-normal leading-none text-zinc-500 dark:bg-zinc-800/70 dark:text-zinc-400">
           <div class="flex w-10 shrink-0 items-center justify-center">
             <input
               type="checkbox"
@@ -272,14 +288,17 @@ const ORDER_STEPS = [
             />
           </div>
           <div class="w-64 shrink-0 px-2">Email</div>
-          <div class="hidden w-40 shrink-0 px-2 text-center sm:block">Service</div>
-          <div class="hidden w-28 shrink-0 px-2 text-center sm:block">Montant</div>
-          <div class="hidden w-32 shrink-0 px-2 text-center md:block">Statut</div>
-          <div class="hidden w-36 shrink-0 px-2 text-center lg:block">Date</div>
-          <div class="hidden w-44 shrink-0 px-2 text-center xl:block">Adresse</div>
-          <div class="hidden w-28 shrink-0 px-2 text-center xl:block">Ville</div>
-          <div class="hidden w-24 shrink-0 px-2 text-center xl:block">Code postal</div>
-          <div class="hidden w-20 shrink-0 px-2 text-center xl:block">Pays</div>
+          <div class="w-40 shrink-0 px-2 text-center">Service</div>
+          <div class="w-28 shrink-0 px-2 text-center">Montant</div>
+          <div class="w-32 shrink-0 px-2 text-center">Statut</div>
+          <div class="w-36 shrink-0 px-2 text-center">Date</div>
+          <div class="w-40 shrink-0 px-2 text-center">Nom facture</div>
+          <div class="w-44 shrink-0 px-2 text-center">Adresse</div>
+          <div class="w-28 shrink-0 px-2 text-center">Ville</div>
+          <div class="w-24 shrink-0 px-2 text-center">Code postal</div>
+          <div class="w-20 shrink-0 px-2 text-center">Pays</div>
+          <div class="w-32 shrink-0 px-2 text-center">IP</div>
+          <div class="w-20 shrink-0 px-2 text-center">Score</div>
           <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
 
@@ -287,7 +306,7 @@ const ORDER_STEPS = [
         <div>
           @for (order of filteredOrders(); track order.id) {
             <div
-              class="group flex h-10 cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
+              class="group flex h-10 min-w-max cursor-pointer items-center border-b border-zinc-50 transition-colors hover:bg-zinc-50 dark:border-zinc-800/30 dark:hover:bg-zinc-900/50"
               (click)="viewOrderDetail(order.id)"
             >
               <div class="flex w-10 shrink-0 items-center justify-center" (click)="$event.stopPropagation()">
@@ -301,13 +320,13 @@ const ORDER_STEPS = [
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
                 {{ order.customerEmail || '—' }}
               </div>
-              <div class="hidden w-40 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="w-40 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.serviceName }}
               </div>
-              <div class="hidden w-28 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 sm:block dark:text-zinc-400">
+              <div class="w-28 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.amount | currency:'EUR':'symbol':'1.2-2' }}
               </div>
-              <div class="hidden w-32 shrink-0 px-2 text-center md:block">
+              <div class="w-32 shrink-0 px-2 text-center">
                 <span
                   class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
                   [ngClass]="getStatusClass(order.status)"
@@ -315,22 +334,51 @@ const ORDER_STEPS = [
                   {{ getStatusLabel(order.status) }}
                 </span>
               </div>
-              <div class="hidden w-36 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 lg:block dark:text-zinc-400">
+              <div class="w-36 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}
               </div>
-              <div class="hidden w-44 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+              <div class="w-40 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
+                {{ order.billingName || '—' }}
+              </div>
+              <div class="w-44 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.billingAddress || '—' }}
               </div>
-              <div class="hidden w-28 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+              <div class="w-28 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.billingCity || '—' }}
               </div>
-              <div class="hidden w-24 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+              <div class="w-24 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.billingPostalCode || '—' }}
               </div>
-              <div class="hidden w-20 shrink-0 truncate px-2 text-center text-sm leading-none text-zinc-600 xl:block dark:text-zinc-400">
+              <div class="w-20 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.billingCountry || '—' }}
               </div>
-              <div class="w-32 shrink-0 px-2 text-center text-sm leading-none text-zinc-500 dark:text-zinc-400">
+              <div class="w-32 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
+                @if (order.ipAddress) {
+                  <span class="font-mono text-xs">{{ order.ipAddress }}</span>
+                  @if (order.ipCountry) {
+                    <span class="ml-1 text-xs">({{ order.ipCountry }})</span>
+                  }
+                } @else {
+                  —
+                }
+              </div>
+              <div class="w-20 shrink-0 px-2 text-center">
+                @if (order.fraudScore != null) {
+                  <span
+                    class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium"
+                    [ngClass]="{
+                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': order.fraudScore! >= 80,
+                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': order.fraudScore! >= 60 && order.fraudScore! < 80,
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': order.fraudScore! < 60
+                    }"
+                  >
+                    {{ order.fraudScore }}
+                  </span>
+                } @else {
+                  <span class="text-xs text-zinc-400">—</span>
+                }
+              </div>
+              <div class="w-32 shrink-0 px-2 text-center text-sm leading-normal text-zinc-500 dark:text-zinc-400">
                 {{ formatRelativeTimeFr(order.createdAt) }}
               </div>
             </div>
@@ -449,14 +497,17 @@ const ORDER_STEPS = [
               </div>
 
               <!-- Billing Address -->
-              @if (orderDetail()!.billingAddress || orderDetail()!.billingCity || orderDetail()!.billingPostalCode || orderDetail()!.billingCountry) {
+              @if (orderDetail()!.billingName || orderDetail()!.billingAddress || orderDetail()!.billingCity || orderDetail()!.billingPostalCode || orderDetail()!.billingCountry) {
                 <div>
-                  <p class="text-xs font-medium text-(--muted-foreground)">Adresse de facturation</p>
+                  <p class="text-xs font-medium text-(--muted-foreground)">Facturation</p>
                   <div class="mt-2 flex items-start gap-3 rounded-sm border border-(--border) bg-(--background) p-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">
                       <lucide-icon [img]="MapPinIcon" [size]="16"></lucide-icon>
                     </div>
                     <div class="text-sm text-(--foreground)">
+                      @if (orderDetail()!.billingName) {
+                        <p class="font-medium">{{ orderDetail()!.billingName }}</p>
+                      }
                       @if (orderDetail()!.billingAddress) {
                         <p>{{ orderDetail()!.billingAddress }}</p>
                       }
@@ -983,6 +1034,8 @@ export class AdminOrdersComponent implements OnInit {
   readonly FilterIcon = Filter;
   readonly ArrowUpDownIcon = ArrowUpDown;
   readonly MapPinIcon = MapPin;
+  readonly ShieldAlertIcon = ShieldAlert;
+  readonly ChevronDownIcon = ChevronDown;
 
 
   readonly loading = signal(false);

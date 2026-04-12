@@ -6,7 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 
-import { environment } from '../../../environments/environment';
+import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { AuthService, UserInfo } from '../../core/services/auth.service';
 
 interface ApiOk<T> {
@@ -256,7 +256,7 @@ export class PaymentGuestComponent implements OnDestroy {
   private fetchPreview(token: string): void {
     this.http
       .get<ApiOk<{ orderId: string; serviceName: string; totalAmount: number; currency: string }>>(
-        `${environment.apiUrl}/api/v1/payments/guest-order/preview/${encodeURIComponent(token)}`,
+        paymentApiUrls.guestOrderPreview(token),
         { withCredentials: true },
       )
       .subscribe({
@@ -289,7 +289,7 @@ export class PaymentGuestComponent implements OnDestroy {
           publishableKey: string;
           user: UserInfo;
         }>
-      >(`${environment.apiUrl}/api/v1/payments/guest-order/attach`, { checkoutToken: token }, { withCredentials: true })
+      >(paymentApiUrls.guestOrderAttach(), { checkoutToken: token }, { withCredentials: true })
       .subscribe({
         next: (res) => {
           this.guestAttachPending.set(false);
@@ -335,7 +335,7 @@ export class PaymentGuestComponent implements OnDestroy {
     this.resumeTriggered = true;
     this.http
       .post<ApiOk<{ orderId: string; clientSecret: string; publishableKey: string }>>(
-        `${environment.apiUrl}/api/v1/payments/checkout-order/${encodeURIComponent(orderIdFromPreview)}/payment-element`,
+        paymentApiUrls.checkoutOrderPaymentElement(orderIdFromPreview),
         {},
         { withCredentials: true },
       )
@@ -394,7 +394,7 @@ export class PaymentGuestComponent implements OnDestroy {
           publishableKey: string;
           user: UserInfo;
         }>
-      >(`${environment.apiUrl}/api/v1/payments/guest-order/prepare`, body, { withCredentials: true })
+      >(paymentApiUrls.guestOrderPrepare(), body, { withCredentials: true })
       .subscribe({
         next: (res) => {
           this.preparing.set(false);

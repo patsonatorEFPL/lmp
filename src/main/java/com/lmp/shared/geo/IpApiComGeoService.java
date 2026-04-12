@@ -20,21 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Géolocalisation IP via <a href="https://ip-api.com">ip-api.com</a>.
  *
- * <h3>Limites et niveaux de service</h3>
- * <table>
- *   <tr><th>Plan</th><th>Protocole</th><th>Limite</th><th>Clé</th></tr>
- *   <tr><td>Gratuit</td><td><strong>HTTP seulement</strong></td><td>45 req/min</td><td>Non</td></tr>
- *   <tr><td>Pro</td><td>HTTPS</td><td>15 000 req/min</td><td>Oui ({@code ipapi.com.key})</td></tr>
- * </table>
- *
- * <p>Configurer {@code ipapi.com.key} dans les propriétés pour activer le plan Pro (HTTPS).
- * Sans clé, le service utilise le plan gratuit HTTP — acceptable en fallback derrière ipwho.is
- * (HTTPS), mais à ne pas utiliser en source principale en production.
- *
- * <p>Retourne {@link GeoResolution} avec le pays <strong>et</strong> la devise
- * ({@code "currency"} directement dans la réponse JSON).
- *
- * <p>Les résultats sont mis en cache en mémoire pendant {@value CACHE_TTL_SECONDS} secondes.
+ * <p>Retourne {@link GeoResolution} avec le pays, la devise et le flag proxy/VPN.
  */
 @Service
 public class IpApiComGeoService {
@@ -43,17 +29,11 @@ public class IpApiComGeoService {
 
     private static final long CACHE_TTL_SECONDS = 3600;
 
-    /**
-     * Plan gratuit — HTTP uniquement.
-     * Champs demandés : status, countryCode, currency.
-     */
-    private static final String FREE_URL = "http://ip-api.com/json/%s?fields=status,countryCode,currency";
+    /** Plan gratuit — HTTP uniquement. Ajout du champ proxy pour détection VPN. */
+    private static final String FREE_URL = "http://ip-api.com/json/%s?fields=status,countryCode,currency,proxy";
 
-    /**
-     * Plan Pro — HTTPS.
-     * Champs demandés : status, countryCode, currency.
-     */
-    private static final String PRO_URL = "https://pro.ip-api.com/json/%s?key=%s&fields=status,countryCode,currency";
+    /** Plan Pro — HTTPS. */
+    private static final String PRO_URL = "https://pro.ip-api.com/json/%s?key=%s&fields=status,countryCode,currency,proxy";
 
     private final RestTemplate restTemplate;
     private final String apiKey;
@@ -75,7 +55,7 @@ public class IpApiComGeoService {
     }
 
     /**
-     * Résout le pays et la devise pour une adresse IP.
+     * Résout le pays, la devise et le flag proxy pour une adresse IP.
      *
      * @return {@link GeoResolution} ou vide si l'API est indisponible / IP privée.
      */
@@ -94,6 +74,8 @@ public class IpApiComGeoService {
                     ? String.format(FREE_URL, ip)
                     : String.format(PRO_URL, ip, apiKey);
 
+            logger.debug("[FRAUD-DEBUG] ip-api.com → calling {} for IP {}", url.replaceAll("key=[^&]+", "key=***"), ip);
+
             IpApiResponse response = restTemplate.getForObject(url, IpApiResponse.class);
 
             if (response != null && "success".equalsIgnoreCase(response.status)
@@ -102,16 +84,20 @@ public class IpApiComGeoService {
                 String currency = (response.currency != null && !response.currency.isBlank())
                         ? response.currency.trim().toUpperCase()
                         : null;
+                boolean proxy = Boolean.TRUE.equals(response.proxy);
                 GeoResolution result = new GeoResolution(
-                        response.countryCode.trim().toUpperCase(), currency);
+                        response.countryCode.trim().toUpperCase(), currency, proxy);
                 Optional<GeoResolution> opt = Optional.of(result);
                 cache.put(ip, new CachedResult(opt));
-                logger.debug("[GeoIP] ip-api.com resolved {} → country={} currency={}",
-                        ip, result.countryCode(), result.currencyCode());
+                logger.debug("[FRAUD-DEBUG] ip-api.com resolved {} → country={} currency={} proxy={}",
+                        ip, result.countryCode(), result.currencyCode(), proxy);
                 return opt;
+            } else {
+                logger.debug("[FRAUD-DEBUG] ip-api.com returned non-success for {}: status={}",
+                        ip, response != null ? response.status : "null");
             }
         } catch (Exception e) {
-            logger.debug("[GeoIP] ip-api.com unavailable for {}: {}", ip, e.getMessage());
+            logger.warn("[FRAUD-DEBUG] ip-api.com unavailable for {}: {}", ip, e.getMessage());
         }
 
         cache.put(ip, new CachedResult(Optional.empty()));
@@ -142,5 +128,7 @@ public class IpApiComGeoService {
         String countryCode;
         @JsonProperty("currency")
         String currency;
+        @JsonProperty("proxy")
+        Boolean proxy;
     }
 }
