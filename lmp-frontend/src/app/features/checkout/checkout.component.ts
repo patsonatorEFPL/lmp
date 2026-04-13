@@ -86,6 +86,13 @@ interface FraudCheckResult {
   flags: string[];
 }
 
+interface ViesResponse {
+  valid: boolean;
+  serviceAvailable: boolean;
+  companyName: string | null;
+  companyAddress: string | null;
+}
+
 @Component({
   selector: 'lmp-checkout',
   standalone: true,
@@ -240,6 +247,28 @@ interface FraudCheckResult {
                 @if (vatError()) {
                   <p class="mt-1.5 text-xs text-red-400">{{ vatError() }}</p>
                 }
+
+                <!-- VIES validation feedback -->
+                @if (viesValidating()) {
+                  <div class="mt-2 flex items-center gap-2 text-xs text-[#999]">
+                    <lucide-icon [img]="Loader2Icon" [size]="14" class="animate-spin"></lucide-icon>
+                    <span>Vérification VIES en cours…</span>
+                  </div>
+                }
+                @if (!viesValidating() && viesValid() === true && viesCompanyName()) {
+                  <div class="mt-2 flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2 text-xs text-green-400">
+                    <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+                    <span>TVA valide — {{ viesCompanyName() }}</span>
+                  </div>
+                }
+                @if (!viesValidating() && viesValid() === false && !viesUnavailable()) {
+                  <p class="mt-2 text-xs text-red-400">Ce numéro de TVA est invalide selon le registre VIES.</p>
+                }
+                @if (!viesValidating() && viesUnavailable()) {
+                  <div class="mt-2 flex items-center gap-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                    <span>Le service VIES est temporairement indisponible. La validation sera effectuée ultérieurement.</span>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -390,6 +419,13 @@ export class CheckoutComponent implements OnDestroy {
   readonly vatNumber = signal('');
   readonly vatError = signal<string | null>(null);
 
+  // ── VIES validation ────────────────────────────────
+  readonly viesValidating = signal(false);
+  readonly viesValid = signal<boolean | null>(null);
+  readonly viesCompanyName = signal<string | null>(null);
+  readonly viesUnavailable = signal(false);
+  private viesTimer: ReturnType<typeof setTimeout> | null = null;
+
   readonly stripeLoading = signal(true);
   readonly stripeError = signal<string | null>(null);
   readonly stripeReady = signal(false);
@@ -451,11 +487,38 @@ export class CheckoutComponent implements OnDestroy {
     }
   });
 
-  readonly canSubmit = computed(() =>
-    this.stripeReady() && !this.submitting()
-  );
+  readonly canSubmit = computed(() => {
+    if (!this.stripeReady() || this.submitting()) return false;
+    // Block if VIES explicitly says invalid (unless VIES was unavailable)
+    if (this.vatReverseCharge() && this.viesValid() === false && !this.viesUnavailable()) return false;
+    // Block while VIES is validating
+    if (this.viesValidating()) return false;
+    return true;
+  });
 
   constructor() {
+    // ── VIES live validation (debounced) ──
+    effect(() => {
+      const rc = this.vatReverseCharge();
+      const vat = this.vatNumber();
+
+      // Reset when reverse charge disabled or empty
+      if (!rc || !vat.trim()) {
+        this.resetVies();
+        return;
+      }
+
+      const normalized = vat.replace(/[\s.\-]/g, '').toUpperCase();
+      if (!/^[A-Z]{2}[0-9A-Z]{2,28}$/.test(normalized)) {
+        this.resetVies();
+        return;
+      }
+
+      // Debounce 500ms
+      if (this.viesTimer) clearTimeout(this.viesTimer);
+      this.viesTimer = setTimeout(() => this.callViesValidation(normalized), 500);
+    });
+
     afterNextRender(() => {
       // Detect mode: /checkout/order/:orderId  vs  /checkout/:offerId
       const existingOrderId = this.route.snapshot.paramMap.get('orderId');
@@ -997,6 +1060,43 @@ export class CheckoutComponent implements OnDestroy {
     this.vatError.set(null);
   }
 
+  private resetVies(): void {
+    this.viesValidating.set(false);
+    this.viesValid.set(null);
+    this.viesCompanyName.set(null);
+    this.viesUnavailable.set(false);
+    if (this.viesTimer) { clearTimeout(this.viesTimer); this.viesTimer = null; }
+  }
+
+  private callViesValidation(vatNumber: string): void {
+    this.viesValidating.set(true);
+    this.viesValid.set(null);
+    this.viesCompanyName.set(null);
+    this.viesUnavailable.set(false);
+
+    this.http.post<ApiResponse<ViesResponse>>(
+      paymentApiUrls.vatValidate(),
+      { vatNumber }
+    ).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.viesValid.set(res.data.valid);
+          this.viesCompanyName.set(res.data.companyName);
+          this.viesUnavailable.set(!res.data.serviceAvailable);
+        } else {
+          this.viesValid.set(false);
+          this.viesUnavailable.set(false);
+        }
+        this.viesValidating.set(false);
+      },
+      error: () => {
+        this.viesValid.set(null);
+        this.viesUnavailable.set(true);
+        this.viesValidating.set(false);
+      }
+    });
+  }
+
   async submitPayment(): Promise<void> {
     if (!isPlatformBrowser(this.platformId) || !this.stripe || !this.elements) {
       return;
@@ -1011,6 +1111,11 @@ export class CheckoutComponent implements OnDestroy {
       }
       if (!/^[A-Z]{2}\d{4,}/.test(vat.toUpperCase())) {
         this.vatError.set('Format de TVA invalide (ex: FR12345678901).');
+        return;
+      }
+      // Block if VIES explicitly says invalid
+      if (this.viesValid() === false && !this.viesUnavailable()) {
+        this.vatError.set('Ce numéro de TVA est invalide selon le registre VIES.');
         return;
       }
     }
@@ -1079,6 +1184,7 @@ export class CheckoutComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
+    if (this.viesTimer) clearTimeout(this.viesTimer);
     if (this.beforeUnloadHandler) window.removeEventListener('beforeunload', this.beforeUnloadHandler);
     this.addressElement?.unmount();
     this.addressElement = null;

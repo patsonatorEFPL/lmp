@@ -1,9 +1,15 @@
 package com.lmp.shared.geo;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +60,25 @@ public class FraudScoringService {
             /** Pays de la carte bancaire (ex: "FR"). Null avant paiement. */
             String cardCountry,
             /** Géolocalisation refusée par l'utilisateur. */
-            boolean geoLocationDenied
-    ) {}
+            boolean geoLocationDenied,
+            /** Préfixe pays du numéro de TVA (ex: "BE"). Null si pas de reverse charge. */
+            String vatCountryPrefix,
+            /** Nom d'entreprise retourné par VIES. Null si pas de TVA ou VIES indisponible. */
+            String viesCompanyName,
+            /** Nom de facturation saisi par le client. */
+            String billingName,
+            /** {@code true} si VIES était indisponible lors de la validation. */
+            boolean viesUnavailable
+    ) {
+        /** Factory pour les appels existants sans champs TVA (compatibilité). */
+        public static FraudSignals ofLegacy(String ipCountry, double vpnScore, String browserTimezone,
+                                            String geoCountry, String billingCountry, String cardCountry,
+                                            boolean geoLocationDenied) {
+            return new FraudSignals(ipCountry, vpnScore, browserTimezone, geoCountry,
+                    billingCountry, cardCountry, geoLocationDenied,
+                    null, null, null, false);
+        }
+    }
 
     /** Mapping pays → timezones attendues (les plus courantes). */
     private static final Map<String, List<String>> COUNTRY_TIMEZONES = Map.ofEntries(
@@ -183,6 +206,47 @@ public class FraudScoringService {
                     signals.cardCountry(), signals.billingCountry());
         }
 
+        // ── 8. VAT country vs billing country ─────────────────────────────
+        if (signals.vatCountryPrefix() != null && signals.billingCountry() != null
+                && !signals.vatCountryPrefix().equalsIgnoreCase(signals.billingCountry())) {
+            score -= 15;
+            flags.add("VAT_BILLING_COUNTRY_MISMATCH");
+            logger.debug("[FRAUD-DEBUG] Penalty -15: VAT_BILLING_COUNTRY_MISMATCH (vat={}, billing={})",
+                    signals.vatCountryPrefix(), signals.billingCountry());
+        }
+
+        // ── 9. VAT country vs IP country ────────────────────────────────
+        if (signals.vatCountryPrefix() != null && signals.ipCountry() != null
+                && !signals.vatCountryPrefix().equalsIgnoreCase(signals.ipCountry())) {
+            score -= 10;
+            flags.add("VAT_IP_COUNTRY_MISMATCH");
+            logger.debug("[FRAUD-DEBUG] Penalty -10: VAT_IP_COUNTRY_MISMATCH (vat={}, ip={})",
+                    signals.vatCountryPrefix(), signals.ipCountry());
+        }
+
+        // ── 10. VIES company name vs billing name ───────────────────────
+        if (signals.viesCompanyName() != null && signals.billingName() != null) {
+            double similarity = jaccardTokenSimilarity(signals.viesCompanyName(), signals.billingName());
+            logger.debug("[FRAUD-DEBUG] Name similarity: vies=\"{}\" billing=\"{}\" jaccard={}",
+                    signals.viesCompanyName(), signals.billingName(), similarity);
+            if (similarity < 0.4) {
+                score -= 20;
+                flags.add("VAT_NAME_MISMATCH");
+                logger.debug("[FRAUD-DEBUG] Penalty -20: VAT_NAME_MISMATCH (similarity={})", similarity);
+            } else if (similarity < 0.7) {
+                score -= 10;
+                flags.add("VAT_NAME_WEAK_MATCH");
+                logger.debug("[FRAUD-DEBUG] Penalty -10: VAT_NAME_WEAK_MATCH (similarity={})", similarity);
+            }
+        }
+
+        // ── 11. VIES unavailable ────────────────────────────────────────
+        if (signals.viesUnavailable() && signals.vatCountryPrefix() != null) {
+            score -= 10;
+            flags.add("VIES_UNAVAILABLE");
+            logger.debug("[FRAUD-DEBUG] Penalty -10: VIES_UNAVAILABLE");
+        }
+
         // ── Bonus ────────────────────────────────────────────────────────────
         boolean allCountriesMatch = signals.ipCountry() != null
                 && signals.billingCountry() != null
@@ -221,7 +285,11 @@ public class FraudScoringService {
                 originalSignals.geoCountry(),
                 originalSignals.billingCountry(),
                 cardCountry,
-                originalSignals.geoLocationDenied()
+                originalSignals.geoLocationDenied(),
+                originalSignals.vatCountryPrefix(),
+                originalSignals.viesCompanyName(),
+                originalSignals.billingName(),
+                originalSignals.viesUnavailable()
         ));
     }
 
@@ -245,5 +313,46 @@ public class FraudScoringService {
         }
 
         return expectedTzs.stream().anyMatch(tz -> tz.equalsIgnoreCase(timezone));
+    }
+
+    /** Suffixes juridiques courants à ignorer lors de la comparaison de noms. */
+    private static final Set<String> LEGAL_SUFFIXES = Set.of(
+            "SA", "SAS", "SARL", "EURL", "SCI", "SNC", "SASU",
+            "SPRL", "SRL", "NV", "BV", "BVBA", "VOF",
+            "GMBH", "AG", "UG", "KG", "OHG",
+            "LTD", "LLP", "PLC", "INC", "LLC", "CORP",
+            "SP", "ZOO", "AS", "AB", "OY", "APS", "SE"
+    );
+
+    /**
+     * Similarité Jaccard sur les tokens normalisés (uppercase, sans accents, sans suffixes juridiques).
+     *
+     * @return 0.0 (aucun token commun) à 1.0 (identiques)
+     */
+    static double jaccardTokenSimilarity(String a, String b) {
+        if (a == null || b == null) return 0.0;
+        Set<String> tokensA = tokenize(a);
+        Set<String> tokensB = tokenize(b);
+        if (tokensA.isEmpty() || tokensB.isEmpty()) return 0.0;
+
+        Set<String> intersection = new HashSet<>(tokensA);
+        intersection.retainAll(tokensB);
+
+        Set<String> union = new HashSet<>(tokensA);
+        union.addAll(tokensB);
+
+        return (double) intersection.size() / union.size();
+    }
+
+    private static Set<String> tokenize(String name) {
+        // Supprimer les accents
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        // Uppercase et split sur non-alphanumériques
+        String[] parts = normalized.toUpperCase(Locale.ROOT).split("[^A-Z0-9]+");
+        return Arrays.stream(parts)
+                .filter(t -> !t.isEmpty())
+                .filter(t -> !LEGAL_SUFFIXES.contains(t))
+                .collect(Collectors.toSet());
     }
 }

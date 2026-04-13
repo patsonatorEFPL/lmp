@@ -1699,7 +1699,7 @@ public class StripeWebhookHandler {
 
                 // Recalculate fraud score with card country
                 if (order.getFraudScore() != null) {
-                    FraudScoringService.FraudSignals signals = new FraudScoringService.FraudSignals(
+                    FraudScoringService.FraudSignals signals = FraudScoringService.FraudSignals.ofLegacy(
                             order.getIpCountry(),
                             order.getVpnScore() != null ? order.getVpnScore().doubleValue() : 0.0,
                             order.getBrowserTimezone(),
