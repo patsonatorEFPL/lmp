@@ -15,6 +15,8 @@ import com.lmp.shared.geo.IPHubService;
 import com.lmp.shared.geo.IpApiComGeoService;
 import com.lmp.shared.geo.IpWhoIsGeoService;
 import com.lmp.shared.vat.ViesVatValidationService;
+import com.stripe.StripeClient;
+import com.stripe.param.BalanceRetrieveParams;
 
 /**
  * Exécute des probes légers vers chaque API externe pour alimenter
@@ -39,6 +41,7 @@ public class ApiHealthProbeService {
     private final GetIPIntelService getIPIntelService;
     private final IPHubService ipHubService;
     private final ViesVatValidationService viesService;
+    private final StripeClient stripeClient;
     private final ApiHealthRecorder recorder;
     private final RestTemplate fxProbeTemplate;
 
@@ -51,12 +54,14 @@ public class ApiHealthProbeService {
                                   GetIPIntelService getIPIntelService,
                                   IPHubService ipHubService,
                                   ViesVatValidationService viesService,
+                                  StripeClient stripeClient,
                                   ApiHealthRecorder recorder) {
         this.ipApiComGeoService = ipApiComGeoService;
         this.ipWhoIsGeoService = ipWhoIsGeoService;
         this.getIPIntelService = getIPIntelService;
         this.ipHubService = ipHubService;
         this.viesService = viesService;
+        this.stripeClient = stripeClient;
         this.recorder = recorder;
         this.fxProbeTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
@@ -98,8 +103,8 @@ public class ApiHealthProbeService {
         // Mailtrap — pas de probe sûr sans envoyer un email
         results.put("Mailtrap", "skipped");
 
-        // Stripe — pas de probe sûr sans clé / appel facturable
-        results.put("Stripe", "skipped");
+        // Stripe — balance.retrieve() est gratuit et en lecture seule
+        results.put("Stripe", probeStripe());
 
         logger.info("[API-PROBE] Probe terminé : {}", results);
         return results;
@@ -111,6 +116,25 @@ public class ApiHealthProbeService {
             return "ok";
         } catch (Exception e) {
             logger.warn("[API-PROBE] {} failed: {}", name, e.getMessage());
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Probe Stripe via balance.retrieve() — gratuit, lecture seule.
+     * Vérifie la connectivité réseau + validité de la clé API.
+     */
+    private String probeStripe() {
+        long t0 = System.currentTimeMillis();
+        try {
+            stripeClient.balance().retrieve(BalanceRetrieveParams.builder().build());
+            long latency = System.currentTimeMillis() - t0;
+            recorder.record("Stripe", latency, true, null);
+            return "ok";
+        } catch (Exception e) {
+            long latency = System.currentTimeMillis() - t0;
+            recorder.record("Stripe", latency, false, e.getMessage());
+            logger.warn("[API-PROBE] Stripe failed: {}", e.getMessage());
             return e.getMessage();
         }
     }
