@@ -293,16 +293,32 @@ const API_ICONS: Record<string, typeof Activity> = {
                   class="text-(--foreground)"
                 ></lucide-icon>
               </div>
-              <div>
+              <div class="min-w-0 flex-1">
                 <p class="text-sm font-semibold text-(--foreground)">
                   Espace disque
                 </p>
-                <p class="mt-0.5 text-xs" [class]="infraStatusClass(snapshot()!.infra.diskSpace)">
-                  {{ infraStatusLabel(snapshot()!.infra.diskSpace) }}
-                </p>
+                @if (snapshot()!.infra.diskTotal) {
+                  <p class="mt-0.5 text-xs text-(--muted-foreground)">
+                    {{ formatBytes(snapshot()!.infra.diskFree!) }} libre sur {{ formatBytes(snapshot()!.infra.diskTotal!) }}
+                  </p>
+                  <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div
+                      class="h-full rounded-full transition-all"
+                      [class]="diskBarClass(snapshot()!.infra.diskUsagePercent!)"
+                      [style.width.%]="snapshot()!.infra.diskUsagePercent"
+                    ></div>
+                  </div>
+                  <p class="mt-1 text-[10px] text-(--muted-foreground)">
+                    {{ snapshot()!.infra.diskUsagePercent }}% utilisé
+                  </p>
+                } @else {
+                  <p class="mt-0.5 text-xs" [class]="infraStatusClass(snapshot()!.infra.diskSpace)">
+                    {{ infraStatusLabel(snapshot()!.infra.diskSpace) }}
+                  </p>
+                }
               </div>
               <span
-                class="ml-auto h-2.5 w-2.5 rounded-full"
+                class="ml-auto h-2.5 w-2.5 shrink-0 rounded-full"
                 [class]="statusDotClass(normalizeInfraStatus(snapshot()!.infra.diskSpace))"
               ></span>
             </div>
@@ -334,7 +350,9 @@ export class AdminMonitoringComponent implements OnInit {
     loader: async ({ params }) => {
       if (!params.browser) return null;
       try {
-        return await firstValueFrom(this.apiHealthService.getHealthSnapshot());
+        const snap = await firstValueFrom(this.apiHealthService.getHealthSnapshot());
+        this.nowMs.set(Date.now());
+        return snap;
       } catch {
         return null;
       }
@@ -342,6 +360,12 @@ export class AdminMonitoringComponent implements OnInit {
   });
 
   readonly snapshot = computed(() => this.healthResource.value() ?? null);
+
+  /**
+   * Timestamp capturé à chaque chargement du snapshot.
+   * Évite NG0100 : timeAgo() utilise ce signal stable au lieu de Date.now().
+   */
+  private readonly nowMs = signal(Date.now());
 
   readonly blockingLoader = computed(
     () => this.healthResource.status() === 'loading' && !this.healthResource.hasValue(),
@@ -462,7 +486,7 @@ export class AdminMonitoringComponent implements OnInit {
   }
 
   timeAgo(iso: string): string {
-    const diff = Date.now() - new Date(iso).getTime();
+    const diff = this.nowMs() - new Date(iso).getTime();
     if (diff < 0) return 'à l\'instant';
     const seconds = Math.floor(diff / 1000);
     if (seconds < 60) return `il y a ${seconds}s`;
@@ -470,5 +494,19 @@ export class AdminMonitoringComponent implements OnInit {
     if (minutes < 60) return `il y a ${minutes} min`;
     const hours = Math.floor(minutes / 60);
     return `il y a ${hours}h`;
+  }
+
+  formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 o';
+    const units = ['o', 'Ko', 'Mo', 'Go', 'To'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const value = bytes / Math.pow(1024, i);
+    return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[i]}`;
+  }
+
+  diskBarClass(usagePercent: number): string {
+    if (usagePercent >= 90) return 'bg-red-500';
+    if (usagePercent >= 75) return 'bg-amber-500';
+    return 'bg-green-500';
   }
 }

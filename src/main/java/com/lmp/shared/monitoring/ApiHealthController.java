@@ -55,13 +55,14 @@ public class ApiHealthController {
         Map<String, ApiHealthEntry> apis = recorder.getSnapshot();
 
         // Infrastructure via Actuator
-        Map<String, String> infra = new HashMap<>();
+        Map<String, Object> infra = new HashMap<>();
         try {
             HealthComponent health = healthEndpoint.health();
             if (health instanceof CompositeHealth composite) {
                 var components = composite.getComponents();
                 infra.put("db", extractComponentStatus(components, "db"));
                 infra.put("diskSpace", extractComponentStatus(components, "diskSpace"));
+                infra.putAll(extractDiskSpaceDetails(components));
             } else if (health instanceof Health h) {
                 infra.put("db", h.getStatus().getCode());
                 infra.put("diskSpace", "UNKNOWN");
@@ -100,5 +101,29 @@ public class ApiHealthController {
             return c.getStatus().getCode();
         }
         return "UNKNOWN";
+    }
+
+    /**
+     * Extrait les détails d'espace disque depuis le composant Actuator diskSpace.
+     * Retourne total, free, threshold en octets et usagePercent.
+     */
+    private Map<String, Object> extractDiskSpaceDetails(Map<String, HealthComponent> components) {
+        Map<String, Object> details = new HashMap<>();
+        if (components == null) return details;
+        HealthComponent component = components.get("diskSpace");
+        if (component instanceof Health h && h.getDetails() != null) {
+            var d = h.getDetails();
+            if (d.containsKey("total")) details.put("diskTotal", ((Number) d.get("total")).longValue());
+            if (d.containsKey("free")) details.put("diskFree", ((Number) d.get("free")).longValue());
+            if (d.containsKey("threshold")) details.put("diskThreshold", ((Number) d.get("threshold")).longValue());
+            if (d.containsKey("total") && d.containsKey("free")) {
+                long total = ((Number) d.get("total")).longValue();
+                long free = ((Number) d.get("free")).longValue();
+                if (total > 0) {
+                    details.put("diskUsagePercent", Math.round((double)(total - free) / total * 1000.0) / 10.0);
+                }
+            }
+        }
+        return details;
     }
 }
