@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.lmp.shared.web.InetRoutability;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -39,10 +40,12 @@ public class IPHubService {
 
     private final RestTemplate restTemplate;
     private final String apiKey;
+    private final ApiHealthRecorder healthRecorder;
     private final Map<String, CachedResult> cache = new ConcurrentHashMap<>();
 
-    public IPHubService(@Value("${iphub.api-key:}") String apiKey) {
+    public IPHubService(@Value("${iphub.api-key:}") String apiKey, ApiHealthRecorder healthRecorder) {
         this.apiKey = (apiKey != null) ? apiKey.trim() : "";
+        this.healthRecorder = healthRecorder;
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(5))
@@ -91,6 +94,7 @@ public class IPHubService {
             return cached.value;
         }
 
+        long t0 = System.currentTimeMillis();
         try {
             String url = String.format(API_URL, ip);
             HttpHeaders headers = new HttpHeaders();
@@ -100,10 +104,12 @@ public class IPHubService {
 
             ResponseEntity<IPHubResponse> responseEntity = restTemplate.exchange(
                     url, HttpMethod.GET, new HttpEntity<>(headers), IPHubResponse.class);
+            long latency = System.currentTimeMillis() - t0;
 
             IPHubResponse response = responseEntity.getBody();
 
             if (response != null && response.ip != null) {
+                healthRecorder.record("IPHub", latency, true, null);
                 boolean proxy = response.proxyType != null && Boolean.TRUE.equals(response.proxyType.proxy);
                 boolean tor = response.proxyType != null && Boolean.TRUE.equals(response.proxyType.tor);
                 boolean hosting = response.proxyType != null && Boolean.TRUE.equals(response.proxyType.hosting);
@@ -118,9 +124,11 @@ public class IPHubService {
                         ip, result.block(), result.countryCode(), result.isp(), proxy, tor, hosting);
                 return opt;
             } else {
+                healthRecorder.record("IPHub", latency, false, "empty body");
                 logger.debug("[FRAUD-DEBUG] IPHub returned empty body for {}", ip);
             }
         } catch (Exception e) {
+            healthRecorder.record("IPHub", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.warn("[FRAUD-DEBUG] IPHub unavailable for {}: {}", ip, e.getMessage());
         }
 

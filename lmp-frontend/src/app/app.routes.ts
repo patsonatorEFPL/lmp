@@ -217,6 +217,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'monitoring',
+        loadComponent: () =>
+          import('./features/admin/admin-monitoring.component').then(
+            (m) => m.AdminMonitoringComponent,
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/admin/admin-settings.component').then(

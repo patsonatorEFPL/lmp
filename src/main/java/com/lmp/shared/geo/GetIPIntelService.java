@@ -13,6 +13,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.lmp.shared.web.InetRoutability;
 
 /**
@@ -34,10 +35,13 @@ public class GetIPIntelService {
 
     private final RestTemplate restTemplate;
     private final String contactEmail;
+    private final ApiHealthRecorder healthRecorder;
     private final Map<String, CachedResult> cache = new ConcurrentHashMap<>();
 
-    public GetIPIntelService(@Value("${getipintel.contact-email:}") String contactEmail) {
+    public GetIPIntelService(@Value("${getipintel.contact-email:}") String contactEmail,
+                             ApiHealthRecorder healthRecorder) {
         this.contactEmail = (contactEmail != null) ? contactEmail.trim() : "";
+        this.healthRecorder = healthRecorder;
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(5))
@@ -72,24 +76,28 @@ public class GetIPIntelService {
             return cached.value;
         }
 
+        long t0 = System.currentTimeMillis();
         try {
             String url = String.format(API_URL, ip, contactEmail);
             logger.debug("[FRAUD-DEBUG] GetIPIntel → calling for IP {}", ip);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            long latency = System.currentTimeMillis() - t0;
 
             if (response != null) {
                 Object resultObj = response.get("result");
                 if (resultObj != null) {
                     double score = Double.parseDouble(resultObj.toString());
                     if (score >= 0) {
+                        healthRecorder.record("GetIPIntel", latency, true, null);
                         Optional<Double> opt = Optional.of(score);
                         cache.put(ip, new CachedResult(opt));
                         logger.debug("[FRAUD-DEBUG] GetIPIntel resolved {} → score={}", ip, score);
                         return opt;
                     } else {
                         // Negative values are error codes
+                        healthRecorder.record("GetIPIntel", latency, false, "error code: " + score);
                         logger.warn("[FRAUD-DEBUG] GetIPIntel error code for {}: {}", ip, score);
                     }
                 }
@@ -98,6 +106,7 @@ public class GetIPIntelService {
                         ip, statusObj, resultObj);
             }
         } catch (Exception e) {
+            healthRecorder.record("GetIPIntel", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.warn("[FRAUD-DEBUG] GetIPIntel unavailable for {}: {}", ip, e.getMessage());
         }
 
