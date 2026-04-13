@@ -41,4 +41,8 @@ export const paymentApiUrls = {
 
   /** Validate a VAT number via VIES. */
   vatValidate: (): string => `${root()}/vat/validate`,
+
+  /** Finalize checkout: re-apply VAT snapshot and update PaymentIntent amount. */
+  finalizeCheckout: (orderId: string): string =>
+    `${root()}/orders/${encodeURIComponent(orderId)}/finalize-checkout`,
 } as const;

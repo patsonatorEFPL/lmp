@@ -1190,6 +1190,26 @@ export class CheckoutComponent implements OnDestroy {
     // Send fraud signals (non-blocking)
     await this.sendFraudSignals();
 
+    // Finalize checkout: re-apply VAT snapshot + update PaymentIntent amount
+    if (this.orderId) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          this.http
+            .patch<ApiResponse<unknown>>(
+              paymentApiUrls.finalizeCheckout(this.orderId!),
+              {},
+              { withCredentials: true },
+            )
+            .subscribe({ next: () => resolve(), error: reject });
+        });
+      } catch (e: any) {
+        const msg = e?.error?.message || 'Erreur lors de la finalisation du paiement.';
+        this.stripeError.set(msg);
+        this.submitting.set(false);
+        return;
+      }
+    }
+
     const origin = window.location.origin;
     const { error } = await this.stripe.confirmPayment({
       elements: this.elements,

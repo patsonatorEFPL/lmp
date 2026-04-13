@@ -696,6 +696,146 @@ const ORDER_STEPS = [
               </div>
             </div>
 
+            <!-- Fraud Audit Section -->
+            @if (orderDetail()!.fraudScore != null) {
+              <div class="px-6 pb-4">
+                <button
+                  type="button"
+                  class="flex w-full cursor-pointer items-center justify-between rounded-sm border border-(--border) bg-(--background) px-4 py-3 text-left transition-colors hover:bg-(--muted)"
+                  (click)="fraudAuditOpen.set(!fraudAuditOpen())"
+                >
+                  <div class="flex items-center gap-2">
+                    <lucide-icon
+                      [img]="ShieldAlertIcon" [size]="16"
+                      [ngClass]="orderDetail()!.fraudScore! < 60 ? 'text-red-500' : orderDetail()!.fraudScore! < 80 ? 'text-amber-500' : 'text-green-500'"
+                    ></lucide-icon>
+                    <span class="text-sm font-semibold text-(--foreground)">Audit Fraude</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="inline-flex min-w-[2rem] items-center justify-center rounded-xs px-2 py-0.5 text-xs font-bold"
+                      [ngClass]="{
+                        'bg-green-500/10 text-green-600 dark:text-green-400': orderDetail()!.fraudScore! >= 80,
+                        'bg-amber-500/10 text-amber-600 dark:text-amber-400': orderDetail()!.fraudScore! >= 60 && orderDetail()!.fraudScore! < 80,
+                        'bg-red-500/10 text-red-600 dark:text-red-400': orderDetail()!.fraudScore! < 60
+                      }"
+                    >
+                      {{ orderDetail()!.fraudScore }}/100
+                    </span>
+                    <lucide-icon
+                      [img]="ChevronDownIcon" [size]="14"
+                      class="text-(--muted-foreground) transition-transform duration-200"
+                      [ngClass]="{ 'rotate-180': fraudAuditOpen() }"
+                    ></lucide-icon>
+                  </div>
+                </button>
+
+                @if (fraudAuditOpen()) {
+                  <div class="mt-2 space-y-3 rounded-sm border border-(--border) bg-(--background) p-4 animate-in fade-in slide-in-from-top-1 duration-200">
+
+                    <!-- Signal Details Grid -->
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-3">
+                      @if (orderDetail()!.ipCountry || orderDetail()!.ipAddress) {
+                        <div>
+                          <span class="text-(--muted-foreground)">IP :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">
+                            {{ orderDetail()!.ipAddress || '—' }}
+                            @if (orderDetail()!.ipCountry) { ({{ orderDetail()!.ipCountry }}) }
+                          </span>
+                        </div>
+                      }
+                      @if (orderDetail()!.vpnScore != null) {
+                        <div>
+                          <span class="text-(--muted-foreground)">VPN Score :</span>
+                          <span
+                            class="ml-1 font-medium"
+                            [ngClass]="orderDetail()!.vpnScore! > 0.6 ? 'text-red-500' : orderDetail()!.vpnScore! > 0.4 ? 'text-amber-500' : 'text-(--foreground)'"
+                          >
+                            {{ orderDetail()!.vpnScore | number:'1.2-2' }}
+                          </span>
+                        </div>
+                      }
+                      @if (orderDetail()!.browserTimezone) {
+                        <div>
+                          <span class="text-(--muted-foreground)">Timezone :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">{{ orderDetail()!.browserTimezone }}</span>
+                        </div>
+                      }
+                      @if (orderDetail()!.geoCountry) {
+                        <div>
+                          <span class="text-(--muted-foreground)">Géoloc :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">{{ orderDetail()!.geoCountry }}</span>
+                        </div>
+                      }
+                      @if (orderDetail()!.billingCountry) {
+                        <div>
+                          <span class="text-(--muted-foreground)">Facturation :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">{{ orderDetail()!.billingCountry }}</span>
+                        </div>
+                      }
+                      @if (orderDetail()!.cardCountry) {
+                        <div>
+                          <span class="text-(--muted-foreground)">Carte :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">{{ orderDetail()!.cardCountry }}</span>
+                        </div>
+                      }
+                      @if (orderDetail()!.customerVatNumber) {
+                        <div>
+                          <span class="text-(--muted-foreground)">TVA :</span>
+                          <span class="ml-1 font-mono font-medium text-(--foreground)">{{ orderDetail()!.customerVatNumber }}</span>
+                        </div>
+                      }
+                      @if (orderDetail()!.vatCompanyName) {
+                        <div>
+                          <span class="text-(--muted-foreground)">Nom VIES :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">{{ orderDetail()!.vatCompanyName }}</span>
+                        </div>
+                      }
+                      @if (orderDetail()!.billingName) {
+                        <div>
+                          <span class="text-(--muted-foreground)">Nom facturation :</span>
+                          <span class="ml-1 font-medium text-(--foreground)">{{ orderDetail()!.billingName }}</span>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Fraud Flags Breakdown -->
+                    @if (parsedFraudFlags().length > 0) {
+                      <div class="h-px bg-(--border)"></div>
+                      <div class="space-y-1.5">
+                        @for (flag of parsedFraudFlags(); track flag.key) {
+                          <div class="flex items-start justify-between gap-2 rounded-xs px-2 py-1.5"
+                            [ngClass]="flag.penalty < 0 ? 'bg-red-500/5' : 'bg-green-500/5'"
+                          >
+                            <div class="flex items-start gap-2">
+                              <lucide-icon
+                                [img]="flag.penalty < 0 ? AlertCircleIcon : CheckCircleIcon"
+                                [size]="14"
+                                class="mt-0.5 shrink-0"
+                                [ngClass]="flag.penalty < 0 ? 'text-red-500' : 'text-green-500'"
+                              ></lucide-icon>
+                              <div>
+                                <p class="text-xs font-medium text-(--foreground)">{{ flag.label }}</p>
+                                <p class="text-[11px] text-(--muted-foreground)">{{ flag.key }}</p>
+                              </div>
+                            </div>
+                            <span
+                              class="shrink-0 text-xs font-bold"
+                              [ngClass]="flag.penalty < 0 ? 'text-red-500' : 'text-green-500'"
+                            >
+                              {{ flag.penalty > 0 ? '+' : '' }}{{ flag.penalty }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="text-xs italic text-(--muted-foreground)">Aucun signal de fraude détecté.</p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
             <!-- Refunds Section -->
             @if (orderRefunds().length > 0) {
               <div class="px-6 pb-4">
@@ -1069,6 +1209,7 @@ export class AdminOrdersComponent implements OnInit {
   readonly syncing = signal(false);
   readonly orderRefunds = signal<any[]>([]);
   readonly deletingOrder = signal(false);
+  readonly fraudAuditOpen = signal(false);
   readonly selectedOrderIds = signal<Set<string>>(new Set());
 
   readonly pageSizes = [20, 50, 100];
@@ -1119,6 +1260,18 @@ export class AdminOrdersComponent implements OnInit {
   });
 
   private userEmailSuggestTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Fraud flags parsed from the fraudFlags string on orderDetail. */
+  readonly parsedFraudFlags = computed(() => {
+    const detail = this.orderDetail();
+    if (!detail?.fraudFlags) return [];
+    const raw = detail.fraudFlags.split(',').map((f: string) => f.trim()).filter(Boolean);
+    return raw.map((key: string) => ({
+      key,
+      label: this.getFraudFlagLabel(key),
+      penalty: this.getFraudFlagPenalty(key),
+    }));
+  });
 
   statusFilter = '';
   readonly orderSteps = ORDER_STEPS;
@@ -1257,6 +1410,7 @@ export class AdminOrdersComponent implements OnInit {
     this.loadingDetail.set(true);
     this.showDetailModal.set(true);
     this.orderRefunds.set([]);
+    this.fraudAuditOpen.set(false);
 
     this.http
       .get<ApiResponse<OrderDetail>>(
@@ -1847,6 +2001,35 @@ export class AdminOrdersComponent implements OnInit {
       return va.localeCompare(vb, 'fr', { sensitivity: 'base' }) * dir;
     });
     this.filteredOrders.set(sorted);
+  }
+
+  // ========== Fraud Audit Helpers ==========
+
+  private readonly FRAUD_FLAG_META: Record<string, { label: string; penalty: number }> = {
+    VPN_DETECTED_HIGH:          { label: 'VPN détecté (haute confiance)',              penalty: -30 },
+    VPN_DETECTED_MEDIUM:        { label: 'VPN détecté (confiance moyenne)',            penalty: -20 },
+    VPN_SUSPECTED:              { label: 'VPN suspecté',                               penalty: -10 },
+    TZ_MISMATCH:                { label: 'Timezone incohérente avec le pays IP',       penalty: -10 },
+    BILLING_IP_MISMATCH:        { label: 'Pays facturation ≠ pays IP',                 penalty: -15 },
+    GEO_BILLING_MISMATCH:       { label: 'Géolocalisation ≠ pays facturation',         penalty: -20 },
+    GEO_IP_MISMATCH:            { label: 'Géolocalisation ≠ pays IP',                  penalty: -10 },
+    GEO_DENIED_WITH_VPN:        { label: 'Géolocalisation refusée + VPN suspecté',     penalty: -15 },
+    GEO_DENIED_WITH_MISMATCH:   { label: 'Géolocalisation refusée + pays incohérents', penalty: -10 },
+    CARD_BILLING_MISMATCH:      { label: 'Pays carte ≠ pays facturation',              penalty: -15 },
+    VAT_BILLING_COUNTRY_MISMATCH: { label: 'Pays TVA ≠ pays facturation',              penalty: -15 },
+    VAT_IP_COUNTRY_MISMATCH:    { label: 'Pays TVA ≠ pays IP',                         penalty: -10 },
+    VAT_NAME_MISMATCH:          { label: 'Nom VIES ≠ nom facturation',                 penalty: -20 },
+    VAT_NAME_PARTIAL_MATCH:     { label: 'Nom VIES partiellement similaire',           penalty: -5  },
+    VAT_NAME_WEAK_MATCH:        { label: 'Nom VIES faiblement similaire',              penalty: -5  },
+    VIES_UNAVAILABLE:           { label: 'Service VIES indisponible',                  penalty: -10 },
+  };
+
+  getFraudFlagLabel(key: string): string {
+    return this.FRAUD_FLAG_META[key]?.label ?? key;
+  }
+
+  getFraudFlagPenalty(key: string): number {
+    return this.FRAUD_FLAG_META[key]?.penalty ?? 0;
   }
 
   private showToast(type: 'success' | 'error', message: string): void {
