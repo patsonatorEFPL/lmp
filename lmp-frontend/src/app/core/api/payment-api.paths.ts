@@ -38,4 +38,7 @@ export const paymentApiUrls = {
   /** Record fraud signals (timezone, geolocation, billing country) on an order. */
   updateFraudSignals: (orderId: string): string =>
     `${root()}/orders/${encodeURIComponent(orderId)}/fraud-signals`,
+
+  /** Validate a VAT number via VIES. */
+  vatValidate: (): string => `${root()}/vat/validate`,
 } as const;
