@@ -19,6 +19,10 @@ export interface ApiHealthEntry {
 export interface InfraHealth {
   db: string;
   diskSpace: string;
+  diskTotal?: number;
+  diskFree?: number;
+  diskThreshold?: number;
+  diskUsagePercent?: number;
 }
 
 export interface ApiHealthSnapshot {
