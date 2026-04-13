@@ -467,6 +467,21 @@ public class AdminRestController {
 
                     detail.put("guestPaymentLink", OrderResponse.computeGuestPaymentLink(order, frontendUrl));
 
+                    // Anti-fraude
+                    detail.put("billingName", order.getBillingName());
+                    detail.put("customerVatNumber", order.getCustomerVatNumber());
+                    detail.put("vatCompanyName", order.getVatCompanyName());
+                    detail.put("vatReverseCharge", order.getVatReverseCharge());
+                    detail.put("ipCountry", order.getIpCountry());
+                    detail.put("ipAddress", order.getIpAddress());
+                    detail.put("vpnScore", order.getVpnScore());
+                    detail.put("vpnSources", order.getVpnSources());
+                    detail.put("browserTimezone", order.getBrowserTimezone());
+                    detail.put("geoCountry", order.getGeoCountry());
+                    detail.put("cardCountry", order.getCardCountry());
+                    detail.put("fraudScore", order.getFraudScore());
+                    detail.put("fraudFlags", order.getFraudFlags());
+
                     return ResponseEntity.ok(ApiResponse.ok(detail));
                 })
                 .orElse(ResponseEntity.notFound().build());

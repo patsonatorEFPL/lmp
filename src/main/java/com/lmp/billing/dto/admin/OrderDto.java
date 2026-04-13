@@ -92,7 +92,22 @@ public class OrderDto {
     private Long paymentDelayHours; // Délai de paiement en heures
     private Integer progressPercentage; // Avancement 0-100
     private String progressStatus;      // Libellé étape en cours
-    
+
+    // Informations anti-fraude
+    private String billingName;
+    private String customerVatNumber;
+    private String vatCompanyName;
+    private Boolean vatReverseCharge;
+    private String ipCountry;
+    private String ipAddress;
+    private BigDecimal vpnScore;
+    private String vpnSources;
+    private String browserTimezone;
+    private String geoCountry;
+    private String cardCountry;
+    private Integer fraudScore;
+    private String fraudFlags;
+
     // Informations calculées
     private Long daysSinceCreated;
     private Long daysSinceLastUpdate;
@@ -135,7 +150,22 @@ public class OrderDto {
         this.priority = order.getPriority();
         this.progressPercentage = order.getProgressPercentage() != null ? order.getProgressPercentage() : 0;
         this.progressStatus = order.getProgressStatus();
-        
+
+        // Anti-fraude
+        this.billingName = order.getBillingName();
+        this.customerVatNumber = order.getCustomerVatNumber();
+        this.vatCompanyName = order.getVatCompanyName();
+        this.vatReverseCharge = order.getVatReverseCharge();
+        this.ipCountry = order.getIpCountry();
+        this.ipAddress = order.getIpAddress();
+        this.vpnScore = order.getVpnScore();
+        this.vpnSources = order.getVpnSources();
+        this.browserTimezone = order.getBrowserTimezone();
+        this.geoCountry = order.getGeoCountry();
+        this.cardCountry = order.getCardCountry();
+        this.fraudScore = order.getFraudScore();
+        this.fraudFlags = order.getFraudFlags();
+
         // Calculs
         this.daysSinceCreated = calculateDaysSince(order.getCreatedAt());
         this.daysSinceLastUpdate = calculateDaysSince(order.getUpdatedAt());
@@ -539,6 +569,34 @@ public class OrderDto {
     public void setProgressPercentage(Integer progressPercentage) { this.progressPercentage = progressPercentage; }
     public String getProgressStatus() { return progressStatus; }
     public void setProgressStatus(String progressStatus) { this.progressStatus = progressStatus; }
+
+    // Anti-fraude getters/setters
+    public String getBillingName() { return billingName; }
+    public void setBillingName(String billingName) { this.billingName = billingName; }
+    public String getCustomerVatNumber() { return customerVatNumber; }
+    public void setCustomerVatNumber(String customerVatNumber) { this.customerVatNumber = customerVatNumber; }
+    public String getVatCompanyName() { return vatCompanyName; }
+    public void setVatCompanyName(String vatCompanyName) { this.vatCompanyName = vatCompanyName; }
+    public Boolean getVatReverseCharge() { return vatReverseCharge; }
+    public void setVatReverseCharge(Boolean vatReverseCharge) { this.vatReverseCharge = vatReverseCharge; }
+    public String getIpCountry() { return ipCountry; }
+    public void setIpCountry(String ipCountry) { this.ipCountry = ipCountry; }
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    public BigDecimal getVpnScore() { return vpnScore; }
+    public void setVpnScore(BigDecimal vpnScore) { this.vpnScore = vpnScore; }
+    public String getVpnSources() { return vpnSources; }
+    public void setVpnSources(String vpnSources) { this.vpnSources = vpnSources; }
+    public String getBrowserTimezone() { return browserTimezone; }
+    public void setBrowserTimezone(String browserTimezone) { this.browserTimezone = browserTimezone; }
+    public String getGeoCountry() { return geoCountry; }
+    public void setGeoCountry(String geoCountry) { this.geoCountry = geoCountry; }
+    public String getCardCountry() { return cardCountry; }
+    public void setCardCountry(String cardCountry) { this.cardCountry = cardCountry; }
+    public Integer getFraudScore() { return fraudScore; }
+    public void setFraudScore(Integer fraudScore) { this.fraudScore = fraudScore; }
+    public String getFraudFlags() { return fraudFlags; }
+    public void setFraudFlags(String fraudFlags) { this.fraudFlags = fraudFlags; }
 
     // Méthodes utilitaires
     

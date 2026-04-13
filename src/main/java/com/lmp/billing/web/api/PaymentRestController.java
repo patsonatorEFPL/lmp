@@ -496,6 +496,85 @@ public class PaymentRestController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @PatchMapping("/orders/{orderId}/finalize-checkout")
+    @Operation(summary = "Finaliser le checkout avant confirmation Stripe",
+            description = "Ré-applique le snapshot TVA depuis le profil, recalcule le montant et met à jour le PaymentIntent Stripe")
+    public ResponseEntity<ApiResponse<PaymentElementResponse>> finalizeCheckout(
+            @PathVariable UUID orderId,
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getUser() == null || !order.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Commande introuvable"));
+        }
+
+        if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Cette commande n'est pas en attente de paiement"));
+        }
+
+        // Vérification VIES si reverse charge
+        if (Boolean.TRUE.equals(user.getVatReverseCharge())) {
+            String vat = VatIdentifierUtils.normalize(user.getVatNumber());
+            if (vat.isEmpty() || !VatIdentifierUtils.isPlausibleEuVatFormat(vat)) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Numéro de TVA manquant ou invalide."));
+            }
+            Optional<ViesVatValidationService.ViesResult> viesResult = viesVatValidationService.validate(vat);
+            if (viesResult.isPresent() && viesResult.get().serviceAvailable() && !viesResult.get().valid()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Le numéro de TVA " + vat + " est invalide selon le registre VIES."));
+            }
+        }
+
+        // Ré-appliquer le snapshot TVA
+        applyVatSnapshotFromUser(order, user);
+
+        // Recalculer le montant
+        boolean reverseCharge = Boolean.TRUE.equals(order.getVatReverseCharge());
+        BigDecimal amountHt = order.getAmountBaseEur() != null ? order.getAmountBaseEur() : order.getTotalAmount();
+        // Si la commande a un taux FX, convertir
+        if (order.getFxRate() != null && order.getAmountBaseEur() != null) {
+            amountHt = order.getAmountBaseEur().multiply(order.getFxRate())
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        BigDecimal newTotal = vatCalculationService.applyVat(amountHt, reverseCharge);
+        order.setTotalAmount(newTotal);
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+
+        logger.info("FINALIZE_CHECKOUT - order={} reverseCharge={} amountHT={} total={} piId={}",
+                orderId, reverseCharge, amountHt, newTotal, order.getStripePaymentIntentId());
+
+        // Mettre à jour le PaymentIntent Stripe
+        try {
+            String piId = order.getStripePaymentIntentId();
+            if (piId != null && !piId.isBlank()) {
+                stripePaymentIntentCheckoutService.updatePaymentIntentAmount(
+                        piId, newTotal, order.getCurrency());
+            }
+        } catch (Exception e) {
+            logger.error("Erreur mise à jour PaymentIntent pour commande {}: {}", orderId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Erreur de mise à jour du paiement"));
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok(new PaymentElementResponse(
+                order.getId(),
+                null, // clientSecret inchangé
+                null  // publishableKey inchangé
+        )));
+    }
+
     @PostMapping("/checkout-order/{orderId}")
     @Operation(summary = "Payer une commande existante",
                description = "Crée une session Stripe Checkout pour une commande en attente de paiement (ex: commande créée par admin)")
