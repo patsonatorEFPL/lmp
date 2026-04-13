@@ -255,10 +255,10 @@ interface ViesResponse {
                     <span>Vérification VIES en cours…</span>
                   </div>
                 }
-                @if (!viesValidating() && viesValid() === true && viesCompanyName()) {
+                @if (!viesValidating() && viesValid() === true) {
                   <div class="mt-2 flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2 text-xs text-green-400">
                     <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
-                    <span>TVA valide — {{ viesCompanyName() }}</span>
+                    <span>TVA valide</span>
                   </div>
                 }
                 @if (!viesValidating() && viesValid() === false && !viesUnavailable()) {
@@ -282,6 +282,12 @@ interface ViesResponse {
                 />
                 @if (vatCompanyNameError()) {
                   <p class="mt-1.5 text-xs text-red-400">{{ vatCompanyNameError() }}</p>
+                }
+                @if (viesValid() === true && viesCompanyName() && vatCompanyName().trim()) {
+                  <div class="mt-2 flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2 text-xs text-green-400">
+                    <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+                    <span>Société enregistrée VIES : {{ viesCompanyName() }}</span>
+                  </div>
                 }
               </div>
             }
@@ -1102,10 +1108,6 @@ export class CheckoutComponent implements OnDestroy {
           this.viesValid.set(res.data.valid);
           this.viesCompanyName.set(res.data.companyName);
           this.viesUnavailable.set(!res.data.serviceAvailable);
-          // Pre-fill company name from VIES if field is empty
-          if (res.data.valid && res.data.companyName && !this.vatCompanyName().trim()) {
-            this.vatCompanyName.set(res.data.companyName);
-          }
         } else {
           this.viesValid.set(false);
           this.viesUnavailable.set(false);
