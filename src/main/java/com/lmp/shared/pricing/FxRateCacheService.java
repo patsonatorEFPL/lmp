@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -57,6 +58,7 @@ public class FxRateCacheService {
 
     private final RestTemplate restTemplate;
     private final RegionalPricingProperties properties;
+    private final ApiHealthRecorder healthRecorder;
     private final boolean enabled;
 
     /** Taux bruts EUR → devise. */
@@ -66,8 +68,9 @@ public class FxRateCacheService {
 
     private volatile Instant lastRefreshed;
 
-    public FxRateCacheService(RegionalPricingProperties properties) {
+    public FxRateCacheService(RegionalPricingProperties properties, ApiHealthRecorder healthRecorder) {
         this.properties = properties;
+        this.healthRecorder = healthRecorder;
         this.enabled = properties.isFxAutoRefresh();
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
@@ -147,10 +150,13 @@ public class FxRateCacheService {
     }
 
     private void refreshFromFrankfurter() {
+        long t0 = System.currentTimeMillis();
         try {
             FrankfurterResponse resp = restTemplate.getForObject(
                     FRANKFURTER_URL, FrankfurterResponse.class);
+            long latency = System.currentTimeMillis() - t0;
             if (resp != null && resp.rates != null && !resp.rates.isEmpty()) {
+                healthRecorder.record("FX Rates", latency, true, null);
                 resp.rates.forEach((k, v) -> {
                     String code = k.toUpperCase();
                     ratesCache.put(code, v);
@@ -158,9 +164,11 @@ public class FxRateCacheService {
                 });
                 logger.info("[FX] Frankfurter: {} devises chargées", resp.rates.size());
             } else {
+                healthRecorder.record("FX Rates", latency, false, "empty response");
                 logger.warn("[FX] Frankfurter: réponse vide — taux Fawaz conservés");
             }
         } catch (Exception e) {
+            healthRecorder.record("FX Rates", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.warn("[FX] Frankfurter indisponible: {} — taux Fawaz conservés", e.getMessage());
         }
     }

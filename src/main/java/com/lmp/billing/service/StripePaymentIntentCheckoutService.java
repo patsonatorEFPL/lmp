@@ -15,6 +15,7 @@ import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.exception.PaymentProcessingException;
 import com.lmp.billing.exception.PaymentProviderException;
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -30,6 +31,7 @@ public class StripePaymentIntentCheckoutService {
     private static final Logger logger = LoggerFactory.getLogger(StripePaymentIntentCheckoutService.class);
 
     private final StripeClient stripeClient;
+    private final ApiHealthRecorder healthRecorder;
 
     private static final Set<String> SUPPORTED_CURRENCIES = Set.of(
             "CAD", "USD", "EUR", "GBP", "AUD", "JPY", "CHF", "SEK", "NOK", "DKK");
@@ -45,8 +47,9 @@ public class StripePaymentIntentCheckoutService {
     @Value("${stripe.publishable.key}")
     private String stripePublishableKey;
 
-    public StripePaymentIntentCheckoutService(StripeClient stripeClient) {
+    public StripePaymentIntentCheckoutService(StripeClient stripeClient, ApiHealthRecorder healthRecorder) {
         this.stripeClient = stripeClient;
+        this.healthRecorder = healthRecorder;
     }
 
     public String getPublishableKey() {
@@ -127,11 +130,14 @@ public class StripePaymentIntentCheckoutService {
                 // passe return_url au confirm côté client (redirect PM) si besoin.
                 .putAllMetadata(metadata);
 
+        long t0 = System.currentTimeMillis();
         try {
             PaymentIntent pi = stripeClient.paymentIntents().create(b.build());
+            healthRecorder.record("Stripe", System.currentTimeMillis() - t0, true, null);
             logger.info("PaymentIntent créé {} pour commande {}", pi.getId(), order.getId());
             return new PaymentIntentResult(pi.getClientSecret(), pi.getId());
         } catch (StripeException e) {
+            healthRecorder.record("Stripe", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.error("Stripe PaymentIntent error: {}", e.getMessage());
             throw new PaymentProviderException(
                     "Échec création PaymentIntent: " + e.getMessage(),

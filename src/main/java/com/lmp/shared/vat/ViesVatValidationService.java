@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.lmp.shared.util.VatIdentifierUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,6 +41,7 @@ public class ViesVatValidationService {
     private static final long CACHE_TTL_UNAVAILABLE_SECONDS = 300;
 
     private final RestTemplate restTemplate;
+    private final ApiHealthRecorder healthRecorder;
     private final Map<String, CachedResult> cache = new ConcurrentHashMap<>();
 
     /**
@@ -52,7 +54,8 @@ public class ViesVatValidationService {
      */
     public record ViesResult(boolean valid, boolean serviceAvailable, String name, String address) {}
 
-    public ViesVatValidationService() {
+    public ViesVatValidationService(ApiHealthRecorder healthRecorder) {
+        this.healthRecorder = healthRecorder;
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(5))
@@ -89,6 +92,7 @@ public class ViesVatValidationService {
             return cached.value;
         }
 
+        long t0 = System.currentTimeMillis();
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -102,8 +106,10 @@ public class ViesVatValidationService {
 
             ViesResponse response = restTemplate.postForObject(
                     VIES_URL, new HttpEntity<>(body, headers), ViesResponse.class);
+            long latency = System.currentTimeMillis() - t0;
 
             if (response != null) {
+                healthRecorder.record("VIES", latency, true, null);
                 String name = sanitizeViesField(response.name);
                 String address = sanitizeViesField(response.address);
 
@@ -122,6 +128,7 @@ public class ViesVatValidationService {
                 return opt;
             }
         } catch (Exception e) {
+            healthRecorder.record("VIES", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.warn("[VIES] Service indisponible pour {} : {}", normalized, e.getMessage());
         }
 

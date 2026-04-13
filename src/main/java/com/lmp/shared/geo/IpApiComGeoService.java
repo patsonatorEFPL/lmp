@@ -13,6 +13,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.lmp.shared.web.InetRoutability;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,10 +38,12 @@ public class IpApiComGeoService {
 
     private final RestTemplate restTemplate;
     private final String apiKey;
+    private final ApiHealthRecorder healthRecorder;
     private final Map<String, CachedResult> cache = new ConcurrentHashMap<>();
 
-    public IpApiComGeoService(@Value("${ipapi.com.key:}") String apiKey) {
+    public IpApiComGeoService(@Value("${ipapi.com.key:}") String apiKey, ApiHealthRecorder healthRecorder) {
         this.apiKey = (apiKey != null) ? apiKey.trim() : "";
+        this.healthRecorder = healthRecorder;
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(3))
                 .readTimeout(Duration.ofSeconds(3))
@@ -69,6 +72,7 @@ public class IpApiComGeoService {
             return cached.value;
         }
 
+        long t0 = System.currentTimeMillis();
         try {
             String url = apiKey.isBlank()
                     ? String.format(FREE_URL, ip)
@@ -77,10 +81,12 @@ public class IpApiComGeoService {
             logger.debug("[FRAUD-DEBUG] ip-api.com → calling {} for IP {}", url.replaceAll("key=[^&]+", "key=***"), ip);
 
             IpApiResponse response = restTemplate.getForObject(url, IpApiResponse.class);
+            long latency = System.currentTimeMillis() - t0;
 
             if (response != null && "success".equalsIgnoreCase(response.status)
                     && response.countryCode != null && !response.countryCode.isBlank()) {
 
+                healthRecorder.record("ip-api.com", latency, true, null);
                 String currency = (response.currency != null && !response.currency.isBlank())
                         ? response.currency.trim().toUpperCase()
                         : null;
@@ -96,10 +102,12 @@ public class IpApiComGeoService {
                         ip, result.countryCode(), result.currencyCode(), proxy, hosting, vpnDetected);
                 return opt;
             } else {
+                healthRecorder.record("ip-api.com", latency, false, "non-success status");
                 logger.debug("[FRAUD-DEBUG] ip-api.com returned non-success for {}: status={}",
                         ip, response != null ? response.status : "null");
             }
         } catch (Exception e) {
+            healthRecorder.record("ip-api.com", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.warn("[FRAUD-DEBUG] ip-api.com unavailable for {}: {}", ip, e.getMessage());
         }
 
