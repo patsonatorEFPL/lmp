@@ -269,6 +269,20 @@ interface ViesResponse {
                     <span>Le service VIES est temporairement indisponible. La validation sera effectuée ultérieurement.</span>
                   </div>
                 }
+
+                <!-- Company name (mandatory for reverse charge) -->
+                <label class="mt-3 mb-1 block text-xs font-medium text-[#999]">Nom de la société</label>
+                <input
+                  type="text"
+                  [ngModel]="vatCompanyName()"
+                  (ngModelChange)="vatCompanyName.set($event)"
+                  placeholder="ex. Acme Corporation SPRL"
+                  class="w-full rounded-lg border border-[#333] bg-[#111] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#555] focus:border-blue-500/60"
+                  autocomplete="organization"
+                />
+                @if (vatCompanyNameError()) {
+                  <p class="mt-1.5 text-xs text-red-400">{{ vatCompanyNameError() }}</p>
+                }
               </div>
             }
           </div>
@@ -418,6 +432,8 @@ export class CheckoutComponent implements OnDestroy {
   readonly vatReverseCharge = signal(false);
   readonly vatNumber = signal('');
   readonly vatError = signal<string | null>(null);
+  readonly vatCompanyName = signal('');
+  readonly vatCompanyNameError = signal<string | null>(null);
 
   // ── VIES validation ────────────────────────────────
   readonly viesValidating = signal(false);
@@ -529,6 +545,7 @@ export class CheckoutComponent implements OnDestroy {
       if (user) {
         this.vatReverseCharge.set(!!user.vatReverseCharge);
         this.vatNumber.set(user.vatNumber ?? '');
+        this.vatCompanyName.set(user.companyName ?? '');
       }
 
       if (existingOrderId) {
@@ -951,6 +968,7 @@ export class CheckoutComponent implements OnDestroy {
         customBillingName: this.customBillingName(),
         vatReverseCharge: this.vatReverseCharge(),
         vatNumber: this.vatNumber(),
+        vatCompanyName: this.vatCompanyName(),
         timestamp: Date.now(),
       };
 
@@ -998,6 +1016,7 @@ export class CheckoutComponent implements OnDestroy {
       if (draft.customBillingName) this.customBillingName.set(draft.customBillingName);
       if (draft.vatReverseCharge != null) this.vatReverseCharge.set(draft.vatReverseCharge);
       if (draft.vatNumber) this.vatNumber.set(draft.vatNumber);
+      if (draft.vatCompanyName) this.vatCompanyName.set(draft.vatCompanyName);
 
       console.debug('[CHECKOUT-DRAFT] Restored draft:', this.draftKey, draft);
     } catch (e) {
@@ -1083,6 +1102,10 @@ export class CheckoutComponent implements OnDestroy {
           this.viesValid.set(res.data.valid);
           this.viesCompanyName.set(res.data.companyName);
           this.viesUnavailable.set(!res.data.serviceAvailable);
+          // Pre-fill company name from VIES if field is empty
+          if (res.data.valid && res.data.companyName && !this.vatCompanyName().trim()) {
+            this.vatCompanyName.set(res.data.companyName);
+          }
         } else {
           this.viesValid.set(false);
           this.viesUnavailable.set(false);
@@ -1118,6 +1141,12 @@ export class CheckoutComponent implements OnDestroy {
         this.vatError.set('Ce numéro de TVA est invalide selon le registre VIES.');
         return;
       }
+      // Validate company name
+      if (!this.vatCompanyName().trim()) {
+        this.vatCompanyNameError.set('Veuillez saisir le nom de votre société.');
+        return;
+      }
+      this.vatCompanyNameError.set(null);
     }
     this.vatError.set(null);
     this.stripeError.set(null);
@@ -1131,6 +1160,7 @@ export class CheckoutComponent implements OnDestroy {
           .updateProfile({
             vatReverseCharge: this.vatReverseCharge(),
             vatNumber: this.vatReverseCharge() ? this.vatNumber().trim() : '',
+            companyName: this.vatReverseCharge() ? this.vatCompanyName().trim() : undefined,
           })
           .subscribe({ next: (u) => { this.authService.setUser(u); resolve(); }, error: reject });
       });

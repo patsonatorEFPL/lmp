@@ -860,14 +860,43 @@ public class PaymentRestController {
                 ipCountry, vpnResult.normalizedScore(), request.browserTimezone(),
                 request.geoCountry(), request.billingCountry());
 
-        FraudScoringService.FraudSignals signals = FraudScoringService.FraudSignals.ofLegacy(
+        // Resolve VAT-related fraud signals from user profile + VIES
+        String vatCountryPrefix = null;
+        String viesCompanyName = null;
+        String vatCompanyNameForScoring = null;
+        boolean viesUnavailable = false;
+
+        if (Boolean.TRUE.equals(user.getVatReverseCharge()) && user.getVatNumber() != null) {
+            String normalizedVat = VatIdentifierUtils.normalize(user.getVatNumber());
+            if (VatIdentifierUtils.isPlausibleEuVatFormat(normalizedVat)) {
+                vatCountryPrefix = normalizedVat.substring(0, 2);
+                vatCompanyNameForScoring = user.getCompanyName();
+
+                Optional<ViesVatValidationService.ViesResult> viesResult =
+                        viesVatValidationService.validate(normalizedVat);
+                if (viesResult.isPresent()) {
+                    ViesVatValidationService.ViesResult vr = viesResult.get();
+                    if (vr.serviceAvailable()) {
+                        viesCompanyName = vr.name();
+                    } else {
+                        viesUnavailable = true;
+                    }
+                }
+            }
+        }
+
+        FraudScoringService.FraudSignals signals = new FraudScoringService.FraudSignals(
                 ipCountry,
                 vpnResult.normalizedScore(),
                 request.browserTimezone(),
                 request.geoCountry() != null ? request.geoCountry().trim().toUpperCase() : null,
                 request.billingCountry() != null ? request.billingCountry().trim().toUpperCase() : null,
                 null,
-                request.geoLocationDenied()
+                request.geoLocationDenied(),
+                vatCountryPrefix,
+                viesCompanyName,
+                vatCompanyNameForScoring,
+                viesUnavailable
         );
         FraudScoringService.FraudResult result = fraudScoringService.score(signals);
 
@@ -911,6 +940,8 @@ public class PaymentRestController {
         order.setVatReverseCharge(reverse);
         String vat = VatIdentifierUtils.normalize(user.getVatNumber());
         order.setCustomerVatNumber(reverse && !vat.isEmpty() ? vat : null);
+        order.setVatCompanyName(reverse && user.getCompanyName() != null && !user.getCompanyName().isBlank()
+                ? user.getCompanyName().trim() : null);
     }
 
 }
