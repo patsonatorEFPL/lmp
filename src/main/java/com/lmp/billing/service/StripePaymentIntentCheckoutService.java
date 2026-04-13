@@ -19,6 +19,7 @@ import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.PaymentIntentUpdateParams;
 
 /**
  * Crée des PaymentIntents Stripe pour le Payment Element (sans session Checkout hébergée).
@@ -135,6 +136,36 @@ public class StripePaymentIntentCheckoutService {
             throw new PaymentProviderException(
                     "Échec création PaymentIntent: " + e.getMessage(),
                     "STRIPE_PI_ERROR",
+                    e.getCode(),
+                    "stripe",
+                    null);
+        }
+    }
+
+    /**
+     * Met à jour le montant d'un PaymentIntent existant (avant confirmation).
+     */
+    public void updatePaymentIntentAmount(String paymentIntentId, BigDecimal newAmount, String currency)
+            throws PaymentProcessingException {
+        if (paymentIntentId == null || paymentIntentId.isBlank()) {
+            throw new PaymentProviderException("Aucun PaymentIntent à mettre à jour", "stripe");
+        }
+
+        BigDecimal amountMajor = newAmount.setScale(2, RoundingMode.HALF_UP);
+        long amountCents = amountMajor.multiply(new BigDecimal("100")).longValueExact();
+
+        try {
+            PaymentIntentUpdateParams params = PaymentIntentUpdateParams.builder()
+                    .setAmount(amountCents)
+                    .build();
+            PaymentIntent updated = stripeClient.paymentIntents().update(paymentIntentId, params);
+            logger.info("PaymentIntent {} montant mis à jour → {} cents ({})",
+                    paymentIntentId, amountCents, currency);
+        } catch (StripeException e) {
+            logger.error("Stripe PaymentIntent update error: {}", e.getMessage());
+            throw new PaymentProviderException(
+                    "Échec mise à jour PaymentIntent: " + e.getMessage(),
+                    "STRIPE_PI_UPDATE_ERROR",
                     e.getCode(),
                     "stripe",
                     null);
