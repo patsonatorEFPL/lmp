@@ -400,6 +400,9 @@ export class CheckoutComponent implements OnDestroy {
   private geoCountry = signal<string | null>(null);
   private geoLocationDenied = signal(false);
   readonly showGeoPrompt = signal(false);
+  /** Resolves when geolocation flow completes (granted, denied, or not needed). */
+  private geoResolve!: () => void;
+  private readonly geoReady = new Promise<void>((r) => { this.geoResolve = r; });
   private autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   private beforeUnloadHandler: (() => void) | null = null;
 
@@ -741,10 +744,18 @@ export class CheckoutComponent implements OnDestroy {
             console.debug('[FRAUD-DEBUG] geo-check result:', res.data);
             if (res.data.vpnDetected) {
               this.requestGeolocation();
+            } else {
+              // No VPN → geolocation not needed, unblock fraud signals
+              this.geoResolve();
             }
+          } else {
+            this.geoResolve();
           }
         },
-        error: (err) => console.warn('[FRAUD-DEBUG] geo-check failed:', err),
+        error: (err) => {
+          console.warn('[FRAUD-DEBUG] geo-check failed:', err);
+          this.geoResolve();
+        },
       });
   }
 
@@ -770,12 +781,17 @@ export class CheckoutComponent implements OnDestroy {
             const cc = data?.address?.country_code?.toUpperCase() ?? null;
             this.geoCountry.set(cc);
             console.debug('[FRAUD-DEBUG] Reverse geocode country:', cc);
+            this.geoResolve();
           })
-          .catch(err => console.warn('[FRAUD-DEBUG] Reverse geocode failed:', err));
+          .catch(err => {
+            console.warn('[FRAUD-DEBUG] Reverse geocode failed:', err);
+            this.geoResolve();
+          });
       },
       (err) => {
         this.geoLocationDenied.set(true);
         console.debug('[FRAUD-DEBUG] Geolocation denied:', err.message);
+        this.geoResolve();
       },
       { timeout: 10000, enableHighAccuracy: false },
     );
@@ -785,10 +801,14 @@ export class CheckoutComponent implements OnDestroy {
     this.showGeoPrompt.set(false);
     this.geoLocationDenied.set(true);
     console.debug('[FRAUD-DEBUG] Geolocation declined via custom prompt');
+    this.geoResolve();
   }
 
   private async sendFraudSignals(): Promise<void> {
     if (!this.orderId) return;
+
+    // Wait for geolocation flow to complete (granted, denied, or skipped)
+    await this.geoReady;
 
     // Get billing country from Stripe Address Element
     let billingCountry: string | null = null;
