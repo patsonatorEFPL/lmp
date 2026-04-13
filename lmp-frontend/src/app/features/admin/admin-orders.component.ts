@@ -66,6 +66,8 @@ interface OrderItem {
   billingCity?: string | null;
   billingPostalCode?: string | null;
   billingCountry?: string | null;
+  customerVatNumber?: string | null;
+  vatCompanyName?: string | null;
   ipCountry?: string | null;
   ipAddress?: string | null;
   fraudScore?: number | null;
@@ -102,6 +104,9 @@ interface OrderDetail {
   billingCity: string | null;
   billingPostalCode: string | null;
   billingCountry: string | null;
+  vatReverseCharge: boolean | null;
+  customerVatNumber: string | null;
+  vatCompanyName: string | null;
   ipCountry: string | null;
   ipAddress: string | null;
   vpnScore: number | null;
@@ -298,6 +303,8 @@ const ORDER_STEPS = [
           <div class="w-24 shrink-0 px-2 text-center">Code postal</div>
           <div class="w-20 shrink-0 px-2 text-center">Pays</div>
           <div class="w-32 shrink-0 px-2 text-center">IP</div>
+          <div class="w-32 shrink-0 px-2 text-center">N° TVA</div>
+          <div class="w-36 shrink-0 px-2 text-center">Société</div>
           <div class="w-20 shrink-0 px-2 text-center">Score</div>
           <div class="w-32 shrink-0 px-2 text-center">Last Modified</div>
         </div>
@@ -361,6 +368,12 @@ const ORDER_STEPS = [
                 } @else {
                   —
                 }
+              </div>
+              <div class="w-32 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
+                <span class="font-mono text-xs">{{ order.customerVatNumber || '—' }}</span>
+              </div>
+              <div class="w-36 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
+                {{ order.vatCompanyName || '—' }}
               </div>
               <div class="w-20 shrink-0 px-2 text-center">
                 @if (order.fraudScore != null) {

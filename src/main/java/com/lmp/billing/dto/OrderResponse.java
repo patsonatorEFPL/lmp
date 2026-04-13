@@ -36,6 +36,7 @@ public record OrderResponse(
         // TVA snapshot
         Boolean vatReverseCharge,
         String customerVatNumber,
+        String vatCompanyName,
         // FX snapshot
         BigDecimal amountBaseEur,
         // Fraud scoring
@@ -84,6 +85,7 @@ public record OrderResponse(
                 order.getBillingCountry(),
                 order.getVatReverseCharge(),
                 order.getCustomerVatNumber(),
+                order.getVatCompanyName(),
                 order.getAmountBaseEur(),
                 order.getIpCountry(),
                 order.getIpAddress(),

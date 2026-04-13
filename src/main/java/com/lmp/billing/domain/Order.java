@@ -150,6 +150,10 @@ public class Order {
     @Column(name = "customer_vat_number", length = 64)
     private String customerVatNumber;
 
+    /** Nom de société saisi par le client lors du checkout (reverse charge). */
+    @Column(name = "vat_company_name")
+    private String vatCompanyName;
+
     /** Token opaque pour lien de paiement invité (commande sans user jusqu'à inscription). */
     @Column(name = "checkout_token", length = 64)
     private String checkoutToken;
@@ -288,6 +292,9 @@ public class Order {
 
     public String getCustomerVatNumber() { return customerVatNumber; }
     public void setCustomerVatNumber(String customerVatNumber) { this.customerVatNumber = customerVatNumber; }
+
+    public String getVatCompanyName() { return vatCompanyName; }
+    public void setVatCompanyName(String vatCompanyName) { this.vatCompanyName = vatCompanyName; }
 
     public String getCheckoutToken() { return checkoutToken; }
     public void setCheckoutToken(String checkoutToken) { this.checkoutToken = checkoutToken; }
