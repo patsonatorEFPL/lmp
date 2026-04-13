@@ -26,6 +26,7 @@ import com.lmp.shared.pricing.PricingContext;
 import com.lmp.shared.pricing.RegionalPricingService;
 import com.lmp.shared.pricing.VatCalculationService;
 import com.lmp.shared.util.VatIdentifierUtils;
+import com.lmp.shared.vat.ViesVatValidationService;
 import com.lmp.shared.web.ClientIpResolver;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -72,6 +73,7 @@ public class PaymentRestController {
     private final GeoCountryLookupService geoCountryLookupService;
     private final VpnDetectionService vpnDetectionService;
     private final FraudScoringService fraudScoringService;
+    private final ViesVatValidationService viesVatValidationService;
 
     public PaymentRestController(OrderRepository orderRepository,
                                  UserService userService,
@@ -85,7 +87,8 @@ public class PaymentRestController {
                                  VatCalculationService vatCalculationService,
                                  GeoCountryLookupService geoCountryLookupService,
                                  VpnDetectionService vpnDetectionService,
-                                 FraudScoringService fraudScoringService) {
+                                 FraudScoringService fraudScoringService,
+                                 ViesVatValidationService viesVatValidationService) {
         this.orderRepository = orderRepository;
         this.userService = userService;
         this.catalogService = catalogService;
@@ -99,6 +102,7 @@ public class PaymentRestController {
         this.geoCountryLookupService = geoCountryLookupService;
         this.vpnDetectionService = vpnDetectionService;
         this.fraudScoringService = fraudScoringService;
+        this.viesVatValidationService = viesVatValidationService;
     }
 
     // =========================================================================
@@ -165,6 +169,17 @@ public class PaymentRestController {
             int score,
             boolean alert,
             java.util.List<String> flags
+    ) {}
+
+    public record VatValidationRequest(
+            String vatNumber
+    ) {}
+
+    public record VatValidationResponse(
+            boolean valid,
+            boolean serviceAvailable,
+            String companyName,
+            String companyAddress
     ) {}
 
     // =========================================================================
@@ -238,6 +253,13 @@ public class PaymentRestController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error(
                                 "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+            // Vérification VIES — bloquer si le service confirme que le numéro est invalide
+            Optional<ViesVatValidationService.ViesResult> viesResult = viesVatValidationService.validate(vat);
+            if (viesResult.isPresent() && viesResult.get().serviceAvailable() && !viesResult.get().valid()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Le numéro de TVA " + vat + " est invalide selon le registre VIES de la Commission européenne."));
             }
         }
 
@@ -365,6 +387,12 @@ public class PaymentRestController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error(
                                 "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+            Optional<ViesVatValidationService.ViesResult> viesResult = viesVatValidationService.validate(vat);
+            if (viesResult.isPresent() && viesResult.get().serviceAvailable() && !viesResult.get().valid()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Le numéro de TVA " + vat + " est invalide selon le registre VIES de la Commission européenne."));
             }
         }
 
@@ -497,6 +525,12 @@ public class PaymentRestController {
                         .body(ApiResponse.error(
                                 "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
             }
+            Optional<ViesVatValidationService.ViesResult> viesResult = viesVatValidationService.validate(vat);
+            if (viesResult.isPresent() && viesResult.get().serviceAvailable() && !viesResult.get().valid()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Le numéro de TVA " + vat + " est invalide selon le registre VIES de la Commission européenne."));
+            }
         }
 
         if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
@@ -589,6 +623,12 @@ public class PaymentRestController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error(
                                 "Numéro de TVA manquant ou invalide : complétez un N° TVA au format intracommunautaire dans les paramètres du compte."));
+            }
+            Optional<ViesVatValidationService.ViesResult> viesResult = viesVatValidationService.validate(vat);
+            if (viesResult.isPresent() && viesResult.get().serviceAvailable() && !viesResult.get().valid()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error(
+                                "Le numéro de TVA " + vat + " est invalide selon le registre VIES de la Commission européenne."));
             }
         }
 
@@ -709,6 +749,47 @@ public class PaymentRestController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/vat/validate")
+    @Operation(summary = "Valider un numéro de TVA via VIES",
+            description = "Interroge le service VIES de la Commission européenne pour vérifier la validité d'un numéro de TVA intracommunautaire")
+    public ResponseEntity<ApiResponse<VatValidationResponse>> validateVat(
+            @RequestBody VatValidationRequest request,
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        if (request.vatNumber() == null || request.vatNumber().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("vatNumber is required"));
+        }
+
+        String normalized = VatIdentifierUtils.normalize(request.vatNumber());
+        if (!VatIdentifierUtils.isPlausibleEuVatFormat(normalized)) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Format de numéro de TVA invalide"));
+        }
+
+        Optional<ViesVatValidationService.ViesResult> resultOpt =
+                viesVatValidationService.validate(request.vatNumber());
+
+        if (resultOpt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Format de numéro de TVA invalide"));
+        }
+
+        ViesVatValidationService.ViesResult result = resultOpt.get();
+        return ResponseEntity.ok(ApiResponse.ok(new VatValidationResponse(
+                result.valid(),
+                result.serviceAvailable(),
+                result.name(),
+                result.address()
+        )));
+    }
+
     @GetMapping("/geo-check")
     @Operation(summary = "Geo + VPN check",
             description = "Returns IP country and VPN score for the connected client")
@@ -779,7 +860,7 @@ public class PaymentRestController {
                 ipCountry, vpnResult.normalizedScore(), request.browserTimezone(),
                 request.geoCountry(), request.billingCountry());
 
-        FraudScoringService.FraudSignals signals = new FraudScoringService.FraudSignals(
+        FraudScoringService.FraudSignals signals = FraudScoringService.FraudSignals.ofLegacy(
                 ipCountry,
                 vpnResult.normalizedScore(),
                 request.browserTimezone(),
