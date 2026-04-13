@@ -225,18 +225,26 @@ public class FraudScoringService {
         }
 
         // ── 10. VIES company name vs billing name ───────────────────────
+        // Logique assouplie : si au moins un token significatif concorde
+        // (ex: "PROXIMUS" dans "SA DPU PROXIMUS"), la pénalité est réduite.
         if (signals.viesCompanyName() != null && signals.billingName() != null) {
             double similarity = jaccardTokenSimilarity(signals.viesCompanyName(), signals.billingName());
-            logger.debug("[FRAUD-DEBUG] Name similarity: vies=\"{}\" billing=\"{}\" jaccard={}",
-                    signals.viesCompanyName(), signals.billingName(), similarity);
-            if (similarity < 0.4) {
+            boolean hasCommonToken = hasAnyCommonToken(signals.viesCompanyName(), signals.billingName());
+            logger.debug("[FRAUD-DEBUG] Name similarity: vies=\"{}\" billing=\"{}\" jaccard={} commonToken={}",
+                    signals.viesCompanyName(), signals.billingName(), similarity, hasCommonToken);
+            if (similarity < 0.4 && !hasCommonToken) {
                 score -= 20;
                 flags.add("VAT_NAME_MISMATCH");
                 logger.debug("[FRAUD-DEBUG] Penalty -20: VAT_NAME_MISMATCH (similarity={})", similarity);
+            } else if (similarity < 0.4) {
+                // Au moins un token commun malgré Jaccard faible → pénalité réduite
+                score -= 5;
+                flags.add("VAT_NAME_PARTIAL_MATCH");
+                logger.debug("[FRAUD-DEBUG] Penalty -5: VAT_NAME_PARTIAL_MATCH (similarity={}, commonToken)", similarity);
             } else if (similarity < 0.7) {
-                score -= 10;
+                score -= 5;
                 flags.add("VAT_NAME_WEAK_MATCH");
-                logger.debug("[FRAUD-DEBUG] Penalty -10: VAT_NAME_WEAK_MATCH (similarity={})", similarity);
+                logger.debug("[FRAUD-DEBUG] Penalty -5: VAT_NAME_WEAK_MATCH (similarity={})", similarity);
             }
         }
 
@@ -323,6 +331,20 @@ public class FraudScoringService {
             "LTD", "LLP", "PLC", "INC", "LLC", "CORP",
             "SP", "ZOO", "AS", "AB", "OY", "APS", "SE"
     );
+
+    /**
+     * Vérifie si au moins un token significatif est commun entre deux noms.
+     * Ex: "PROXIMUS" vs "SA DPU PROXIMUS" → true (token "PROXIMUS" commun).
+     */
+    static boolean hasAnyCommonToken(String a, String b) {
+        if (a == null || b == null) return false;
+        Set<String> tokensA = tokenize(a);
+        Set<String> tokensB = tokenize(b);
+        for (String t : tokensA) {
+            if (tokensB.contains(t)) return true;
+        }
+        return false;
+    }
 
     /**
      * Similarité Jaccard sur les tokens normalisés (uppercase, sans accents, sans suffixes juridiques).
