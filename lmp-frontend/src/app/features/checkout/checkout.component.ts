@@ -240,6 +240,7 @@ interface ViesResponse {
                   type="text"
                   [ngModel]="vatNumber()"
                   (ngModelChange)="vatNumber.set($event)"
+                  (blur)="onVatNumberBlur()"
                   placeholder="ex. FR12345678901"
                   class="w-full rounded-lg border border-[#333] bg-[#111] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#555] focus:border-blue-500/60"
                   autocomplete="off"
@@ -276,6 +277,8 @@ interface ViesResponse {
                   type="text"
                   [ngModel]="vatCompanyName()"
                   (ngModelChange)="vatCompanyName.set($event)"
+                  (blur)="vatCompanyNameTouched.set(true)"
+                  (focus)="vatCompanyNameTouched.set(false)"
                   placeholder="ex. Acme Corporation SPRL"
                   class="w-full rounded-lg border border-[#333] bg-[#111] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#555] focus:border-blue-500/60"
                   autocomplete="organization"
@@ -283,12 +286,7 @@ interface ViesResponse {
                 @if (vatCompanyNameError()) {
                   <p class="mt-1.5 text-xs text-red-400">{{ vatCompanyNameError() }}</p>
                 }
-                @if (viesValid() === true && viesCompanyName() && vatCompanyName().trim()) {
-                  <div class="mt-2 flex items-center gap-2 rounded-md bg-green-500/10 px-3 py-2 text-xs text-green-400">
-                    <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
-                    <span>Société enregistrée VIES : {{ viesCompanyName() }}</span>
-                  </div>
-                }
+
               </div>
             }
           </div>
@@ -440,6 +438,7 @@ export class CheckoutComponent implements OnDestroy {
   readonly vatError = signal<string | null>(null);
   readonly vatCompanyName = signal('');
   readonly vatCompanyNameError = signal<string | null>(null);
+  readonly vatCompanyNameTouched = signal(false);
 
   // ── VIES validation ────────────────────────────────
   readonly viesValidating = signal(false);
@@ -519,28 +518,6 @@ export class CheckoutComponent implements OnDestroy {
   });
 
   constructor() {
-    // ── VIES live validation (debounced) ──
-    effect(() => {
-      const rc = this.vatReverseCharge();
-      const vat = this.vatNumber();
-
-      // Reset when reverse charge disabled or empty
-      if (!rc || !vat.trim()) {
-        this.resetVies();
-        return;
-      }
-
-      const normalized = vat.replace(/[\s.\-]/g, '').toUpperCase();
-      if (!/^[A-Z]{2}[0-9A-Z]{2,28}$/.test(normalized)) {
-        this.resetVies();
-        return;
-      }
-
-      // Debounce 500ms
-      if (this.viesTimer) clearTimeout(this.viesTimer);
-      this.viesTimer = setTimeout(() => this.callViesValidation(normalized), 500);
-    });
-
     afterNextRender(() => {
       // Detect mode: /checkout/order/:orderId  vs  /checkout/:offerId
       const existingOrderId = this.route.snapshot.paramMap.get('orderId');
@@ -1083,6 +1060,25 @@ export class CheckoutComponent implements OnDestroy {
     const checked = (event.target as HTMLInputElement).checked;
     this.vatReverseCharge.set(checked);
     this.vatError.set(null);
+  }
+
+  /** Triggered on blur of the VAT number input — validates via VIES only when leaving the field. */
+  onVatNumberBlur(): void {
+    if (!this.vatReverseCharge()) {
+      this.resetVies();
+      return;
+    }
+    const vat = this.vatNumber().trim();
+    if (!vat) {
+      this.resetVies();
+      return;
+    }
+    const normalized = vat.replace(/[\s.\-]/g, '').toUpperCase();
+    if (!/^[A-Z]{2}[0-9A-Z]{2,28}$/.test(normalized)) {
+      this.resetVies();
+      return;
+    }
+    this.callViesValidation(normalized);
   }
 
   private resetVies(): void {
