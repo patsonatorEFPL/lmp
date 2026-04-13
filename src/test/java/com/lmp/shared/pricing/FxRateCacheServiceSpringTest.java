@@ -14,7 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 /**
  * Charge {@link FxRateCacheService} avec des taux statiques uniquement (pas d'appel Frankfurter).
  */
-@SpringBootTest(classes = { FxRateCacheService.class })
+@SpringBootTest(classes = { FxRateCacheService.class, com.lmp.shared.monitoring.ApiHealthRecorder.class })
 @EnableConfigurationProperties(RegionalPricingProperties.class)
 @org.springframework.test.context.TestPropertySource(properties = {
         "pricing.fx-auto-refresh=false",

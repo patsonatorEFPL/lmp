@@ -12,6 +12,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.lmp.shared.web.InetRoutability;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,9 +41,11 @@ public class IpWhoIsGeoService {
     private static final long CACHE_TTL_SECONDS = 3600;
 
     private final RestTemplate restTemplate;
+    private final ApiHealthRecorder healthRecorder;
     private final Map<String, CachedResult> cache = new ConcurrentHashMap<>();
 
-    public IpWhoIsGeoService() {
+    public IpWhoIsGeoService(ApiHealthRecorder healthRecorder) {
+        this.healthRecorder = healthRecorder;
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(3))
                 .readTimeout(Duration.ofSeconds(3))
@@ -64,13 +67,16 @@ public class IpWhoIsGeoService {
             return cached.value;
         }
 
+        long t0 = System.currentTimeMillis();
         try {
             String url = String.format(API_URL, ip);
             IpWhoIsResponse response = restTemplate.getForObject(url, IpWhoIsResponse.class);
+            long latency = System.currentTimeMillis() - t0;
 
             if (response != null && Boolean.TRUE.equals(response.success)
                     && response.countryCode != null && !response.countryCode.isBlank()) {
 
+                healthRecorder.record("ipwho.is", latency, true, null);
                 String currency = (response.currency != null && response.currency.code != null
                         && !response.currency.code.isBlank())
                         ? response.currency.code.trim().toUpperCase()
@@ -85,6 +91,7 @@ public class IpWhoIsGeoService {
                 return opt;
             }
         } catch (Exception e) {
+            healthRecorder.record("ipwho.is", System.currentTimeMillis() - t0, false, e.getMessage());
             logger.debug("[GeoIP] ipwho.is unavailable for {}: {}", ip, e.getMessage());
         }
 

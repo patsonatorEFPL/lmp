@@ -11,6 +11,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 
+import com.lmp.shared.monitoring.ApiHealthRecorder;
+
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -26,6 +28,7 @@ public class MailtrapServiceHttp {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final ApiHealthRecorder healthRecorder;
 
         private final MailAddressConfig mailAddressConfig;
 
@@ -35,9 +38,10 @@ public class MailtrapServiceHttp {
     @Value("${mailtrap.account.id:}")
     private String accountId;
 
-    public MailtrapServiceHttp(MailAddressConfig mailAddressConfig) {
+    public MailtrapServiceHttp(MailAddressConfig mailAddressConfig, ApiHealthRecorder healthRecorder) {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+        this.healthRecorder = healthRecorder;
         logger.info("✅ MailtrapServiceHttp initialized with HTTP client");
         this.mailAddressConfig = mailAddressConfig;
     }
@@ -139,22 +143,31 @@ public class MailtrapServiceHttp {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
 
             // Envoi via l'API Mailtrap
+            long t0 = System.currentTimeMillis();
             ResponseEntity<String> response = restTemplate.postForEntity(MAILTRAP_API_URL, entity, String.class);
+            long latency = System.currentTimeMillis() - t0;
             
             if (response.getStatusCode().is2xxSuccessful()) {
+                healthRecorder.record("Mailtrap", latency, true, null);
                 logger.info("✅ Email envoyé avec succès via Mailtrap REST API à {}", to);
             } else {
+                healthRecorder.record("Mailtrap", latency, false, "HTTP " + response.getStatusCode());
                 logger.error("❌ Erreur HTTP lors de l'envoi à {}: {}", to, response.getStatusCode());
                 throw new RuntimeException("HTTP Error: " + response.getStatusCode());
             }
 
         } catch (HttpClientErrorException e) {
+            healthRecorder.record("Mailtrap", 0, false, e.getStatusCode() + ": " + e.getMessage());
             logger.error("❌ Erreur client HTTP lors de l'envoi à {}: {} - {}", to, e.getStatusCode(), e.getResponseBodyAsString());
             throw new Exception("Erreur client Mailtrap: " + e.getMessage());
         } catch (HttpServerErrorException e) {
+            healthRecorder.record("Mailtrap", 0, false, e.getStatusCode() + ": " + e.getMessage());
             logger.error("❌ Erreur serveur HTTP lors de l'envoi à {}: {} - {}", to, e.getStatusCode(), e.getResponseBodyAsString());
             throw new Exception("Erreur serveur Mailtrap: " + e.getMessage());
         } catch (Exception e) {
+            if (!(e instanceof RuntimeException && e.getMessage() != null && e.getMessage().startsWith("HTTP Error"))) {
+                healthRecorder.record("Mailtrap", 0, false, e.getMessage());
+            }
             logger.error("❌ Erreur inattendue lors de l'envoi à {}: {}", to, e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi email", e);
         }
