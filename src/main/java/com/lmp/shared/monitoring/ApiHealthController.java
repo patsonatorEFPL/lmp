@@ -1,6 +1,7 @@
 package com.lmp.shared.monitoring;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,10 +15,12 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmp.shared.dto.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,13 +43,19 @@ public class ApiHealthController {
     private final ApiHealthRecorder recorder;
     private final HealthEndpoint healthEndpoint;
     private final ApiHealthProbeService probeService;
+    private final ApiHealthReportRepository reportRepository;
+    private final ObjectMapper objectMapper;
 
     public ApiHealthController(ApiHealthRecorder recorder,
                                HealthEndpoint healthEndpoint,
-                               ApiHealthProbeService probeService) {
+                               ApiHealthProbeService probeService,
+                               ApiHealthReportRepository reportRepository,
+                               ObjectMapper objectMapper) {
         this.recorder = recorder;
         this.healthEndpoint = healthEndpoint;
         this.probeService = probeService;
+        this.reportRepository = reportRepository;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping
@@ -91,6 +100,58 @@ public class ApiHealthController {
         return ResponseEntity.ok(ApiResponse.ok(results));
     }
 
+    // ── Rapports ─────────────────────────────────────────────────────────────
+
+    @GetMapping("/reports")
+    @Operation(summary = "Liste des rapports quotidiens disponibles (7 derniers jours)")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getReportsList() {
+        List<ApiHealthReport> reports = reportRepository.findAllByOrderByReportDateDesc();
+        List<Map<String, Object>> summaries = reports.stream().map(r -> {
+            Map<String, Object> summary = new HashMap<>();
+            summary.put("reportDate", r.getReportDate().toString());
+            summary.put("generatedAt", r.getGeneratedAt().toString());
+            // Extraire le nombre total de records du JSON pour l'affichage
+            try {
+                var tree = objectMapper.readTree(r.getReportData());
+                if (tree.has("totalRecords")) {
+                    summary.put("totalRecords", tree.get("totalRecords").asInt());
+                }
+                if (tree.has("apis")) {
+                    summary.put("apiCount", tree.get("apis").size());
+                }
+            } catch (Exception e) {
+                // Ignorer les erreurs de parsing
+            }
+            return summary;
+        }).toList();
+        return ResponseEntity.ok(ApiResponse.ok(summaries));
+    }
+
+    @GetMapping("/reports/{date}")
+    @Operation(summary = "Rapport détaillé pour une date spécifique")
+    public ResponseEntity<ApiResponse<Object>> getReport(@PathVariable String date) {
+        LocalDate reportDate;
+        try {
+            reportDate = LocalDate.parse(date);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Format de date invalide (attendu: YYYY-MM-DD)"));
+        }
+
+        return reportRepository.findByReportDate(reportDate)
+                .map(report -> {
+                    try {
+                        Object data = objectMapper.readValue(report.getReportData(), Object.class);
+                        return ResponseEntity.ok(ApiResponse.ok(data));
+                    } catch (Exception e) {
+                        return ResponseEntity.ok(ApiResponse.ok((Object) report.getReportData()));
+                    }
+                })
+                .orElse(ResponseEntity.ok(ApiResponse.error("Aucun rapport pour cette date")));
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
     private String extractComponentStatus(Map<String, HealthComponent> components, String key) {
         if (components == null) return "UNKNOWN";
         HealthComponent component = components.get(key);
@@ -103,10 +164,6 @@ public class ApiHealthController {
         return "UNKNOWN";
     }
 
-    /**
-     * Extrait les détails d'espace disque depuis le composant Actuator diskSpace.
-     * Retourne total, free, threshold en octets et usagePercent.
-     */
     private Map<String, Object> extractDiskSpaceDetails(Map<String, HealthComponent> components) {
         Map<String, Object> details = new HashMap<>();
         if (components == null) return details;

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
  */
 class GeoServicesTest {
 
-    private final com.lmp.shared.monitoring.ApiHealthRecorder recorder = new com.lmp.shared.monitoring.ApiHealthRecorder();
+    private final com.lmp.shared.monitoring.ApiHealthRecorder recorder = new com.lmp.shared.monitoring.ApiHealthRecorder(null);
     private final IpWhoIsGeoService ipWhoIs = new IpWhoIsGeoService(recorder);
     private final IpApiComGeoService ipApiCom = new IpApiComGeoService("", recorder);
 
