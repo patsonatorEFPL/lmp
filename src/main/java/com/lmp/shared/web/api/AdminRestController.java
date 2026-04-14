@@ -454,6 +454,7 @@ public class AdminRestController {
                     detail.put("cancellationReason", order.getCancellationReason());
 
                     // Adresse de facturation
+                    detail.put("amountBaseEur", order.getAmountBaseEur());
                     detail.put("billingAddress", order.getBillingAddress());
                     detail.put("billingCity", order.getBillingCity());
                     detail.put("billingPostalCode", order.getBillingPostalCode());
