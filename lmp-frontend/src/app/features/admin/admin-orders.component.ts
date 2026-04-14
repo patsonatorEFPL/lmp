@@ -54,6 +54,9 @@ interface OrderItem {
   customerEmail: string;
   serviceName: string;
   amount: number;
+  currency: string;
+  /** Montant équivalent EUR (snapshot FX au moment de la commande). */
+  amountBaseEur?: number | null;
   status: string;
   createdAt: string;
   /** Présent dans la réponse API liste admin (OrderResponse). */
@@ -78,6 +81,8 @@ interface OrderDetail {
   serviceName: string;
   totalAmount: number;
   currency: string;
+  /** Montant EUR de base (snapshot FX). Null si devise = EUR. */
+  amountBaseEur?: number | null;
   status: string;
   paymentStatus: string;
   paymentMethod: string;
@@ -330,8 +335,8 @@ const ORDER_STEPS = [
               <div class="w-40 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ order.serviceName }}
               </div>
-              <div class="w-28 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
-                {{ order.amount | currency:'EUR':'symbol':'1.2-2' }}
+              <div class="w-28 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400" [title]="order.currency !== 'EUR' ? (order.amount | currency:order.currency:'symbol':'1.0-2') + ' (devise client)' : ''">
+                {{ (order.amountBaseEur ?? order.amount) | currency:'EUR':'symbol':'1.2-2' }}
               </div>
               <div class="w-32 shrink-0 px-2 text-center">
                 <span
@@ -469,8 +474,13 @@ const ORDER_STEPS = [
                 <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Montant</p>
                   <p class="mt-1 text-lg font-bold text-(--foreground)">
-                    {{ orderDetail()!.totalAmount | currency:(orderDetail()!.currency || 'EUR'):'symbol':'1.2-2' }}
+                    {{ (orderDetail()!.amountBaseEur ?? orderDetail()!.totalAmount) | currency:'EUR':'symbol':'1.2-2' }}
                   </p>
+                  @if (orderDetail()!.currency && orderDetail()!.currency !== 'EUR') {
+                    <p class="mt-0.5 text-xs text-(--muted-foreground)">
+                      Client : {{ orderDetail()!.totalAmount | currency:orderDetail()!.currency:'symbol':'1.0-2' }}
+                    </p>
+                  }
                 </div>
                 <div class="rounded-sm border border-(--border) bg-(--background) p-3 text-center">
                   <p class="text-xs text-(--muted-foreground)">Statut</p>
@@ -1329,6 +1339,8 @@ export class AdminOrdersComponent implements OnInit {
               customerName: o.userName || o.customerName || '',
               customerEmail: o.userEmail || o.customerEmail || '',
               amount: o.totalAmount ?? o.amount ?? 0,
+              currency: o.currency || 'EUR',
+              amountBaseEur: o.amountBaseEur ?? null,
               paidAt: o.paidAt ?? null,
             };
           });
