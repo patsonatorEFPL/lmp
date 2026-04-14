@@ -22,7 +22,7 @@ class ViesVatValidationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ViesVatValidationService(new com.lmp.shared.monitoring.ApiHealthRecorder());
+        service = new ViesVatValidationService(new com.lmp.shared.monitoring.ApiHealthRecorder(null));
     }
 
     // =========================================================================

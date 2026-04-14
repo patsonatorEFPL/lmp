@@ -37,6 +37,35 @@ interface ApiResponse<T> {
   data?: T;
 }
 
+// ── Report types ─────────────────────────────────────────────────────────────
+
+export interface ReportSummary {
+  reportDate: string;
+  generatedAt: string;
+  totalRecords?: number;
+  apiCount?: number;
+}
+
+export interface ApiReportEntry {
+  name: string;
+  totalCalls: number;
+  successCount: number;
+  successRate: number;
+  avgLatencyMs: number;
+  maxLatencyMs: number;
+  p95LatencyMs: number;
+  errorCount: number;
+  topErrors: string[];
+  hourlyBreakdown: { hour: number; calls: number; successRate: number; avgLatencyMs: number }[];
+}
+
+export interface DailyReport {
+  reportDate: string;
+  period: { from: string; to: string };
+  apis: ApiReportEntry[];
+  totalRecords: number;
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
@@ -52,6 +81,18 @@ export class ApiHealthService {
   probeAll(): Observable<Record<string, string>> {
     return this.http
       .post<ApiResponse<Record<string, string>>>('/api/v1/admin/api-health/probe', {})
+      .pipe(map((res) => res.data!));
+  }
+
+  getReportsList(): Observable<ReportSummary[]> {
+    return this.http
+      .get<ApiResponse<ReportSummary[]>>('/api/v1/admin/api-health/reports')
+      .pipe(map((res) => res.data!));
+  }
+
+  getReport(date: string): Observable<DailyReport> {
+    return this.http
+      .get<ApiResponse<DailyReport>>(`/api/v1/admin/api-health/reports/${date}`)
       .pipe(map((res) => res.data!));
   }
 }
