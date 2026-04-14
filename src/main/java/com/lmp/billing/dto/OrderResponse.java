@@ -4,6 +4,7 @@ import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderStatus;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -39,6 +40,8 @@ public record OrderResponse(
         String vatCompanyName,
         // FX snapshot
         BigDecimal amountBaseEur,
+        /** Montant TTC en EUR (= totalAmount si EUR, sinon amountBaseEur × (1+TVA)). */
+        BigDecimal totalAmountEur,
         // Fraud scoring
         String ipCountry,
         String ipAddress,
@@ -87,6 +90,7 @@ public record OrderResponse(
                 order.getCustomerVatNumber(),
                 order.getVatCompanyName(),
                 order.getAmountBaseEur(),
+                computeTotalAmountEur(order),
                 order.getIpCountry(),
                 order.getIpAddress(),
                 order.getVpnScore(),
@@ -96,6 +100,35 @@ public record OrderResponse(
                 order.getCardCountry(),
                 order.getFraudScore(),
                 order.getFraudFlags());
+    }
+
+    /**
+     * Calcule le montant TTC en EUR.
+     * <ul>
+     *   <li>Devise EUR → {@code totalAmount} est déjà TTC EUR</li>
+     *   <li>Devise étrangère + reverse-charge → {@code amountBaseEur} (HT = TTC)</li>
+     *   <li>Devise étrangère, pas de reverse-charge → {@code amountBaseEur × 1.20} (taux TVA standard)</li>
+     * </ul>
+     */
+    private static BigDecimal computeTotalAmountEur(Order order) {
+        String currency = order.getCurrency();
+        if (currency == null || "EUR".equalsIgnoreCase(currency)) {
+            // Déjà en EUR → totalAmount est TTC
+            return order.getTotalAmount();
+        }
+        BigDecimal baseEur = order.getAmountBaseEur();
+        if (baseEur == null) {
+            // Pas de snapshot FX → fallback sur totalAmount
+            return order.getTotalAmount();
+        }
+        if (Boolean.TRUE.equals(order.getVatReverseCharge())) {
+            // Reverse-charge : pas de TVA → HT = TTC
+            return baseEur;
+        }
+        // Appliquer TVA 20% au montant HT EUR
+        BigDecimal VAT_RATE = new BigDecimal("0.20");
+        return baseEur.multiply(BigDecimal.ONE.add(VAT_RATE))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
