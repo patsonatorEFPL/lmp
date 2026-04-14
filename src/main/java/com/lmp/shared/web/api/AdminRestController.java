@@ -455,6 +455,22 @@ public class AdminRestController {
 
                     // Adresse de facturation
                     detail.put("amountBaseEur", order.getAmountBaseEur());
+                    // Montant TTC EUR calculé (pour affichage admin cohérent)
+                    BigDecimal totalAmountEur;
+                    if (order.getCurrency() == null || "EUR".equalsIgnoreCase(order.getCurrency())) {
+                        totalAmountEur = order.getTotalAmount();
+                    } else if (order.getAmountBaseEur() != null) {
+                        if (Boolean.TRUE.equals(order.getVatReverseCharge())) {
+                            totalAmountEur = order.getAmountBaseEur();
+                        } else {
+                            totalAmountEur = order.getAmountBaseEur()
+                                    .multiply(new BigDecimal("1.20"))
+                                    .setScale(2, java.math.RoundingMode.HALF_UP);
+                        }
+                    } else {
+                        totalAmountEur = order.getTotalAmount();
+                    }
+                    detail.put("totalAmountEur", totalAmountEur);
                     detail.put("billingAddress", order.getBillingAddress());
                     detail.put("billingCity", order.getBillingCity());
                     detail.put("billingPostalCode", order.getBillingPostalCode());
