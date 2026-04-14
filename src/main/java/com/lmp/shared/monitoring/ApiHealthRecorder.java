@@ -6,21 +6,33 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
  * Enregistre passivement les métriques de santé des APIs externes.
  *
- * <p>Chaque appel HTTP externe est signalé via {@link #record(String, long, boolean, String)}.
- * Les métriques sont conservées en mémoire dans une fenêtre glissante de 30 minutes.
+ * <p>Double écriture :
+ * <ul>
+ *   <li>En mémoire (fenêtre glissante 30 min) — pour le dashboard temps réel</li>
+ *   <li>En base (fenêtre 24h) — pour la génération de rapports quotidiens</li>
+ * </ul>
+ *
+ * <p>L'écriture en base est asynchrone : les records sont collectés dans une queue
+ * et flushés toutes les 60 secondes pour minimiser la pression sur la DB.
  *
  * <p>Thread-safe : utilise {@link ConcurrentHashMap} + synchronisation sur les listes internes.
  */
 @Component
 public class ApiHealthRecorder {
 
-    /** Fenêtre de rétention des métriques (30 min). */
+    private static final Logger logger = LoggerFactory.getLogger(ApiHealthRecorder.class);
+
+    /** Fenêtre de rétention mémoire (30 min). */
     private static final long WINDOW_MS = 30 * 60 * 1000L;
 
     /** Seuils de statut. */
@@ -30,6 +42,13 @@ public class ApiHealthRecorder {
     private static final long STALE_THRESHOLD_MS = 10 * 60 * 1000L;
 
     private final ConcurrentHashMap<String, List<CallRecord>> records = new ConcurrentHashMap<>();
+    private final ConcurrentLinkedQueue<ApiHealthRecord> pendingDbWrites = new ConcurrentLinkedQueue<>();
+
+    private final ApiHealthRecordRepository recordRepository;
+
+    public ApiHealthRecorder(ApiHealthRecordRepository recordRepository) {
+        this.recordRepository = recordRepository;
+    }
 
     /**
      * Enregistre un appel vers une API externe.
@@ -40,13 +59,41 @@ public class ApiHealthRecorder {
      * @param error     message d'erreur (null si succès)
      */
     public void record(String apiName, long latencyMs, boolean success, String error) {
+        // 1. Écriture mémoire (temps réel)
         records.computeIfAbsent(apiName, k -> new ArrayList<>());
         List<CallRecord> list = records.get(apiName);
         synchronized (list) {
             list.add(new CallRecord(Instant.now(), latencyMs, success, error));
-            // Purge les entrées hors fenêtre
             Instant cutoff = Instant.now().minusMillis(WINDOW_MS);
             list.removeIf(r -> r.timestamp().isBefore(cutoff));
+        }
+
+        // 2. Queue pour écriture DB asynchrone (null-safe pour les tests unitaires)
+        if (recordRepository != null) {
+            pendingDbWrites.add(new ApiHealthRecord(apiName, (int) latencyMs, success, error));
+        }
+    }
+
+    /**
+     * Flush les records en attente vers la base toutes les 60 secondes.
+     */
+    @Scheduled(fixedDelay = 60_000, initialDelay = 30_000)
+    public void flushToDatabase() {
+        if (recordRepository == null) return;
+        List<ApiHealthRecord> batch = new ArrayList<>();
+        ApiHealthRecord record;
+        while ((record = pendingDbWrites.poll()) != null) {
+            batch.add(record);
+        }
+        if (!batch.isEmpty()) {
+            try {
+                recordRepository.saveAll(batch);
+                logger.debug("[API-HEALTH] Flushed {} records to database", batch.size());
+            } catch (Exception e) {
+                logger.warn("[API-HEALTH] Failed to flush records to DB: {}", e.getMessage());
+                // Re-queue failed records
+                pendingDbWrites.addAll(batch);
+            }
         }
     }
 
@@ -69,7 +116,6 @@ public class ApiHealthRecorder {
             String lastError = null;
 
             synchronized (list) {
-                // Purge avant lecture
                 list.removeIf(r -> r.timestamp().isBefore(cutoff));
 
                 totalCalls = list.size();
@@ -110,7 +156,7 @@ public class ApiHealthRecorder {
                     apiName,
                     status,
                     Math.round(avgLatency),
-                    Math.round(successRate * 1000.0) / 10.0, // 1 decimal %
+                    Math.round(successRate * 1000.0) / 10.0,
                     totalCalls,
                     lastCallAt != null ? lastCallAt.toString() : null,
                     lastError
