@@ -143,7 +143,11 @@ public class ApiHealthRecorder {
             } else {
                 boolean stale = lastCallAt != null
                         && lastCallAt.plusMillis(STALE_THRESHOLD_MS).isBefore(now);
-                if (stale || successRate < SUCCESS_RATE_DEGRADED) {
+                if (stale) {
+                    // Pas d'appel récent → pas de données fiables
+                    status = "UNKNOWN";
+                } else if (successRate < SUCCESS_RATE_DEGRADED) {
+                    // Vrais échecs : taux de succès < 50%
                     status = "DOWN";
                 } else if (successRate < SUCCESS_RATE_UP || avgLatency > LATENCY_DEGRADED_MS) {
                     status = "DEGRADED";
