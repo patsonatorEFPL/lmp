@@ -212,9 +212,10 @@ public class PaymentRestController {
         BigDecimal amountEur = offer.getPrice();
         BigDecimal amountHt = regionalPricingService.convertFromEur(amountEur, payCtx);
         boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
-        BigDecimal vatAmt = vatCalculationService.vatAmount(amountHt, reverseCharge);
-        BigDecimal total = vatCalculationService.applyVat(amountHt, reverseCharge);
-        int vatPct = vatCalculationService.getVatRate()
+        String countryCode = payCtx.countryCode();
+        BigDecimal vatAmt = vatCalculationService.vatAmount(amountHt, reverseCharge, countryCode);
+        BigDecimal total = vatCalculationService.applyVat(amountHt, reverseCharge, countryCode);
+        int vatPct = vatCalculationService.getVatRate(countryCode)
                 .multiply(new BigDecimal("100")).intValue();
         String currency = payCtx.currency();
         String durationType = offer.getDurationType() != null ? offer.getDurationType().name() : "ONE_TIME";
@@ -281,12 +282,13 @@ public class PaymentRestController {
         BigDecimal amountEur = offer.getPrice(); // HT en EUR
         BigDecimal amountHt = regionalPricingService.convertFromEur(amountEur, payCtx); // HT en devise cible
         boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
-        BigDecimal amount = vatCalculationService.applyVat(amountHt, reverseCharge); // TTC ou HT selon statut
+        String countryCode = payCtx.countryCode();
+        BigDecimal amount = vatCalculationService.applyVat(amountHt, reverseCharge, countryCode);
         String serviceName = offer.getService().getTitle();
         String currency = payCtx.currency();
 
-        logger.info("VAT_CHECKOUT - Order for user {} (reverseCharge={}): amountHT={} {}, amountCharged={} {}",
-                user.getEmail(), reverseCharge, amountHt, currency, amount, currency);
+        logger.info("VAT_CHECKOUT - Order for user {} (reverseCharge={}, country={}): amountHT={} {}, amountCharged={} {}",
+                user.getEmail(), reverseCharge, countryCode, amountHt, currency, amount, currency);
 
         try {
             // Créer la commande avec snapshot FX figé
@@ -302,6 +304,7 @@ public class PaymentRestController {
             order.setAmountBaseEur(amountEur);
             order.setFxRate(payCtx.eurToTargetRate());
             order.setFxSource(payCtx.rateSource());
+            order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
 
             applyVatSnapshotFromUser(order, user);
 
@@ -413,12 +416,13 @@ public class PaymentRestController {
         BigDecimal amountEur = offer.getPrice(); // HT en EUR
         BigDecimal amountHt = regionalPricingService.convertFromEur(amountEur, payCtx2); // HT en devise cible
         boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
-        BigDecimal amount = vatCalculationService.applyVat(amountHt, reverseCharge); // TTC ou HT selon statut
+        String countryCode = payCtx2.countryCode();
+        BigDecimal amount = vatCalculationService.applyVat(amountHt, reverseCharge, countryCode);
         String serviceName = offer.getService().getTitle();
         String currency = payCtx2.currency();
 
-        logger.info("VAT_PAYMENT_ELEMENT - Order for user {} (reverseCharge={}): amountHT={} {}, amountCharged={} {}",
-                user.getEmail(), reverseCharge, amountHt, currency, amount, currency);
+        logger.info("VAT_PAYMENT_ELEMENT - Order for user {} (reverseCharge={}, country={}): amountHT={} {}, amountCharged={} {}",
+                user.getEmail(), reverseCharge, countryCode, amountHt, currency, amount, currency);
 
         try {
             Order order = new Order();
@@ -433,6 +437,7 @@ public class PaymentRestController {
             order.setAmountBaseEur(amountEur);
             order.setFxRate(payCtx2.eurToTargetRate());
             order.setFxSource(payCtx2.rateSource());
+            order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
 
             applyVatSnapshotFromUser(order, user);
             OrderProgressSync.applyMinimumForStatus(order);

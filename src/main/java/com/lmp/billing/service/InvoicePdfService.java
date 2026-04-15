@@ -387,9 +387,10 @@ public class InvoicePdfService {
         String currency = order.getCurrency() != null ? order.getCurrency() : "EUR";
 
         // Montant HT pour le prix unitaire et le total ligne
+        // Utiliser le taux snapshoté sur la commande si disponible
         java.math.BigDecimal lineAmountHt = Boolean.TRUE.equals(order.getVatReverseCharge())
                 ? order.getTotalAmount()
-                : vatCalculationService.extractHt(order.getTotalAmount());
+                : vatCalculationService.extractHt(order.getTotalAmount(), order.getAppliedVatRate());
 
         // Description
         PdfPCell descCell = new PdfPCell();
@@ -474,9 +475,12 @@ public class InvoicePdfService {
             tvaLabel = "TVA — autoliquidation (auto-reverse)";
             totalLabel = "TOTAL";
         } else {
-            htAmount = vatCalculationService.extractHt(totalAmount);
+            // Utiliser le taux snapshoté sur la commande si disponible
+            java.math.BigDecimal appliedRate = order.getAppliedVatRate();
+            htAmount = vatCalculationService.extractHt(totalAmount, appliedRate);
             tvaAmount = totalAmount.subtract(htAmount);
-            int vatPct = vatCalculationService.getVatRate()
+            java.math.BigDecimal rateForDisplay = appliedRate != null ? appliedRate : vatCalculationService.getVatRate();
+            int vatPct = rateForDisplay
                     .multiply(new java.math.BigDecimal("100")).intValue();
             tvaLabel = "TVA (" + vatPct + "%)";
             totalLabel = "TOTAL TTC";
