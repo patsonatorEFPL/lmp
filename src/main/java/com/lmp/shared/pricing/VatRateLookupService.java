@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -32,7 +33,12 @@ import jakarta.annotation.PostConstruct;
  * <p>Refresh : {@code @PostConstruct} + cron mensuel (1er du mois, 06h UTC).
  * Chaque refresh met à jour la table statique en mémoire.
  *
- * <p>Pays hors-UE ou inconnu → fallback vers {@code pricing.vat.rate} (défaut 0.20).
+ * <h3>Résolution du taux</h3>
+ * <ul>
+ *   <li>{@code null} / vide → taux par défaut ({@code pricing.vat.rate}, défaut 0.20 = FR domestique)</li>
+ *   <li>Pays UE → taux du cache (API + seed)</li>
+ *   <li>Pays hors-UE (code connu) → <strong>0 %</strong> (exonération export — hors champ TVA)</li>
+ * </ul>
  */
 @Service
 public class VatRateLookupService {
@@ -41,6 +47,16 @@ public class VatRateLookupService {
 
     /** VATComply — endpoint TVA (pas /rates qui est FX). */
     private static final String VATCOMPLY_URL = "https://api.vatcomply.com/vat_rates";
+
+    /**
+     * Jeu explicite des 27 pays membres de l'UE (ISO 3166-1 alpha-2).
+     * Découplé du cache pour éviter toute ambiguïté en cas de bug API ou d'adhésion d'un nouveau membre.
+     */
+    private static final Set<String> EU_COUNTRY_CODES = Set.of(
+            "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI",
+            "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV", "MT",
+            "NL", "PL", "PT", "RO", "SE", "SI", "SK"
+    );
 
     /** Table statique UE — seed initial, mise à jour en mémoire par les APIs. */
     private static final Map<String, BigDecimal> STATIC_EU_RATES = new ConcurrentHashMap<>(Map.ofEntries(
@@ -107,28 +123,51 @@ public class VatRateLookupService {
     /**
      * Retourne le taux TVA standard pour un pays donné.
      *
+     * <ul>
+     *   <li>{@code null} / vide → taux par défaut (règle domestique FR)</li>
+     *   <li>Pays UE → taux du cache (API + seed)</li>
+     *   <li>Pays hors-UE → {@code 0} (exonération export, hors champ TVA)</li>
+     * </ul>
+     *
      * @param countryCode Code ISO 3166-1 alpha-2 (ex: "DE", "FR").
-     * @return Taux TVA décimal (ex: 0.19) ou le taux par défaut si inconnu.
+     * @return Taux TVA décimal (ex: 0.19 pour DE, 0 pour CA).
      */
     public BigDecimal getRate(String countryCode) {
         if (countryCode == null || countryCode.isBlank()) {
             return defaultRate;
         }
-        String key = countryCode.trim().toUpperCase();
-        // Alias EU : EL → GR (Grèce)
-        if ("EL".equals(key)) {
-            key = "GR";
+        String key = normalizeCountryCode(countryCode);
+
+        // Pays UE : taux du cache, fallback defaultRate si cache vide (ne devrait pas arriver)
+        if (EU_COUNTRY_CODES.contains(key)) {
+            BigDecimal rate = ratesCache.get(key);
+            return rate != null ? rate : defaultRate;
         }
-        BigDecimal rate = ratesCache.get(key);
-        return rate != null ? rate : defaultRate;
+
+        // Pays hors-UE connu : exonération export → 0 %
+        return BigDecimal.ZERO;
     }
 
     /** Vérifie si un pays est dans le cache (UE ou connu). */
     public boolean hasRate(String countryCode) {
         if (countryCode == null || countryCode.isBlank()) return false;
-        String key = countryCode.trim().toUpperCase();
-        if ("EL".equals(key)) key = "GR";
+        String key = normalizeCountryCode(countryCode);
         return ratesCache.containsKey(key);
+    }
+
+    /** Vérifie si un pays fait partie de l'UE (jeu explicite, indépendant du cache). */
+    public boolean isEuCountry(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) return false;
+        return EU_COUNTRY_CODES.contains(normalizeCountryCode(countryCode));
+    }
+
+    /** Normalise un code pays : trim, uppercase, alias EL→GR. */
+    private static String normalizeCountryCode(String countryCode) {
+        String key = countryCode.trim().toUpperCase();
+        if ("EL".equals(key)) {
+            key = "GR";
+        }
+        return key;
     }
 
     public Instant getLastRefreshed() {
