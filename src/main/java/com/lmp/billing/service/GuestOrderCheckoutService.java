@@ -142,11 +142,13 @@ public class GuestOrderCheckoutService {
 
         // Appliquer la TVA : le montant admin est HT, on ajoute la TVA si le client n'est pas en autoliquidation.
         boolean isReverse = Boolean.TRUE.equals(managed.getVatReverseCharge());
+        String countryCode = managed.getCountry() != null ? managed.getCountry() : "FR";
         BigDecimal amountHt = order.getTotalAmount(); // Montant HT fixé par l'admin
-        BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, isReverse);
+        BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, isReverse, countryCode);
         order.setTotalAmount(amountCharged);
-        logger.info("VAT_GUEST_CHECKOUT - Guest order {} (reverseCharge={}): amountHT={}, amountCharged={}",
-                order.getId(), isReverse, amountHt, amountCharged);
+        order.setAppliedVatRate(isReverse ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
+        logger.info("VAT_GUEST_CHECKOUT - Guest order {} (reverseCharge={}, country={}): amountHT={}, amountCharged={}",
+                order.getId(), isReverse, countryCode, amountHt, amountCharged);
 
         order.setUpdatedAt(LocalDateTime.now());
         order.setLastModifiedAt(LocalDateTime.now());
@@ -197,11 +199,13 @@ public class GuestOrderCheckoutService {
 
         // Appliquer la TVA : le montant admin est HT, on ajoute la TVA si le client n'est pas en autoliquidation.
         boolean isReverse = Boolean.TRUE.equals(managed.getVatReverseCharge());
+        String countryCode = managed.getCountry() != null ? managed.getCountry() : "FR";
         BigDecimal amountHt = order.getTotalAmount();
-        BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, isReverse);
+        BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, isReverse, countryCode);
         order.setTotalAmount(amountCharged);
-        logger.info("VAT_GUEST_ATTACH - Guest order {} (reverseCharge={}): amountHT={}, amountCharged={}",
-                order.getId(), isReverse, amountHt, amountCharged);
+        order.setAppliedVatRate(isReverse ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
+        logger.info("VAT_GUEST_ATTACH - Guest order {} (reverseCharge={}, country={}): amountHT={}, amountCharged={}",
+                order.getId(), isReverse, countryCode, amountHt, amountCharged);
 
         order.setUpdatedAt(LocalDateTime.now());
         order.setLastModifiedAt(LocalDateTime.now());

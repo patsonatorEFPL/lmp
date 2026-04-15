@@ -1,0 +1,227 @@
+package com.lmp.shared.pricing;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.lmp.shared.monitoring.ApiHealthRecorder;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.annotation.PostConstruct;
+
+/**
+ * Cache des taux de TVA standard par pays (ISO 3166-1 alpha-2).
+ *
+ * <h3>Chaîne de résolution</h3>
+ * <ol>
+ *   <li><b>Table statique</b> — seed initial 27 pays UE (dernier recours)</li>
+ *   <li><b>VATComply API</b> — primaire, gratuit, sans clé</li>
+ * </ol>
+ *
+ * <p>Refresh : {@code @PostConstruct} + cron mensuel (1er du mois, 06h UTC).
+ * Chaque refresh met à jour la table statique en mémoire.
+ *
+ * <p>Pays hors-UE ou inconnu → fallback vers {@code pricing.vat.rate} (défaut 0.20).
+ */
+@Service
+public class VatRateLookupService {
+
+    private static final Logger logger = LoggerFactory.getLogger(VatRateLookupService.class);
+
+    /** VATComply — endpoint TVA (pas /rates qui est FX). */
+    private static final String VATCOMPLY_URL = "https://api.vatcomply.com/vat_rates";
+
+    /** Table statique UE — seed initial, mise à jour en mémoire par les APIs. */
+    private static final Map<String, BigDecimal> STATIC_EU_RATES = new ConcurrentHashMap<>(Map.ofEntries(
+            Map.entry("AT", new BigDecimal("0.20")),
+            Map.entry("BE", new BigDecimal("0.21")),
+            Map.entry("BG", new BigDecimal("0.20")),
+            Map.entry("CY", new BigDecimal("0.19")),
+            Map.entry("CZ", new BigDecimal("0.21")),
+            Map.entry("DE", new BigDecimal("0.19")),
+            Map.entry("DK", new BigDecimal("0.25")),
+            Map.entry("EE", new BigDecimal("0.22")),
+            Map.entry("ES", new BigDecimal("0.21")),
+            Map.entry("FI", new BigDecimal("0.255")),
+            Map.entry("FR", new BigDecimal("0.20")),
+            Map.entry("GR", new BigDecimal("0.24")),
+            Map.entry("HR", new BigDecimal("0.25")),
+            Map.entry("HU", new BigDecimal("0.27")),
+            Map.entry("IE", new BigDecimal("0.23")),
+            Map.entry("IT", new BigDecimal("0.22")),
+            Map.entry("LT", new BigDecimal("0.21")),
+            Map.entry("LU", new BigDecimal("0.17")),
+            Map.entry("LV", new BigDecimal("0.21")),
+            Map.entry("MT", new BigDecimal("0.18")),
+            Map.entry("NL", new BigDecimal("0.21")),
+            Map.entry("PL", new BigDecimal("0.23")),
+            Map.entry("PT", new BigDecimal("0.23")),
+            Map.entry("RO", new BigDecimal("0.19")),
+            Map.entry("SE", new BigDecimal("0.25")),
+            Map.entry("SI", new BigDecimal("0.22")),
+            Map.entry("SK", new BigDecimal("0.23"))
+    ));
+
+    private final RestTemplate restTemplate;
+    private final ApiHealthRecorder healthRecorder;
+    private final BigDecimal defaultRate;
+
+    /** Cache principal : pays ISO → taux TVA décimal (ex: 0.21). */
+    private final Map<String, BigDecimal> ratesCache = new ConcurrentHashMap<>();
+
+    private volatile Instant lastRefreshed;
+
+    public VatRateLookupService(
+            ApiHealthRecorder healthRecorder,
+            @Value("${pricing.vat.rate:0.20}") BigDecimal defaultRate) {
+        this.healthRecorder = healthRecorder;
+        this.defaultRate = defaultRate;
+        this.restTemplate = new RestTemplateBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .readTimeout(Duration.ofSeconds(10))
+                .build();
+    }
+
+    @PostConstruct
+    void init() {
+        refreshAll();
+    }
+
+    /** Refresh mensuel : 1er du mois à 06h00 UTC. */
+    @Scheduled(cron = "0 0 6 1 * *")
+    public void scheduledRefresh() {
+        refreshAll();
+    }
+
+    /**
+     * Retourne le taux TVA standard pour un pays donné.
+     *
+     * @param countryCode Code ISO 3166-1 alpha-2 (ex: "DE", "FR").
+     * @return Taux TVA décimal (ex: 0.19) ou le taux par défaut si inconnu.
+     */
+    public BigDecimal getRate(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return defaultRate;
+        }
+        String key = countryCode.trim().toUpperCase();
+        // Alias EU : EL → GR (Grèce)
+        if ("EL".equals(key)) {
+            key = "GR";
+        }
+        BigDecimal rate = ratesCache.get(key);
+        return rate != null ? rate : defaultRate;
+    }
+
+    /** Vérifie si un pays est dans le cache (UE ou connu). */
+    public boolean hasRate(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) return false;
+        String key = countryCode.trim().toUpperCase();
+        if ("EL".equals(key)) key = "GR";
+        return ratesCache.containsKey(key);
+    }
+
+    public Instant getLastRefreshed() {
+        return lastRefreshed;
+    }
+
+    public int getCacheSize() {
+        return ratesCache.size();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Refresh logic
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void refreshAll() {
+        // 1. Charger la table statique comme base
+        ratesCache.putAll(STATIC_EU_RATES);
+        logger.info("[VAT Rates] Table statique chargée ({} pays)", STATIC_EU_RATES.size());
+
+        // 2. VATComply (primaire) — écrase les taux statiques
+        boolean vatComplyOk = refreshFromVatComply();
+
+        // 3. Mettre à jour la table statique avec les résultats API
+        updateStaticTable();
+
+        lastRefreshed = Instant.now();
+        logger.info("[VAT Rates] Refresh terminé — {} pays en cache (VATComply={})",
+                ratesCache.size(), vatComplyOk ? "OK" : "FAIL");
+    }
+
+    /**
+     * VATComply API — GET /vat_rates retourne tous les taux TVA UE en un seul appel.
+     * Réponse : tableau JSON [{country_code, standard_rate, ...}, ...]
+     */
+    private boolean refreshFromVatComply() {
+        long t0 = System.currentTimeMillis();
+        try {
+            VatComplyEntry[] entries = restTemplate.getForObject(VATCOMPLY_URL, VatComplyEntry[].class);
+            long latency = System.currentTimeMillis() - t0;
+
+            if (entries == null || entries.length == 0) {
+                healthRecorder.record("VATComply", latency, false, "empty response");
+                logger.warn("[VAT Rates] VATComply: réponse vide");
+                return false;
+            }
+
+            int updated = 0;
+            for (VatComplyEntry entry : entries) {
+                if (entry.countryCode != null && entry.standardRate != null
+                        && entry.standardRate.compareTo(BigDecimal.ZERO) > 0) {
+                    String country = entry.countryCode.trim().toUpperCase();
+                    // Convertir pourcentage → décimal (19.0 → 0.19)
+                    BigDecimal rate = entry.standardRate.movePointLeft(2);
+                    ratesCache.put(country, rate);
+                    updated++;
+                }
+            }
+
+            healthRecorder.record("VATComply", latency, updated > 0, null);
+            if (updated > 0) {
+                logger.info("[VAT Rates] VATComply: {} pays mis à jour", updated);
+            } else {
+                logger.warn("[VAT Rates] VATComply: aucun taux récupéré");
+            }
+            return updated > 0;
+        } catch (Exception e) {
+            healthRecorder.record("VATComply", System.currentTimeMillis() - t0, false, e.getMessage());
+            logger.warn("[VAT Rates] VATComply indisponible: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /** Met à jour la table statique en mémoire pour survivre à un échec API. */
+    private void updateStaticTable() {
+        for (String country : STATIC_EU_RATES.keySet()) {
+            BigDecimal cached = ratesCache.get(country);
+            if (cached != null) {
+                STATIC_EU_RATES.put(country, cached);
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // JSON DTO — VATComply
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class VatComplyEntry {
+        @JsonProperty("country_code")
+        String countryCode;
+
+        @JsonProperty("standard_rate")
+        BigDecimal standardRate;
+    }
+
+}

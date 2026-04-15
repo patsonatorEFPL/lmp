@@ -158,6 +158,10 @@ public class Order {
     @Column(name = "checkout_token", length = 64)
     private String checkoutToken;
 
+    /** Taux de TVA appliqué au moment de la commande (ex: 0.2100 pour 21 %). */
+    @Column(name = "applied_vat_rate", precision = 5, scale = 4)
+    private BigDecimal appliedVatRate;
+
     /** Snapshot FX : montant en devise de base (EUR) au moment de la création de la commande. */
     @Column(name = "amount_base_eur", precision = 10, scale = 2)
     private BigDecimal amountBaseEur;
@@ -298,6 +302,9 @@ public class Order {
 
     public String getCheckoutToken() { return checkoutToken; }
     public void setCheckoutToken(String checkoutToken) { this.checkoutToken = checkoutToken; }
+
+    public BigDecimal getAppliedVatRate() { return appliedVatRate; }
+    public void setAppliedVatRate(BigDecimal appliedVatRate) { this.appliedVatRate = appliedVatRate; }
 
     public BigDecimal getAmountBaseEur() { return amountBaseEur; }
     public void setAmountBaseEur(BigDecimal amountBaseEur) { this.amountBaseEur = amountBaseEur; }
