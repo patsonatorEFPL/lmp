@@ -127,6 +127,7 @@ class PricingDebugController {
         vatMap.put("cache_size", vatRateLookupService.getCacheSize());
         vatMap.put("last_refreshed", vatRateLookupService.getLastRefreshed());
         vatMap.put("has_rate_for_country", vatRateLookupService.hasRate(vatCountry));
+        vatMap.put("is_eu_country", vatRateLookupService.isEuCountry(vatCountry));
         result.put("vat", vatMap);
 
         // ── 6. Couverture du cache FX ─────────────────────────────────────────
