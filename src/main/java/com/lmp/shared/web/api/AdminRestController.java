@@ -455,6 +455,7 @@ public class AdminRestController {
 
                     // Adresse de facturation
                     detail.put("amountBaseEur", order.getAmountBaseEur());
+                    detail.put("appliedVatRate", order.getAppliedVatRate());
                     // Montant TTC EUR calculé (pour affichage admin cohérent)
                     BigDecimal totalAmountEur;
                     if (order.getCurrency() == null || "EUR".equalsIgnoreCase(order.getCurrency())) {
@@ -463,8 +464,11 @@ public class AdminRestController {
                         if (Boolean.TRUE.equals(order.getVatReverseCharge())) {
                             totalAmountEur = order.getAmountBaseEur();
                         } else {
+                            // Utiliser le taux snapshoté, fallback 0.20 pour les anciennes commandes
+                            BigDecimal vatRate = order.getAppliedVatRate() != null
+                                    ? order.getAppliedVatRate() : new BigDecimal("0.20");
                             totalAmountEur = order.getAmountBaseEur()
-                                    .multiply(new BigDecimal("1.20"))
+                                    .multiply(BigDecimal.ONE.add(vatRate))
                                     .setScale(2, java.math.RoundingMode.HALF_UP);
                         }
                     } else {
@@ -698,7 +702,9 @@ public class AdminRestController {
             // Le montant admin est HT — appliquer la TVA selon le statut du client
             BigDecimal amountHt = BigDecimal.valueOf(amount);
             boolean reverseCharge = Boolean.TRUE.equals(user.getVatReverseCharge());
-            BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, reverseCharge);
+            // Pays du client pour le taux TVA (fallback FR si non renseigné)
+            String countryCode = user.getCountry() != null ? user.getCountry() : "FR";
+            BigDecimal amountCharged = vatCalculationService.applyVat(amountHt, reverseCharge, countryCode);
 
             Order order = new Order();
             order.setUser(user);
@@ -712,6 +718,7 @@ public class AdminRestController {
             order.setUpdatedAt(LocalDateTime.now());
             order.setPriority(1); // High priority — admin-created
             order.setVatReverseCharge(reverseCharge);
+            order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
             String vat = com.lmp.shared.util.VatIdentifierUtils.normalize(user.getVatNumber());
             order.setCustomerVatNumber(reverseCharge && !vat.isEmpty() ? vat : null);
 

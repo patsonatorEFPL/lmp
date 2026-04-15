@@ -38,9 +38,11 @@ public record OrderResponse(
         Boolean vatReverseCharge,
         String customerVatNumber,
         String vatCompanyName,
+        /** Taux TVA appliqué au moment de la commande (ex: 0.21). */
+        BigDecimal appliedVatRate,
         // FX snapshot
         BigDecimal amountBaseEur,
-        /** Montant TTC en EUR (= totalAmount si EUR, sinon amountBaseEur × (1+TVA)). */
+        /** Montant TTC en EUR (= totalAmount si EUR, sinon amountBaseEur × (1+TVA appliquée)). */
         BigDecimal totalAmountEur,
         // Fraud scoring
         String ipCountry,
@@ -89,6 +91,7 @@ public record OrderResponse(
                 order.getVatReverseCharge(),
                 order.getCustomerVatNumber(),
                 order.getVatCompanyName(),
+                order.getAppliedVatRate(),
                 order.getAmountBaseEur(),
                 computeTotalAmountEur(order),
                 order.getIpCountry(),
@@ -107,27 +110,28 @@ public record OrderResponse(
      * <ul>
      *   <li>Devise EUR → {@code totalAmount} est déjà TTC EUR</li>
      *   <li>Devise étrangère + reverse-charge → {@code amountBaseEur} (HT = TTC)</li>
-     *   <li>Devise étrangère, pas de reverse-charge → {@code amountBaseEur × 1.20} (taux TVA standard)</li>
+     *   <li>Devise étrangère → {@code amountBaseEur × (1 + appliedVatRate)}</li>
      * </ul>
+     * Utilise le taux TVA snapshoté sur la commande, avec fallback 0.20 pour les anciennes commandes.
      */
     private static BigDecimal computeTotalAmountEur(Order order) {
         String currency = order.getCurrency();
         if (currency == null || "EUR".equalsIgnoreCase(currency)) {
-            // Déjà en EUR → totalAmount est TTC
             return order.getTotalAmount();
         }
         BigDecimal baseEur = order.getAmountBaseEur();
         if (baseEur == null) {
-            // Pas de snapshot FX → fallback sur totalAmount
             return order.getTotalAmount();
         }
         if (Boolean.TRUE.equals(order.getVatReverseCharge())) {
-            // Reverse-charge : pas de TVA → HT = TTC
             return baseEur;
         }
-        // Appliquer TVA 20% au montant HT EUR
-        BigDecimal VAT_RATE = new BigDecimal("0.20");
-        return baseEur.multiply(BigDecimal.ONE.add(VAT_RATE))
+        // Utiliser le taux snapshoté, fallback 0.20 pour les commandes avant migration
+        BigDecimal vatRate = order.getAppliedVatRate();
+        if (vatRate == null) {
+            vatRate = new BigDecimal("0.20");
+        }
+        return baseEur.multiply(BigDecimal.ONE.add(vatRate))
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
