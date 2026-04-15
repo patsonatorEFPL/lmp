@@ -506,7 +506,8 @@ public class PaymentRestController {
             description = "Ré-applique le snapshot TVA depuis le profil, recalcule le montant et met à jour le PaymentIntent Stripe")
     public ResponseEntity<ApiResponse<PaymentElementResponse>> finalizeCheckout(
             @PathVariable UUID orderId,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
 
         User user = getAuthenticatedUser(authentication);
         if (user == null) {
@@ -544,7 +545,7 @@ public class PaymentRestController {
         // Ré-appliquer le snapshot TVA
         applyVatSnapshotFromUser(order, user);
 
-        // Recalculer le montant
+        // Recalculer le montant avec le taux TVA du pays (résolu par IP)
         boolean reverseCharge = Boolean.TRUE.equals(order.getVatReverseCharge());
         BigDecimal amountHt = order.getAmountBaseEur() != null ? order.getAmountBaseEur() : order.getTotalAmount();
         // Si la commande a un taux FX, convertir
@@ -552,13 +553,22 @@ public class PaymentRestController {
             amountHt = order.getAmountBaseEur().multiply(order.getFxRate())
                     .setScale(2, java.math.RoundingMode.HALF_UP);
         }
-        BigDecimal newTotal = vatCalculationService.applyVat(amountHt, reverseCharge);
+
+        // Résoudre le pays depuis l'IP pour appliquer le bon taux TVA
+        PricingContext displayCtx = regionalPricingService.resolve(httpRequest);
+        PricingContext payCtx = regionalPricingService.resolveForPayment(displayCtx);
+        String countryCode = payCtx.countryCode();
+
+        BigDecimal newTotal = vatCalculationService.applyVat(amountHt, reverseCharge, countryCode);
+        // Mettre à jour le snapshot TVA avec le taux résolu
+        order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
         order.setTotalAmount(newTotal);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
 
-        logger.info("FINALIZE_CHECKOUT - order={} reverseCharge={} amountHT={} total={} piId={}",
-                orderId, reverseCharge, amountHt, newTotal, order.getStripePaymentIntentId());
+        logger.info("FINALIZE_CHECKOUT - order={} reverseCharge={} country={} amountHT={} total={} appliedVatRate={} piId={}",
+                orderId, reverseCharge, countryCode, amountHt, newTotal,
+                order.getAppliedVatRate(), order.getStripePaymentIntentId());
 
         // Mettre à jour le PaymentIntent Stripe
         try {
