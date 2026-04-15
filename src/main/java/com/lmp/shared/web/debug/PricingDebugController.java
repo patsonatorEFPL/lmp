@@ -16,6 +16,8 @@ import com.lmp.shared.geo.GeoResolution;
 import com.lmp.shared.pricing.FxRateCacheService;
 import com.lmp.shared.pricing.PricingContext;
 import com.lmp.shared.pricing.RegionalPricingService;
+import com.lmp.shared.pricing.VatCalculationService;
+import com.lmp.shared.pricing.VatRateLookupService;
 import com.lmp.shared.web.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,13 +37,19 @@ class PricingDebugController {
     private final GeoCountryLookupService geoCountryLookupService;
     private final RegionalPricingService regionalPricingService;
     private final FxRateCacheService fxRateCacheService;
+    private final VatCalculationService vatCalculationService;
+    private final VatRateLookupService vatRateLookupService;
 
     PricingDebugController(GeoCountryLookupService geoCountryLookupService,
                            RegionalPricingService regionalPricingService,
-                           FxRateCacheService fxRateCacheService) {
+                           FxRateCacheService fxRateCacheService,
+                           VatCalculationService vatCalculationService,
+                           VatRateLookupService vatRateLookupService) {
         this.geoCountryLookupService = geoCountryLookupService;
         this.regionalPricingService = regionalPricingService;
         this.fxRateCacheService = fxRateCacheService;
+        this.vatCalculationService = vatCalculationService;
+        this.vatRateLookupService = vatRateLookupService;
     }
 
     @GetMapping
@@ -103,7 +111,25 @@ class PricingDebugController {
         }
         result.put("payment_stripe", payMap);
 
-        // ── 5. Couverture du cache FX ─────────────────────────────────────────
+        // ── 5. TVA ────────────────────────────────────────────────────────────
+        String vatCountry = payCtx.countryCode();
+        BigDecimal vatRate = vatCalculationService.getVatRate(vatCountry);
+        BigDecimal amountHt = payPrice;
+        BigDecimal vatAmount = vatCalculationService.vatAmount(amountHt, false, vatCountry);
+        BigDecimal amountTtc = vatCalculationService.applyVat(amountHt, false, vatCountry);
+        Map<String, Object> vatMap = new LinkedHashMap<>();
+        vatMap.put("country", vatCountry);
+        vatMap.put("rate_decimal", vatRate);
+        vatMap.put("rate_pct", vatRate.multiply(new BigDecimal("100")).intValue());
+        vatMap.put("amount_ht", amountHt);
+        vatMap.put("vat_amount", vatAmount);
+        vatMap.put("amount_ttc", amountTtc);
+        vatMap.put("cache_size", vatRateLookupService.getCacheSize());
+        vatMap.put("last_refreshed", vatRateLookupService.getLastRefreshed());
+        vatMap.put("has_rate_for_country", vatRateLookupService.hasRate(vatCountry));
+        result.put("vat", vatMap);
+
+        // ── 6. Couverture du cache FX ─────────────────────────────────────────
         result.put("fx_cache", fxRateCacheService.getCoverageSummary());
         result.put("fx_last_refreshed", fxRateCacheService.getLastRefreshed());
 
