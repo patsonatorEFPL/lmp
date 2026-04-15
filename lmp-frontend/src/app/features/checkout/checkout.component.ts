@@ -71,6 +71,7 @@ interface OrderDetail {
   vatReverseCharge: boolean | null;
   customerVatNumber: string | null;
   amountBaseEur: number | null;
+  appliedVatRate: number | null;
 }
 
 interface GeoCheckResult {
@@ -613,11 +614,12 @@ export class CheckoutComponent implements OnDestroy {
 
             // Build a preview from the order data
             const amountHt = order.amountBaseEur ?? order.totalAmount;
-            const vatRate = (order.vatReverseCharge) ? 0 : 20;
+            const appliedRate = order.appliedVatRate ?? 0.20;
+            const vatRate = (order.vatReverseCharge) ? 0 : Math.round(appliedRate * 100);
             this.preview.set({
               serviceName: order.serviceName,
               amountHt,
-              vatAmount: order.vatReverseCharge ? 0 : Math.round(amountHt * vatRate) / 100,
+              vatAmount: order.vatReverseCharge ? 0 : +(amountHt * appliedRate).toFixed(2),
               totalAmount: order.totalAmount,
               vatRate,
               reverseCharge: !!order.vatReverseCharge,
