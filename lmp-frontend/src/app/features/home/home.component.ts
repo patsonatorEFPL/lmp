@@ -46,55 +46,125 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
   standalone: true,
   imports: [RouterLink, FormsModule, LucideAngularModule, AppointmentModalComponent, CurrencyPipe],
   template: `
-    <!-- ===== HERO SECTION (includes ticker at bottom) ===== -->
-    <section
-      class="home-hero relative overflow-hidden -mt-14 pt-14 flex flex-col min-h-screen"
-    >
-      <div class="home-hero-media absolute inset-0">
-        <img
-          src="/images/hero-bg-office.jpg"
-          alt="Modern corporate office"
-          class="absolute inset-0 w-full h-full object-cover"
-        />
-        <div class="home-hero-shade absolute inset-0 bg-black/80"></div>
-      </div>
+    <!-- ===== HERO SECTION ===== -->
+    <section class="relative overflow-hidden -mt-14 pt-14 flex flex-col min-h-screen bg-(--background)">
+      <!-- Subtle indigo glow at top — atmosphere without imagery -->
+      <div
+        class="absolute inset-x-0 top-0 h-[600px] pointer-events-none"
+        style="background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(94, 106, 210, 0.10), transparent 70%);"
+      ></div>
 
-      <!-- Hero content — grows to fill available space, centered -->
+      <!-- Hero content — left text + right analytics mockup (option 3) -->
       <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full flex-1 flex items-center py-20">
-        <div class="max-w-2xl">
-          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
-            Propulsez votre visibilité digitale
-          </h1>
-          <p class="mt-4 text-base sm:text-lg text-white/60 leading-relaxed max-w-lg">
-            Nous bâtissons des stratégies digitales, sites web et expériences
-            numériques avec précision, clarté et engagement.
-          </p>
-          <div class="mt-8 flex items-center gap-4">
-            <button
-              (click)="showAppointment.set(true)"
-              class="inline-flex items-center gap-2 rounded-sm bg-white px-5 py-2.5 text-sm font-medium text-gray-900 transition-colors hover:bg-gray-100 cursor-pointer"
-            >
-              Réserver un audit gratuit
-            </button>
-            <a
-              routerLink="/services"
-              class="inline-flex items-center gap-1.5 text-sm font-medium text-white/70 transition-colors hover:text-white cursor-pointer"
-            >
-              Voir les services
-              <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
-            </a>
+        <div class="grid w-full grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <!-- Left: text -->
+          <div class="lg:col-span-6">
+            <h1 class="text-[40px] sm:text-[56px] lg:text-[64px] font-medium leading-[1.0] tracking-[-0.022em] text-(--foreground)">
+              Propulsez votre visibilité digitale
+            </h1>
+            <p class="mt-6 max-w-lg text-[18px] leading-[1.6] text-(--muted-foreground)">
+              Nous bâtissons des stratégies digitales, sites web et expériences
+              numériques avec précision, clarté et engagement.
+            </p>
+            <div class="mt-10 flex items-center gap-3">
+              <button
+                (click)="showAppointment.set(true)"
+                class="inline-flex items-center gap-2 rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) transition-colors hover:bg-[#828fff] cursor-pointer"
+              >
+                Réserver un audit gratuit
+              </button>
+              <a
+                routerLink="/services"
+                class="inline-flex items-center gap-1.5 rounded-md border border-(--border) bg-(--card) px-4 py-2 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
+              >
+                Voir les services
+                <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+              </a>
+            </div>
+          </div>
+
+          <!-- Right: stylized analytics dashboard mockup -->
+          <div class="hidden lg:block lg:col-span-6 relative">
+            <!-- Soft indigo halo behind the panel -->
+            <div
+              class="absolute -inset-8 pointer-events-none"
+              style="background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(94, 106, 210, 0.15), transparent 70%);"
+            ></div>
+
+            <!-- Main analytics panel -->
+            <div class="relative rounded-xl border border-(--border) bg-(--card) p-5 shadow-2xl shadow-black/30">
+              <!-- Window chrome -->
+              <div class="flex items-center gap-2 pb-4 border-b border-(--border)">
+                <div class="flex gap-1.5">
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]"></span>
+                  <span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
+                </div>
+                <span class="ml-2 text-xs font-mono text-(--muted-foreground)">analytics · Q1 2026</span>
+              </div>
+
+              <!-- KPI row -->
+              <div class="grid grid-cols-3 gap-2 mt-4">
+                <div class="rounded-md border border-(--border) p-3">
+                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Visites</div>
+                  <div class="mt-1 text-lg font-semibold tracking-[-0.022em] text-(--foreground)">12,4k</div>
+                  <div class="text-xs text-[#10b981]">+34%</div>
+                </div>
+                <div class="rounded-md border border-(--border) p-3">
+                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Leads</div>
+                  <div class="mt-1 text-lg font-semibold tracking-[-0.022em] text-(--foreground)">487</div>
+                  <div class="text-xs text-[#10b981]">+128%</div>
+                </div>
+                <div class="rounded-md border border-(--border) p-3">
+                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Speed</div>
+                  <div class="mt-1 text-lg font-semibold tracking-[-0.022em] text-(--foreground)">98</div>
+                  <div class="text-xs text-(--muted-foreground)">/ 100</div>
+                </div>
+              </div>
+
+              <!-- Chart -->
+              <div class="rounded-md border border-(--border) p-4 mt-3">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-sm font-medium text-(--foreground)">Trafic organique</span>
+                  <span class="text-xs font-mono text-(--muted-foreground)">30 jours</span>
+                </div>
+                <svg viewBox="0 0 300 80" preserveAspectRatio="none" class="w-full h-20" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="hero-spark" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#5e6ad2" stop-opacity="0.35"/>
+                      <stop offset="100%" stop-color="#5e6ad2" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,62 L25,58 L50,55 L75,52 L100,46 L125,42 L150,34 L175,28 L200,22 L225,16 L250,12 L275,8 L300,4 L300,80 L0,80 Z" fill="url(#hero-spark)" />
+                  <path d="M0,62 L25,58 L50,55 L75,52 L100,46 L125,42 L150,34 L175,28 L200,22 L225,16 L250,12 L275,8 L300,4" fill="none" stroke="#5e6ad2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Floating "rank #1" card -->
+            <div class="absolute -bottom-5 -left-5 rounded-lg border border-(--border) bg-(--popover) p-3.5 shadow-xl shadow-black/20">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-full" style="background: rgba(94, 106, 210, 0.15);">
+                  <span class="text-sm font-semibold text-(--primary)">#1</span>
+                </div>
+                <div>
+                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Google Search</div>
+                  <div class="text-sm font-medium text-(--foreground)">Position moyenne</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Partner ticker — pinned at the bottom of the hero -->
-      <div class="relative z-10 border-t border-white/10 overflow-hidden">
-        <div class="py-4">
+      <div class="relative z-10 overflow-hidden border-t border-(--border)">
+        <div class="py-5">
           <div class="ticker-track">
             @for (i of [0,1]; track i) {
-              <div class="flex items-center gap-10 px-5">
+              <div class="flex items-center gap-12 px-6">
                 @for (partner of partners; track $index) {
-                  <span class="text-sm text-white/40 whitespace-nowrap hover:text-white/80 transition-colors">
+                  <span class="text-sm text-(--muted-foreground) whitespace-nowrap hover:text-(--foreground) transition-colors">
                     {{ partner.name }}
                   </span>
                 }
@@ -110,7 +180,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
       <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-12">
           <div class="scroll-animate">
-            <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground)">
+            <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">
               Ce que nous faisons
             </h2>
           </div>
@@ -120,13 +190,13 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
           </p>
         </div>
 
-        <div class="grid grid-cols-1 gap-px rounded-sm border border-(--border) overflow-hidden sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-px rounded-md border border-(--border) overflow-hidden sm:grid-cols-2">
           @for (svc of coreServices; track svc.title; let i = $index) {
             <div
               class="bg-(--card) p-8 sm:p-10 transition-colors duration-150 hover:bg-(--accent) scroll-animate"
               [style.transition-delay.ms]="(i + 1) * 100"
             >
-              <div class="flex items-center justify-center h-12 w-12 rounded-sm bg-(--muted) mb-5">
+              <div class="flex items-center justify-center h-12 w-12 rounded-md bg-(--muted) mb-5">
                 <lucide-icon [img]="getIcon(svc.iconName)" [size]="20" class="text-(--muted-foreground)"></lucide-icon>
               </div>
               <h3 class="text-base font-semibold text-(--foreground)">{{ svc.title }}</h3>
@@ -152,7 +222,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               class="scroll-animate"
               [style.transition-delay.ms]="(i + 1) * 100"
             >
-              <div class="text-4xl sm:text-5xl font-bold text-(--foreground)">{{ stat.value }}</div>
+              <div class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">{{ stat.value }}</div>
               <div class="mt-1 text-sm font-medium text-(--foreground)">{{ stat.label }}</div>
               <div class="text-xs text-(--muted-foreground)">{{ stat.sublabel }}</div>
             </div>
@@ -165,7 +235,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
     <section class="border-b border-(--border)">
       <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-10 scroll-animate">
-          <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground)">
+          <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">
             Solutions
           </h2>
           <p class="mt-3 max-w-2xl text-sm text-(--muted-foreground)">
@@ -177,15 +247,15 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         @if (loadingFeatured()) {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (s of [1,2,3,4,5,6]; track s) {
-              <div class="rounded-sm border border-(--border) bg-(--card) p-5 animate-pulse">
+              <div class="rounded-md border border-(--border) bg-(--card) p-5 animate-pulse">
                 <div class="flex items-start justify-between mb-3">
-                  <div class="h-10 w-10 rounded-sm bg-(--muted)"></div>
-                  <div class="h-4 w-16 rounded-sm bg-(--muted)"></div>
+                  <div class="h-10 w-10 rounded-md bg-(--muted)"></div>
+                  <div class="h-4 w-16 rounded-md bg-(--muted)"></div>
                 </div>
-                <div class="h-4 w-3/4 rounded-sm bg-(--muted)"></div>
+                <div class="h-4 w-3/4 rounded-md bg-(--muted)"></div>
                 <div class="mt-2 space-y-1.5">
-                  <div class="h-3 w-full rounded-sm bg-(--muted)"></div>
-                  <div class="h-3 w-5/6 rounded-sm bg-(--muted)"></div>
+                  <div class="h-3 w-full rounded-md bg-(--muted)"></div>
+                  <div class="h-3 w-5/6 rounded-md bg-(--muted)"></div>
                 </div>
               </div>
             }
@@ -198,14 +268,14 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             <a
               routerLink="/services"
               [fragment]="service.slug"
-              class="group flex flex-col rounded-sm border border-(--border) bg-(--card) p-5 transition-colors duration-150 hover:border-(--primary)/30 scroll-animate cursor-pointer"
+              class="group flex flex-col rounded-md border border-(--border) bg-(--card) p-5 transition-colors duration-150 hover:border-(--primary)/30 scroll-animate cursor-pointer"
               [style.transition-delay.ms]="(i % 3 + 1) * 100"
             >
               <div class="flex items-start justify-between mb-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted)">
+                <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted)">
                   <lucide-icon [img]="getIcon(service.icon)" [size]="18" class="text-(--muted-foreground)"></lucide-icon>
                 </div>
-                <span class="rounded-sm bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
+                <span class="rounded-md bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                   {{ service.categoryName }}
                 </span>
               </div>
@@ -222,7 +292,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               <div class="mt-4 flex items-end justify-between border-t border-(--border) pt-3">
                 <div>
                   @if (service.currentOffer) {
-                    <span class="text-lg font-bold text-(--foreground)">
+                    <span class="text-lg font-semibold text-(--foreground)">
                       {{
                         service.currentOffer.price
                           | currency
@@ -241,7 +311,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                     <span class="text-base font-semibold text-(--foreground)">Sur devis</span>
                   }
                 </div>
-                <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-(--muted) text-(--muted-foreground) transition-colors group-hover:text-(--primary)">
+                <div class="flex h-7 w-7 items-center justify-center rounded-md bg-(--muted) text-(--muted-foreground) transition-colors group-hover:text-(--primary)">
                   <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
                 </div>
               </div>
@@ -254,21 +324,21 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             @for (service of fallbackServices; track service.subtitle) {
               <a
                 routerLink="/services"
-                class="group flex flex-col rounded-sm border border-(--border) bg-(--card) p-5 transition-colors duration-150 hover:border-(--primary)/30 scroll-animate cursor-pointer"
+                class="group flex flex-col rounded-md border border-(--border) bg-(--card) p-5 transition-colors duration-150 hover:border-(--primary)/30 scroll-animate cursor-pointer"
               >
                 <div class="flex items-start justify-between mb-3">
-                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted)">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted)">
                     <lucide-icon [img]="getIcon(service.iconName)" [size]="18" class="text-(--muted-foreground)"></lucide-icon>
                   </div>
-                  <span class="rounded-sm bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
+                  <span class="rounded-md bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                     {{ service.category }}
                   </span>
                 </div>
                 <h3 class="text-sm font-semibold text-(--foreground)">{{ service.subtitle }}</h3>
                 <p class="mt-1.5 flex-1 text-sm leading-relaxed text-(--muted-foreground)">{{ service.description }}</p>
                 <div class="mt-4 flex items-end justify-between border-t border-(--border) pt-3">
-                  <span class="text-lg font-bold text-(--foreground)">{{ service.price }}</span>
-                  <div class="flex h-7 w-7 items-center justify-center rounded-sm bg-(--muted) text-(--muted-foreground)">
+                  <span class="text-lg font-semibold text-(--foreground)">{{ service.price }}</span>
+                  <div class="flex h-7 w-7 items-center justify-center rounded-md bg-(--muted) text-(--muted-foreground)">
                     <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
                   </div>
                 </div>
@@ -280,7 +350,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         <div class="mt-8 scroll-animate">
           <a
             routerLink="/services"
-            class="inline-flex items-center gap-2 rounded-sm border border-(--border) bg-(--card) px-5 py-2.5 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
+            class="inline-flex items-center gap-2 rounded-md border border-(--border) bg-(--card) px-5 py-2.5 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
           >
             Voir tous les services
             @if (totalFeaturedCount() > 6) {
@@ -296,7 +366,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
       <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-12">
           <div class="scroll-animate">
-            <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground)">
+            <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">
               Notre processus
             </h2>
           </div>
@@ -308,7 +378,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           @for (step of processSteps; track step.title; let i = $index) {
             <div
-              class="rounded-sm border border-(--border) bg-(--card) p-5 scroll-animate"
+              class="rounded-md border border-(--border) bg-(--card) p-5 scroll-animate"
               [style.transition-delay.ms]="(i + 1) * 100"
             >
               <span class="text-xs font-mono text-(--muted-foreground)">{{ (i + 1).toString().padStart(2, '0') }}</span>
@@ -324,7 +394,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
     <section class="border-b border-(--border)">
       <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-10 scroll-animate">
-          <h2 class="text-2xl font-bold text-(--foreground)">Certifications</h2>
+          <h2 class="text-2xl font-semibold tracking-[-0.022em] text-(--foreground)">Certifications</h2>
         </div>
 
         <div class="scroll-animate">
@@ -343,19 +413,19 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
     <section class="border-b border-(--border)">
       <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-10 scroll-animate">
-          <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground)">
+          <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">
             Ce que disent nos clients
           </h2>
         </div>
 
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <!-- Large featured testimonial -->
-          <div class="lg:col-span-2 rounded-sm border border-(--border) bg-(--card) p-6 sm:p-8 scroll-animate">
+          <div class="lg:col-span-2 rounded-md border border-(--border) bg-(--card) p-6 sm:p-8 scroll-animate">
             <p class="text-base sm:text-lg leading-relaxed text-(--foreground)">
               "{{ testimonials[0].quote }}"
             </p>
             <div class="mt-6 flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted) text-sm font-semibold text-(--foreground) shrink-0">
+              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted) text-sm font-semibold text-(--foreground) shrink-0">
                 {{ getInitials(testimonials[0].name) }}
               </div>
               <div>
@@ -369,14 +439,14 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
           <div class="flex flex-col gap-4">
             @for (t of testimonials.slice(1); track t.name; let i = $index) {
               <div
-                class="rounded-sm border border-(--border) bg-(--card) p-5 scroll-animate"
+                class="rounded-md border border-(--border) bg-(--card) p-5 scroll-animate"
                 [style.transition-delay.ms]="(i + 1) * 100"
               >
                 <p class="text-sm leading-relaxed text-(--muted-foreground)">
                   "{{ t.quote }}"
                 </p>
                 <div class="mt-3 flex items-center gap-2">
-                  <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted) text-xs font-semibold text-(--foreground) shrink-0">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-md bg-(--muted) text-xs font-semibold text-(--foreground) shrink-0">
                     {{ getInitials(t.name) }}
                   </div>
                   <div>
@@ -395,7 +465,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
     <section class="border-b border-(--border)">
       <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-10 scroll-animate">
-          <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground)">
+          <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">
             Tarifs
           </h2>
           <p class="mt-3 max-w-2xl text-sm text-(--muted-foreground)">
@@ -406,12 +476,12 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           @for (plan of pricingPlans; track plan.name; let i = $index) {
             <div
-              class="relative rounded-sm border bg-(--card) p-6 scroll-animate"
-              [class]="plan.popular ? 'border-(--primary) relative rounded-sm bg-(--card) p-6 scroll-animate' : 'border-(--border) relative rounded-sm bg-(--card) p-6 scroll-animate'"
+              class="relative rounded-md border bg-(--card) p-6 scroll-animate"
+              [class]="plan.popular ? 'border-(--primary) relative rounded-md bg-(--card) p-6 scroll-animate' : 'border-(--border) relative rounded-md bg-(--card) p-6 scroll-animate'"
               [style.transition-delay.ms]="(i + 1) * 100"
             >
               @if (plan.popular) {
-                <div class="absolute -top-2.5 left-4 rounded-sm bg-(--primary) px-2.5 py-0.5 text-xs font-medium text-(--primary-foreground)">
+                <div class="absolute -top-2.5 left-4 rounded-md bg-(--primary) px-2.5 py-0.5 text-xs font-medium text-(--primary-foreground)">
                   Populaire
                 </div>
               }
@@ -419,13 +489,13 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               <p class="mt-1 text-xs text-(--muted-foreground)">{{ plan.subtitle }}</p>
 
               <div class="mt-5">
-                <span class="text-3xl font-bold text-(--foreground)">{{ plan.price }}</span>
+                <span class="text-3xl font-semibold tracking-[-0.022em] text-(--foreground)">{{ plan.price }}</span>
                 <span class="text-sm text-(--muted-foreground) ml-1">/ Projet</span>
               </div>
 
               <a
                 routerLink="/contact"
-                class="mt-5 flex items-center justify-center gap-2 rounded-sm px-5 py-2.5 text-sm font-medium transition-colors cursor-pointer"
+                class="mt-5 flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-colors cursor-pointer"
                 [class]="plan.popular ? 'bg-(--primary) text-(--primary-foreground) hover:opacity-90' : 'border border-(--border) text-(--foreground) hover:bg-(--accent)'"
               >
                 Commencer
@@ -451,14 +521,14 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
     <section class="border-b border-(--border)">
       <div class="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-10 scroll-animate">
-          <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground)">
+          <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground)">
             Questions fréquentes
           </h2>
         </div>
 
         <div class="space-y-2 scroll-animate">
           @for (faq of faqs; track faq.question; let i = $index) {
-            <div class="rounded-sm border border-(--border) bg-(--card) overflow-hidden">
+            <div class="rounded-md border border-(--border) bg-(--card) overflow-hidden">
               <button
                 class="flex w-full items-center justify-between p-4 text-left cursor-pointer"
                 (click)="toggleFaq(i)"
@@ -488,7 +558,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <!-- Left: CTA -->
           <div class="flex flex-col justify-center scroll-animate">
-            <h2 class="text-3xl sm:text-4xl font-bold text-(--foreground) leading-tight">
+            <h2 class="text-4xl sm:text-5xl font-semibold tracking-[-0.022em] text-(--foreground) leading-tight">
               Parlons de votre prochain projet
             </h2>
             <p class="mt-3 text-sm text-(--muted-foreground) max-w-md">
@@ -496,7 +566,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             </p>
             <button
               (click)="showAppointment.set(true)"
-              class="mt-6 inline-flex items-center gap-2 rounded-sm bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) transition-colors hover:opacity-90 cursor-pointer w-fit"
+              class="mt-6 inline-flex items-center gap-2 rounded-md bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) transition-colors hover:opacity-90 cursor-pointer w-fit"
             >
               <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
               Réserver mon audit
@@ -504,7 +574,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
           </div>
 
           <!-- Right: Contact form -->
-          <div class="rounded-sm border border-(--border) bg-(--card) p-6 scroll-animate">
+          <div class="rounded-md border border-(--border) bg-(--card) p-6 scroll-animate">
             <h3 class="text-base font-semibold text-(--foreground) mb-5">Formulaire rapide</h3>
             <form (ngSubmit)="onContactSubmit()" class="space-y-4">
               <div>
@@ -515,7 +585,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   [(ngModel)]="contactForm.name"
                   name="name"
                   required
-                  class="mt-1 w-full rounded-sm border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-(--primary) transition-colors"
+                  class="mt-1 w-full rounded-md border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-(--primary) transition-colors"
                 />
               </div>
               <div>
@@ -526,7 +596,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   [(ngModel)]="contactForm.email"
                   name="email"
                   required
-                  class="mt-1 w-full rounded-sm border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-(--primary) transition-colors"
+                  class="mt-1 w-full rounded-md border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-(--primary) transition-colors"
                 />
               </div>
               <div>
@@ -537,17 +607,17 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   name="message"
                   required
                   rows="3"
-                  class="mt-1 w-full rounded-sm border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-(--primary) transition-colors resize-none"
+                  class="mt-1 w-full rounded-md border border-(--border) bg-transparent px-3 py-2 text-sm text-(--foreground) placeholder:text-(--muted-foreground) outline-none focus:border-(--primary) transition-colors resize-none"
                 ></textarea>
               </div>
 
               @if (contactSuccess()) {
-                <div class="rounded-sm bg-(--success)/10 px-3 py-2 text-sm text-(--success)">
+                <div class="rounded-md bg-(--success)/10 px-3 py-2 text-sm text-(--success)">
                   {{ contactSuccess() }}
                 </div>
               }
               @if (contactError()) {
-                <div class="rounded-sm bg-(--destructive)/10 px-3 py-2 text-sm text-(--destructive)">
+                <div class="rounded-md bg-(--destructive)/10 px-3 py-2 text-sm text-(--destructive)">
                   {{ contactError() }}
                 </div>
               }
@@ -555,7 +625,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               <button
                 type="submit"
                 [disabled]="contactSubmitting()"
-                class="w-full flex items-center justify-center gap-2 rounded-sm bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) transition-colors hover:opacity-90 cursor-pointer disabled:opacity-50"
+                class="w-full flex items-center justify-center gap-2 rounded-md bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) transition-colors hover:opacity-90 cursor-pointer disabled:opacity-50"
               >
                 @if (contactSubmitting()) {
                   Envoi en cours...
