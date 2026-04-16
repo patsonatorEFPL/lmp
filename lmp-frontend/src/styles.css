@@ -202,6 +202,98 @@ lmp-home {
   --ring: #5e6ad2;
 }
 
+/* === Hero Aurora Backdrop (animated) === */
+.hero-aurora {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 700px;
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.hero-aurora-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform, opacity;
+}
+
+.hero-aurora-orb--indigo {
+  top: -10%;
+  left: 15%;
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle at 50% 50%, #5e6ad2 0%, rgba(94, 106, 210, 0) 70%);
+  animation: aurora-drift-a 22s ease-in-out infinite alternate;
+}
+
+.hero-aurora-orb--violet {
+  top: 5%;
+  right: 10%;
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle at 50% 50%, #8b5cf6 0%, rgba(139, 92, 246, 0) 70%);
+  animation: aurora-drift-b 26s ease-in-out infinite alternate;
+}
+
+.hero-aurora-orb--cyan {
+  top: 30%;
+  left: 45%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at 50% 50%, #22d3ee 0%, rgba(34, 211, 238, 0) 70%);
+  animation: aurora-drift-c 30s ease-in-out infinite alternate;
+}
+
+/* Light-mode: subtle + professional — low opacity, no saturation pop. */
+lmp-home .hero-aurora-orb--indigo { opacity: 0.14; }
+lmp-home .hero-aurora-orb--violet { opacity: 0.09; }
+lmp-home .hero-aurora-orb--cyan   { opacity: 0.08; }
+
+/* Dark-mode: neon glow — vibrant indigo/violet with cooler cyan accent. */
+.dark lmp-home .hero-aurora-orb--indigo { opacity: 0.55; }
+.dark lmp-home .hero-aurora-orb--violet { opacity: 0.42; }
+.dark lmp-home .hero-aurora-orb--cyan   { opacity: 0.28; }
+
+/* Subtle grid overlay, fading out via radial mask. */
+.hero-aurora-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(94, 106, 210, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(94, 106, 210, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
+  opacity: 0.6;
+}
+
+.dark .hero-aurora-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  opacity: 1;
+}
+
+@keyframes aurora-drift-a {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(6%, 4%, 0) scale(1.08); }
+  100% { transform: translate3d(-4%, 8%, 0) scale(0.95); }
+}
+
+@keyframes aurora-drift-b {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-8%, 6%, 0) scale(1.1); }
+  100% { transform: translate3d(4%, -4%, 0) scale(0.92); }
+}
+
+@keyframes aurora-drift-c {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-6%, -5%, 0) scale(1.15); }
+  100% { transform: translate3d(8%, 3%, 0) scale(0.9); }
+}
+
 /* === Partner Ticker / Marquee === */
 @keyframes ticker-scroll {
   0% { transform: translateX(0); }
@@ -267,6 +359,7 @@ lmp-home {
   .notification-toast-enter { animation: none; }
   .notification-toast-exit { animation: none; }
   .ticker-track { animation: none; }
+  .hero-aurora-orb { animation: none; }
 }
 
 /* === external CRM Theme Adaptation === */

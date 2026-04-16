@@ -48,23 +48,25 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
   template: `
     <!-- ===== HERO SECTION ===== -->
     <section class="relative overflow-hidden -mt-14 pt-14 flex flex-col min-h-screen bg-(--background)">
-      <!-- Subtle indigo glow at top — atmosphere without imagery -->
-      <div
-        class="absolute inset-x-0 top-0 h-[600px] pointer-events-none"
-        style="background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(94, 106, 210, 0.10), transparent 70%);"
-      ></div>
+      <!-- Animated aurora backdrop — neon in dark mode, soft mesh in light mode -->
+      <div class="hero-aurora" aria-hidden="true">
+        <div class="hero-aurora-orb hero-aurora-orb--indigo"></div>
+        <div class="hero-aurora-orb hero-aurora-orb--violet"></div>
+        <div class="hero-aurora-orb hero-aurora-orb--cyan"></div>
+        <div class="hero-aurora-grid"></div>
+      </div>
 
       <!-- Hero content -->
       <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full flex-1 flex items-center py-20">
-        <div class="max-w-3xl">
+        <div class="mx-auto max-w-3xl text-center">
           <h1 class="text-[32px] sm:text-[48px] lg:text-[64px] font-medium leading-[1.05] tracking-[-0.022em] text-(--foreground) break-words">
             Propulsez votre visibilité digitale
           </h1>
-          <p class="mt-6 max-w-lg text-[18px] leading-[1.6] text-(--muted-foreground)">
+          <p class="mt-6 mx-auto max-w-lg text-[18px] leading-[1.6] text-(--muted-foreground)">
             Nous bâtissons des stratégies digitales, sites web et expériences
             numériques avec précision, clarté et engagement.
           </p>
-          <div class="mt-10 flex items-center gap-3">
+          <div class="mt-10 flex items-center justify-center gap-3">
             <button
               (click)="showAppointment.set(true)"
               class="inline-flex items-center gap-2 rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) transition-colors hover:bg-[#828fff] cursor-pointer"
