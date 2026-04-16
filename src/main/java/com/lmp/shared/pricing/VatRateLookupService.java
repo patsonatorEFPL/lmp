@@ -14,6 +14,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.lmp.shared.monitoring.ApiHealthRecorder;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -24,10 +25,12 @@ import jakarta.annotation.PostConstruct;
 /**
  * Cache des taux de TVA standard par pays (ISO 3166-1 alpha-2).
  *
- * <h3>Chaîne de résolution</h3>
+ * <h3>Chaîne de résolution (refresh)</h3>
  * <ol>
- *   <li><b>Table statique</b> — seed initial 27 pays UE (dernier recours)</li>
+ *   <li><b>Table statique</b> — seed initial 27 pays UE</li>
  *   <li><b>VATComply API</b> — primaire, gratuit, sans clé</li>
+ *   <li><b>VATLayer</b> (apilayer {@code rate_list}) — si {@code pricing.vat.vatlayer.access-key}
+ *       est renseigné <em>et</em> que VATComply a échoué</li>
  * </ol>
  *
  * <p>Refresh : {@code @PostConstruct} + cron mensuel (1er du mois, 06h UTC).
@@ -47,6 +50,9 @@ public class VatRateLookupService {
 
     /** VATComply — endpoint TVA (pas /rates qui est FX). */
     private static final String VATCOMPLY_URL = "https://api.vatcomply.com/vat_rates";
+
+    /** VATLayer (apilayer) — liste des taux UE ; nécessite une clé d'accès. */
+    private static final String VATLAYER_RATE_LIST_BASE = "https://apilayer.net/api/rate_list";
 
     /**
      * Jeu explicite des 27 pays membres de l'UE (ISO 3166-1 alpha-2).
@@ -92,6 +98,8 @@ public class VatRateLookupService {
     private final RestTemplate restTemplate;
     private final ApiHealthRecorder healthRecorder;
     private final BigDecimal defaultRate;
+    /** Vide = désactivé. */
+    private final String vatLayerAccessKey;
 
     /** Cache principal : pays ISO → taux TVA décimal (ex: 0.21). */
     private final Map<String, BigDecimal> ratesCache = new ConcurrentHashMap<>();
@@ -100,9 +108,11 @@ public class VatRateLookupService {
 
     public VatRateLookupService(
             ApiHealthRecorder healthRecorder,
-            @Value("${pricing.vat.rate:0.20}") BigDecimal defaultRate) {
+            @Value("${pricing.vat.rate:0.20}") BigDecimal defaultRate,
+            @Value("${pricing.vat.vatlayer.access-key:}") String vatLayerAccessKey) {
         this.healthRecorder = healthRecorder;
         this.defaultRate = defaultRate;
+        this.vatLayerAccessKey = vatLayerAccessKey != null ? vatLayerAccessKey.trim() : "";
         this.restTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(10))
@@ -190,12 +200,24 @@ public class VatRateLookupService {
         // 2. VATComply (primaire) — écrase les taux statiques
         boolean vatComplyOk = refreshFromVatComply();
 
-        // 3. Mettre à jour la table statique avec les résultats API
+        // 3. VATLayer — uniquement si VATComply a échoué et clé configurée
+        boolean vatLayerOk = false;
+        if (!vatComplyOk && !vatLayerAccessKey.isEmpty()) {
+            vatLayerOk = refreshFromVatLayer();
+            if (!vatLayerOk) {
+                logger.warn("[VAT Rates] VATLayer indisponible ou invalide — taux statiques UE conservés");
+            }
+        }
+
+        // 4. Mettre à jour la table statique avec les résultats API
         updateStaticTable();
 
         lastRefreshed = Instant.now();
-        logger.info("[VAT Rates] Refresh terminé — {} pays en cache (VATComply={})",
-                ratesCache.size(), vatComplyOk ? "OK" : "FAIL");
+        logger.info("[VAT Rates] Refresh terminé — {} pays en cache (VATComply={}, VATLayer={})",
+                ratesCache.size(),
+                vatComplyOk ? "OK" : "FAIL",
+                vatLayerAccessKey.isEmpty() ? "skip(no-key)"
+                        : (vatComplyOk ? "skip(primary-ok)" : (vatLayerOk ? "OK" : "FAIL")));
     }
 
     /**
@@ -240,6 +262,59 @@ public class VatRateLookupService {
         }
     }
 
+    /**
+     * VATLayer (apilayer) — GET rate_list, taux standard par pays UE.
+     * N'appelé que si {@link #vatLayerAccessKey} est non vide et VATComply a échoué.
+     */
+    private boolean refreshFromVatLayer() {
+        long t0 = System.currentTimeMillis();
+        String url = UriComponentsBuilder.fromUriString(VATLAYER_RATE_LIST_BASE)
+                .queryParam("access_key", vatLayerAccessKey)
+                .build()
+                .toUriString();
+        try {
+            VatLayerRateListResponse body = restTemplate.getForObject(url, VatLayerRateListResponse.class);
+            long latency = System.currentTimeMillis() - t0;
+
+            if (body == null || !Boolean.TRUE.equals(body.success) || body.rates == null || body.rates.isEmpty()) {
+                healthRecorder.record("VATLayer", latency, false,
+                        body == null ? "null body" : "success=false or empty rates");
+                logger.warn("[VAT Rates] VATLayer: réponse vide ou success=false");
+                return false;
+            }
+
+            int updated = 0;
+            for (Map.Entry<String, VatLayerRateEntry> e : body.rates.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null || e.getValue().standardRate == null) {
+                    continue;
+                }
+                String country = e.getKey().trim().toUpperCase();
+                if (!EU_COUNTRY_CODES.contains(country)) {
+                    continue;
+                }
+                BigDecimal pct = e.getValue().standardRate;
+                if (pct.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                BigDecimal rate = pct.movePointLeft(2);
+                ratesCache.put(country, rate);
+                updated++;
+            }
+
+            healthRecorder.record("VATLayer", latency, updated > 0, null);
+            if (updated > 0) {
+                logger.info("[VAT Rates] VATLayer: {} pays UE mis à jour", updated);
+            } else {
+                logger.warn("[VAT Rates] VATLayer: aucun taux UE applicable dans la réponse");
+            }
+            return updated > 0;
+        } catch (Exception ex) {
+            healthRecorder.record("VATLayer", System.currentTimeMillis() - t0, false, ex.getMessage());
+            logger.warn("[VAT Rates] VATLayer indisponible: {}", ex.getMessage());
+            return false;
+        }
+    }
+
     /** Met à jour la table statique en mémoire pour survivre à un échec API. */
     private void updateStaticTable() {
         for (String country : STATIC_EU_RATES.keySet()) {
@@ -259,6 +334,22 @@ public class VatRateLookupService {
         @JsonProperty("country_code")
         String countryCode;
 
+        @JsonProperty("standard_rate")
+        BigDecimal standardRate;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // JSON DTO — VATLayer (apilayer rate_list)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class VatLayerRateListResponse {
+        Boolean success;
+        Map<String, VatLayerRateEntry> rates;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class VatLayerRateEntry {
         @JsonProperty("standard_rate")
         BigDecimal standardRate;
     }
