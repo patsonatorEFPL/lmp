@@ -54,105 +54,30 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
         style="background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(94, 106, 210, 0.10), transparent 70%);"
       ></div>
 
-      <!-- Hero content — left text + right analytics mockup (option 3) -->
+      <!-- Hero content -->
       <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full flex-1 flex items-center py-20">
-        <div class="grid w-full grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          <!-- Left: text -->
-          <div class="lg:col-span-6">
-            <h1 class="text-[40px] sm:text-[56px] lg:text-[64px] font-medium leading-[1.0] tracking-[-0.022em] text-(--foreground)">
-              Propulsez votre visibilité digitale
-            </h1>
-            <p class="mt-6 max-w-lg text-[18px] leading-[1.6] text-(--muted-foreground)">
-              Nous bâtissons des stratégies digitales, sites web et expériences
-              numériques avec précision, clarté et engagement.
-            </p>
-            <div class="mt-10 flex items-center gap-3">
-              <button
-                (click)="showAppointment.set(true)"
-                class="inline-flex items-center gap-2 rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) transition-colors hover:bg-[#828fff] cursor-pointer"
-              >
-                Réserver un audit gratuit
-              </button>
-              <a
-                routerLink="/services"
-                class="inline-flex items-center gap-1.5 rounded-md border border-(--border) bg-(--card) px-4 py-2 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
-              >
-                Voir les services
-                <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
-              </a>
-            </div>
-          </div>
-
-          <!-- Right: stylized analytics dashboard mockup -->
-          <div class="hidden lg:block lg:col-span-6 relative">
-            <!-- Soft indigo halo behind the panel -->
-            <div
-              class="absolute -inset-8 pointer-events-none"
-              style="background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(94, 106, 210, 0.15), transparent 70%);"
-            ></div>
-
-            <!-- Main analytics panel -->
-            <div class="relative rounded-xl border border-(--border) bg-(--card) p-5 shadow-2xl shadow-black/30">
-              <!-- Window chrome -->
-              <div class="flex items-center gap-2 pb-4 border-b border-(--border)">
-                <div class="flex gap-1.5">
-                  <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
-                  <span class="h-2.5 w-2.5 rounded-full bg-[#febc2e]"></span>
-                  <span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
-                </div>
-                <span class="ml-2 text-xs font-mono text-(--muted-foreground)">analytics · Q1 2026</span>
-              </div>
-
-              <!-- KPI row -->
-              <div class="grid grid-cols-3 gap-2 mt-4">
-                <div class="rounded-md border border-(--border) p-3">
-                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Visites</div>
-                  <div class="mt-1 text-lg font-semibold tracking-[-0.022em] text-(--foreground)">12,4k</div>
-                  <div class="text-xs text-[#10b981]">+34%</div>
-                </div>
-                <div class="rounded-md border border-(--border) p-3">
-                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Leads</div>
-                  <div class="mt-1 text-lg font-semibold tracking-[-0.022em] text-(--foreground)">487</div>
-                  <div class="text-xs text-[#10b981]">+128%</div>
-                </div>
-                <div class="rounded-md border border-(--border) p-3">
-                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Speed</div>
-                  <div class="mt-1 text-lg font-semibold tracking-[-0.022em] text-(--foreground)">98</div>
-                  <div class="text-xs text-(--muted-foreground)">/ 100</div>
-                </div>
-              </div>
-
-              <!-- Chart -->
-              <div class="rounded-md border border-(--border) p-4 mt-3">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-sm font-medium text-(--foreground)">Trafic organique</span>
-                  <span class="text-xs font-mono text-(--muted-foreground)">30 jours</span>
-                </div>
-                <svg viewBox="0 0 300 80" preserveAspectRatio="none" class="w-full h-20" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="hero-spark" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stop-color="#5e6ad2" stop-opacity="0.35"/>
-                      <stop offset="100%" stop-color="#5e6ad2" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
-                  <path d="M0,62 L25,58 L50,55 L75,52 L100,46 L125,42 L150,34 L175,28 L200,22 L225,16 L250,12 L275,8 L300,4 L300,80 L0,80 Z" fill="url(#hero-spark)" />
-                  <path d="M0,62 L25,58 L50,55 L75,52 L100,46 L125,42 L150,34 L175,28 L200,22 L225,16 L250,12 L275,8 L300,4" fill="none" stroke="#5e6ad2" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-
-            <!-- Floating "rank #1" card -->
-            <div class="absolute -bottom-5 -left-5 rounded-lg border border-(--border) bg-(--popover) p-3.5 shadow-xl shadow-black/20">
-              <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full" style="background: rgba(94, 106, 210, 0.15);">
-                  <span class="text-sm font-semibold text-(--primary)">#1</span>
-                </div>
-                <div>
-                  <div class="text-[10px] uppercase tracking-wider font-mono text-(--muted-foreground)">Google Search</div>
-                  <div class="text-sm font-medium text-(--foreground)">Position moyenne</div>
-                </div>
-              </div>
-            </div>
+        <div class="max-w-3xl">
+          <h1 class="text-[32px] sm:text-[48px] lg:text-[64px] font-medium leading-[1.05] tracking-[-0.022em] text-(--foreground) break-words">
+            Propulsez votre visibilité digitale
+          </h1>
+          <p class="mt-6 max-w-lg text-[18px] leading-[1.6] text-(--muted-foreground)">
+            Nous bâtissons des stratégies digitales, sites web et expériences
+            numériques avec précision, clarté et engagement.
+          </p>
+          <div class="mt-10 flex items-center gap-3">
+            <button
+              (click)="showAppointment.set(true)"
+              class="inline-flex items-center gap-2 rounded-md bg-(--primary) px-4 py-2 text-sm font-medium text-(--primary-foreground) transition-colors hover:bg-[#828fff] cursor-pointer"
+            >
+              Réserver un audit gratuit
+            </button>
+            <a
+              routerLink="/services"
+              class="inline-flex items-center gap-1.5 rounded-md border border-(--border) bg-(--card) px-4 py-2 text-sm font-medium text-(--foreground) transition-colors hover:bg-(--accent) cursor-pointer"
+            >
+              Voir les services
+              <lucide-icon [img]="ArrowRightIcon" [size]="14" aria-hidden="true"></lucide-icon>
+            </a>
           </div>
         </div>
       </div>
@@ -197,7 +122,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               [style.transition-delay.ms]="(i + 1) * 100"
             >
               <div class="flex items-center justify-center h-12 w-12 rounded-md bg-(--muted) mb-5">
-                <lucide-icon [img]="getIcon(svc.iconName)" [size]="20" class="text-(--muted-foreground)"></lucide-icon>
+                <lucide-icon [img]="getIcon(svc.iconName)" [size]="20" class="text-(--muted-foreground)" aria-hidden="true"></lucide-icon>
               </div>
               <h3 class="text-base font-semibold text-(--foreground)">{{ svc.title }}</h3>
               <p class="mt-2 text-sm leading-relaxed text-(--muted-foreground)">{{ svc.description }}</p>
@@ -273,7 +198,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
             >
               <div class="flex items-start justify-between mb-3">
                 <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted)">
-                  <lucide-icon [img]="getIcon(service.icon)" [size]="18" class="text-(--muted-foreground)"></lucide-icon>
+                  <lucide-icon [img]="getIcon(service.icon)" [size]="18" class="text-(--muted-foreground)" aria-hidden="true"></lucide-icon>
                 </div>
                 <span class="rounded-md bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                   {{ service.categoryName }}
@@ -284,7 +209,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               <ul class="mt-3 space-y-1">
                 @for (benefit of service.benefits.slice(0, 3); track benefit) {
                   <li class="flex items-start gap-2 text-xs text-(--muted-foreground)">
-                    <lucide-icon [img]="CheckIcon" [size]="12" class="mt-0.5 text-(--primary) shrink-0"></lucide-icon>
+                    <lucide-icon [img]="CheckIcon" [size]="12" class="mt-0.5 text-(--primary) shrink-0" aria-hidden="true"></lucide-icon>
                     {{ benefit }}
                   </li>
                 }
@@ -312,7 +237,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   }
                 </div>
                 <div class="flex h-7 w-7 items-center justify-center rounded-md bg-(--muted) text-(--muted-foreground) transition-colors group-hover:text-(--primary)">
-                  <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+                  <lucide-icon [img]="ArrowRightIcon" [size]="14" aria-hidden="true"></lucide-icon>
                 </div>
               </div>
             </a>
@@ -328,7 +253,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               >
                 <div class="flex items-start justify-between mb-3">
                   <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted)">
-                    <lucide-icon [img]="getIcon(service.iconName)" [size]="18" class="text-(--muted-foreground)"></lucide-icon>
+                    <lucide-icon [img]="getIcon(service.iconName)" [size]="18" class="text-(--muted-foreground)" aria-hidden="true"></lucide-icon>
                   </div>
                   <span class="rounded-md bg-(--muted) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                     {{ service.category }}
@@ -339,7 +264,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                 <div class="mt-4 flex items-end justify-between border-t border-(--border) pt-3">
                   <span class="text-lg font-semibold text-(--foreground)">{{ service.price }}</span>
                   <div class="flex h-7 w-7 items-center justify-center rounded-md bg-(--muted) text-(--muted-foreground)">
-                    <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+                    <lucide-icon [img]="ArrowRightIcon" [size]="14" aria-hidden="true"></lucide-icon>
                   </div>
                 </div>
               </a>
@@ -425,7 +350,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               "{{ testimonials[0].quote }}"
             </p>
             <div class="mt-6 flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted) text-sm font-semibold text-(--foreground) shrink-0">
+              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-(--muted) text-sm font-semibold text-(--foreground) shrink-0" role="img" [attr.aria-label]="'Avatar de ' + testimonials[0].name">
                 {{ getInitials(testimonials[0].name) }}
               </div>
               <div>
@@ -446,7 +371,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   "{{ t.quote }}"
                 </p>
                 <div class="mt-3 flex items-center gap-2">
-                  <div class="flex h-8 w-8 items-center justify-center rounded-md bg-(--muted) text-xs font-semibold text-(--foreground) shrink-0">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-md bg-(--muted) text-xs font-semibold text-(--foreground) shrink-0" role="img" [attr.aria-label]="'Avatar de ' + t.name">
                     {{ getInitials(t.name) }}
                   </div>
                   <div>
@@ -505,7 +430,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                 <ul class="space-y-2">
                   @for (feat of plan.features; track feat) {
                     <li class="flex items-start gap-2 text-sm text-(--muted-foreground)">
-                      <lucide-icon [img]="CheckIcon" [size]="14" class="mt-0.5 text-(--primary) shrink-0"></lucide-icon>
+                      <lucide-icon [img]="CheckIcon" [size]="14" class="mt-0.5 text-(--primary) shrink-0" aria-hidden="true"></lucide-icon>
                       {{ feat }}
                     </li>
                   }
@@ -532,6 +457,8 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               <button
                 class="flex w-full items-center justify-between p-4 text-left cursor-pointer"
                 (click)="toggleFaq(i)"
+                [attr.aria-expanded]="openFaqIndex() === i"
+                [attr.aria-controls]="'faq-answer-' + i"
               >
                 <span class="text-sm font-medium text-(--foreground)">{{ faq.question }}</span>
                 <lucide-icon
@@ -539,10 +466,11 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                   [size]="16"
                   class="text-(--muted-foreground) transition-transform duration-150 shrink-0 ml-4"
                   [class.rotate-180]="openFaqIndex() === i"
+                  aria-hidden="true"
                 ></lucide-icon>
               </button>
               @if (openFaqIndex() === i) {
-                <div class="px-4 pb-4 text-sm text-(--muted-foreground) leading-relaxed border-t border-(--border) pt-3">
+                <div [id]="'faq-answer-' + i" class="px-4 pb-4 text-sm text-(--muted-foreground) leading-relaxed border-t border-(--border) pt-3">
                   {{ faq.answer }}
                 </div>
               }
@@ -568,7 +496,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
               (click)="showAppointment.set(true)"
               class="mt-6 inline-flex items-center gap-2 rounded-md bg-(--primary) px-5 py-2.5 text-sm font-medium text-(--primary-foreground) transition-colors hover:opacity-90 cursor-pointer w-fit"
             >
-              <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
+              <lucide-icon [img]="CalendarIcon" [size]="16" aria-hidden="true"></lucide-icon>
               Réserver mon audit
             </button>
           </div>
@@ -630,7 +558,7 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
                 @if (contactSubmitting()) {
                   Envoi en cours...
                 } @else {
-                  <lucide-icon [img]="SendIcon" [size]="16"></lucide-icon>
+                  <lucide-icon [img]="SendIcon" [size]="16" aria-hidden="true"></lucide-icon>
                   Envoyer le message
                 }
               </button>
@@ -645,6 +573,13 @@ import { CatalogService, ServiceItem } from '../../core/services/catalog.service
       [isOpen]="showAppointment()"
       (closed)="showAppointment.set(false)"
     />
+  `,
+  styles: `
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-track {
+        animation: none !important;
+      }
+    }
   `,
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
