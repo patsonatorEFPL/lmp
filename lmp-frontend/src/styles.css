@@ -153,13 +153,53 @@
   }
 }
 
-/* Accueil — hero : la colonne z-10 est transparente ; si l’overlay Tailwind n’est pas encore actif, le fond clair transparaît. */
-.home-hero,
-.home-hero .home-hero-media {
-  background-color: rgb(10, 14, 26);
+/* === Home page design tokens (scoped to public landing) === */
+/* Override vars only inside <lmp-home> so admin/CRM/dashboards stay untouched. */
+
+/* Light theme (default) */
+lmp-home {
+  display: block;
+  background-color: var(--background);
+  font-feature-settings: 'cv01', 'ss03';
+
+  --background: #f7f8f8;
+  --foreground: #08090a;
+  --card: #ffffff;
+  --card-foreground: #08090a;
+  --popover: #ffffff;
+  --popover-foreground: #08090a;
+  --primary: #5e6ad2;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f5;
+  --secondary-foreground: #08090a;
+  --muted: #f3f4f5;
+  --muted-foreground: #62666d;
+  --accent: #f5f6f7;
+  --accent-foreground: #08090a;
+  --border: #e6e6e6;
+  --input: #e6e6e6;
+  --ring: #5e6ad2;
 }
-.home-hero .home-hero-shade {
-  background-color: rgba(0, 0, 0, 0.8);
+
+/* Dark theme — overrides light vars when .dark is on <html> */
+.dark lmp-home {
+  --background: #08090a;
+  --foreground: #f7f8f8;
+  --card: rgba(255, 255, 255, 0.02);
+  --card-foreground: #f7f8f8;
+  --popover: #191a1b;
+  --popover-foreground: #f7f8f8;
+  --primary: #5e6ad2;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(255, 255, 255, 0.04);
+  --secondary-foreground: #f7f8f8;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: #8a8f98;
+  --accent: rgba(255, 255, 255, 0.05);
+  --accent-foreground: #f7f8f8;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #5e6ad2;
 }
 
 /* === Partner Ticker / Marquee === */
