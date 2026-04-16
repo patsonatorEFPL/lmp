@@ -89,6 +89,7 @@ preview_payment.py
 take_screenshots.py
 tmp-login.json
 tmp-payment-screenshots/
+audit-screenshots/
 
 ### OS Files ###
 .DS_Store
