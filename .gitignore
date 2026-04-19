@@ -90,6 +90,15 @@ take_screenshots.py
 tmp-login.json
 tmp-payment-screenshots/
 audit-screenshots/
+tmp-*.js
+tmp-*.ts
+tmp_*.py
+tmp-*.json
+diff.txt
+diff-*.txt
+
+### BMAD Method workspace (local tooling) ###
+_bmad/
 
 ### OS Files ###
 .DS_Store

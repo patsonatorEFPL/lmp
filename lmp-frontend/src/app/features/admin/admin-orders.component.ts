@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe } from '@angular/common';
+import { NgClass, DatePipe, CurrencyPipe, DecimalPipe } from '@angular/common';
 import {
   LucideAngularModule,
   ShoppingCart,
@@ -172,7 +172,7 @@ const ORDER_STEPS = [
 @Component({
   selector: 'lmp-admin-orders',
   standalone: true,
-  imports: [NgClass, DatePipe, CurrencyPipe, DecimalPipe, SlicePipe, FormsModule, LucideAngularModule, HlmButton],
+  imports: [NgClass, DatePipe, CurrencyPipe, DecimalPipe, FormsModule, LucideAngularModule, HlmButton],
   template: `
     <div class="crm-list-view flex h-full flex-col overflow-hidden bg-(--background)">
     <!-- Barre de filtres inline (style CRM) -->
