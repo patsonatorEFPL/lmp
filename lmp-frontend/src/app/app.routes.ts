@@ -158,6 +158,55 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'quotations',
+        loadComponent: () =>
+          import('./features/dashboard/user-quotations.component').then(
+            (m) => m.UserQuotationsComponent,
+          ),
+      },
+      {
+        path: 'invoices',
+        loadComponent: () =>
+          import('./features/dashboard/user-invoices.component').then(
+            (m) => m.UserInvoicesComponent,
+          ),
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./features/dashboard/user-projects.component').then(
+            (m) => m.UserProjectsComponent,
+          ),
+      },
+      {
+        path: 'projects/:id',
+        loadComponent: () =>
+          import('./features/dashboard/user-project-detail.component').then(
+            (m) => m.UserProjectDetailComponent,
+          ),
+      },
+      {
+        path: 'tickets',
+        loadComponent: () =>
+          import('./features/dashboard/user-tickets.component').then(
+            (m) => m.UserTicketsComponent,
+          ),
+      },
+      {
+        path: 'tickets/:id',
+        loadComponent: () =>
+          import('./features/dashboard/user-ticket-detail.component').then(
+            (m) => m.UserTicketDetailComponent,
+          ),
+      },
+      {
+        path: 'addresses',
+        loadComponent: () =>
+          import('./features/dashboard/user-addresses.component').then(
+            (m) => m.UserAddressesComponent,
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings.component').then(

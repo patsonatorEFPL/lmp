@@ -30,7 +30,7 @@ import { ProfileService } from '../../core/services/profile.service';
   ],
   template: `
     <!-- Titre dans lmp-dashboard-layout -->
-    <div class="mx-auto max-w-4xl">
+    <div class="space-y-6">
         <!-- Success / Error Messages -->
         @if (profileSuccess()) {
           <div
@@ -191,7 +191,7 @@ import { ProfileService } from '../../core/services/profile.service';
         </div>
 
         <!-- Security Section -->
-        <div class="mt-6 rounded-sm border border-(--border) bg-(--card) p-6">
+        <div class="rounded-sm border border-(--border) bg-(--card) p-6">
           <div class="mb-4 flex items-center gap-3">
             <div
               class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--primary)/10 text-(--primary)"

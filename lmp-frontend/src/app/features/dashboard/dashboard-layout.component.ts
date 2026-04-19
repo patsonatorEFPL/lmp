@@ -16,6 +16,11 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  FileText,
+  Receipt,
+  FolderKanban,
+  LifeBuoy,
+  MapPin,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
@@ -400,6 +405,16 @@ export class DashboardLayoutComponent implements OnInit {
         return 'Mes commandes';
       case 'appointments':
         return 'Mes rendez-vous';
+      case 'quotations':
+        return 'Mes devis';
+      case 'invoices':
+        return 'Mes factures';
+      case 'projects':
+        return parts[2] ? 'Détail projet' : 'Mes projets';
+      case 'tickets':
+        return parts[2] ? 'Détail ticket' : 'Mes tickets';
+      case 'addresses':
+        return 'Mes adresses';
       case 'settings':
         return 'Paramètres du compte';
       default:
@@ -425,7 +440,12 @@ export class DashboardLayoutComponent implements OnInit {
   readonly sidebarItems = [
     { label: "Accueil", route: '/dashboard', icon: LayoutDashboard, exact: true },
     { label: 'Mes commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false },
+    { label: 'Mes devis', route: '/dashboard/quotations', icon: FileText, exact: false },
+    { label: 'Mes factures', route: '/dashboard/invoices', icon: Receipt, exact: false },
+    { label: 'Mes projets', route: '/dashboard/projects', icon: FolderKanban, exact: false },
+    { label: 'Mes tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false },
     { label: 'Mes rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false },
+    { label: 'Mes adresses', route: '/dashboard/addresses', icon: MapPin, exact: false },
     { label: 'Paramètres', route: '/dashboard/settings', icon: Settings, exact: false },
   ];
 
