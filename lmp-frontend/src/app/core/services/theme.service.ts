@@ -34,6 +34,13 @@ export class ThemeService {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
+      const saved = localStorage.getItem('lmp-theme');
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        this.preference.set(saved);
+      }
+      this.mql = window.matchMedia('(prefers-color-scheme: dark)');
+      this.systemIsDark.set(this.mql.matches);
+
       effect(() => {
         const dark = this.isDark();
         untracked(() => {
@@ -61,19 +68,9 @@ export class ThemeService {
   }
 
   init(): void {
-    if (!isPlatformBrowser(this.platformId)) {
+    if (!isPlatformBrowser(this.platformId) || !this.mql) {
       return;
     }
-
-    const saved = localStorage.getItem('lmp-theme');
-    if (saved === 'light' || saved === 'dark' || saved === 'system') {
-      this.preference.set(saved);
-    } else {
-      this.preference.set('system');
-    }
-
-    this.mql = window.matchMedia('(prefers-color-scheme: dark)');
-    this.systemIsDark.set(this.mql.matches);
     this.mqlListener = (e: MediaQueryListEvent) => this.systemIsDark.set(e.matches);
     this.mql.addEventListener('change', this.mqlListener);
   }
