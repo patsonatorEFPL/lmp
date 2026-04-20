@@ -180,7 +180,10 @@
         try {
           var saved = localStorage.getItem('lmp-theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var useDark = saved ? saved === 'dark' : prefersDark;
+          var useDark;
+          if (saved === 'light') useDark = false;
+          else if (saved === 'dark') useDark = true;
+          else useDark = prefersDark;
           document.documentElement.classList.toggle('dark', useDark);
         } catch(e) {}
       })();
