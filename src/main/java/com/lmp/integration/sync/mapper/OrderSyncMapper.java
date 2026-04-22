@@ -57,6 +57,9 @@ public class OrderSyncMapper {
         // Traçabilité bidirectionnelle — UUID LMP stocké côté système externe
         payload.put("lmp_order_id", order.getId().toString());
 
+        // Services — pas de livraison physique requise (champ au niveau SO parent dans external ERP v17)
+        payload.put("skip_delivery_note", 1);
+
         // Lignes d'articles
         List<Map<String, Object>> items = buildOrderItems(order);
         payload.put("items", items);
