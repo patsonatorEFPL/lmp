@@ -44,6 +44,8 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
 
     List<Service> findByCategoryIdAndActiveTrue(UUID categoryId);
 
+    Optional<Service> findByExternalItemCode(String externalItemCode);
+
     @Query("SELECT DISTINCT s FROM Service s " +
            "LEFT JOIN FETCH s.category " +
            "LEFT JOIN FETCH s.benefits " +

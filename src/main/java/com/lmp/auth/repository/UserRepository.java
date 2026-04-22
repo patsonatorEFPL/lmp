@@ -48,4 +48,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("SELECT COUNT(DISTINCT u.id) FROM User u JOIN u.roles r WHERE r.name = :roleName")
     long countDistinctUsersWithRoleName(@Param("roleName") String roleName);
+
+    Optional<User> findByExternalCustomerId(String externalCustomerId);
 }

@@ -103,9 +103,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/payments/guest-order/prepare")
                         .permitAll()
 
-                        // Webhooks Stripe (pas d'auth)
+                        // Webhooks Stripe + sync externe (pas d'auth — validés par HMAC)
                         .requestMatchers(
                                 "/api/webhooks/**",
+                                "/api/v1/webhooks/**",
                                 "/api/payments/**",
                                 "/api/payment-status/**")
                         .permitAll()
@@ -117,8 +118,10 @@ public class SecurityConfig {
                                 "/api/orders/clear-purchase-intent")
                         .permitAll()
 
-                        // Admin endpoints
+                        // Admin + Dev endpoints (DevSyncController n'existe qu'en @Profile("dev"))
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // Dev endpoints — @Profile("dev") controller only exists in dev
+                        .requestMatchers("/api/v1/dev/**").permitAll()
 
                         // Tout le reste nécessite authentification
                         .anyRequest().authenticated())
@@ -130,7 +133,9 @@ public class SecurityConfig {
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(spaCsrfTokenRequestHandler())
                         .ignoringRequestMatchers(
+                                "/api/v1/dev/**",
                                 "/api/webhooks/**",
+                                "/api/v1/webhooks/**",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/forgot-password",

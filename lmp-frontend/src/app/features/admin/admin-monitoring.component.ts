@@ -1,4 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -28,6 +28,10 @@ import {
   FileText,
   ChevronRight,
   AlertCircle,
+  BarChart3,
+  List,
+  Server,
+  HardDrive,
 } from 'lucide-angular';
 import {
   ApiHealthService,
@@ -41,6 +45,8 @@ import {
 import { VisiblePollService } from '../../core/services/visible-poll.service';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
+import { DailyUsageChartComponent, DailyDataPoint } from './monitoring/daily-usage-chart.component';
+import { ApiUsageChartComponent, ApiUsageItem } from './monitoring/api-usage-chart.component';
 
 /** Map API name → category icon */
 const API_ICONS: Record<string, typeof Activity> = {
@@ -54,39 +60,29 @@ const API_ICONS: Record<string, typeof Activity> = {
   'FX Rates': DollarSign,
 };
 
-type Tab = 'realtime' | 'history';
+type Tab = 'realtime' | 'statistics';
 
 @Component({
   selector: 'lmp-admin-monitoring',
   standalone: true,
-  imports: [LucideAngularModule],
+  imports: [LucideAngularModule, DailyUsageChartComponent, ApiUsageChartComponent, DecimalPipe],
   template: `
     <div class="p-4 sm:p-5">
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <div
-            class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)"
-          >
-            <lucide-icon
-              [img]="ActivityIcon"
-              [size]="18"
-              class="text-(--foreground)"
-            ></lucide-icon>
+          <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+            <lucide-icon [img]="ActivityIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
           </div>
           <div>
-            <h1 class="text-base font-semibold text-(--foreground)">
-              Monitoring API
-            </h1>
+            <h1 class="text-base font-semibold text-(--foreground)">Monitoring API</h1>
             @if (activeTab() === 'realtime' && snapshot()) {
               <p class="text-xs text-(--muted-foreground)">
                 Mis à jour : {{ formatTimestamp(snapshot()!.timestamp) }}
               </p>
             }
-            @if (activeTab() === 'history') {
-              <p class="text-xs text-(--muted-foreground)">
-                Rapports des 7 derniers jours
-              </p>
+            @if (activeTab() === 'statistics') {
+              <p class="text-xs text-(--muted-foreground)">Vue d'ensemble des performances</p>
             }
           </div>
         </div>
@@ -97,11 +93,7 @@ type Tab = 'realtime' | 'history';
             [disabled]="probing()"
             (click)="onProbeAll()"
           >
-            <lucide-icon
-              [img]="PlayCircleIcon"
-              [size]="14"
-              [class.animate-spin]="probing()"
-            ></lucide-icon>
+            <lucide-icon [img]="PlayCircleIcon" [size]="14" [class.animate-spin]="probing()"></lucide-icon>
             {{ probing() ? 'Test en cours…' : 'Tester les APIs' }}
           </button>
         }
@@ -111,106 +103,177 @@ type Tab = 'realtime' | 'history';
       <div class="mt-5 flex gap-1 rounded-sm border border-zinc-200 bg-zinc-50 p-0.5 dark:border-zinc-700 dark:bg-zinc-800/50">
         <button
           type="button"
-          class="flex-1 rounded-xs px-3 py-1.5 text-xs font-medium transition-colors"
+          class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xs px-3 py-1.5 text-xs font-medium transition-colors"
           [class]="activeTab() === 'realtime'
             ? 'bg-white text-(--foreground) shadow-xs dark:bg-zinc-800 dark:text-white'
             : 'text-(--muted-foreground) hover:text-(--foreground)'"
           (click)="activeTab.set('realtime')"
         >
+          <lucide-icon [img]="ListIcon" [size]="13"></lucide-icon>
           Temps réel
         </button>
         <button
           type="button"
-          class="flex-1 rounded-xs px-3 py-1.5 text-xs font-medium transition-colors"
-          [class]="activeTab() === 'history'
+          class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xs px-3 py-1.5 text-xs font-medium transition-colors"
+          [class]="activeTab() === 'statistics'
             ? 'bg-white text-(--foreground) shadow-xs dark:bg-zinc-800 dark:text-white'
             : 'text-(--muted-foreground) hover:text-(--foreground)'"
-          (click)="switchToHistory()"
+          (click)="switchToStatistics()"
         >
-          Historique (7j)
+          <lucide-icon [img]="BarChart3Icon" [size]="13"></lucide-icon>
+          Statistiques
         </button>
       </div>
+
+      <!-- ═══════════════ STATISTICS TAB ═══════════════ -->
+      @if (activeTab() === 'statistics') {
+        @if (blockingLoader()) {
+          <div class="flex items-center justify-center py-16">
+            <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
+          </div>
+        }
+
+        @if (!blockingLoader() && snapshot()) {
+          <!-- Stat cards -->
+          <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <!-- Total APIs -->
+            <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
+              <span class="text-2xl font-bold text-(--foreground)">{{ snapshot()!.apis.length }}</span>
+              <p class="mt-1 text-xs font-medium text-(--muted-foreground)">APIs</p>
+            </div>
+            <!-- Total Appels -->
+            <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
+              <span class="text-2xl font-bold text-(--foreground)">{{ totalCalls() | number }}</span>
+              <p class="mt-1 text-xs font-medium text-(--muted-foreground)">Total Appels</p>
+            </div>
+            <!-- Latence moyenne -->
+            <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
+              <span class="text-2xl font-bold text-(--foreground)">{{ avgLatency() }} ms</span>
+              <p class="mt-1 text-xs font-medium text-(--muted-foreground)">Latence moy.</p>
+            </div>
+            <!-- Taux de succès -->
+            <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
+              <span class="text-2xl font-bold" [class]="globalSuccessRateClass()">{{ globalSuccessRate() }}%</span>
+              <p class="mt-1 text-xs font-medium text-(--muted-foreground)">Taux de succès</p>
+            </div>
+          </div>
+
+          <!-- Status subtitle -->
+          <p class="mt-3 text-xs text-(--muted-foreground)">
+            {{ upCount() }} UP · {{ degradedCount() }} Dégradée{{ degradedCount() > 1 ? 's' : '' }} · {{ downCount() }} Hors service
+          </p>
+
+          <!-- Daily Usage chart -->
+          <div class="mt-6">
+            <lmp-daily-usage-chart [dataInput]="dailyChartData()"></lmp-daily-usage-chart>
+          </div>
+
+          <!-- Bottom section: API Usage + Infrastructure -->
+          <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+            <!-- API Usage chart (3/5) -->
+            <div class="lg:col-span-3">
+              <lmp-api-usage-chart [dataInput]="apiUsageData()"></lmp-api-usage-chart>
+            </div>
+
+            <!-- Infrastructure panel (2/5) -->
+            <div class="lg:col-span-2">
+              <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
+                <h3 class="text-sm font-semibold text-(--foreground)">Infrastructure</h3>
+
+                <div class="mt-4 space-y-4">
+                  <!-- Database -->
+                  <div class="flex items-center gap-3.5">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+                      <lucide-icon [img]="DatabaseIcon" [size]="16" class="text-(--foreground)"></lucide-icon>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-semibold text-(--foreground)">Base de données</p>
+                      <p class="mt-0.5 text-xs" [class]="infraStatusClass(snapshot()!.infra.db)">
+                        {{ infraStatusLabel(snapshot()!.infra.db) }}
+                      </p>
+                    </div>
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full" [class]="statusDotClass(normalizeInfraStatus(snapshot()!.infra.db))"></span>
+                  </div>
+
+                  <!-- Disk space -->
+                  <div class="flex items-start gap-3.5">
+                    <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+                      <lucide-icon [img]="HardDriveIcon" [size]="16" class="text-(--foreground)"></lucide-icon>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-semibold text-(--foreground)">Espace disque</p>
+                      @if (snapshot()!.infra.diskTotal) {
+                        <p class="mt-0.5 text-xs text-(--muted-foreground)">
+                          {{ formatBytes(snapshot()!.infra.diskFree!) }} libre sur {{ formatBytes(snapshot()!.infra.diskTotal!) }}
+                        </p>
+                        <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                          <div
+                            class="h-full rounded-full transition-all"
+                            [class]="diskBarClass(snapshot()!.infra.diskUsagePercent!)"
+                            [style.width.%]="snapshot()!.infra.diskUsagePercent"
+                          ></div>
+                        </div>
+                        <p class="mt-1 text-[10px] text-(--muted-foreground)">{{ snapshot()!.infra.diskUsagePercent }}% utilisé</p>
+                      } @else {
+                        <p class="mt-0.5 text-xs" [class]="infraStatusClass(snapshot()!.infra.diskSpace)">
+                          {{ infraStatusLabel(snapshot()!.infra.diskSpace) }}
+                        </p>
+                      }
+                    </div>
+                    <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" [class]="statusDotClass(normalizeInfraStatus(snapshot()!.infra.diskSpace))"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      }
 
       <!-- ═══════════════ REAL-TIME TAB ═══════════════ -->
       @if (activeTab() === 'realtime') {
         @if (blockingLoader()) {
           <div class="flex items-center justify-center py-16">
-            <lucide-icon
-              [img]="Loader2Icon"
-              [size]="32"
-              class="animate-spin text-(--primary)"
-            ></lucide-icon>
+            <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
           </div>
         }
 
         @if (!blockingLoader() && snapshot()) {
           <!-- Summary pills -->
           <div class="mt-5 flex flex-wrap gap-3">
-            <div
-              class="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3.5 py-1.5 dark:border-green-900/50 dark:bg-green-950/30"
-            >
+            <div class="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3.5 py-1.5 dark:border-green-900/50 dark:bg-green-950/30">
               <span class="h-2 w-2 rounded-full bg-green-500"></span>
-              <span class="text-xs font-medium text-green-700 dark:text-green-400"
-                >{{ upCount() }} Opérationnel{{ upCount() > 1 ? 's' : '' }}</span
-              >
+              <span class="text-xs font-medium text-green-700 dark:text-green-400">{{ upCount() }} Opérationnel{{ upCount() > 1 ? 's' : '' }}</span>
             </div>
             @if (degradedCount() > 0) {
-              <div
-                class="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5 dark:border-amber-900/50 dark:bg-amber-950/30"
-              >
+              <div class="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5 dark:border-amber-900/50 dark:bg-amber-950/30">
                 <span class="h-2 w-2 rounded-full bg-amber-500"></span>
-                <span
-                  class="text-xs font-medium text-amber-700 dark:text-amber-400"
-                  >{{ degradedCount() }} Dégradé{{ degradedCount() > 1 ? 's' : '' }}</span
-                >
+                <span class="text-xs font-medium text-amber-700 dark:text-amber-400">{{ degradedCount() }} Dégradé{{ degradedCount() > 1 ? 's' : '' }}</span>
               </div>
             }
             @if (downCount() > 0) {
-              <div
-                class="flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3.5 py-1.5 dark:border-red-900/50 dark:bg-red-950/30"
-              >
+              <div class="flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3.5 py-1.5 dark:border-red-900/50 dark:bg-red-950/30">
                 <span class="h-2 w-2 rounded-full bg-red-500"></span>
-                <span class="text-xs font-medium text-red-700 dark:text-red-400"
-                  >{{ downCount() }} Hors service</span
-                >
+                <span class="text-xs font-medium text-red-700 dark:text-red-400">{{ downCount() }} Hors service</span>
               </div>
             }
             @if (unknownCount() > 0) {
-              <div
-                class="flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1.5 dark:border-zinc-700 dark:bg-zinc-800/30"
-              >
+              <div class="flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3.5 py-1.5 dark:border-zinc-700 dark:bg-zinc-800/30">
                 <span class="h-2 w-2 rounded-full bg-zinc-400"></span>
-                <span
-                  class="text-xs font-medium text-zinc-600 dark:text-zinc-400"
-                  >{{ unknownCount() }} Aucune donnée</span
-                >
+                <span class="text-xs font-medium text-zinc-600 dark:text-zinc-400">{{ unknownCount() }} Aucune donnée</span>
               </div>
             }
           </div>
 
           <!-- API Cards Grid -->
-          <div
-            class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-          >
+          <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             @for (api of snapshot()!.apis; track api.name) {
-              <div
-                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
-              >
+              <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2.5">
-                    <div
-                      class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted)"
-                    >
-                      <lucide-icon
-                        [img]="getApiIcon(api.name)"
-                        [size]="15"
-                        class="text-(--foreground)"
-                      ></lucide-icon>
+                    <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted)">
+                      <lucide-icon [img]="getApiIcon(api.name)" [size]="15" class="text-(--foreground)"></lucide-icon>
                     </div>
-                    <span
-                      class="text-sm font-semibold text-(--foreground)"
-                      >{{ api.name }}</span
-                    >
+                    <span class="text-sm font-semibold text-(--foreground)">{{ api.name }}</span>
                   </div>
                   <span
                     class="h-2.5 w-2.5 rounded-full"
@@ -255,7 +318,7 @@ type Tab = 'realtime' | 'history';
           <div class="mt-8">
             <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Infrastructure</h2>
             <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div class="flex items-center gap-3.5 rounded border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+              <div class="flex items-center gap-3.5 rounded border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
                 <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
                   <lucide-icon [img]="DatabaseIcon" [size]="16" class="text-(--foreground)"></lucide-icon>
                 </div>
@@ -267,9 +330,9 @@ type Tab = 'realtime' | 'history';
                 </div>
                 <span class="ml-auto h-2.5 w-2.5 rounded-full" [class]="statusDotClass(normalizeInfraStatus(snapshot()!.infra.db))"></span>
               </div>
-              <div class="flex items-center gap-3.5 rounded border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+              <div class="flex items-center gap-3.5 rounded border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80">
                 <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
-                  <lucide-icon [img]="ZapIcon" [size]="16" class="text-(--foreground)"></lucide-icon>
+                  <lucide-icon [img]="HardDriveIcon" [size]="16" class="text-(--foreground)"></lucide-icon>
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="text-sm font-semibold text-(--foreground)">Espace disque</p>
@@ -293,134 +356,6 @@ type Tab = 'realtime' | 'history';
           </div>
         }
       }
-
-      <!-- ═══════════════ HISTORY TAB ═══════════════ -->
-      @if (activeTab() === 'history') {
-        @if (loadingReports()) {
-          <div class="flex items-center justify-center py-16">
-            <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-(--primary)"></lucide-icon>
-          </div>
-        }
-
-        @if (!loadingReports() && reports().length === 0) {
-          <div class="mt-8 flex flex-col items-center justify-center py-12 text-center">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <lucide-icon [img]="FileTextIcon" [size]="22" class="text-(--muted-foreground)"></lucide-icon>
-            </div>
-            <p class="mt-3 text-sm font-medium text-(--foreground)">Aucun rapport disponible</p>
-            <p class="mt-1 text-xs text-(--muted-foreground)">
-              Les rapports sont générés automatiquement chaque jour à minuit.
-            </p>
-          </div>
-        }
-
-        @if (!loadingReports() && reports().length > 0) {
-          <!-- Report list or detail -->
-          @if (!selectedReport()) {
-            <div class="mt-5 space-y-2">
-              @for (report of reports(); track report.reportDate) {
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-3.5 rounded border border-zinc-200/90 bg-white p-4 text-left shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/70"
-                  (click)="loadReport(report.reportDate)"
-                >
-                  <div class="flex h-10 w-10 items-center justify-center rounded-sm bg-(--muted)">
-                    <lucide-icon [img]="FileTextIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-semibold text-(--foreground)">
-                      {{ formatReportDate(report.reportDate) }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-(--muted-foreground)">
-                      {{ report.apiCount ?? 0 }} APIs · {{ report.totalRecords ?? 0 }} appels enregistrés
-                    </p>
-                  </div>
-                  <lucide-icon [img]="ChevronRightIcon" [size]="16" class="shrink-0 text-(--muted-foreground)"></lucide-icon>
-                </button>
-              }
-            </div>
-          }
-
-          <!-- Report detail -->
-          @if (selectedReport()) {
-            <div class="mt-5">
-              <button
-                type="button"
-                class="mb-4 inline-flex items-center gap-1 text-xs font-medium text-(--primary) hover:underline"
-                (click)="selectedReport.set(null)"
-              >
-                ← Retour aux rapports
-              </button>
-
-              <div class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <h3 class="text-sm font-semibold text-(--foreground)">
-                      Rapport du {{ formatReportDate(selectedReport()!.reportDate) }}
-                    </h3>
-                    <p class="mt-0.5 text-xs text-(--muted-foreground)">
-                      {{ selectedReport()!.totalRecords }} appels enregistrés
-                    </p>
-                  </div>
-                </div>
-
-                <!-- Per-API cards -->
-                <div class="mt-5 space-y-4">
-                  @for (api of selectedReport()!.apis; track api.name) {
-                    <div class="rounded border border-zinc-100 p-4 dark:border-zinc-800">
-                      <div class="flex items-center gap-2.5">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-sm bg-(--muted)">
-                          <lucide-icon [img]="getApiIcon(api.name)" [size]="15" class="text-(--foreground)"></lucide-icon>
-                        </div>
-                        <span class="text-sm font-semibold text-(--foreground)">{{ api.name }}</span>
-                      </div>
-
-                      <div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-5">
-                        <div>
-                          <p class="text-[10px] font-medium tracking-wider text-(--muted-foreground) uppercase">Appels</p>
-                          <p class="mt-0.5 text-sm font-semibold text-(--foreground)">{{ api.totalCalls }}</p>
-                        </div>
-                        <div>
-                          <p class="text-[10px] font-medium tracking-wider text-(--muted-foreground) uppercase">Succès</p>
-                          <p class="mt-0.5 text-sm font-semibold" [class]="successRateClass(api.successRate, api.totalCalls)">
-                            {{ api.successRate }}%
-                          </p>
-                        </div>
-                        <div>
-                          <p class="text-[10px] font-medium tracking-wider text-(--muted-foreground) uppercase">Latence moy.</p>
-                          <p class="mt-0.5 text-sm font-semibold text-(--foreground)">{{ api.avgLatencyMs }} ms</p>
-                        </div>
-                        <div>
-                          <p class="text-[10px] font-medium tracking-wider text-(--muted-foreground) uppercase">P95</p>
-                          <p class="mt-0.5 text-sm font-semibold text-(--foreground)">{{ api.p95LatencyMs }} ms</p>
-                        </div>
-                        <div>
-                          <p class="text-[10px] font-medium tracking-wider text-(--muted-foreground) uppercase">Erreurs</p>
-                          <p class="mt-0.5 text-sm font-semibold" [class]="api.errorCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-(--foreground)'">
-                            {{ api.errorCount }}
-                          </p>
-                        </div>
-                      </div>
-
-                      @if (api.topErrors.length > 0) {
-                        <div class="mt-3 border-t border-zinc-100 pt-2.5 dark:border-zinc-800">
-                          <p class="text-[10px] font-medium tracking-wider text-(--muted-foreground) uppercase">Dernières erreurs</p>
-                          @for (err of api.topErrors; track err) {
-                            <div class="mt-1 flex items-start gap-1.5">
-                              <lucide-icon [img]="AlertCircleIcon" [size]="11" class="mt-0.5 shrink-0 text-red-500"></lucide-icon>
-                              <p class="truncate text-xs text-red-500 dark:text-red-400" [title]="err">{{ err }}</p>
-                            </div>
-                          }
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          }
-        }
-      }
     </div>
   `,
 })
@@ -438,16 +373,20 @@ export class AdminMonitoringComponent implements OnInit {
   readonly ClockIcon = Clock;
   readonly ZapIcon = Zap;
   readonly DatabaseIcon = Database;
+  readonly HardDriveIcon = HardDrive;
   readonly Loader2Icon = Loader2;
   readonly PlayCircleIcon = PlayCircle;
   readonly FileTextIcon = FileText;
   readonly ChevronRightIcon = ChevronRight;
   readonly AlertCircleIcon = AlertCircle;
+  readonly BarChart3Icon = BarChart3;
+  readonly ListIcon = List;
+  readonly ServerIcon = Server;
 
-  // ── Tab state ──────────────────────────────────────────────────────────────
-  readonly activeTab = signal<Tab>('realtime');
+  // ── Tab state ──────────────────────────────────────────────────────────
+  readonly activeTab = signal<Tab>('statistics');
 
-  // ── Real-time ──────────────────────────────────────────────────────────────
+  // ── Real-time ──────────────────────────────────────────────────────────
   readonly healthResource = resource<ApiHealthSnapshot | null, { browser: boolean }>({
     params: () => ({ browser: isPlatformBrowser(this.platformId) }),
     loader: async ({ params }) => {
@@ -471,6 +410,7 @@ export class AdminMonitoringComponent implements OnInit {
 
   readonly probing = signal(false);
 
+  // ── Computed stats from snapshot ───────────────────────────────────────
   readonly upCount = computed(
     () => this.snapshot()?.apis.filter((a) => a.status === 'UP').length ?? 0,
   );
@@ -484,11 +424,52 @@ export class AdminMonitoringComponent implements OnInit {
     () => this.snapshot()?.apis.filter((a) => a.status === 'UNKNOWN').length ?? 0,
   );
 
-  // ── History ────────────────────────────────────────────────────────────────
+  readonly totalCalls = computed(
+    () => this.snapshot()?.apis.reduce((sum, a) => sum + a.totalCalls, 0) ?? 0,
+  );
+
+  readonly avgLatency = computed(() => {
+    const apis = this.snapshot()?.apis.filter(a => a.totalCalls > 0) ?? [];
+    if (apis.length === 0) return 0;
+    const totalWeighted = apis.reduce((sum, a) => sum + a.avgLatencyMs * a.totalCalls, 0);
+    const totalC = apis.reduce((sum, a) => sum + a.totalCalls, 0);
+    return totalC > 0 ? Math.round(totalWeighted / totalC) : 0;
+  });
+
+  readonly globalSuccessRate = computed(() => {
+    const apis = this.snapshot()?.apis ?? [];
+    const totalC = apis.reduce((sum, a) => sum + a.totalCalls, 0);
+    if (totalC === 0) return 0;
+    const totalSuccess = apis.reduce((sum, a) => sum + Math.round(a.totalCalls * a.successRate / 100), 0);
+    return Math.round((totalSuccess / totalC) * 100 * 10) / 10;
+  });
+
+  readonly globalSuccessRateClass = computed(() => {
+    const rate = this.globalSuccessRate();
+    if (rate >= 90) return 'text-green-600 dark:text-green-400';
+    if (rate >= 50) return 'text-amber-600 dark:text-amber-400';
+    return 'text-red-600 dark:text-red-400';
+  });
+
+  // ── Chart data ─────────────────────────────────────────────────────────
+  readonly apiUsageData = computed<ApiUsageItem[]>(() => {
+    const apis = this.snapshot()?.apis ?? [];
+    return apis
+      .map(a => ({
+        name: a.name,
+        successCalls: Math.round(a.totalCalls * a.successRate / 100),
+        errorCalls: a.totalCalls - Math.round(a.totalCalls * a.successRate / 100),
+      }))
+      .sort((a, b) => (b.successCalls + b.errorCalls) - (a.successCalls + a.errorCalls));
+  });
+
+  // ── Daily chart data from reports ──────────────────────────────────────
+  readonly dailyChartData = signal<DailyDataPoint[]>([]);
+  private dailyDataLoaded = false;
+
+  // ── History (kept for potential future use) ────────────────────────────
   readonly reports = signal<ReportSummary[]>([]);
   readonly loadingReports = signal(false);
-  readonly selectedReport = signal<DailyReport | null>(null);
-  private reportsLoaded = false;
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -497,6 +478,74 @@ export class AdminMonitoringComponent implements OnInit {
         environment.dashboardPollIntervalMs,
         () => this.healthResource.reload(),
       );
+      // Load daily chart data
+      this.loadDailyChartData();
+    }
+  }
+
+  switchToStatistics(): void {
+    this.activeTab.set('statistics');
+    if (!this.dailyDataLoaded) {
+      this.loadDailyChartData();
+    }
+  }
+
+  private loadDailyChartData(): void {
+    this.apiHealthService.getReportsList().subscribe({
+      next: (list) => {
+        this.reports.set(list);
+        this.dailyDataLoaded = true;
+        // Build daily data points from report summaries
+        const points: DailyDataPoint[] = list
+          .slice(0, 7)
+          .map(r => ({
+            date: r.reportDate,
+            calls: r.totalRecords ?? 0,
+            successRate: 0, // Will be enriched if we fetch individual reports
+          }))
+          .reverse();
+
+        // Enrich with success rates by fetching individual reports
+        if (points.length > 0) {
+          this.enrichDailyData(points);
+        } else {
+          this.dailyChartData.set(points);
+        }
+      },
+      error: () => {
+        this.dailyChartData.set([]);
+        this.dailyDataLoaded = true;
+      },
+    });
+  }
+
+  private enrichDailyData(points: DailyDataPoint[]): void {
+    // Load the most recent reports to get success rates
+    let completed = 0;
+    const enriched = [...points];
+
+    for (let i = 0; i < enriched.length; i++) {
+      this.apiHealthService.getReport(enriched[i].date).subscribe({
+        next: (report) => {
+          const totalCalls = report.apis.reduce((s, a) => s + a.totalCalls, 0);
+          const totalSuccess = report.apis.reduce((s, a) => s + a.successCount, 0);
+          enriched[i] = {
+            ...enriched[i],
+            calls: totalCalls || enriched[i].calls,
+            successRate: totalCalls > 0 ? Math.round((totalSuccess / totalCalls) * 100) : 0,
+          };
+          completed++;
+          if (completed === enriched.length) {
+            this.dailyChartData.set([...enriched]);
+          }
+        },
+        error: () => {
+          completed++;
+          if (completed === enriched.length) {
+            this.dailyChartData.set([...enriched]);
+          }
+        },
+      });
     }
   }
 
@@ -511,37 +560,7 @@ export class AdminMonitoringComponent implements OnInit {
     });
   }
 
-  switchToHistory(): void {
-    this.activeTab.set('history');
-    this.selectedReport.set(null);
-    if (!this.reportsLoaded) {
-      this.loadingReports.set(true);
-      this.apiHealthService.getReportsList().subscribe({
-        next: (list) => {
-          this.reports.set(list);
-          this.loadingReports.set(false);
-          this.reportsLoaded = true;
-        },
-        error: () => {
-          this.reports.set([]);
-          this.loadingReports.set(false);
-        },
-      });
-    }
-  }
-
-  loadReport(date: string): void {
-    this.loadingReports.set(true);
-    this.apiHealthService.getReport(date).subscribe({
-      next: (report) => {
-        this.selectedReport.set(report);
-        this.loadingReports.set(false);
-      },
-      error: () => this.loadingReports.set(false),
-    });
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────
 
   getApiIcon(apiName: string) {
     return API_ICONS[apiName] ?? Activity;
@@ -629,19 +648,5 @@ export class AdminMonitoringComponent implements OnInit {
     if (usagePercent >= 90) return 'bg-red-500';
     if (usagePercent >= 75) return 'bg-amber-500';
     return 'bg-green-500';
-  }
-
-  formatReportDate(dateStr: string): string {
-    try {
-      const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-    } catch {
-      return dateStr;
-    }
   }
 }

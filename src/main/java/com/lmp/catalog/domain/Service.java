@@ -107,4 +107,12 @@ public class Service {
         benefits.add(benefit);
         benefit.setService(this);
     }
+
+    // --- Champ de liaison système externe (agnostique ERP) ---
+
+    @Column(name = "external_item_code", length = 140)
+    private String externalItemCode;
+
+    public String getExternalItemCode() { return externalItemCode; }
+    public void setExternalItemCode(String externalItemCode) { this.externalItemCode = externalItemCode; }
 }

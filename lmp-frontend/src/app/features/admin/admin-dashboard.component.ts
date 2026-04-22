@@ -53,7 +53,7 @@ type AdminDashboardPayload = {
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <!-- Users -->
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Utilisateurs</span>
@@ -79,7 +79,7 @@ type AdminDashboardPayload = {
 
         <!-- Orders -->
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Commandes</span>
@@ -102,7 +102,7 @@ type AdminDashboardPayload = {
 
         <!-- Services -->
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Services</span>
@@ -128,7 +128,7 @@ type AdminDashboardPayload = {
 
         <!-- Appointments -->
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Rendez-vous</span>
@@ -160,7 +160,7 @@ type AdminDashboardPayload = {
         <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <a
             routerLink="/admin/services"
-            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/80"
+            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800/80"
           >
             <div class="flex items-center gap-3">
               <div
@@ -186,7 +186,7 @@ type AdminDashboardPayload = {
 
           <a
             routerLink="/admin/users"
-            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/80"
+            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800/80"
           >
             <div class="flex items-center gap-3">
               <div
@@ -212,7 +212,7 @@ type AdminDashboardPayload = {
 
           <a
             routerLink="/admin/orders"
-            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/80"
+            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800/80"
           >
             <div class="flex items-center gap-3">
               <div
@@ -238,7 +238,7 @@ type AdminDashboardPayload = {
 
           <a
             routerLink="/admin/appointments"
-            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/80"
+            class="group flex items-center justify-between rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800/80"
           >
             <div class="flex items-center gap-3">
               <div

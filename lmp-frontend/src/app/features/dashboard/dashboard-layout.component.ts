@@ -44,13 +44,13 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
   template: `
     <!-- Même squelette que lmp-admin-layout : bandeau desktop 220px + titre/outils, sidebar « Vues », colonne main -->
     <div
-      class="flex min-h-screen flex-col bg-surface-white dark:bg-zinc-950 lg:h-screen lg:overflow-hidden"
+      class="flex min-h-screen flex-col bg-surface-white dark:bg-black lg:h-screen lg:overflow-hidden"
     >
       <div
         class="hidden h-14 shrink-0 border-b border-zinc-200/90 dark:border-zinc-800 lg:flex lg:items-stretch"
       >
         <div
-          class="flex shrink-0 items-center border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-900"
+          class="flex shrink-0 items-center border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-black"
           [ngClass]="
             sidebarCollapsed()
               ? 'w-16 justify-center px-1'
@@ -87,7 +87,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           }
         </div>
         <div
-          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-zinc-950"
+          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-black"
         >
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <h1
@@ -132,7 +132,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
 
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <aside
-          class="z-30 hidden shrink-0 flex-col overflow-hidden border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-900 lg:z-auto lg:flex"
+          class="z-30 hidden shrink-0 flex-col overflow-hidden border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-black lg:z-auto lg:flex"
           [ngClass]="sidebarCollapsed() ? 'w-16' : 'w-[220px]'"
         >
           <nav
@@ -231,7 +231,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
             (click)="mobileMenuOpen.set(false)"
           ></button>
           <aside
-            class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col border-r border-zinc-200/90 bg-surface-menu-bar shadow-xl dark:border-zinc-800 dark:bg-zinc-900 lg:hidden"
+            class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col border-r border-zinc-200/90 bg-surface-menu-bar shadow-xl dark:border-zinc-800 dark:bg-black lg:hidden"
           >
             <div
               class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-2 dark:border-zinc-800"
@@ -298,10 +298,10 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
         }
 
         <div
-          class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950 lg:min-h-0"
+          class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-black lg:min-h-0"
         >
           <header
-            class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/90 bg-white lg:hidden dark:border-zinc-800 dark:bg-zinc-950"
+            class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/90 bg-white lg:hidden dark:border-zinc-800 dark:bg-black"
           >
             <div
               class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-3 px-3 sm:pl-5 sm:pr-6"
@@ -362,7 +362,7 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           </header>
 
           <main
-            class="lmp-dashboard-theme min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-white p-4 sm:p-5 dark:bg-zinc-950"
+            class="lmp-dashboard-theme min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-white p-4 sm:p-5 dark:bg-black"
           >
             <router-outlet />
           </main>
@@ -398,23 +398,23 @@ export class DashboardLayoutComponent implements OnInit {
       return 'Espace client';
     }
     if (parts.length === 1) {
-      return 'Accueil';
+      return 'Tableau de bord';
     }
     switch (parts[1]) {
       case 'orders':
-        return 'Mes commandes';
+        return 'Commandes';
       case 'appointments':
-        return 'Mes rendez-vous';
+        return 'Rendez-vous';
       case 'quotations':
-        return 'Mes devis';
+        return 'Devis';
       case 'invoices':
-        return 'Mes factures';
+        return 'Factures';
       case 'projects':
-        return parts[2] ? 'Détail projet' : 'Mes projets';
+        return parts[2] ? 'Détail projet' : 'Projets';
       case 'tickets':
-        return parts[2] ? 'Détail ticket' : 'Mes tickets';
+        return parts[2] ? 'Détail ticket' : 'Tickets';
       case 'addresses':
-        return 'Mes adresses';
+        return 'Adresses';
       case 'settings':
         return 'Paramètres du compte';
       default:
@@ -438,14 +438,14 @@ export class DashboardLayoutComponent implements OnInit {
   readonly PanelLeftOpenIcon = PanelLeftOpen;
 
   readonly sidebarItems = [
-    { label: "Accueil", route: '/dashboard', icon: LayoutDashboard, exact: true },
-    { label: 'Mes commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false },
-    { label: 'Mes devis', route: '/dashboard/quotations', icon: FileText, exact: false },
-    { label: 'Mes factures', route: '/dashboard/invoices', icon: Receipt, exact: false },
-    { label: 'Mes projets', route: '/dashboard/projects', icon: FolderKanban, exact: false },
-    { label: 'Mes tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false },
-    { label: 'Mes rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false },
-    { label: 'Mes adresses', route: '/dashboard/addresses', icon: MapPin, exact: false },
+    { label: "Tableau de bord", route: '/dashboard', icon: LayoutDashboard, exact: true },
+    { label: 'Commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false },
+    { label: 'Devis', route: '/dashboard/quotations', icon: FileText, exact: false },
+    { label: 'Factures', route: '/dashboard/invoices', icon: Receipt, exact: false },
+    { label: 'Projets', route: '/dashboard/projects', icon: FolderKanban, exact: false },
+    { label: 'Tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false },
+    { label: 'Rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false },
+    { label: 'Adresses', route: '/dashboard/addresses', icon: MapPin, exact: false },
     { label: 'Paramètres', route: '/dashboard/settings', icon: Settings, exact: false },
   ];
 
