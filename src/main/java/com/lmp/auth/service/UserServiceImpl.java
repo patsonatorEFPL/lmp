@@ -23,6 +23,12 @@ import com.lmp.billing.repository.ReviewRepository;
 import com.lmp.auth.repository.RoleRepository;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.auth.service.SessionSecurityService;
+import com.lmp.integration.event.LmpBusinessEvent;
+import com.lmp.integration.event.LmpBusinessEvent.EventType;
+import org.springframework.context.ApplicationEventPublisher;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Implémentation du service de gestion des utilisateurs.
@@ -46,6 +52,8 @@ public class UserServiceImpl implements UserService {
     
         private final AppointmentRepository appointmentRepository;
 
+        private final ApplicationEventPublisher eventPublisher;
+
 
     public UserServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -53,7 +61,8 @@ public class UserServiceImpl implements UserService {
                            SessionSecurityService sessionSecurityService,
                            OrderRepository orderRepository,
                            ReviewRepository reviewRepository,
-                           AppointmentRepository appointmentRepository) {
+                           AppointmentRepository appointmentRepository,
+                           ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -61,6 +70,7 @@ public class UserServiceImpl implements UserService {
         this.orderRepository = orderRepository;
         this.reviewRepository = reviewRepository;
         this.appointmentRepository = appointmentRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -663,15 +673,28 @@ public class UserServiceImpl implements UserService {
             
             // ÉTAPE 6: CONSERVER l'historique des statuts de commandes
             // (table order_status_history) - Ne rien faire, conservé pour audit
-            logger.info("📋 [HARD-DELETE] Étape 6/7 - Historique des statuts conservé pour audit");
+            logger.info("📋 [HARD-DELETE] Étape 6/8 - Historique des statuts conservé pour audit");
+
+            // ÉTAPE 7: Publier USER_DELETED AVANT la suppression (pour conserver externalCustomerId)
+            logger.warn("📡 [HARD-DELETE] Étape 7/8 - Publication événement USER_DELETED pour sync cascade");
+            Map<String, Object> deletePayload = new HashMap<>();
+            if (user.getExternalCustomerId() != null) {
+                deletePayload.put("externalCustomerId", user.getExternalCustomerId());
+            }
+            if (user.getExternalContactId() != null) {
+                deletePayload.put("externalContactId", user.getExternalContactId());
+            }
+            deletePayload.put("email", userEmail);
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_DELETED, "auth", id, deletePayload));
+            logger.info("✅ [HARD-DELETE] Événement USER_DELETED publié avec payload: {}", deletePayload);
             
-            // ÉTAPE 7: Suppression définitive de l'utilisateur
-            logger.error("🗑️ [HARD-DELETE] Étape 7/7 - SUPPRESSION DÉFINITIVE de l'utilisateur");
+            // ÉTAPE 8: Suppression définitive de l'utilisateur
+            logger.error("🗑️ [HARD-DELETE] Étape 8/8 - SUPPRESSION DÉFINITIVE de l'utilisateur");
             userRepository.delete(user);
             
             // AUDIT FINAL
             logger.error("✅ [HARD-DELETE] SUPPRESSION DÉFINITIVE TERMINÉE - Utilisateur {} complètement supprimé", userEmail);
-            logger.error("📊 [HARD-DELETE] STATISTIQUES - Sessions: {}, Commandes: {}, Avis: {}, Rendez-vous: {}", 
+            logger.error("📊 [HARD-DELETE] STATISTIQUES - Sessions: {}, Commandes: {}, Avis: {}, Rendez-vous: {}, Sync: événement USER_DELETED publié", 
                         invalidatedSessions, anonymizedOrders, anonymizedReviews, anonymizedAppointments);
                         
         } catch (Exception e) {

@@ -31,6 +31,7 @@ public record LmpBusinessEvent(
         USER_REGISTERED,
         USER_VERIFIED,
         USER_UPDATED,
+        USER_DELETED,
 
         // Billing
         ORDER_CREATED,
@@ -38,6 +39,7 @@ public record LmpBusinessEvent(
         ORDER_CANCELLED,
         /** Changement de statut / annulation admin (hors webhook seul). */
         ORDER_UPDATED,
+        ORDER_DELETED,
         PAYMENT_RECEIVED,
         PAYMENT_FAILED,
         INVOICE_GENERATED,
@@ -60,7 +62,22 @@ public record LmpBusinessEvent(
 
         // Catalog
         SERVICE_CREATED,
-        SERVICE_UPDATED
+        SERVICE_UPDATED,
+        SERVICE_DELETED,
+
+        // Projects
+        PROJECT_CREATED,
+        PROJECT_UPDATED,
+        PROJECT_DELETED,
+        TASK_CREATED,
+        TASK_UPDATED,
+        TASK_DELETED,
+
+        // Support / Tickets
+        TICKET_CREATED,
+        TICKET_UPDATED,
+        TICKET_RESOLVED,
+        TICKET_DELETED
     }
 
     /**

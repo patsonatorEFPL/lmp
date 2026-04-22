@@ -242,4 +242,18 @@ public class User {
 
     public String getVatNumber() { return vatNumber; }
     public void setVatNumber(String vatNumber) { this.vatNumber = vatNumber; }
+
+    // --- Champs de liaison système externe (agnostique ERP) ---
+
+    @Column(name = "external_customer_id", length = 140)
+    private String externalCustomerId;
+
+    @Column(name = "external_contact_id", length = 140)
+    private String externalContactId;
+
+    public String getExternalCustomerId() { return externalCustomerId; }
+    public void setExternalCustomerId(String externalCustomerId) { this.externalCustomerId = externalCustomerId; }
+
+    public String getExternalContactId() { return externalContactId; }
+    public void setExternalContactId(String externalContactId) { this.externalContactId = externalContactId; }
 }

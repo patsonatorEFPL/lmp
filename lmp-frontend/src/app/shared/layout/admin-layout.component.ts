@@ -54,14 +54,14 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
       La ligne verticale = border-r sur la colonne 220px (marque puis nav) — un seul axe.
     -->
     <div
-      class="flex min-h-screen flex-col bg-surface-white dark:bg-zinc-950 lg:h-screen lg:overflow-hidden"
+      class="flex min-h-screen flex-col bg-surface-white dark:bg-black lg:h-screen lg:overflow-hidden"
     >
       <!-- Bandeau unique desktop : trait horizontal unique + séparation marque | titre -->
       <div
         class="hidden h-14 shrink-0 border-b border-zinc-200/90 dark:border-zinc-800 lg:flex lg:items-stretch"
       >
         <div
-          class="flex shrink-0 items-center border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-900"
+          class="flex shrink-0 items-center border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-black"
           [ngClass]="
             sidebarCollapsed()
               ? 'w-16 justify-center px-1'
@@ -98,7 +98,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
           }
         </div>
         <div
-          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-zinc-950"
+          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-black"
         >
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <h1
@@ -155,7 +155,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
       <!-- Sidebar desktop : navigation uniquement (marque dans le bandeau ci-dessus) -->
       <aside
-        class="z-30 hidden shrink-0 flex-col overflow-hidden border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-zinc-900 lg:z-auto lg:flex"
+        class="z-30 hidden shrink-0 flex-col overflow-hidden border-r border-zinc-200/90 bg-surface-menu-bar transition-[width] duration-200 ease-out dark:border-zinc-800 dark:bg-black lg:z-auto lg:flex"
         [ngClass]="sidebarCollapsed() ? 'w-16' : 'w-[220px]'"
       >
         <nav
@@ -360,7 +360,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
           (click)="mobileMenuOpen.set(false)"
         ></button>
         <aside
-          class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col border-r border-zinc-200/90 bg-surface-menu-bar shadow-xl dark:border-zinc-800 dark:bg-zinc-900 lg:hidden"
+          class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2.5rem))] flex-col border-r border-zinc-200/90 bg-surface-menu-bar shadow-xl dark:border-zinc-800 dark:bg-black lg:hidden"
         >
           <div
             class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-2 border-b border-zinc-200/90 px-2 dark:border-zinc-800"
@@ -481,10 +481,10 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
       }
 
       <div
-        class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-zinc-950 lg:min-h-0"
+          class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-black lg:min-h-0"
       >
         <header
-          class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/90 bg-white lg:hidden dark:border-zinc-800 dark:bg-zinc-950"
+          class="sticky top-0 z-20 shrink-0 border-b border-zinc-200/90 bg-white lg:hidden dark:border-zinc-800 dark:bg-black"
         >
           <div
             class="box-border flex h-14 min-h-14 shrink-0 items-center justify-between gap-3 px-3 sm:pl-5 sm:pr-6"
@@ -558,7 +558,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
         </header>
 
         <main
-          class="lmp-dashboard-theme min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-white dark:bg-zinc-950"
+          class="lmp-dashboard-theme min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-white dark:bg-black"
         >
           <router-outlet />
         </main>
