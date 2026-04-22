@@ -49,6 +49,9 @@ public class DataInitializer implements CommandLineRunner {
     private final ServiceOfferRepository serviceOfferRepository;
     private final OfferBenefitRepository offerBenefitRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD}")
+    private String adminPassword;
+
     public DataInitializer(UserRepository userRepository,
                            RoleRepository roleRepository,
                            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
@@ -112,11 +115,10 @@ public class DataInitializer implements CommandLineRunner {
 
         var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
         if (existingAdmin.isPresent()) {
-            // V3 migration may have inserted admin with a hash that doesn't match "admin123".
-            // Force-sync the password so the documented default password always works.
+            // Force-sync the password so it always matches the configured value.
             User admin = existingAdmin.get();
-            String expectedHash = passwordEncoder.encode("admin123");
-            if (!passwordEncoder.matches("admin123", admin.getPassword())) {
+            String expectedHash = passwordEncoder.encode(adminPassword);
+            if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
                 admin.setPassword(expectedHash);
                 userRepository.save(admin);
                 logger.info("🔑 Mot de passe admin synchronisé avec la valeur par défaut.");
@@ -124,7 +126,7 @@ public class DataInitializer implements CommandLineRunner {
         } else {
             User admin = new User();
             admin.setEmail("admin@lmp.ca");
-            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setFirstName("Admin");
             admin.setLastName("LMP");
             admin.setRegistrationDate(LocalDateTime.now());
