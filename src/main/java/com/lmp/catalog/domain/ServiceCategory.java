@@ -53,4 +53,12 @@ public class ServiceCategory {
     public void setDisplayOrder(Integer displayOrder) { this.displayOrder = displayOrder; }
     public Set<Service> getServices() { return services; }
     public void setServices(Set<Service> services) { this.services = services; }
+
+    // --- Champ de liaison système externe (agnostique ERP) ---
+
+    @Column(name = "external_group_id", length = 140)
+    private String externalGroupId;
+
+    public String getExternalGroupId() { return externalGroupId; }
+    public void setExternalGroupId(String externalGroupId) { this.externalGroupId = externalGroupId; }
 }

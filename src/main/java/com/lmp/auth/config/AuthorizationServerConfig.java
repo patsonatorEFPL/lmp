@@ -68,6 +68,15 @@ public class AuthorizationServerConfig {
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.external.redirect-uri:}")
     private String externalOAuthRedirectUri;
 
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erp.client-id:}")
+    private String erpOAuthClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erp.client-secret:}")
+    private String erpOAuthClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.erp.redirect-uri:}")
+    private String erpOAuthRedirectUri;
+
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
     private String issuerUri;
 
@@ -126,6 +135,37 @@ public class AuthorizationServerConfig {
         } else if (repository.findByClientId(externalOAuthClientId) == null) {
             logger.debug(
                     "Enregistrement OAuth2 satellite ignoré : définir OAUTH2_EXTERNAL_REDIRECT_URI et OAUTH2_EXTERNAL_CLIENT_SECRET pour créer le client au démarrage.");
+        }
+
+        // --- Client ERP (SSO pour le staff) ---
+        if (StringUtils.hasText(erpOAuthClientId)
+                && repository.findByClientId(erpOAuthClientId) == null
+                && StringUtils.hasText(erpOAuthRedirectUri)
+                && StringUtils.hasText(erpOAuthClientSecret)) {
+            RegisteredClient erpClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                    .clientId(erpOAuthClientId)
+                    .clientSecret(passwordEncoder.encode(erpOAuthClientSecret))
+                    .clientName("Système ERP (SSO staff)")
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+                    .redirectUri(erpOAuthRedirectUri)
+                    .scope(OidcScopes.OPENID)
+                    .scope(OidcScopes.PROFILE)
+                    .scope(OidcScopes.EMAIL)
+                    .clientSettings(ClientSettings.builder()
+                            .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
+                            .build())
+                    .tokenSettings(TokenSettings.builder()
+                            .accessTokenTimeToLive(Duration.ofHours(4))
+                            .refreshTokenTimeToLive(Duration.ofDays(30))
+                            .build())
+                    .build();
+
+            repository.save(erpClient);
+            logger.info("OAuth2 client ERP enregistré (client_id={}, redirect={})",
+                    erpOAuthClientId, erpOAuthRedirectUri);
         }
 
         return repository;

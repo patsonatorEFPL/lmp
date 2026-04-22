@@ -69,7 +69,7 @@ type ModalMode = 'create' | 'edit';
     @if (stats()) {
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Catégories</span>
@@ -82,7 +82,7 @@ type ModalMode = 'create' | 'edit';
           </div>
         </div>
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Services</span>
@@ -95,7 +95,7 @@ type ModalMode = 'create' | 'edit';
           </div>
         </div>
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">Actifs</span>
@@ -108,7 +108,7 @@ type ModalMode = 'create' | 'edit';
           </div>
         </div>
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-(--muted-foreground)">En vedette</span>

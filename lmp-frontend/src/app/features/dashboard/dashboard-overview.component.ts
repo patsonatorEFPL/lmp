@@ -71,7 +71,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
       <!-- Quick stats (même base que /admin : cartes zinc + ombre légère) -->
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Commandes</span>
@@ -88,7 +88,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
         </div>
 
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">En cours</span>
@@ -105,7 +105,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
         </div>
 
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Rendez-vous</span>
@@ -122,7 +122,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
         </div>
 
         <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
         >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Avis</span>
@@ -152,7 +152,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
               Voir tout →
             </a>
           </div>
-          <div class="rounded border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-900/50">
+          <div class="rounded border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950/80">
             @if (stats()!.recentOrders.length === 0) {
               <div class="flex flex-col items-center justify-center py-10 text-center">
                 <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
@@ -212,7 +212,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
             @for (action of quickActions; track action.label) {
               <a
                 [routerLink]="action.route"
-                class="group flex items-center gap-3 rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:bg-zinc-800/80"
+                class="group flex items-center gap-3 rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800/80"
               >
                 <div
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
@@ -248,7 +248,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (appt of stats()!.upcomingAppointmentsList; track appt.id) {
               <div
-                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
               >
                 <div class="flex items-start justify-between">
                   <div
@@ -279,7 +279,7 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
           <div class="space-y-3">
             @for (review of stats()!.recentReviews; track review.id) {
               <div
-                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50"
+                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-1">

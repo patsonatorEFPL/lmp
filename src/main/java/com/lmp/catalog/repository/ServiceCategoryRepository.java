@@ -13,4 +13,6 @@ import com.lmp.catalog.domain.ServiceCategory;
 public interface ServiceCategoryRepository extends JpaRepository<ServiceCategory, UUID> {
     Optional<ServiceCategory> findBySlug(String slug);
     List<ServiceCategory> findAllByOrderByDisplayOrderAsc();
+    Optional<ServiceCategory> findByExternalGroupId(String externalGroupId);
+    Optional<ServiceCategory> findByName(String name);
 }

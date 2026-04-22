@@ -341,4 +341,24 @@ public class Order {
 
     public String getFraudFlags() { return fraudFlags; }
     public void setFraudFlags(String fraudFlags) { this.fraudFlags = fraudFlags; }
+
+    // --- Champs de liaison système externe (agnostique ERP) ---
+
+    @Column(name = "external_order_id", length = 140)
+    private String externalOrderId;
+
+    @Column(name = "external_invoice_id", length = 140)
+    private String externalInvoiceId;
+
+    @Column(name = "external_payment_id", length = 140)
+    private String externalPaymentId;
+
+    public String getExternalOrderId() { return externalOrderId; }
+    public void setExternalOrderId(String externalOrderId) { this.externalOrderId = externalOrderId; }
+
+    public String getExternalInvoiceId() { return externalInvoiceId; }
+    public void setExternalInvoiceId(String externalInvoiceId) { this.externalInvoiceId = externalInvoiceId; }
+
+    public String getExternalPaymentId() { return externalPaymentId; }
+    public void setExternalPaymentId(String externalPaymentId) { this.externalPaymentId = externalPaymentId; }
 }

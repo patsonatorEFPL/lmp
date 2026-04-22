@@ -116,6 +116,21 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByCheckoutToken(String checkoutToken);
 
     /**
+     * Trouve une commande par son identifiant externe Sales Order (ERP).
+     */
+    Optional<Order> findByExternalOrderId(String externalOrderId);
+
+    /**
+     * Trouve une commande par son identifiant externe Sales Invoice (ERP).
+     */
+    Optional<Order> findByExternalInvoiceId(String externalInvoiceId);
+
+    /**
+     * Trouve une commande par son identifiant externe Payment Entry (ERP).
+     */
+    Optional<Order> findByExternalPaymentId(String externalPaymentId);
+
+    /**
      * Commandes PAYMENT_PENDING avec PaymentIntent mais sans session Checkout (ex. Payment Element).
      */
     @Query("SELECT o FROM Order o WHERE o.status = :status AND (o.stripeSessionId IS NULL OR o.stripeSessionId = '') "
@@ -259,6 +274,13 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      */
     @Query("SELECT o FROM Order o ORDER BY o.createdAt DESC")
     Page<Order> findLatestOrders(Pageable pageable);
+
+    /**
+     * Charge une commande avec son User et ses Items pour la synchronisation externe.
+     * Évite les LazyInitializationException hors session Hibernate.
+     */
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.user LEFT JOIN FETCH o.items i LEFT JOIN FETCH i.service WHERE o.id = :id")
+    Optional<Order> findByIdWithUserAndItems(@Param("id") UUID id);
 
     /**
      * Export de données pour rapports
