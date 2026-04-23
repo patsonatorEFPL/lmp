@@ -2,9 +2,9 @@ package com.lmp.billing.dto;
 
 import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderStatus;
+import com.lmp.shared.pricing.MoneyUtils;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -131,8 +131,7 @@ public record OrderResponse(
         if (vatRate == null) {
             vatRate = new BigDecimal("0.20");
         }
-        return baseEur.multiply(BigDecimal.ONE.add(vatRate))
-                .setScale(2, RoundingMode.HALF_UP);
+        return MoneyUtils.multiply(baseEur, BigDecimal.ONE.add(vatRate));
     }
 
     /**

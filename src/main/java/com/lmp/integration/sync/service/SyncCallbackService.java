@@ -2,7 +2,10 @@ package com.lmp.integration.sync.service;
 
 import com.lmp.auth.domain.User;
 import com.lmp.auth.repository.UserRepository;
+import com.lmp.billing.domain.InstallmentStatus;
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderInstallment;
+import com.lmp.billing.repository.OrderInstallmentRepository;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.catalog.domain.Service;
 import com.lmp.catalog.domain.ServiceCategory;
@@ -39,6 +42,7 @@ public class SyncCallbackService {
 
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final OrderInstallmentRepository installmentRepository;
     private final ServiceRepository serviceRepository;
     private final ServiceCategoryRepository serviceCategoryRepository;
     private final ProjectRepository projectRepository;
@@ -51,6 +55,7 @@ public class SyncCallbackService {
 
     public SyncCallbackService(UserRepository userRepository,
                                OrderRepository orderRepository,
+                               OrderInstallmentRepository installmentRepository,
                                ServiceRepository serviceRepository,
                                ServiceCategoryRepository serviceCategoryRepository,
                                ProjectRepository projectRepository,
@@ -62,6 +67,7 @@ public class SyncCallbackService {
                                @Lazy SyncOutboundService syncOutboundService) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
+        this.installmentRepository = installmentRepository;
         this.serviceRepository = serviceRepository;
         this.serviceCategoryRepository = serviceCategoryRepository;
         this.projectRepository = projectRepository;
@@ -278,19 +284,27 @@ public class SyncCallbackService {
     }
 
     /**
-     * Enqueue un Payment Entry (type Receive) si la commande est payée
-     * et qu'aucun paiement externe n'a déjà été enregistré.
+     * Enqueue un ou plusieurs Payment Entry (type Receive) après la création de la SINV.
      * <p>
-     * Appelé automatiquement après la création réussie de la Sales Invoice.
-     * Le Payment Entry est lié à la SINV pour que l'ERP marque la facture "Payée".
+     * Deux cas :
+     * <ul>
+     *   <li>Paiement unique : 1 PE pour le montant total (comportement existant)</li>
+     *   <li>Paiement en plusieurs fois : 1 PE par échéance payée (status=PAID),
+     *       avec {@code payment_term} sur la référence SINV pour que external ERP mette à jour
+     *       le bon slot du {@code payment_schedule}</li>
+     * </ul>
      *
-     * @param erpTotal montant grand_total réel de la facture ERP (peut différer de LMP
-     *                 à cause des arrondis TVA avec included_in_print_rate). Null = fallback
-     *                 sur order.getTotalAmount().
+     * @param erpTotal montant grand_total réel de la facture ERP (pour éviter les écarts d'arrondi)
      */
     private void enqueuePaymentEntryIfPaid(Order order, String salesInvoiceId,
                                             java.math.BigDecimal erpTotal) {
-        // Ne pas créer de Payment Entry si déjà fait ou si pas payée
+        // Cas installment : créer un PE par échéance payée
+        if (order.isInstallmentOrder()) {
+            enqueueInstallmentPaymentEntries(order, salesInvoiceId);
+            return;
+        }
+
+        // Cas paiement unique (existant)
         if (order.getExternalPaymentId() != null) {
             log.debug("📋 [CALLBACK] Order {} already has Payment Entry — skipping", order.getId());
             return;
@@ -313,15 +327,139 @@ public class SyncCallbackService {
         }
     }
 
+    /**
+     * Enqueue un Payment Entry pour chaque échéance payée d'une commande en plusieurs fois.
+     * <p>
+     * Récupère le {@code payment_schedule} de la SINV pour utiliser les montants exacts
+     * calculés par external ERP (évite les écarts d'arrondi entre LMP et l'ERP).
+     */
+    @SuppressWarnings("unchecked")
+    private void enqueueInstallmentPaymentEntries(Order order, String salesInvoiceId) {
+        List<OrderInstallment> installments = installmentRepository
+                .findByOrderIdOrderByInstallmentNumberAsc(order.getId());
+
+        if (installments.isEmpty()) {
+            log.warn("⚠️ [CALLBACK] Installment order {} has no installments — skipping PE", order.getId());
+            return;
+        }
+
+        // Récupérer le payment_schedule réel de l'ERP pour les montants exacts
+        Map<String, java.math.BigDecimal> erpAmountByTerm = fetchErpPaymentScheduleAmounts(salesInvoiceId);
+
+        for (OrderInstallment inst : installments) {
+            if (inst.getStatus() != InstallmentStatus.PAID) {
+                log.debug("📋 [CALLBACK] Installment {}/{} not yet paid — skipping",
+                        inst.getInstallmentNumber(), order.getInstallmentCount());
+                continue;
+            }
+            if (inst.getExternalPaymentId() != null) {
+                log.debug("📋 [CALLBACK] Installment {}/{} already has PE {} — skipping",
+                        inst.getInstallmentNumber(), order.getInstallmentCount(), inst.getExternalPaymentId());
+                continue;
+            }
+
+            try {
+                // Utiliser le montant ERP si disponible (évite les écarts d'arrondi)
+                java.math.BigDecimal erpAmount = erpAmountByTerm.get(inst.getPaymentTerm());
+                Map<String, Object> pePayload = paymentSyncMapper.toInstallmentPaymentEntryPayload(
+                        order, inst, salesInvoiceId, erpAmount);
+                syncOutboundService.enqueue(
+                        SyncEntityType.PAYMENT, "CREATED",
+                        order.getId(), null, pePayload
+                );
+                log.info("💳 [CALLBACK] Enqueued PE for installment {}/{} → SINV {} (term={}, erpAmount={})",
+                        inst.getInstallmentNumber(), order.getInstallmentCount(),
+                        salesInvoiceId, inst.getPaymentTerm(), erpAmount);
+            } catch (Exception e) {
+                log.error("❌ [CALLBACK] Failed to enqueue PE for installment {}/{}: {}",
+                        inst.getInstallmentNumber(), order.getInstallmentCount(), e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Récupère les montants du payment_schedule depuis la SINV ERP.
+     * Retourne un map payment_term → payment_amount (montant exact calculé par external ERP).
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, java.math.BigDecimal> fetchErpPaymentScheduleAmounts(String salesInvoiceId) {
+        Map<String, java.math.BigDecimal> result = new java.util.LinkedHashMap<>();
+        if (salesInvoiceId == null) return result;
+
+        try {
+            ExternalResponse response = externalClient.getEntity(SyncEntityType.SALES_INVOICE, salesInvoiceId);
+            if (!response.success() || response.data() == null) return result;
+
+            Map<String, Object> data = response.data();
+            if (data.containsKey("data") && data.get("data") instanceof Map) {
+                data = (Map<String, Object>) data.get("data");
+            }
+
+            List<Map<String, Object>> schedule = data.containsKey("payment_schedule")
+                    ? (List<Map<String, Object>>) data.get("payment_schedule") : null;
+            if (schedule == null) return result;
+
+            for (Map<String, Object> row : schedule) {
+                String term = row.get("payment_term") != null ? row.get("payment_term").toString() : null;
+                Object amountObj = row.get("payment_amount");
+                if (term != null && amountObj != null) {
+                    result.put(term, new java.math.BigDecimal(amountObj.toString()));
+                    log.debug("📋 [CALLBACK] ERP payment_schedule: term={}, amount={}", term, amountObj);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ [CALLBACK] Error fetching payment_schedule for {}: {}", salesInvoiceId, e.getMessage());
+        }
+        return result;
+    }
+
     private void updateOrderExternalPaymentId(UUID orderId, String externalId) {
         orderRepository.findById(orderId).ifPresentOrElse(
                 order -> {
-                    order.setExternalPaymentId(externalId);
-                    orderRepository.save(order);
+                    if (order.isInstallmentOrder()) {
+                        // Pour les installments, stocker l'external ID sur l'échéance
+                        // Le PE externe contient le payment_term dans son payload
+                        updateInstallmentExternalPaymentId(order, externalId);
+                    } else {
+                        order.setExternalPaymentId(externalId);
+                        orderRepository.save(order);
+                    }
                     log.info("🔗 [CALLBACK] Order {} linked to external Payment {}", orderId, externalId);
                 },
                 () -> log.warn("⚠️ [CALLBACK] Order {} not found for payment link", orderId)
         );
+    }
+
+    /**
+     * Stocke l'external payment ID sur la bonne échéance.
+     * Cherche la première échéance PAID sans external ID.
+     */
+    private void updateInstallmentExternalPaymentId(Order order, String externalPaymentId) {
+        List<OrderInstallment> installments = installmentRepository
+                .findByOrderIdOrderByInstallmentNumberAsc(order.getId());
+
+        for (OrderInstallment inst : installments) {
+            if (inst.getStatus() == InstallmentStatus.PAID && inst.getExternalPaymentId() == null) {
+                inst.setExternalPaymentId(externalPaymentId);
+                installmentRepository.save(inst);
+                log.info("🔗 [CALLBACK] Installment {}/{} linked to PE {}",
+                        inst.getInstallmentNumber(), order.getInstallmentCount(), externalPaymentId);
+
+                // Vérifier si toutes les échéances sont payées ET synchronisées
+                long pendingSync = installments.stream()
+                        .filter(i -> i.getStatus() == InstallmentStatus.PAID && i.getExternalPaymentId() == null)
+                        .count();
+                if (pendingSync == 0) {
+                    // Toutes les échéances payées sont synchronisées — marquer l'order aussi
+                    order.setExternalPaymentId(externalPaymentId + " (installments)");
+                    orderRepository.save(order);
+                    log.info("✅ [CALLBACK] All installments synced for Order {}", order.getId());
+                }
+                return;
+            }
+        }
+        log.warn("⚠️ [CALLBACK] No unpaid installment found for PE {} on Order {}",
+                externalPaymentId, order.getId());
     }
 
     private void updateServiceExternalItemCode(UUID serviceId, String externalId) {

@@ -5,6 +5,8 @@ import com.lmp.billing.domain.OrderItem;
 import com.lmp.integration.sync.SyncProperties;
 import org.springframework.stereotype.Component;
 
+import com.lmp.shared.pricing.MoneyUtils;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -120,6 +122,11 @@ public class OrderSyncMapper {
             payload.put("po_no", order.getExternalOrderId());
         }
 
+        // Payment Terms Template — paiement en plusieurs fois
+        if (order.isInstallmentOrder() && order.getPaymentTermsTemplate() != null) {
+            payload.put("payment_terms_template", order.getPaymentTermsTemplate());
+        }
+
         // Traçabilité bidirectionnelle — UUID LMP stocké côté système externe
         payload.put("lmp_order_id", order.getId().toString());
 
@@ -165,8 +172,7 @@ public class OrderSyncMapper {
                 BigDecimal vatRate = order.getAppliedVatRate();
                 if (unitHT != null && vatRate != null && vatRate.compareTo(BigDecimal.ZERO) > 0
                         && !Boolean.TRUE.equals(order.getVatReverseCharge())) {
-                    line.put("rate", unitHT.multiply(BigDecimal.ONE.add(vatRate))
-                            .setScale(2, RoundingMode.HALF_UP));
+                    line.put("rate", MoneyUtils.multiply(unitHT, BigDecimal.ONE.add(vatRate)));
                 } else {
                     line.put("rate", unitHT);
                 }
@@ -216,8 +222,7 @@ public class OrderSyncMapper {
         // Calculer le montant de la taxe pour référence
         // totalAmount = TTC, taxAmount = TTC - (TTC / (1 + rate))
         BigDecimal totalTTC = order.getTotalAmount();
-        BigDecimal divisor = BigDecimal.ONE.add(vatRate);
-        BigDecimal netAmount = totalTTC.divide(divisor, 2, RoundingMode.HALF_UP);
+        BigDecimal netAmount = MoneyUtils.extractHt(totalTTC, vatRate);
         BigDecimal taxAmount = totalTTC.subtract(netAmount);
 
         Map<String, Object> taxRow = new LinkedHashMap<>();

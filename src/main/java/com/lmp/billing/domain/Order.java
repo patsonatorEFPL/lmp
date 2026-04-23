@@ -342,6 +342,20 @@ public class Order {
     public String getFraudFlags() { return fraudFlags; }
     public void setFraudFlags(String fraudFlags) { this.fraudFlags = fraudFlags; }
 
+    // --- Paiement en plusieurs fois (installments) ---
+
+    /** Nombre d'échéances choisi par le client (2, 3, 4) — null = paiement unique. */
+    @Column(name = "installment_count")
+    private Integer installmentCount;
+
+    /** Nom du Payment Terms Template external ERP associé (ex: "Paiement en 3x"). */
+    @Column(name = "payment_terms_template", length = 140)
+    private String paymentTermsTemplate;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @jakarta.persistence.OrderBy("installmentNumber ASC")
+    private Set<OrderInstallment> installments;
+
     // --- Champs de liaison système externe (agnostique ERP) ---
 
     @Column(name = "external_order_id", length = 140)
@@ -352,6 +366,20 @@ public class Order {
 
     @Column(name = "external_payment_id", length = 140)
     private String externalPaymentId;
+
+    public Integer getInstallmentCount() { return installmentCount; }
+    public void setInstallmentCount(Integer installmentCount) { this.installmentCount = installmentCount; }
+
+    public String getPaymentTermsTemplate() { return paymentTermsTemplate; }
+    public void setPaymentTermsTemplate(String paymentTermsTemplate) { this.paymentTermsTemplate = paymentTermsTemplate; }
+
+    public Set<OrderInstallment> getInstallments() { return installments; }
+    public void setInstallments(Set<OrderInstallment> installments) { this.installments = installments; }
+
+    /** Retourne true si la commande est un paiement en plusieurs fois. */
+    public boolean isInstallmentOrder() {
+        return installmentCount != null && installmentCount > 1;
+    }
 
     public String getExternalOrderId() { return externalOrderId; }
     public void setExternalOrderId(String externalOrderId) { this.externalOrderId = externalOrderId; }
