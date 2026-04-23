@@ -51,10 +51,9 @@ public class DataInitializer implements CommandLineRunner {
     private final OfferBenefitRepository offerBenefitRepository;
 
     /**
-     * Mot de passe admin — comportement identique à Frappe/ERPNext :
-     *   • Si la variable d'environnement ADMIN_PASSWORD est définie → utilisée pour créer/mettre à jour.
-     *   • Si absente → un mot de passe aléatoire est généré à la CRÉATION uniquement (affiché dans les logs).
-     *   • Après création, le mot de passe en base fait foi. Aucun fallback codé en dur.
+     * Mot de passe admin — utilisé UNIQUEMENT à la création initiale du compte.
+     * Après la première création, le mot de passe en base fait foi et n'est plus
+     * modifié au démarrage. Pour le changer, utiliser l'API ou la UI.
      */
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
@@ -122,18 +121,9 @@ public class DataInitializer implements CommandLineRunner {
 
         var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
         if (existingAdmin.isPresent()) {
-            // Méthode Frappe : mise à jour UNIQUEMENT si ADMIN_PASSWORD est explicitement défini
-            // dans l'environnement. Sinon, le mot de passe en base fait foi — aucun fallback.
-            if (adminPassword != null && !adminPassword.isBlank()) {
-                User admin = existingAdmin.get();
-                if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
-                    admin.setPassword(passwordEncoder.encode(adminPassword));
-                    userRepository.save(admin);
-                    logger.info("🔑 Mot de passe admin mis à jour depuis la variable d'environnement ADMIN_PASSWORD.");
-                }
-            } else {
-                logger.debug("📋 Aucune variable ADMIN_PASSWORD définie — mot de passe admin inchangé.");
-            }
+            // Le mot de passe en base fait foi — aucune modification au démarrage.
+            // Pour changer le mot de passe, utiliser l'API ou la UI.
+            logger.debug("📋 Compte admin existant — mot de passe inchangé.");
         } else {
             // Première création — identique à `bench new-site --admin-password`
             String effectivePassword;
