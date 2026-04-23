@@ -1,7 +1,6 @@
 package com.lmp.shared.pricing;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -170,7 +169,7 @@ public class RegionalPricingService {
         if (amountEur == null) {
             return null;
         }
-        BigDecimal converted = amountEur.multiply(ctx.eurToTargetRate()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal converted = MoneyUtils.multiply(amountEur, ctx.eurToTargetRate());
         if (psychologicalRounding) {
             return PsychologicalRounder.round(converted, ctx.currency());
         }
@@ -184,7 +183,7 @@ public class RegionalPricingService {
         if (amountLocal == null || ctx.eurToTargetRate().compareTo(BigDecimal.ZERO) == 0) {
             return amountLocal;
         }
-        return amountLocal.divide(ctx.eurToTargetRate(), 2, RoundingMode.HALF_UP);
+        return MoneyUtils.divide(amountLocal, ctx.eurToTargetRate());
     }
 
     private PricingContext eurContext(String countryCode) {

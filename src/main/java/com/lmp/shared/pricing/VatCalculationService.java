@@ -1,7 +1,6 @@
 package com.lmp.shared.pricing;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,8 +77,7 @@ public class VatCalculationService {
         if (amountHt == null) return null;
         if (reverseCharge) return amountHt;
         BigDecimal rate = vatRateLookupService.getRate(countryCode);
-        return amountHt.multiply(BigDecimal.ONE.add(rate))
-                .setScale(2, RoundingMode.HALF_UP);
+        return MoneyUtils.multiply(amountHt, BigDecimal.ONE.add(rate));
     }
 
     /**
@@ -89,8 +87,7 @@ public class VatCalculationService {
         if (amountHt == null) return BigDecimal.ZERO;
         if (reverseCharge) return BigDecimal.ZERO;
         BigDecimal rate = vatRateLookupService.getRate(countryCode);
-        return amountHt.multiply(rate)
-                .setScale(2, RoundingMode.HALF_UP);
+        return MoneyUtils.multiply(amountHt, rate);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -107,8 +104,7 @@ public class VatCalculationService {
     public BigDecimal applyVat(BigDecimal amountHt, boolean reverseCharge) {
         if (amountHt == null) return null;
         if (reverseCharge) return amountHt;
-        return amountHt.multiply(BigDecimal.ONE.add(vatRate))
-                .setScale(2, RoundingMode.HALF_UP);
+        return MoneyUtils.multiply(amountHt, BigDecimal.ONE.add(vatRate));
     }
 
     /**
@@ -117,8 +113,7 @@ public class VatCalculationService {
     public BigDecimal vatAmount(BigDecimal amountHt, boolean reverseCharge) {
         if (amountHt == null) return BigDecimal.ZERO;
         if (reverseCharge) return BigDecimal.ZERO;
-        return amountHt.multiply(vatRate)
-                .setScale(2, RoundingMode.HALF_UP);
+        return MoneyUtils.multiply(amountHt, vatRate);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -130,7 +125,7 @@ public class VatCalculationService {
      */
     public BigDecimal extractHt(BigDecimal amountTtc) {
         if (amountTtc == null) return null;
-        return amountTtc.divide(BigDecimal.ONE.add(vatRate), 2, RoundingMode.HALF_UP);
+        return MoneyUtils.extractHt(amountTtc, vatRate);
     }
 
     /**
@@ -139,7 +134,7 @@ public class VatCalculationService {
     public BigDecimal extractHt(BigDecimal amountTtc, String countryCode) {
         if (amountTtc == null) return null;
         BigDecimal rate = vatRateLookupService.getRate(countryCode);
-        return amountTtc.divide(BigDecimal.ONE.add(rate), 2, RoundingMode.HALF_UP);
+        return MoneyUtils.extractHt(amountTtc, rate);
     }
 
     /**
@@ -148,7 +143,7 @@ public class VatCalculationService {
     public BigDecimal extractHt(BigDecimal amountTtc, BigDecimal explicitRate) {
         if (amountTtc == null) return null;
         BigDecimal rate = explicitRate != null ? explicitRate : vatRate;
-        return amountTtc.divide(BigDecimal.ONE.add(rate), 2, RoundingMode.HALF_UP);
+        return MoneyUtils.extractHt(amountTtc, rate);
     }
 
     /**
