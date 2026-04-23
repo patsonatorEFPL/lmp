@@ -1,6 +1,7 @@
 package com.lmp.integration.sync.mapper;
 
 import com.lmp.billing.domain.Order;
+import com.lmp.billing.domain.OrderInstallment;
 import com.lmp.integration.sync.SyncProperties;
 import org.springframework.stereotype.Component;
 
@@ -102,6 +103,83 @@ public class PaymentSyncMapper {
 
         // Remarque
         payload.put("remarks", String.format("Paiement Stripe pour commande LMP %s", order.getId()));
+
+        return payload;
+    }
+
+    /**
+     * Construit le payload Payment Entry pour une échéance spécifique d'un paiement en plusieurs fois.
+     * <p>
+     * Le champ {@code payment_term} sur la référence SINV permet à ERPNext de mettre à jour
+     * le {@code paid_amount} de la bonne ligne du {@code payment_schedule} sur la facture.
+     *
+     * @param order          la commande LMP
+     * @param installment    l'échéance payée
+     * @param salesInvoiceId le nom de la Sales Invoice dans l'ERP
+     * @param erpInstallmentAmount montant réel de l'échéance côté ERP (null = utiliser installment.getAmount())
+     */
+    public Map<String, Object> toInstallmentPaymentEntryPayload(Order order,
+                                                                 OrderInstallment installment,
+                                                                 String salesInvoiceId,
+                                                                 BigDecimal erpInstallmentAmount) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+
+        payload.put("naming_series", "ACC-PAY-.YYYY.-");
+        payload.put("payment_type", "Receive");
+        payload.put("company", syncProperties.getExternal().getCompany());
+
+        // Client
+        String customerName = resolveCustomerName(order);
+        payload.put("party_type", "Customer");
+        payload.put("party", customerName);
+
+        // Comptes comptables
+        payload.put("paid_from", syncProperties.getExternal().getReceivableAccount());
+        payload.put("paid_to", syncProperties.getExternal().getPaymentAccount());
+
+        // Montant de l'échéance
+        BigDecimal amount = erpInstallmentAmount != null ? erpInstallmentAmount : installment.getAmount();
+        payload.put("paid_amount", amount);
+        payload.put("received_amount", amount);
+
+        // Devise
+        payload.put("source_exchange_rate", 1);
+        payload.put("target_exchange_rate", 1);
+
+        // Mode de paiement
+        String modeOfPayment = resolveModeOfPayment(order);
+        if (modeOfPayment != null) {
+            payload.put("mode_of_payment", modeOfPayment);
+        }
+
+        // Date de paiement
+        LocalDateTime paymentDate = installment.getPaidAt() != null ? installment.getPaidAt() : LocalDateTime.now();
+        payload.put("posting_date", formatDate(paymentDate));
+
+        // Référence de transaction (Stripe PaymentIntent de l'échéance)
+        String refNo = installment.getStripePaymentIntentId() != null
+                ? installment.getStripePaymentIntentId()
+                : order.getId() + "-" + installment.getInstallmentNumber();
+        payload.put("reference_no", refNo);
+        payload.put("reference_date", formatDate(paymentDate));
+
+        // Lien vers la Sales Invoice avec le payment_term
+        if (salesInvoiceId != null && !salesInvoiceId.isBlank()) {
+            Map<String, Object> ref = new LinkedHashMap<>();
+            ref.put("reference_doctype", "Sales Invoice");
+            ref.put("reference_name", salesInvoiceId);
+            ref.put("allocated_amount", amount);
+            // payment_term permet à ERPNext d'identifier quelle échéance du payment_schedule
+            // est concernée et de mettre à jour son paid_amount / outstanding
+            ref.put("payment_term", installment.getPaymentTerm());
+            payload.put("references", List.of(ref));
+        }
+
+        // Remarque
+        payload.put("remarks", String.format("Échéance %d/%d — Commande LMP %s",
+                installment.getInstallmentNumber(),
+                order.getInstallmentCount(),
+                order.getId()));
 
         return payload;
     }
