@@ -1,6 +1,7 @@
 package com.lmp.shared.config;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +50,13 @@ public class DataInitializer implements CommandLineRunner {
     private final ServiceOfferRepository serviceOfferRepository;
     private final OfferBenefitRepository offerBenefitRepository;
 
-    @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD}")
+    /**
+     * Mot de passe admin — comportement identique à external CRM/external ERP :
+     *   • Si la variable d'environnement ADMIN_PASSWORD est définie → utilisée pour créer/mettre à jour.
+     *   • Si absente → un mot de passe aléatoire est généré à la CRÉATION uniquement (affiché dans les logs).
+     *   • Après création, le mot de passe en base fait foi. Aucun fallback codé en dur.
+     */
+    @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
 
     public DataInitializer(UserRepository userRepository,
@@ -115,18 +122,36 @@ public class DataInitializer implements CommandLineRunner {
 
         var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
         if (existingAdmin.isPresent()) {
-            // Force-sync the password so it always matches the configured value.
-            User admin = existingAdmin.get();
-            String expectedHash = passwordEncoder.encode(adminPassword);
-            if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
-                admin.setPassword(expectedHash);
-                userRepository.save(admin);
-                logger.info("🔑 Mot de passe admin synchronisé avec la valeur par défaut.");
+            // Méthode external CRM : mise à jour UNIQUEMENT si ADMIN_PASSWORD est explicitement défini
+            // dans l'environnement. Sinon, le mot de passe en base fait foi — aucun fallback.
+            if (adminPassword != null && !adminPassword.isBlank()) {
+                User admin = existingAdmin.get();
+                if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+                    admin.setPassword(passwordEncoder.encode(adminPassword));
+                    userRepository.save(admin);
+                    logger.info("🔑 Mot de passe admin mis à jour depuis la variable d'environnement ADMIN_PASSWORD.");
+                }
+            } else {
+                logger.debug("📋 Aucune variable ADMIN_PASSWORD définie — mot de passe admin inchangé.");
             }
         } else {
+            // Première création — identique à `bench new-site --admin-password`
+            String effectivePassword;
+            if (adminPassword != null && !adminPassword.isBlank()) {
+                effectivePassword = adminPassword;
+                logger.info("✅ Administrateur créé avec le mot de passe fourni via ADMIN_PASSWORD.");
+            } else {
+                effectivePassword = generateRandomPassword(16);
+                logger.warn("⚠️  ============================================================");
+                logger.warn("⚠️  Aucun ADMIN_PASSWORD défini — mot de passe admin auto-généré :");
+                logger.warn("⚠️  Mot de passe : {}", effectivePassword);
+                logger.warn("⚠️  Changez-le immédiatement ou redémarrez avec ADMIN_PASSWORD=xxx");
+                logger.warn("⚠️  ============================================================");
+            }
+
             User admin = new User();
             admin.setEmail("admin@lmp.ca");
-            admin.setPassword(passwordEncoder.encode(adminPassword));
+            admin.setPassword(passwordEncoder.encode(effectivePassword));
             admin.setFirstName("Admin");
             admin.setLastName("LMP");
             admin.setRegistrationDate(LocalDateTime.now());
@@ -138,6 +163,19 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(admin);
             logger.info("✅ Administrateur créé : admin@lmp.ca");
         }
+    }
+
+    /**
+     * Génère un mot de passe aléatoire sécurisé (même approche que external CRM.utils.password).
+     */
+    private String generateRandomPassword(int length) {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     // -------------------------------------------------------------------------
