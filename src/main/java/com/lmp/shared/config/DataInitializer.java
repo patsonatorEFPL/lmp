@@ -51,9 +51,9 @@ public class DataInitializer implements CommandLineRunner {
     private final OfferBenefitRepository offerBenefitRepository;
 
     /**
-     * Mot de passe admin — utilisé UNIQUEMENT à la création initiale du compte.
-     * Après la première création, le mot de passe en base fait foi et n'est plus
-     * modifié au démarrage. Pour le changer, utiliser l'API ou la UI.
+     * Mot de passe admin — OBLIGATOIRE.
+     * À chaque démarrage, si le mot de passe en base diffère de cette variable,
+     * il est mis à jour automatiquement. Aucun fallback n'est prévu.
      */
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
@@ -116,32 +116,30 @@ public class DataInitializer implements CommandLineRunner {
     // -------------------------------------------------------------------------
 
     private void initializeDefaultUsers() {
+        if (adminPassword == null || adminPassword.isBlank()) {
+            throw new IllegalStateException(
+                "❌ ADMIN_PASSWORD n'est pas défini. "
+                + "Définissez la variable d'environnement ADMIN_PASSWORD pour démarrer l'application.");
+        }
+
         Role adminRole = roleRepository.findByName("ADMIN")
                 .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
 
         var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
         if (existingAdmin.isPresent()) {
-            // Le mot de passe en base fait foi — aucune modification au démarrage.
-            // Pour changer le mot de passe, utiliser l'API ou la UI.
-            logger.debug("📋 Compte admin existant — mot de passe inchangé.");
-        } else {
-            // Première création — identique à `bench new-site --admin-password`
-            String effectivePassword;
-            if (adminPassword != null && !adminPassword.isBlank()) {
-                effectivePassword = adminPassword;
-                logger.info("✅ Administrateur créé avec le mot de passe fourni via ADMIN_PASSWORD.");
+            User admin = existingAdmin.get();
+            // Si le mot de passe en base diffère de ADMIN_PASSWORD, le mettre à jour
+            if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+                admin.setPassword(passwordEncoder.encode(adminPassword));
+                userRepository.save(admin);
+                logger.info("🔄 Mot de passe admin mis à jour depuis ADMIN_PASSWORD.");
             } else {
-                effectivePassword = generateRandomPassword(16);
-                logger.warn("⚠️  ============================================================");
-                logger.warn("⚠️  Aucun ADMIN_PASSWORD défini — mot de passe admin auto-généré :");
-                logger.warn("⚠️  Mot de passe : {}", effectivePassword);
-                logger.warn("⚠️  Changez-le immédiatement ou redémarrez avec ADMIN_PASSWORD=xxx");
-                logger.warn("⚠️  ============================================================");
+                logger.debug("📋 Compte admin existant — mot de passe déjà synchronisé.");
             }
-
+        } else {
             User admin = new User();
             admin.setEmail("admin@lmp.ca");
-            admin.setPassword(passwordEncoder.encode(effectivePassword));
+            admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setFirstName("Admin");
             admin.setLastName("LMP");
             admin.setRegistrationDate(LocalDateTime.now());
