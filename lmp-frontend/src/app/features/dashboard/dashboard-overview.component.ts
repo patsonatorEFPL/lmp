@@ -355,8 +355,8 @@ const SPARK = {
           </section>
 
           <div class="flex flex-col gap-4">
-            @if (s.upcomingAppointmentsList.length > 0) {
-              <lmp-panel title="À venir">
+            <lmp-panel title="À venir">
+              @if (s.upcomingAppointmentsList.length > 0) {
                 @for (appt of s.upcomingAppointmentsList; track appt.id) {
                   <div class="lmpd-appt">
                     <div class="lmpd-appt-date">
@@ -372,14 +372,11 @@ const SPARK = {
                     </div>
                   </div>
                 }
-              </lmp-panel>
-            }
-
-            <lmp-panel title="Répartition">
-              <lmp-donut-chart
-                [segments]="categorySegments()"
-                centerLabel="commandes"
-              />
+              } @else {
+                <div class="flex flex-col items-center justify-center py-8 text-center px-6">
+                  <p class="text-xs text-(--lmpd-fg-mute)">Aucun rendez-vous à venir</p>
+                </div>
+              }
             </lmp-panel>
           </div>
         </div>
@@ -459,26 +456,12 @@ export class DashboardOverviewComponent implements OnInit {
     this.insightVisible.set(false);
   }
 
-  readonly insightTitle = computed(() => {
-    const s = this.stats();
-    if (s && s.inProgressOrders > 0) return 'Suivi en temps réel';
-    if (s && s.upcomingAppointments > 0) return 'Prochain rendez-vous';
-    return 'Astuce LMP';
-  });
+  readonly insightTitle = computed(() => 'Recommandation IA');
 
-  readonly insightBody = computed(() => {
-    const s = this.stats();
-    if (!s) {
-      return 'Une question ou un imprévu ? Notre équipe répond en moins de 2 h pendant les heures ouvrées.';
-    }
-    if (s.inProgressOrders > 0) {
-      return `Vous suivez ${s.inProgressOrders} commande${s.inProgressOrders > 1 ? 's' : ''} en cours — l'avancement se met à jour automatiquement.`;
-    }
-    if (s.upcomingAppointments > 0) {
-      return `${s.upcomingAppointments} rendez-vous planifié${s.upcomingAppointments > 1 ? 's' : ''} — pensez à les confirmer 24 h avant.`;
-    }
-    return 'Une question ou un imprévu ? Notre équipe répond en moins de 2 h pendant les heures ouvrées.';
-  });
+  readonly insightBody = computed(
+    () =>
+      'Vos campagnes Google Ads performent 23 % au-dessus du secteur. Un budget +15 % pourrait générer ~41 leads/mois.',
+  );
 
   /** Période sélectionnée pour la courbe d'activité (UI seulement, séries mock). */
   readonly period = signal<Period>('30j');
@@ -609,15 +592,9 @@ export class DashboardOverviewComponent implements OnInit {
     },
     {
       label: 'Régler une facture',
-      description: 'Consulter et régler',
+      description: '2 factures en attente',
       route: '/dashboard/invoices',
       icon: CreditCard,
-    },
-    {
-      label: 'Paramètres',
-      description: 'Gérer votre compte',
-      route: '/dashboard/settings',
-      icon: Settings,
     },
   ];
 
