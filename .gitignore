@@ -91,6 +91,7 @@ take_screenshots.py
 tmp-login.json
 tmp-payment-screenshots/
 audit-screenshots/
+.compare-shots/
 tmp-*.js
 tmp-*.ts
 tmp_*.py
