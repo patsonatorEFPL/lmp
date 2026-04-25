@@ -117,7 +117,7 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="relative" #accountMenuHost>
               <button
                 type="button"
-                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--border) bg-(--muted)/35 text-(--muted-foreground) transition-colors hover:bg-(--muted)/55 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--border) bg-(--muted)/35 text-[11px] font-semibold tracking-wide text-(--muted-foreground) transition-colors hover:bg-(--muted)/55 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
                 (click)="$event.stopPropagation(); toggleAccountMenu()"
                 (keydown.enter)="$event.preventDefault(); openAccountMenuFromKeyboard()"
                 (keydown.space)="$event.preventDefault(); openAccountMenuFromKeyboard()"
@@ -125,7 +125,7 @@ import { AuthService } from '../../core/services/auth.service';
                 aria-haspopup="true"
                 aria-label="Menu compte"
               >
-                <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
+                {{ connectedAccountInitials() || '?' }}
               </button>
 
               @if (accountMenuOpen()) {
@@ -136,9 +136,10 @@ import { AuthService } from '../../core/services/auth.service';
                   <div class="w-full border-b border-(--border) px-3 pb-3 pt-2">
                     <div class="flex gap-3">
                       <div
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--primary)/15 text-(--primary)"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                        [style.background]="connectedAccountAvatarBg()"
                       >
-                        <lucide-icon [img]="UserIcon" [size]="20"></lucide-icon>
+                        {{ connectedAccountInitials() || '?' }}
                       </div>
                       <div class="min-w-0 flex-1 text-left">
                         <p class="truncate text-sm font-semibold">{{ connectedAccountTitle() }}</p>
@@ -572,6 +573,27 @@ export class NavbarComponent implements OnInit, OnDestroy {
   });
 
   readonly connectedAccountEmail = computed(() => this.authService.user()?.email ?? '');
+
+  readonly connectedAccountInitials = computed(() => {
+    const title = this.connectedAccountTitle();
+    if (!title) return '';
+    return title
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? '')
+      .join('');
+  });
+
+  readonly connectedAccountAvatarBg = computed(() => {
+    const name = this.connectedAccountTitle();
+    if (!name) return 'linear-gradient(135deg, oklch(0.72 0.15 260), oklch(0.6 0.2 300))';
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    const hues = [10, 30, 60, 150, 200, 230, 260, 290, 320, 350];
+    const hue = hues[h % hues.length];
+    return `linear-gradient(135deg, oklch(0.7 0.15 ${hue}), oklch(0.55 0.2 ${(hue + 40) % 360}))`;
+  });
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
