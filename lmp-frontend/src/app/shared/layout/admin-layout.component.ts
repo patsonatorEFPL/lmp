@@ -18,6 +18,9 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
+  ShieldCheck,
+  FileSearch,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminSseService } from '../../core/services/admin-sse.service';
@@ -98,25 +101,35 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
           }
         </div>
         <div
-          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-black"
+          class="flex min-w-0 flex-1 items-center gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-black"
         >
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-            <h1
-              class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
-            >
-              {{ adminPageTitle() }}
-            </h1>
+            <div class="flex min-w-0 items-center gap-2 text-sm font-medium">
+              <span class="shrink-0 text-zinc-400 dark:text-zinc-500">Administration</span>
+              <span class="text-zinc-300 dark:text-zinc-600">/</span>
+              <span class="truncate text-zinc-700 dark:text-zinc-200">{{ adminPageTitle() }}</span>
+            </div>
             <span
-              class="hidden shrink-0 items-center gap-1.5 text-[11px] text-zinc-500 sm:inline-flex"
+              class="hidden shrink-0 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[11px] font-medium text-zinc-500 sm:inline-flex dark:border-zinc-700 dark:bg-zinc-900"
               title="Flux temps réel (SSE)"
             >
               <span
-                class="h-2 w-2 rounded-full"
+                class="h-1.5 w-1.5 rounded-full"
                 [class.bg-emerald-500]="adminSse.connected()"
                 [class.bg-red-500]="!adminSse.connected()"
               ></span>
               Live
             </span>
+          </div>
+          <div
+            class="ml-auto hidden items-center gap-2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[12.5px] text-zinc-400 lg:flex dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500"
+            style="min-width: 220px; cursor: text"
+          >
+            <lucide-icon [img]="SearchIcon" [size]="13" class="shrink-0"></lucide-icon>
+            <span class="truncate">Rechercher utilisateur, commande, service…</span>
+            <kbd
+              class="ml-auto shrink-0 rounded border border-zinc-200 bg-zinc-100/60 px-1.5 py-0.5 text-[10.5px] text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+            >⌘K</kbd>
           </div>
           <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <div class="relative hidden lg:block" (click)="$event.stopPropagation()">
@@ -166,9 +179,9 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
         >
           @if (!sidebarCollapsed()) {
             <p
-              class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500 dark:text-zinc-500"
+              class="px-4 pb-2 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500"
             >
-              Vues
+              Pilotage
             </p>
           }
 
@@ -205,6 +218,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="PackageIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Services</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">14</span>
             }
           </a>
           <a
@@ -223,6 +237,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="UsersIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Utilisateurs</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">1.2k</span>
             }
             @if (adminSse.badgeUsers() > 0) {
               <span
@@ -248,6 +263,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="OrdersIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Commandes</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">238</span>
             }
             @if (adminSse.badgeOrders() > 0) {
               <span
@@ -273,6 +289,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="CalendarIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Rendez-vous</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">62</span>
             }
             @if (adminSse.badgeAppointments() > 0) {
               <span
@@ -282,6 +299,15 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               >
             }
           </a>
+
+          @if (!sidebarCollapsed()) {
+            <p
+              class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500"
+            >
+              Système
+            </p>
+          }
+
           <a
             routerLink="/admin/monitoring"
             [routerLinkActive]="sidebarLinkActive"
@@ -297,6 +323,44 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="MonitoringIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Monitoring</span>
+              <span
+                class="ml-auto text-[11px] font-medium rounded-full px-1.5"
+                style="background: oklch(0.78 0.16 80 / 0.2); color: oklch(0.5 0.14 65)"
+              >1</span>
+            }
+          </a>
+          <a
+            routerLink="/admin/security"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Sécurité' : undefined"
+            title="Sécurité"
+          >
+            <lucide-icon [img]="ShieldCheckIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Sécurité</span>
+            }
+          </a>
+          <a
+            routerLink="/admin/logs"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Logs & audit' : undefined"
+            title="Logs & audit"
+          >
+            <lucide-icon [img]="FileSearchIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Logs &amp; audit</span>
             }
           </a>
           <a
@@ -392,89 +456,76 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
             </button>
           </div>
-          <nav class="flex flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1">
-            <p class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500">Vues</p>
-            <a
-              routerLink="/admin"
-              [routerLinkActive]="sidebarLinkActive"
-              [routerLinkActiveOptions]="{ exact: true }"
+            <nav class="flex flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1">
+            <p class="px-4 pb-2 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400">Pilotage</p>
+            <a routerLink="/admin" [routerLinkActive]="sidebarLinkActive" [routerLinkActiveOptions]="{ exact: true }"
               class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false)"
-            >
+              (click)="mobileMenuOpen.set(false)">
               <lucide-icon [img]="DashboardIcon" [size]="16"></lucide-icon>
-              Tableau de bord
+              <span class="truncate">Tableau de bord</span>
             </a>
-            <a
-              routerLink="/admin/services"
-              [routerLinkActive]="sidebarLinkActive"
+            <a routerLink="/admin/services" [routerLinkActive]="sidebarLinkActive"
               class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false)"
-            >
+              (click)="mobileMenuOpen.set(false)">
               <lucide-icon [img]="PackageIcon" [size]="16"></lucide-icon>
-              Services
+              <span class="truncate">Services</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">14</span>
             </a>
-            <a
-              routerLink="/admin/users"
-              [routerLinkActive]="sidebarLinkActive"
+            <a routerLink="/admin/users" [routerLinkActive]="sidebarLinkActive"
               class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false); adminSse.badgeUsers.set(0)"
-            >
+              (click)="mobileMenuOpen.set(false); adminSse.badgeUsers.set(0)">
               <lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon>
-              Utilisateurs
+              <span class="truncate">Utilisateurs</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">1.2k</span>
               @if (adminSse.badgeUsers() > 0) {
-                <span
-                  class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
-                  >{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span
-                >
+                <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span>
               }
             </a>
-            <a
-              routerLink="/admin/orders"
-              [routerLinkActive]="sidebarLinkActive"
+            <a routerLink="/admin/orders" [routerLinkActive]="sidebarLinkActive"
               class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false); adminSse.badgeOrders.set(0)"
-            >
+              (click)="mobileMenuOpen.set(false); adminSse.badgeOrders.set(0)">
               <lucide-icon [img]="OrdersIcon" [size]="16"></lucide-icon>
-              Commandes
+              <span class="truncate">Commandes</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">238</span>
               @if (adminSse.badgeOrders() > 0) {
-                <span
-                  class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
-                  >{{ adminSse.badgeOrders() > 9 ? '9+' : adminSse.badgeOrders() }}</span
-                >
+                <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeOrders() > 9 ? '9+' : adminSse.badgeOrders() }}</span>
               }
             </a>
-            <a
-              routerLink="/admin/appointments"
-              [routerLinkActive]="sidebarLinkActive"
+            <a routerLink="/admin/appointments" [routerLinkActive]="sidebarLinkActive"
               class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false); adminSse.badgeAppointments.set(0)"
-            >
+              (click)="mobileMenuOpen.set(false); adminSse.badgeAppointments.set(0)">
               <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
-              Rendez-vous
+              <span class="truncate">Rendez-vous</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">62</span>
               @if (adminSse.badgeAppointments() > 0) {
-                <span
-                  class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
-                  >{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span
-                >
+                <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span>
               }
             </a>
-            <a
-              routerLink="/admin/monitoring"
-              [routerLinkActive]="sidebarLinkActive"
+            <p class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400">Système</p>
+            <a routerLink="/admin/monitoring" [routerLinkActive]="sidebarLinkActive"
               class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false)"
-            >
+              (click)="mobileMenuOpen.set(false)">
               <lucide-icon [img]="MonitoringIcon" [size]="16"></lucide-icon>
-              Monitoring
+              <span class="truncate">Monitoring</span>
+              <span class="ml-auto text-[11px] font-medium rounded-full px-1.5" style="background: oklch(0.78 0.16 80 / 0.2); color: oklch(0.5 0.14 65)">1</span>
             </a>
-            <a
-              routerLink="/admin/settings"
-              [routerLinkActive]="sidebarLinkActive"
+            <a routerLink="/admin/security" [routerLinkActive]="sidebarLinkActive"
               class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
-              (click)="mobileMenuOpen.set(false)"
-            >
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="ShieldCheckIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Sécurité</span>
+            </a>
+            <a routerLink="/admin/logs" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="FileSearchIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Logs &amp; audit</span>
+            </a>
+            <a routerLink="/admin/settings" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
               <lucide-icon [img]="SettingsIcon" [size]="16"></lucide-icon>
-              Paramètres
+              <span class="truncate">Paramètres</span>
             </a>
           </nav>
         </aside>
@@ -503,17 +554,17 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
                 <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
               </button>
               <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-                <h1
-                  class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
-                >
-                  {{ adminPageTitle() }}
-                </h1>
+                <div class="flex min-w-0 items-center gap-2 text-sm font-medium">
+                  <span class="shrink-0 text-zinc-400 dark:text-zinc-500">Administration</span>
+                  <span class="text-zinc-300 dark:text-zinc-600">/</span>
+                  <span class="truncate text-zinc-700 dark:text-zinc-200">{{ adminPageTitle() }}</span>
+                </div>
                 <span
-                  class="hidden shrink-0 items-center gap-1.5 text-[11px] text-zinc-500 sm:inline-flex"
+                  class="hidden shrink-0 items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-[11px] font-medium text-zinc-500 sm:inline-flex dark:border-zinc-700 dark:bg-zinc-900"
                   title="Flux temps réel (SSE)"
                 >
                   <span
-                    class="h-2 w-2 rounded-full"
+                    class="h-1.5 w-1.5 rounded-full"
                     [class.bg-emerald-500]="adminSse.connected()"
                     [class.bg-red-500]="!adminSse.connected()"
                   ></span>
@@ -606,6 +657,12 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           return 'Rendez-vous';
         case 'settings':
           return 'Paramètres';
+        case 'monitoring':
+          return 'Monitoring';
+        case 'security':
+          return 'Sécurité';
+        case 'logs':
+          return 'Logs & audit';
         default:
           return 'Administration';
       }
@@ -631,6 +688,9 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly ChevronDownIcon = ChevronDown;
   readonly PanelLeftCloseIcon = PanelLeftClose;
   readonly PanelLeftOpenIcon = PanelLeftOpen;
+  readonly SearchIcon = Search;
+  readonly ShieldCheckIcon = ShieldCheck;
+  readonly FileSearchIcon = FileSearch;
 
   /** Lien actif : fond blanc, léger relief (style liste / navigation) */
   readonly sidebarLinkActive =

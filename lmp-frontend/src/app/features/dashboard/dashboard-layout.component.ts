@@ -21,6 +21,8 @@ import {
   FolderKanban,
   LifeBuoy,
   MapPin,
+  Search,
+  Gift,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AuthService } from '../../core/services/auth.service';
@@ -87,14 +89,24 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           }
         </div>
         <div
-          class="flex min-w-0 flex-1 items-center justify-between gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-black"
+          class="flex min-w-0 flex-1 items-center gap-3 bg-white px-3 sm:pl-5 sm:pr-6 dark:bg-black"
         >
           <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-            <h1
-              class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
-            >
-              {{ dashboardPageTitle() }}
-            </h1>
+            <div class="flex min-w-0 items-center gap-2 text-sm font-medium">
+              <span class="shrink-0 text-zinc-400 dark:text-zinc-500">Espace client</span>
+              <span class="text-zinc-300 dark:text-zinc-600">/</span>
+              <span class="truncate text-zinc-700 dark:text-zinc-200">{{ dashboardPageTitle() }}</span>
+            </div>
+          </div>
+          <div
+            class="ml-auto hidden items-center gap-2 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-[12.5px] text-zinc-400 lg:flex dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500"
+            style="min-width: 220px; cursor: text"
+          >
+            <lucide-icon [img]="SearchIcon" [size]="13" class="shrink-0"></lucide-icon>
+            <span class="truncate">Rechercher une commande, facture, projet…</span>
+            <kbd
+              class="ml-auto shrink-0 rounded border border-zinc-200 bg-zinc-100/60 px-1.5 py-0.5 text-[10.5px] text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+            >⌘K</kbd>
           </div>
           <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <div class="relative hidden lg:block" (click)="$event.stopPropagation()">
@@ -143,12 +155,12 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
           >
             @if (!sidebarCollapsed()) {
               <p
-                class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500 dark:text-zinc-500"
+                class="px-4 pb-2 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500"
               >
-                Vues
+                Navigation
               </p>
             }
-            @for (item of sidebarItems; track item.route) {
+            @for (item of navigationItems; track item.route) {
               <a
                 [routerLink]="item.route"
                 [routerLinkActive]="sidebarLinkActive"
@@ -166,6 +178,9 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                 <lucide-icon [img]="item.icon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
                 @if (!sidebarCollapsed()) {
                   <span class="truncate">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ item.badge }}</span>
+                  }
                 }
                 @if (item.route === '/dashboard/orders' && notificationService.liveOrderHint() > 0) {
                   <span
@@ -184,6 +199,34 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                         : notificationService.liveAppointmentHint()
                     }}</span
                   >
+                }
+              </a>
+            }
+
+            @if (!sidebarCollapsed()) {
+              <p
+                class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500"
+              >
+                Compte
+              </p>
+            }
+            @for (item of compteItems; track item.route) {
+              <a
+                [routerLink]="item.route"
+                [routerLinkActive]="sidebarLinkActive"
+                [routerLinkActiveOptions]="{ exact: item.exact }"
+                class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+                [class.justify-center]="sidebarCollapsed()"
+                [class.gap-2]="!sidebarCollapsed()"
+                [class.px-2]="!sidebarCollapsed()"
+                [class.mx-0.5]="!sidebarCollapsed()"
+                [class.w-full]="sidebarCollapsed()"
+                [attr.title]="item.label"
+                [attr.aria-label]="sidebarCollapsed() ? item.label : undefined"
+              >
+                <lucide-icon [img]="item.icon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+                @if (!sidebarCollapsed()) {
+                  <span class="truncate">{{ item.label }}</span>
                 }
               </a>
             }
@@ -264,8 +307,8 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
               </button>
             </div>
             <nav class="flex flex-1 flex-col gap-0 overflow-y-auto px-2 pb-2 pt-1">
-              <p class="px-4 pb-2 pt-3 text-xs font-medium text-zinc-500">Vues</p>
-              @for (item of sidebarItems; track item.route) {
+              <p class="px-4 pb-2 pt-3 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400">Navigation</p>
+              @for (item of navigationItems; track item.route) {
                 <a
                   [routerLink]="item.route"
                   [routerLinkActive]="sidebarLinkActive"
@@ -275,6 +318,9 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                 >
                   <lucide-icon [img]="item.icon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
                   <span class="truncate">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ item.badge }}</span>
+                  }
                   @if (item.route === '/dashboard/orders' && notificationService.liveOrderHint() > 0) {
                     <span
                       class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white"
@@ -291,6 +337,19 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                       }}</span
                     >
                   }
+                </a>
+              }
+              <p class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400">Compte</p>
+              @for (item of compteItems; track item.route) {
+                <a
+                  [routerLink]="item.route"
+                  [routerLinkActive]="sidebarLinkActive"
+                  [routerLinkActiveOptions]="{ exact: item.exact }"
+                  class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+                  (click)="mobileMenuOpen.set(false)"
+                >
+                  <lucide-icon [img]="item.icon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+                  <span class="truncate">{{ item.label }}</span>
                 </a>
               }
             </nav>
@@ -319,11 +378,11 @@ import { ShellAccountMenuComponent } from '../../shared/layout/shell-account-men
                 >
                   <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
                 </button>
-                <h1
-                  class="min-w-0 truncate text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400"
-                >
-                  {{ dashboardPageTitle() }}
-                </h1>
+                <div class="flex min-w-0 items-center gap-2 text-sm font-medium">
+                  <span class="shrink-0 text-zinc-400 dark:text-zinc-500">Espace client</span>
+                  <span class="text-zinc-300 dark:text-zinc-600">/</span>
+                  <span class="truncate text-zinc-700 dark:text-zinc-200">{{ dashboardPageTitle() }}</span>
+                </div>
               </div>
 
               <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -436,17 +495,23 @@ export class DashboardLayoutComponent implements OnInit {
   readonly ChevronDownIcon = ChevronDown;
   readonly PanelLeftCloseIcon = PanelLeftClose;
   readonly PanelLeftOpenIcon = PanelLeftOpen;
+  readonly SearchIcon = Search;
+  readonly GiftIcon = Gift;
 
-  readonly sidebarItems = [
-    { label: "Tableau de bord", route: '/dashboard', icon: LayoutDashboard, exact: true },
-    { label: 'Commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false },
-    { label: 'Devis', route: '/dashboard/quotations', icon: FileText, exact: false },
-    { label: 'Factures', route: '/dashboard/invoices', icon: Receipt, exact: false },
-    { label: 'Projets', route: '/dashboard/projects', icon: FolderKanban, exact: false },
-    { label: 'Tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false },
-    { label: 'Rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false },
-    { label: 'Adresses', route: '/dashboard/addresses', icon: MapPin, exact: false },
-    { label: 'Paramètres', route: '/dashboard/settings', icon: Settings, exact: false },
+  readonly navigationItems = [
+    { label: "Tableau de bord", route: '/dashboard', icon: LayoutDashboard, exact: true, badge: null as string | null },
+    { label: 'Commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false, badge: '14' },
+    { label: 'Devis', route: '/dashboard/quotations', icon: FileText, exact: false, badge: '2' },
+    { label: 'Factures', route: '/dashboard/invoices', icon: Receipt, exact: false, badge: null },
+    { label: 'Projets', route: '/dashboard/projects', icon: FolderKanban, exact: false, badge: '3' },
+    { label: 'Tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false, badge: '1' },
+    { label: 'Rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false, badge: '2' },
+    { label: 'Adresses', route: '/dashboard/addresses', icon: MapPin, exact: false, badge: null },
+  ];
+
+  readonly compteItems = [
+    { label: 'Paramètres', route: '/dashboard/settings', icon: Settings, exact: false, badge: null as string | null },
+    { label: 'Parrainer & gagner', route: '/dashboard/referral', icon: Gift, exact: false, badge: null },
   ];
 
   ngOnInit(): void {
