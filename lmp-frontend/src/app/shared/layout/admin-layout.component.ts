@@ -407,11 +407,6 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               <span>Réduire</span>
             }
           </button>
-          @if (!sidebarCollapsed()) {
-            <p class="px-3 pb-2.5 pt-0 text-center text-[10px] text-zinc-400 dark:text-zinc-500">
-              LMP Administration
-            </p>
-          }
         </div>
       </aside>
 
