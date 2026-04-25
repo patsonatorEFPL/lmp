@@ -381,12 +381,7 @@ const SPARK = {
           </div>
         </div>
 
-        <!-- Activité récente : agrège commandes / rendez-vous / avis -->
-        @if (activityItems().length > 0) {
-          <lmp-panel title="Activité récente">
-            <lmp-activity-feed [items]="activityItems()" />
-          </lmp-panel>
-        }
+
       </div>
     }
   `,
