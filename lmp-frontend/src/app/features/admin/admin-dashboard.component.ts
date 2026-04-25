@@ -47,6 +47,7 @@ import { environment } from '../../../environments/environment';
 import { StatCardComponent } from '../../shared/ui/stat-card.component';
 import { QuickActionComponent } from '../../shared/ui/quick-action.component';
 import { PageHeadComponent } from '../../shared/ui/page-head.component';
+import { LineChartComponent } from '../../shared/ui/line-chart.component';
 
 interface RecentUser {
   id: string;
@@ -99,17 +100,20 @@ interface AdminDashboardPayload {
 
 type RevenuePeriod = 'week' | 'month' | 'quarter';
 
-const REVENUE_BARS: Record<RevenuePeriod, { values: number[]; labels: string[] }> = {
+const REVENUE_SERIES: Record<RevenuePeriod, { current: number[]; previous: number[]; labels: string[] }> = {
   week: {
-    values: [44, 52, 48, 60, 55, 68, 72, 65, 78, 82, 75, 88, 92, 85, 96, 90],
+    current:  [44, 52, 48, 60, 55, 68, 72, 65, 78, 82, 75, 88, 92, 85, 96, 90],
+    previous: [38, 42, 40, 50, 46, 55, 60, 54, 64, 68, 62, 72, 76, 70, 80, 75],
     labels: ['S1', 'S3', 'S5', 'S7', 'S9', 'S11', 'S13', 'S15'],
   },
   month: {
-    values: [55, 62, 70, 65, 72, 78, 84, 80, 88, 92, 86, 95],
-    labels: ['Jan', 'Mar', 'Mai', 'Juil', 'Sep', 'Nov'],
+    current:  [55, 62, 70, 65, 72, 78, 84, 80, 88, 92, 86, 95],
+    previous: [45, 50, 56, 52, 58, 64, 68, 65, 72, 76, 70, 78],
+    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
   },
   quarter: {
-    values: [60, 72, 80, 88],
+    current:  [60, 72, 80, 88],
+    previous: [48, 58, 65, 72],
     labels: ['T1', 'T2', 'T3', 'T4'],
   },
 };
@@ -153,6 +157,7 @@ interface AdminUsersResponse {
     StatCardComponent,
     QuickActionComponent,
     PageHeadComponent,
+    LineChartComponent,
   ],
   template: `
     <div class="p-4 sm:p-5">
@@ -195,7 +200,7 @@ interface AdminUsersResponse {
             [value]="formatNumber(s.totalUsers)"
             [icon]="UsersIcon"
             [delta]="8"
-            [footer]="(s.activeUsers | number: '1.0-0':'fr') + ' actifs'"
+            footer="47 nouveaux ce mois"
             [spark]="sparkUsers"
           />
           <lmp-stat-card
@@ -203,7 +208,7 @@ interface AdminUsersResponse {
             [value]="revenueDisplay()"
             [icon]="CreditCardIcon"
             [delta]="14"
-            [footer]="completedPercent() + ' % terminées'"
+            footer="MRR 12 840 $"
             [accent]="true"
             [spark]="sparkRevenue"
           />
@@ -219,7 +224,7 @@ interface AdminUsersResponse {
             [value]="formatNumber(s.totalAppointments)"
             [icon]="CalendarIcon"
             [delta]="-4"
-            footer="Tous statuts confondus"
+            footer="8 aujourd'hui"
             [spark]="sparkAppointments"
           />
         </div>
@@ -241,18 +246,22 @@ interface AdminUsersResponse {
                 <button type="button" [class.is-on]="revenuePeriod() === 'quarter'" (click)="setRevenuePeriod('quarter')">Trim.</button>
               </div>
             </header>
-            <div class="lmpd-bars">
-              @for (v of revenueBarValues(); track $index) {
-                <div class="lmpd-bar2">
-                  <span class="lmpd-st" [style.height.%]="v"></span>
-                  <span class="lmpd-st is-s2" [style.height.%]="v * 0.35"></span>
-                </div>
-              }
-            </div>
-            <div class="lmpd-bars-foot">
-              @for (l of revenueBarLabels(); track $index) {
-                <span>{{ l }}</span>
-              }
+            <div class="lmpd-chart-wrap">
+              <lmp-line-chart
+                [data]="revenueSeries().current"
+                [secondary]="revenueSeries().previous"
+                [labels]="revenueSeries().labels"
+              />
+              <div style="display:flex;gap:20px;font-size:11.5px;color:var(--lmpd-fg-mute);padding:8px 4px 0">
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:8px;height:8px;border-radius:2px;background:var(--lmpd-accent)"></span>
+                  Cette période
+                </span>
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:10px;height:2px;background:var(--lmpd-fg-mute);opacity:0.5"></span>
+                  Période précédente
+                </span>
+              </div>
             </div>
           </section>
 
@@ -584,7 +593,7 @@ export class AdminDashboardComponent implements OnInit {
   readonly headerSubtitle = computed(() => {
     const s = this.stats();
     if (!s) return 'Pilotage global de la plateforme.';
-    return `${this.formatNumber(s.totalOrders)} commandes · ${this.formatNumber(s.totalUsers)} utilisateurs suivis en temps réel.`;
+    return '1 incident mineur sur la base de données · tout le reste est nominal.';
   });
 
   readonly completedPercent = computed(() => {
@@ -617,8 +626,7 @@ export class AdminDashboardComponent implements OnInit {
   setRevenuePeriod(p: RevenuePeriod) {
     this.revenuePeriod.set(p);
   }
-  readonly revenueBarValues = computed(() => REVENUE_BARS[this.revenuePeriod()].values);
-  readonly revenueBarLabels = computed(() => REVENUE_BARS[this.revenuePeriod()].labels);
+  readonly revenueSeries = computed(() => REVENUE_SERIES[this.revenuePeriod()]);
   readonly revenueRangeLabel = computed(() => {
     switch (this.revenuePeriod()) {
       case 'week':

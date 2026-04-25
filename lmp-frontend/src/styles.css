@@ -168,6 +168,12 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.lmp-dashboard-theme .lmpd-page-head .lmpd-actions > * {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
 
 /* — Buttons (locals au design, n'écrase pas hlmBtn) — */
 .lmp-dashboard-theme .lmpd-btn {
@@ -707,9 +713,9 @@
 .lmp-dashboard-theme .lmpd-bars {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
-  height: 120px;
-  padding: 12px 16px 0;
+  gap: 4px;
+  height: 150px;
+  padding: 16px 16px 0;
 }
 .lmp-dashboard-theme .lmpd-bars .lmpd-bar2 {
   flex: 1;
@@ -717,26 +723,33 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 2px;
+  gap: 1px;
   align-items: center;
 }
 .lmp-dashboard-theme .lmpd-bars .lmpd-bar2 .lmpd-st {
   width: 100%;
   border-radius: 3px 3px 0 0;
   background: var(--lmpd-accent);
-  opacity: 0.9;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+.lmp-dashboard-theme .lmpd-bars .lmpd-bar2:hover .lmpd-st {
+  opacity: 1;
 }
 .lmp-dashboard-theme .lmpd-bars .lmpd-bar2 .lmpd-st.is-s2 {
   background: var(--lmpd-accent);
-  opacity: 0.4;
+  opacity: 0.3;
   border-radius: 0 0 3px 3px;
+}
+.lmp-dashboard-theme .lmpd-bars .lmpd-bar2:hover .lmpd-st.is-s2 {
+  opacity: 0.5;
 }
 .lmp-dashboard-theme .lmpd-bars-foot {
   display: flex;
-  padding: 4px 16px 12px;
+  padding: 6px 16px 14px;
   font-size: 10px;
   color: var(--lmpd-fg-faint);
-  gap: 6px;
+  gap: 4px;
 }
 .lmp-dashboard-theme .lmpd-bars-foot > span {
   flex: 1;
