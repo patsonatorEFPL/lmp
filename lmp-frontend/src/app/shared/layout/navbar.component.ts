@@ -117,7 +117,8 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="relative" #accountMenuHost>
               <button
                 type="button"
-                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--border) bg-(--muted)/35 text-[11px] font-semibold tracking-wide text-(--muted-foreground) transition-colors hover:bg-(--muted)/55 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-[11px] font-semibold tracking-wide text-white transition-colors focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                [style.background]="connectedAccountAvatarBg()"
                 (click)="$event.stopPropagation(); toggleAccountMenu()"
                 (keydown.enter)="$event.preventDefault(); openAccountMenuFromKeyboard()"
                 (keydown.space)="$event.preventDefault(); openAccountMenuFromKeyboard()"
