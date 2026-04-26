@@ -4,7 +4,10 @@ import com.lmp.auth.domain.User;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderItem;
+import com.lmp.billing.domain.Quotation;
+import com.lmp.billing.domain.QuotationItem;
 import com.lmp.billing.repository.OrderRepository;
+import com.lmp.billing.repository.QuotationRepository;
 import com.lmp.catalog.domain.Service;
 import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.sync.ExternalResponse;
@@ -15,6 +18,7 @@ import com.lmp.integration.sync.mapper.CustomerSyncMapper;
 import com.lmp.integration.sync.mapper.ItemSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
 import com.lmp.integration.sync.mapper.PaymentSyncMapper;
+import com.lmp.integration.sync.mapper.QuotationSyncMapper;
 import com.lmp.integration.sync.service.SyncOutboundService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +45,16 @@ import java.util.UUID;
  * émettrice (checkout, webhook Stripe) est commitée avant de démarrer le traitement asynchrone.
  * Cela élimine les race conditions où le handler ne voit pas l'entité ou ses champs mis à jour.
  * {@code fallbackExecution = true} assure le fonctionnement hors contexte transactionnel (dev, tests).
+ * <p>
+ * <b>Contrat Outbox :</b> Le write business (Order, User…) et le publish de l'événement sont
+ * dans la même transaction Spring. L'enqueue dans {@code sync_event_log} est effectué par
+ * {@code SyncOutboundService.enqueue()} dans le thread @Async du listener, APRÈS le commit.
+ * <p>
+ * <b>Risque connu :</b> Si le thread @Async crash entre le commit business et l'enqueue,
+ * l'événement est perdu. Ce cas est rattrapé par {@code SyncReconciliationService} qui détecte
+ * les entités CONFIRMED sans {@code externalOrderId} et ré-enqueue la synchronisation.
+ * Ce trade-off (at-least-once avec réconciliation) est accepté pour éviter la complexité
+ * d'un vrai Outbox pattern (polling table dédiée).
  */
 @Component
 public class ErpEventListener {
@@ -52,32 +66,38 @@ public class ErpEventListener {
     private final ExternalSystemClient externalClient;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final QuotationRepository quotationRepository;
     private final ServiceRepository serviceRepository;
     private final CustomerSyncMapper customerSyncMapper;
     private final OrderSyncMapper orderSyncMapper;
     private final ItemSyncMapper itemSyncMapper;
     private final PaymentSyncMapper paymentSyncMapper;
+    private final QuotationSyncMapper quotationSyncMapper;
 
     public ErpEventListener(SyncOutboundService syncOutboundService,
                             SyncProperties syncProperties,
                             ExternalSystemClient externalClient,
                             UserRepository userRepository,
                             OrderRepository orderRepository,
+                            QuotationRepository quotationRepository,
                             ServiceRepository serviceRepository,
                             CustomerSyncMapper customerSyncMapper,
                             OrderSyncMapper orderSyncMapper,
                             ItemSyncMapper itemSyncMapper,
-                            PaymentSyncMapper paymentSyncMapper) {
+                            PaymentSyncMapper paymentSyncMapper,
+                            QuotationSyncMapper quotationSyncMapper) {
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
         this.externalClient = externalClient;
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
+        this.quotationRepository = quotationRepository;
         this.serviceRepository = serviceRepository;
         this.customerSyncMapper = customerSyncMapper;
         this.orderSyncMapper = orderSyncMapper;
         this.itemSyncMapper = itemSyncMapper;
         this.paymentSyncMapper = paymentSyncMapper;
+        this.quotationSyncMapper = quotationSyncMapper;
     }
 
     @Async
@@ -155,6 +175,28 @@ public class ErpEventListener {
             // --- Avis ---
             case REVIEW_CREATED, REVIEW_UPDATED ->
                     logEvent("Avis — synchronisation externe", event);
+
+            // --- Devis → QUOTATION ---
+            case QUOTATION_CREATED, QUOTATION_SENT -> {
+                logEvent("Devis créé/envoyé — synchronisation externe", event);
+                handleQuotationCreated(event);
+            }
+            case QUOTATION_ACCEPTED -> {
+                logEvent("Devis accepté — conversion via make_sales_order", event);
+                handleQuotationAccepted(event);
+            }
+            case QUOTATION_REJECTED -> {
+                logEvent("Devis refusé — mise à jour externe", event);
+                handleQuotationRejected(event);
+            }
+            case QUOTATION_UPDATED -> {
+                logEvent("Devis mis à jour — synchronisation externe", event);
+                handleQuotationUpdate(event);
+            }
+            case QUOTATION_DELETED -> {
+                logEvent("Devis supprimé — suppression externe", event);
+                handleQuotationDelete(event);
+            }
 
             // --- Lead / Contact ---
             case CONTACT_FORM_SUBMITTED ->
@@ -454,6 +496,9 @@ public class ErpEventListener {
             Service service = item.getService();
             if (service != null && service.getExternalItemCode() == null) {
                 ensureServiceItemProvisioned(service);
+            } else if (service == null) {
+                // Fallback : item sans service lié → provisionner par serviceName
+                ensureSingleItemProvisioned(order.getServiceName(), null);
             }
         }
     }
@@ -745,6 +790,246 @@ public class ErpEventListener {
                 externalId,
                 payload != null ? payload : Map.of()
         );
+    }
+
+    // ==================== Quotation Handlers ====================
+
+    /**
+     * Devis créé ou envoyé → créer Quotation dans le système externe.
+     * Auto-provisionne les Items manquants comme pour les commandes.
+     */
+    private void handleQuotationCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) {
+            logger.debug("🔇 [SYNC] Quotation sync disabled — skipping");
+            return;
+        }
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
+            if (quotationOpt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Quotation {} not found for sync", event.entityId());
+                return;
+            }
+
+            Quotation quotation = quotationOpt.get();
+
+            if (quotation.getExternalQuotationId() != null) {
+                logger.debug("📋 [SYNC] Quotation {} already has externalId {} — skipping",
+                        quotation.getId(), quotation.getExternalQuotationId());
+                return;
+            }
+
+            // Auto-provisionner les Items manquants
+            ensureQuotationItemsProvisioned(quotation);
+
+            Map<String, Object> payload = quotationSyncMapper.toQuotationPayload(quotation);
+            syncOutboundService.syncEntity(
+                    SyncEntityType.QUOTATION, "CREATED",
+                    quotation.getId(), null, payload
+            );
+
+            logger.info("📤 [SYNC] Quotation {} enqueued for external creation", quotation.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Devis accepté → appelle make_sales_order côté external ERP pour convertir
+     * le Quotation en Sales Order. L'external SO ID est ensuite stocké sur
+     * l'Order LMP issue de la conversion (via QuotationService.convertToOrder).
+     */
+    private void handleQuotationAccepted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
+            if (quotationOpt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Quotation {} not found for acceptance", event.entityId());
+                return;
+            }
+
+            Quotation quotation = quotationOpt.get();
+            String externalQuotationId = quotation.getExternalQuotationId();
+
+            if (externalQuotationId == null) {
+                logger.warn("⚠️ [SYNC] Quotation {} has no externalId — cannot call make_sales_order",
+                        quotation.getId());
+                return;
+            }
+
+            // 0. S'assurer que le Quotation est soumis (docstatus=1)
+            submitQuotationIfNeeded(externalQuotationId);
+
+            // 1. Attendre que le submit soit persisté côté external ERP
+            Thread.sleep(1500);
+
+            // 2. Récupérer l'Order depuis l'event (évite LazyInitializationException sur convertedOrder)
+            String orderIdStr = event.payload() != null ? (String) event.payload().get("orderId") : null;
+            if (orderIdStr == null) {
+                logger.error("❌ [SYNC] QUOTATION_ACCEPTED event missing orderId metadata");
+                return;
+            }
+            Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(UUID.fromString(orderIdStr));
+            if (orderOpt.isEmpty()) {
+                logger.error("❌ [SYNC] Order {} not found for Quotation {}", orderIdStr, quotation.getId());
+                return;
+            }
+            Order order = orderOpt.get();
+
+            // 3. Créer le SO directement à partir de l'Order (évite les problèmes de template
+            //    make_sales_order qui contient des champs calculés incompatible avec external CRM.client.insert)
+            Map<String, Object> soData = orderSyncMapper.toSalesOrderPayload(order);
+            soData.put("quotation", externalQuotationId);
+
+            ExternalResponse createResponse = externalClient.createEntity(SyncEntityType.SALES_ORDER, soData);
+
+            if (createResponse.success() && createResponse.externalId() != null) {
+                String soExternalId = createResponse.externalId();
+                logger.info("✅ [SYNC] Quotation {} → SO {} created", quotation.getId(), soExternalId);
+
+                order.setExternalOrderId(soExternalId);
+                orderRepository.save(order);
+                logger.info("🔗 [SYNC] Order {} linked to SO {} (from Quotation conversion)",
+                        order.getId(), soExternalId);
+            } else {
+                logger.error("❌ [SYNC] Failed to create SO from Quotation {}: {}",
+                        quotation.getId(), createResponse.errorMessage());
+            }
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationAccepted failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Soumet un Quotation external ERP s'il est encore en Draft (docstatus=0).
+     * Nécessaire car make_sales_order exige docstatus=1.
+     */
+    private void submitQuotationIfNeeded(String externalQuotationId) {
+        try {
+            ExternalResponse docResponse = externalClient.getEntity(SyncEntityType.QUOTATION, externalQuotationId);
+            if (docResponse.success() && docResponse.data() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) docResponse.data();
+                if (data.containsKey("data") && data.get("data") instanceof Map) {
+                    data = (Map<String, Object>) data.get("data");
+                }
+                Object docstatus = data.get("docstatus");
+                int status = (docstatus instanceof Number) ? ((Number) docstatus).intValue() : 0;
+                if (status == 0) {
+                    // external CRM.client.submit nécessite le document complet avec 'modified' pour éviter
+                    // TimestampMismatchError ("modified after you have opened it")
+                    data.put("docstatus", 1);
+                    ExternalResponse submitResponse = externalClient.callMethod("external CRM.client.submit",
+                            Map.of("doc", data));
+                    if (submitResponse.success()) {
+                        logger.info("📋 [SYNC] Submitted Quotation '{}' before make_sales_order", externalQuotationId);
+                    } else {
+                        logger.warn("⚠️ [SYNC] Failed to submit Quotation '{}': {} — proceeding anyway",
+                                externalQuotationId, submitResponse.errorMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("⚠️ [SYNC] Could not submit Quotation '{}': {} — proceeding with make_sales_order anyway",
+                    externalQuotationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Devis refusé → déclarer comme "Lost" côté système externe.
+     */
+    private void handleQuotationRejected(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findById(event.entityId());
+            if (quotationOpt.isEmpty()) return;
+
+            Quotation quotation = quotationOpt.get();
+            if (quotation.getExternalQuotationId() == null) {
+                logger.debug("📋 [SYNC] Quotation {} has no externalId — skipping reject", quotation.getId());
+                return;
+            }
+
+            // Appeler declare_order_lost sur external ERP
+            externalClient.callMethod(
+                    "external ERP.selling.doctype.quotation.quotation.declare_order_lost",
+                    Map.of(
+                            "docname", quotation.getExternalQuotationId(),
+                            "lost_reasons_list", List.of(Map.of("lost_reason", "Client refusal")),
+                            "detailed_reason", "Rejected by client via LMP"
+                    )
+            );
+
+            logger.info("📋 [SYNC] Quotation {} declared as Lost externally", quotation.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationRejected failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Devis mis à jour → synchroniser les modifications.
+     */
+    private void handleQuotationUpdate(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
+            if (quotationOpt.isEmpty()) return;
+
+            Quotation quotation = quotationOpt.get();
+            if (quotation.getExternalQuotationId() == null) {
+                logger.debug("📋 [SYNC] Quotation {} has no externalId — skipping update", quotation.getId());
+                return;
+            }
+
+            Map<String, Object> payload = quotationSyncMapper.toQuotationUpdatePayload(quotation);
+            syncOutboundService.syncEntity(
+                    SyncEntityType.QUOTATION, "UPDATED",
+                    quotation.getId(), quotation.getExternalQuotationId(), payload
+            );
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationUpdate failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Devis supprimé → supprimer côté système externe.
+     */
+    private void handleQuotationDelete(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        Map<String, Object> payload = event.payload();
+        String externalQuotationId = payload != null ? (String) payload.get("externalQuotationId") : null;
+
+        if (externalQuotationId != null && !externalQuotationId.isBlank()) {
+            syncOutboundService.enqueue(
+                    SyncEntityType.QUOTATION, "DELETED",
+                    event.entityId(), externalQuotationId, Map.of()
+            );
+        }
+    }
+
+    /**
+     * Auto-provisionne les Items référencés par un devis.
+     */
+    private void ensureQuotationItemsProvisioned(Quotation quotation) {
+        if (quotation.getItems() == null || quotation.getItems().isEmpty()) {
+            ensureSingleItemProvisioned(quotation.getTitle(), null);
+            return;
+        }
+
+        for (QuotationItem item : quotation.getItems()) {
+            com.lmp.catalog.domain.Service service = item.getService();
+            if (service != null && service.getExternalItemCode() == null) {
+                ensureServiceItemProvisioned(service);
+            } else if (service == null) {
+                // Fallback : item sans service lié → provisionner avec le même item_code
+                // que le mapper utilisera (quotation.getTitle())
+                ensureSingleItemProvisioned(quotation.getTitle(), null);
+            }
+        }
     }
 
     private void logEvent(String description, LmpBusinessEvent event) {

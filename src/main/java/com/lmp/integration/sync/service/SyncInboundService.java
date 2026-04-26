@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.sentry.Sentry;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -107,6 +109,24 @@ public class SyncInboundService {
             syncEvent.setErrorMessage(e.getMessage());
             log.error("❌ [SYNC IN] Failed to process {} {}: {}",
                     entityType, payload.event(), e.getMessage(), e);
+
+            // Envoi à Sentry — toutes les erreurs de sync inbound avec contexte riche
+            try {
+                Sentry.withScope(scope -> {
+                    scope.setTag("sync.direction", "INBOUND");
+                    scope.setTag("sync.entity_type", entityType.name());
+                    scope.setTag("sync.event_type", payload.event());
+                    scope.setTag("sync.status", "FAILED");
+                    scope.setContexts("sync_event", Map.of(
+                            "eventId", syncEvent.getId().toString(),
+                            "externalEntityId", payload.entityId() != null ? payload.entityId() : "null",
+                            "errorMessage", syncEvent.getErrorMessage() != null ? syncEvent.getErrorMessage() : "null"
+                    ));
+                    Sentry.captureException(e);
+                });
+            } catch (Exception sentryEx) {
+                log.debug("🔇 [SYNC IN] Sentry capture failed: {}", sentryEx.getMessage());
+            }
         }
 
         syncEventRepository.save(syncEvent);

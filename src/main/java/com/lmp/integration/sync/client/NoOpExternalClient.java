@@ -64,4 +64,17 @@ public class NoOpExternalClient implements ExternalSystemClient {
         log.info("🔇 [SYNC NO-OP] listEntities({}, since={})", type, modifiedSince);
         return List.of();
     }
+
+    @Override
+    public java.math.BigDecimal fetchAggregatedTotal(SyncEntityType type, String sumField,
+                                                      String dateField, String startDate, String endDate) {
+        log.info("🔇 [SYNC NO-OP] fetchAggregatedTotal({}, {}, {}→{})", type, sumField, startDate, endDate);
+        return null;
+    }
+
+    @Override
+    public ExternalResponse callMethod(String method, Map<String, Object> args) {
+        log.info("🔇 [SYNC NO-OP] callMethod({}) — args keys: {}", method, args != null ? args.keySet() : "null");
+        return ExternalResponse.unavailable();
+    }
 }

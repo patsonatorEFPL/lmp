@@ -4,8 +4,11 @@ import com.lmp.auth.repository.UserRepository;
 import com.lmp.billing.domain.*;
 import com.lmp.billing.repository.OrderInstallmentRepository;
 import com.lmp.billing.repository.OrderRepository;
+import com.lmp.billing.repository.QuotationRepository;
+import com.lmp.billing.service.QuotationService;
 import com.lmp.billing.service.admin.OrderAdminService;
 import com.lmp.billing.util.InstallmentCalculator;
+import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.shared.dto.ApiResponse;
 import org.slf4j.Logger;
@@ -35,17 +38,26 @@ public class DevSyncController {
     private final OrderAdminService orderAdminService;
     private final OrderRepository orderRepository;
     private final OrderInstallmentRepository installmentRepository;
+    private final QuotationRepository quotationRepository;
+    private final QuotationService quotationService;
+    private final ServiceRepository serviceRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public DevSyncController(OrderAdminService orderAdminService,
                               OrderRepository orderRepository,
                               OrderInstallmentRepository installmentRepository,
+                              QuotationRepository quotationRepository,
+                              QuotationService quotationService,
+                              ServiceRepository serviceRepository,
                               UserRepository userRepository,
                               ApplicationEventPublisher eventPublisher) {
         this.orderAdminService = orderAdminService;
         this.orderRepository = orderRepository;
         this.installmentRepository = installmentRepository;
+        this.quotationRepository = quotationRepository;
+        this.quotationService = quotationService;
+        this.serviceRepository = serviceRepository;
         this.userRepository = userRepository;
         this.eventPublisher = eventPublisher;
     }
@@ -226,6 +238,132 @@ public class DevSyncController {
             log.error("🔧 [DEV] Pay installment failed: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+
+    // ==================== Quotation E2E Test ====================
+
+    /**
+     * DEV-only: Crée un devis de test, l'envoie, puis l'accepte pour tester le flux complet :
+     * DRAFT → SENT (sync Quotation) → ACCEPTED (make_sales_order → Order).
+     */
+    @PostMapping("/quotations/create-test")
+    public ResponseEntity<?> createQuotationTest(
+            @RequestParam(defaultValue = "500.00") BigDecimal amount) {
+        log.warn("🔧 [DEV] Creating quotation test: amount={}", amount);
+        try {
+            // Trouver un user et un service existants
+            var adminUser = userRepository.findByEmail("admin@lmp.ca").orElse(null);
+            if (adminUser == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("User admin@lmp.ca not found"));
+            }
+
+            // Trouver le premier service actif
+            var services = serviceRepository.findAll();
+            if (services.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("No services found in database"));
+            }
+            var service = services.get(0);
+
+            // Créer le devis
+            var itemRequest = new QuotationService.QuotationItemRequest(
+                    service.getId(), 1, amount, "Test quotation item - " + service.getTitle()
+            );
+
+            Quotation quotation = quotationService.createDraft(
+                    adminUser,
+                    "Devis Test E2E - " + service.getTitle(),
+                    List.of(itemRequest),
+                    new BigDecimal("0.2100"),
+                    false,
+                    LocalDateTime.now().plusDays(30),
+                    "Devis de test Phase 2",
+                    adminUser.getFirstName() + " " + adminUser.getLastName()
+            );
+
+            return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                    "quotationId", quotation.getId(),
+                    "status", quotation.getStatus(),
+                    "totalAmount", quotation.getTotalAmount(),
+                    "message", "Quotation DRAFT created. Use /send then /accept to test full flow."
+            )));
+        } catch (Exception e) {
+            log.error("🔧 [DEV] Create quotation test failed: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * DEV-only: Envoie un devis (DRAFT → SENT) — déclenche la sync externe.
+     */
+    @PostMapping("/quotations/{quotationId}/send")
+    public ResponseEntity<?> sendQuotation(@PathVariable UUID quotationId) {
+        log.warn("🔧 [DEV] Sending quotation {}", quotationId);
+        try {
+            Quotation quotation = quotationService.send(quotationId);
+            return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                    "quotationId", quotation.getId(),
+                    "status", quotation.getStatus(),
+                    "message", "Quotation SENT — sync event published"
+            )));
+        } catch (Exception e) {
+            log.error("🔧 [DEV] Send quotation failed: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * DEV-only: Accepte un devis (SENT → ACCEPTED) — convertit en Order + make_sales_order.
+     */
+    @PostMapping("/quotations/{quotationId}/accept")
+    public ResponseEntity<?> acceptQuotation(@PathVariable UUID quotationId) {
+        log.warn("🔧 [DEV] Accepting quotation {}", quotationId);
+        try {
+            Order order = quotationService.accept(quotationId);
+            return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                    "quotationId", quotationId,
+                    "orderId", order.getId(),
+                    "orderStatus", order.getStatus(),
+                    "message", "Quotation ACCEPTED → Order created. make_sales_order event published."
+            )));
+        } catch (Exception e) {
+            log.error("🔧 [DEV] Accept quotation failed: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * DEV-only: Rejette un devis (SENT → REJECTED).
+     */
+    @PostMapping("/quotations/{quotationId}/reject")
+    public ResponseEntity<?> rejectQuotation(@PathVariable UUID quotationId) {
+        log.warn("🔧 [DEV] Rejecting quotation {}", quotationId);
+        try {
+            Quotation quotation = quotationService.reject(quotationId);
+            return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                    "quotationId", quotation.getId(),
+                    "status", quotation.getStatus(),
+                    "message", "Quotation REJECTED — declare_order_lost event published"
+            )));
+        } catch (Exception e) {
+            log.error("🔧 [DEV] Reject quotation failed: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * DEV-only: Statut sync d'un devis.
+     */
+    @GetMapping("/quotations/{quotationId}/status")
+    public ResponseEntity<?> getQuotationSyncStatus(@PathVariable UUID quotationId) {
+        return quotationRepository.findById(quotationId)
+                .map(q -> ResponseEntity.ok(Map.of(
+                        "id", q.getId(),
+                        "status", q.getStatus(),
+                        "externalQuotationId", q.getExternalQuotationId() != null ? q.getExternalQuotationId() : "null",
+                        "convertedOrderId", q.getConvertedOrder() != null ? q.getConvertedOrder().getId().toString() : "null",
+                        "totalAmount", q.getTotalAmount()
+                )))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/orders/{orderId}/status")

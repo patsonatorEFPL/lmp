@@ -79,6 +79,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Sentry SDK — error tracking & alerting with intelligent grouping -->
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry</artifactId>
+			<version>8.16.0</version>
+		</dependency>
+
 		<!-- Flyway pour les migrations de base de données (PostgreSQL) -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>

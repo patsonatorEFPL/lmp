@@ -5,10 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmp.integration.sync.*;
 import com.lmp.integration.sync.domain.SyncEvent;
 import com.lmp.integration.sync.repository.SyncEventRepository;
+import com.lmp.integration.sync.verification.SyncVerificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.slf4j.MDC;
+
+import io.sentry.Sentry;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -29,18 +35,25 @@ public class SyncOutboundService {
     private final SyncEventRepository syncEventRepository;
     private final SyncProperties syncProperties;
     private final SyncCallbackService syncCallbackService;
+    private final SyncVerificationService verificationService;
     private final ObjectMapper objectMapper;
+
+    private final com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier;
 
     public SyncOutboundService(ExternalSystemClient externalClient,
                                SyncEventRepository syncEventRepository,
                                SyncProperties syncProperties,
                                SyncCallbackService syncCallbackService,
-                               ObjectMapper objectMapper) {
+                               @Lazy SyncVerificationService verificationService,
+                               ObjectMapper objectMapper,
+                               com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier) {
         this.externalClient = externalClient;
         this.syncEventRepository = syncEventRepository;
         this.syncProperties = syncProperties;
         this.syncCallbackService = syncCallbackService;
+        this.verificationService = verificationService;
         this.objectMapper = objectMapper;
+        this.errorClassifier = errorClassifier;
     }
 
     /**
@@ -106,14 +119,19 @@ public class SyncOutboundService {
         event.setStatus(SyncStatus.PROCESSING);
         syncEventRepository.save(event);
 
+        // Observabilité : propager le correlationId dans les logs et headers REST
+        MDC.put("correlationId", event.getId().toString());
         try {
             Map<String, Object> data = deserializePayload(event.getPayload());
+            injectIdempotencyKey(data, event);
             ExternalResponse response = executeSync(
                     event.getEntityType(), event.getEventType(),
                     event.getExternalEntityId(), data);
             handleResponse(event, response);
         } catch (Exception e) {
             handleFailure(event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
 
         syncEventRepository.save(event);
@@ -133,14 +151,18 @@ public class SyncOutboundService {
         event.setStatus(SyncStatus.PROCESSING);
         syncEventRepository.save(event);
 
+        MDC.put("correlationId", event.getId().toString());
         try {
             Map<String, Object> data = deserializePayload(event.getPayload());
+            injectIdempotencyKey(data, event);
             ExternalResponse response = executeSync(
                     event.getEntityType(), event.getEventType(),
                     event.getExternalEntityId(), data);
             handleResponse(event, response);
         } catch (Exception e) {
             handleFailure(event, e);
+        } finally {
+            MDC.remove("correlationId");
         }
 
         syncEventRepository.save(event);
@@ -196,6 +218,14 @@ public class SyncOutboundService {
                             syncEvent.getEntityType(), syncEvent.getLocalEntityId(), e.getMessage());
                 }
             }
+
+            // Verify-After-Sync — vérification inline (best-effort, non-bloquante)
+            try {
+                verificationService.verifyAfterSync(syncEvent);
+            } catch (Exception e) {
+                log.warn("⚠️ [SYNC OUT] Post-sync verification failed for {} {}: {}",
+                        syncEvent.getEntityType(), syncEvent.getExternalEntityId(), e.getMessage());
+            }
         } else {
             syncEvent.setStatus(SyncStatus.FAILED);
             syncEvent.setErrorMessage(response.errorMessage());
@@ -215,6 +245,13 @@ public class SyncOutboundService {
                         syncEvent.getEntityType(), syncEvent.getEventType(),
                         syncEvent.getRetryCount(), syncEvent.getMaxRetries(), backoffSeconds);
             }
+
+            // Classification de l'erreur pour détection de drift
+            try {
+                errorClassifier.classify(syncEvent.getErrorMessage(), syncEvent.getId());
+            } catch (Exception ex) {
+                log.debug("🔇 [SYNC OUT] Error classification failed: {}", ex.getMessage());
+            }
         }
     }
 
@@ -222,7 +259,8 @@ public class SyncOutboundService {
         syncEvent.setRetryCount(syncEvent.getRetryCount() + 1);
         syncEvent.setErrorMessage(e.getMessage());
 
-        if (syncEvent.getRetryCount() >= syncEvent.getMaxRetries()) {
+        boolean isDead = syncEvent.getRetryCount() >= syncEvent.getMaxRetries();
+        if (isDead) {
             syncEvent.setStatus(SyncStatus.DEAD);
             log.error("💀 [SYNC OUT] Exception during {} {} — max retries — DEAD: {}",
                     syncEvent.getEntityType(), syncEvent.getEventType(), e.getMessage(), e);
@@ -234,6 +272,48 @@ public class SyncOutboundService {
             log.error("❌ [SYNC OUT] Exception during {} {} (retry {}/{}) — next in {}s: {}",
                     syncEvent.getEntityType(), syncEvent.getEventType(),
                     syncEvent.getRetryCount(), syncEvent.getMaxRetries(), backoffSeconds, e.getMessage(), e);
+        }
+
+        // Envoi à Sentry — toutes les erreurs de sync outbound avec contexte riche
+        try {
+            Sentry.withScope(scope -> {
+                scope.setTag("sync.direction", "OUTBOUND");
+                scope.setTag("sync.entity_type", syncEvent.getEntityType().name());
+                scope.setTag("sync.event_type", syncEvent.getEventType());
+                scope.setTag("sync.status", isDead ? "DEAD" : "FAILED");
+                scope.setTag("sync.retry_count", String.valueOf(syncEvent.getRetryCount()));
+                scope.setTag("sync.max_retries", String.valueOf(syncEvent.getMaxRetries()));
+                scope.setContexts("sync_event", Map.of(
+                        "eventId", syncEvent.getId().toString(),
+                        "localEntityId", syncEvent.getLocalEntityId() != null ? syncEvent.getLocalEntityId().toString() : "null",
+                        "externalEntityId", syncEvent.getExternalEntityId() != null ? syncEvent.getExternalEntityId() : "null",
+                        "errorMessage", syncEvent.getErrorMessage() != null ? syncEvent.getErrorMessage() : "null"
+                ));
+                Sentry.captureException(e);
+            });
+        } catch (Exception sentryEx) {
+            log.debug("🔇 [SYNC OUT] Sentry capture failed: {}", sentryEx.getMessage());
+        }
+
+        // Classification de l'erreur pour détection de drift
+        try {
+            errorClassifier.classify(syncEvent.getErrorMessage(), syncEvent.getId());
+        } catch (Exception ex) {
+            log.debug("🔇 [SYNC OUT] Error classification failed: {}", ex.getMessage());
+        }
+    }
+
+    /**
+     * Injecte la clé d'idempotence dans le payload pour les opérations CREATE.
+     * Utilise l'UUID du SyncEvent comme clé unique — si un retry reposte le même
+     * payload, le système externe peut détecter le doublon via ce champ.
+     * <p>
+     * Le champ {@code lmp_idempotency_key} doit exister comme custom field sur
+     * les DocTypes external ERP synchronisés (Sales Order, Sales Invoice, Payment Entry, etc.).
+     */
+    private void injectIdempotencyKey(Map<String, Object> data, SyncEvent event) {
+        if ("CREATED".equals(event.getEventType()) && event.getId() != null) {
+            data.put("lmp_idempotency_key", event.getId().toString());
         }
     }
 

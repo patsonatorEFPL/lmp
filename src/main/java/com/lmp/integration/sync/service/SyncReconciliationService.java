@@ -7,13 +7,17 @@ import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncProperties;
+import com.lmp.integration.sync.verification.SyncVerificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,6 +35,7 @@ public class SyncReconciliationService {
 
     private final ExternalSystemClient externalClient;
     private final SyncOutboundService syncOutboundService;
+    private final SyncVerificationService verificationService;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final ServiceRepository serviceRepository;
@@ -43,6 +48,7 @@ public class SyncReconciliationService {
 
     public SyncReconciliationService(ExternalSystemClient externalClient,
                                      SyncOutboundService syncOutboundService,
+                                     SyncVerificationService verificationService,
                                      UserRepository userRepository,
                                      OrderRepository orderRepository,
                                      ServiceRepository serviceRepository,
@@ -50,6 +56,7 @@ public class SyncReconciliationService {
                                      SyncProperties syncProperties) {
         this.externalClient = externalClient;
         this.syncOutboundService = syncOutboundService;
+        this.verificationService = verificationService;
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.serviceRepository = serviceRepository;
@@ -74,6 +81,21 @@ public class SyncReconciliationService {
         int totalGaps = 0;
 
         try {
+            // Re-vérifier les events SUCCESS sans verified_at
+            int newlyVerified = verificationService.retryUnverifiedEvents();
+            if (newlyVerified > 0) {
+                log.info("🔍 [RECONCILIATION] {} events newly verified", newlyVerified);
+            }
+
+            // Alerter sur les events non-vérifiés depuis plus d'1 heure
+            long staleUnverified = verificationService.countStaleUnverifiedEvents(
+                    LocalDateTime.now().minusHours(1));
+            if (staleUnverified > 0) {
+                log.error("🚨 [RECONCILIATION] {} SUCCESS events unverified for > 1 hour — investigate!",
+                        staleUnverified);
+                totalGaps += (int) staleUnverified;
+            }
+
             if (syncProperties.getFeatures().isUserProvisioning()) {
                 totalGaps += reconcileCustomers(since);
             }
@@ -83,6 +105,7 @@ public class SyncReconciliationService {
             }
             if (syncProperties.getFeatures().isOrderSync()) {
                 totalGaps += reconcileOrders(since);
+                totalGaps += reconcileTotals();
             }
 
             lastReconcileTimestamp.set(Instant.now());
@@ -160,6 +183,54 @@ public class SyncReconciliationService {
             }
         }
         return gaps;
+    }
+
+    /**
+     * Compare les totaux facturés LMP vs ERP sur une fenêtre fermée (J-7 → J-1).
+     * Alerte si l'écart dépasse 0.1% ET 5€ (les deux conditions).
+     * <p>
+     * Inspiré du pattern {@code get_sales_report()} de NextApp-master :
+     * agrégat {@code SUM(rounded_total * conversion_rate)} par période.
+     */
+    private int reconcileTotals() {
+        LocalDate end = LocalDate.now().minusDays(1);    // J-1
+        LocalDate start = end.minusDays(6);              // J-7
+        String startStr = start.format(DateTimeFormatter.ISO_LOCAL_DATE);
+        String endStr = end.plusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE); // exclusive
+
+        // ERP : SUM(grand_total) des SINV soumises dans la fenêtre
+        BigDecimal erpTotal = externalClient.fetchAggregatedTotal(
+                SyncEntityType.SALES_INVOICE, "grand_total", "posting_date", startStr, endStr);
+
+        if (erpTotal == null) {
+            log.debug("🔍 [RECONCILIATION] Could not fetch ERP totals — skipping comparison");
+            return 0;
+        }
+
+        // LMP : SUM(totalAmount) des commandes CONFIRMED/PAID dans la fenêtre
+        LocalDateTime lmpStart = start.atStartOfDay();
+        LocalDateTime lmpEnd = end.plusDays(1).atStartOfDay();
+        BigDecimal lmpTotal = orderRepository.sumTotalAmountByStatusesInRange(
+                List.of(com.lmp.billing.domain.OrderStatus.CONFIRMED),
+                lmpStart, lmpEnd);
+        if (lmpTotal == null) lmpTotal = BigDecimal.ZERO;
+
+        BigDecimal delta = erpTotal.subtract(lmpTotal).abs();
+        BigDecimal relativeThreshold = lmpTotal.compareTo(BigDecimal.ZERO) > 0
+                ? lmpTotal.multiply(new BigDecimal("0.001")) // 0.1%
+                : BigDecimal.ZERO;
+        BigDecimal absoluteThreshold = new BigDecimal("5.00");
+
+        // Alerte si écart > 0.1% ET > 5€
+        if (delta.compareTo(relativeThreshold) > 0 && delta.compareTo(absoluteThreshold) > 0) {
+            log.error("🚨 [RECONCILIATION] Revenue mismatch ({}→{}): ERP={} LMP={} Δ={}",
+                    startStr, end, erpTotal, lmpTotal, delta);
+            return 1;
+        }
+
+        log.info("✅ [RECONCILIATION] Revenue match ({}→{}): ERP={} LMP={} Δ={}",
+                startStr, end, erpTotal, lmpTotal, delta);
+        return 0;
     }
 
     /**
