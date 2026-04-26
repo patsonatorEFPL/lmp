@@ -76,6 +76,9 @@ lmp-frontend/src/app/generated/
 .gemini/
 .mcp.json
 
+### Dépôt Python local (jonction NTFS ; ne pas versionner) ###
+python/
+
 ### Documentation locale, brouillons et scripts (non versionnés) ###
 docs/
 plans/

@@ -276,6 +276,17 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Page<Order> findLatestOrders(Pageable pageable);
 
     /**
+     * Somme des totalAmount pour les commandes CONFIRMED/PAID dans une fenêtre de dates.
+     * Utilisé par la réconciliation pour comparer les totaux LMP vs ERP.
+     */
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o " +
+           "WHERE o.status IN :statuses " +
+           "AND o.createdAt >= :start AND o.createdAt < :end")
+    BigDecimal sumTotalAmountByStatusesInRange(@Param("statuses") List<OrderStatus> statuses,
+                                               @Param("start") LocalDateTime start,
+                                               @Param("end") LocalDateTime end);
+
+    /**
      * Charge une commande avec son User et ses Items pour la synchronisation externe.
      * Évite les LazyInitializationException hors session Hibernate.
      */

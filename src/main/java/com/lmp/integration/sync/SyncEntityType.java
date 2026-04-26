@@ -17,5 +17,6 @@ public enum SyncEntityType {
     TASK,
     ISSUE,
     COMMUNICATION,
-    NOTIFICATION
+    NOTIFICATION,
+    QUOTATION
 }

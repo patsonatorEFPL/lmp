@@ -73,4 +73,44 @@ public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID> {
      * Compter les événements dans un statut donné (monitoring queue).
      */
     long countByStatus(SyncStatus status);
+
+    // ==================== Verification ====================
+
+    /**
+     * Événements SUCCESS non encore vérifiés (verified_at IS NULL),
+     * traités avant le cutoff. Limité pour ne pas surcharger l'API externe.
+     */
+    @Query(value = """
+            SELECT * FROM sync_event_log
+            WHERE status = 'SUCCESS'
+              AND verified_at IS NULL
+              AND processed_at IS NOT NULL
+              AND processed_at < :cutoff
+            ORDER BY processed_at ASC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<SyncEvent> findUnverifiedSuccessEvents(@Param("cutoff") LocalDateTime cutoff,
+                                                 @Param("limit") int limit);
+
+    /**
+     * Compte les événements SUCCESS non vérifiés plus anciens qu'un seuil (alerting).
+     */
+    @Query(value = """
+            SELECT COUNT(*) FROM sync_event_log
+            WHERE status = 'SUCCESS'
+              AND verified_at IS NULL
+              AND processed_at IS NOT NULL
+              AND processed_at < :olderThan
+            """, nativeQuery = true)
+    long countUnverifiedSuccessOlderThan(@Param("olderThan") LocalDateTime olderThan);
+
+    // ==================== Monitoring / Health ====================
+
+    long countByStatusIn(List<SyncStatus> statuses);
+
+    long countByDirectionAndCreatedAtAfter(SyncDirection direction, LocalDateTime since);
+
+    long countByStatusAndDirectionAndCreatedAtAfter(SyncStatus status, SyncDirection direction, LocalDateTime since);
+
+    List<SyncEvent> findTop10ByStatusAndErrorMessageNotNullOrderByCreatedAtDesc(SyncStatus status);
 }

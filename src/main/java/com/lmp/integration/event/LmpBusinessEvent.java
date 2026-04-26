@@ -73,6 +73,14 @@ public record LmpBusinessEvent(
         TASK_UPDATED,
         TASK_DELETED,
 
+        // Quotations (Devis)
+        QUOTATION_CREATED,
+        QUOTATION_SENT,
+        QUOTATION_ACCEPTED,
+        QUOTATION_REJECTED,
+        QUOTATION_UPDATED,
+        QUOTATION_DELETED,
+
         // Support / Tickets
         TICKET_CREATED,
         TICKET_UPDATED,
