@@ -51,9 +51,12 @@ public class DataInitializer implements CommandLineRunner {
     private final OfferBenefitRepository offerBenefitRepository;
 
     /**
-     * Mot de passe admin — OBLIGATOIRE.
-     * À chaque démarrage, si le mot de passe en base diffère de cette variable,
-     * il est mis à jour automatiquement. Aucun fallback n'est prévu.
+     * Mot de passe admin — la variable d'environnement est prioritaire sur la DB.
+     *
+     * Règles :
+     *  • ENV présente → écrase le hash en base si différent (rotation/reset).
+     *  • ENV absente + admin existe → conserve le hash persisté en DB.
+     *  • ENV absente + admin absent → IllegalStateException (bootstrap initial obligatoire).
      */
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
@@ -116,41 +119,48 @@ public class DataInitializer implements CommandLineRunner {
     // -------------------------------------------------------------------------
 
     private void initializeDefaultUsers() {
-        if (adminPassword == null || adminPassword.isBlank()) {
-            throw new IllegalStateException(
-                "❌ ADMIN_PASSWORD n'est pas défini. "
-                + "Définissez la variable d'environnement ADMIN_PASSWORD pour démarrer l'application.");
-        }
-
         Role adminRole = roleRepository.findByName("ADMIN")
                 .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
 
+        boolean envProvided = adminPassword != null && !adminPassword.isBlank();
         var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
+
         if (existingAdmin.isPresent()) {
             User admin = existingAdmin.get();
-            // Si le mot de passe en base diffère de ADMIN_PASSWORD, le mettre à jour
-            if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
-                admin.setPassword(passwordEncoder.encode(adminPassword));
-                userRepository.save(admin);
-                logger.info("🔄 Mot de passe admin mis à jour depuis ADMIN_PASSWORD.");
+            if (envProvided) {
+                // ENV prioritaire : synchronise le hash en base si différent
+                if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+                    admin.setPassword(passwordEncoder.encode(adminPassword));
+                    userRepository.save(admin);
+                    logger.info("🔄 Mot de passe admin mis à jour depuis ADMIN_PASSWORD.");
+                } else {
+                    logger.debug("📋 Compte admin existant — mot de passe déjà synchronisé avec ADMIN_PASSWORD.");
+                }
             } else {
-                logger.debug("📋 Compte admin existant — mot de passe déjà synchronisé.");
+                logger.info("📋 ADMIN_PASSWORD non défini — conservation du mot de passe persisté en base.");
             }
-        } else {
-            User admin = new User();
-            admin.setEmail("admin@lmp.ca");
-            admin.setPassword(passwordEncoder.encode(adminPassword));
-            admin.setFirstName("Admin");
-            admin.setLastName("LMP");
-            admin.setRegistrationDate(LocalDateTime.now());
-            admin.setStatus(UserStatus.ACTIVE);
-            admin.setAccountLocked(false);
-            admin.setEmailVerified(true);
-            admin.setRoles(Set.of(adminRole));
-
-            userRepository.save(admin);
-            logger.info("✅ Administrateur créé : admin@lmp.ca");
+            return;
         }
+
+        if (!envProvided) {
+            throw new IllegalStateException(
+                "❌ Aucun compte admin en base et ADMIN_PASSWORD non défini. "
+                + "Définissez la variable d'environnement ADMIN_PASSWORD pour le bootstrap initial.");
+        }
+
+        User admin = new User();
+        admin.setEmail("admin@lmp.ca");
+        admin.setPassword(passwordEncoder.encode(adminPassword));
+        admin.setFirstName("Admin");
+        admin.setLastName("LMP");
+        admin.setRegistrationDate(LocalDateTime.now());
+        admin.setStatus(UserStatus.ACTIVE);
+        admin.setAccountLocked(false);
+        admin.setEmailVerified(true);
+        admin.setRoles(Set.of(adminRole));
+
+        userRepository.save(admin);
+        logger.info("✅ Administrateur créé : admin@lmp.ca");
     }
 
     /**
