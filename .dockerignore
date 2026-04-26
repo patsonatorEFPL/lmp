@@ -57,6 +57,7 @@ out/
 # Fichiers de configuration locale
 application-local.properties
 application-dev.properties
+application-secrets.properties
 
 # Fichiers de test
 src/test/

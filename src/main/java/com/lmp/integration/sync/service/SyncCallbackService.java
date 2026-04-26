@@ -7,6 +7,7 @@ import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderInstallment;
 import com.lmp.billing.repository.OrderInstallmentRepository;
 import com.lmp.billing.repository.OrderRepository;
+import com.lmp.billing.repository.QuotationRepository;
 import com.lmp.catalog.domain.Service;
 import com.lmp.catalog.domain.ServiceCategory;
 import com.lmp.catalog.repository.ServiceCategoryRepository;
@@ -43,6 +44,7 @@ public class SyncCallbackService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final OrderInstallmentRepository installmentRepository;
+    private final QuotationRepository quotationRepository;
     private final ServiceRepository serviceRepository;
     private final ServiceCategoryRepository serviceCategoryRepository;
     private final ProjectRepository projectRepository;
@@ -56,6 +58,7 @@ public class SyncCallbackService {
     public SyncCallbackService(UserRepository userRepository,
                                OrderRepository orderRepository,
                                OrderInstallmentRepository installmentRepository,
+                               QuotationRepository quotationRepository,
                                ServiceRepository serviceRepository,
                                ServiceCategoryRepository serviceCategoryRepository,
                                ProjectRepository projectRepository,
@@ -68,6 +71,7 @@ public class SyncCallbackService {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.installmentRepository = installmentRepository;
+        this.quotationRepository = quotationRepository;
         this.serviceRepository = serviceRepository;
         this.serviceCategoryRepository = serviceCategoryRepository;
         this.projectRepository = projectRepository;
@@ -100,6 +104,7 @@ public class SyncCallbackService {
             case PROJECT -> clearProjectExternalId(localEntityId);
             case TASK -> clearTaskExternalId(localEntityId);
             case ISSUE -> clearTicketExternalId(localEntityId);
+            case QUOTATION -> clearQuotationExternalId(localEntityId);
             default -> log.debug("📋 [CALLBACK] No cleanup needed for {}", entityType);
         }
     }
@@ -123,6 +128,7 @@ public class SyncCallbackService {
             case PROJECT -> updateProjectExternalId(localEntityId, externalId);
             case TASK -> updateTaskExternalId(localEntityId, externalId);
             case ISSUE -> updateTicketExternalId(localEntityId, externalId);
+            case QUOTATION -> updateQuotationExternalId(localEntityId, externalId);
             default -> log.debug("📋 [CALLBACK] No local update needed for {}", entityType);
         }
     }
@@ -612,6 +618,27 @@ public class SyncCallbackService {
             ticket.setExternalIssueId(null);
             ticketRepository.save(ticket);
             log.info("🧹 [CALLBACK] Cleared external Issue ID on Ticket {}", ticketId);
+        });
+    }
+
+    // ==================== Quotation ====================
+
+    private void updateQuotationExternalId(UUID quotationId, String externalId) {
+        quotationRepository.findById(quotationId).ifPresentOrElse(
+                quotation -> {
+                    quotation.setExternalQuotationId(externalId);
+                    quotationRepository.save(quotation);
+                    log.info("🔗 [CALLBACK] Quotation {} linked to external Quotation {}", quotationId, externalId);
+                },
+                () -> log.warn("⚠️ [CALLBACK] Quotation {} not found for quotation link", quotationId)
+        );
+    }
+
+    private void clearQuotationExternalId(UUID quotationId) {
+        quotationRepository.findById(quotationId).ifPresent(quotation -> {
+            quotation.setExternalQuotationId(null);
+            quotationRepository.save(quotation);
+            log.info("🧹 [CALLBACK] Cleared external Quotation ID on Quotation {}", quotationId);
         });
     }
 }

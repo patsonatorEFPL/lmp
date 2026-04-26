@@ -27,7 +27,8 @@ public class EntityTypeMapping {
             Map.entry(SyncEntityType.TASK, "Task"),
             Map.entry(SyncEntityType.ISSUE, "Issue"),
             Map.entry(SyncEntityType.COMMUNICATION, "Communication"),
-            Map.entry(SyncEntityType.NOTIFICATION, "Notification Log")
+            Map.entry(SyncEntityType.NOTIFICATION, "Notification Log"),
+            Map.entry(SyncEntityType.QUOTATION, "Quotation")
     );
 
     /**

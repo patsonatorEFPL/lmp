@@ -65,6 +65,14 @@ public class SyncEvent {
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
 
+    /** Horodatage de la vérification post-sync (GET côté système externe). Null = pas encore vérifié. */
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    /** Message d'erreur de vérification (docstatus incorrect, montant divergent, etc.). */
+    @Column(name = "verification_error", columnDefinition = "TEXT")
+    private String verificationError;
+
     public SyncEvent() {}
 
     // --- Getters / Setters ---
@@ -113,4 +121,10 @@ public class SyncEvent {
 
     public LocalDateTime getProcessedAt() { return processedAt; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+
+    public LocalDateTime getVerifiedAt() { return verifiedAt; }
+    public void setVerifiedAt(LocalDateTime verifiedAt) { this.verifiedAt = verifiedAt; }
+
+    public String getVerificationError() { return verificationError; }
+    public void setVerificationError(String verificationError) { this.verificationError = verificationError; }
 }
