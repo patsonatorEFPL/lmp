@@ -131,3 +131,11 @@ src/main/resources/application-staging.properties
 ### Debug session NDJSON (local agent) ###
 debug-e89717.log
 debug-*.log
+
+### Build/Runtime Logs ###
+boot-stdout.log
+boot-stderr.log
+mvn-compile.log
+
+### Test Payloads ###
+test_*.json
