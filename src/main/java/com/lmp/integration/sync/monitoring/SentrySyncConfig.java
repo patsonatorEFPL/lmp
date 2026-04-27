@@ -29,6 +29,12 @@ public class SentrySyncConfig {
 
     @PostConstruct
     public void initSentry() {
+        // Si Sentry a déjà été initialisé par le bootstrap listener, ne pas réinitialiser
+        if (Sentry.getCurrentHub().getClient() != null) {
+            log.info("[SENTRY] Déjà initialisé en bootstrap — skipping");
+            return;
+        }
+
         String dsn = syncProperties.getAlert().getSentryDsn();
         if (dsn == null || dsn.isBlank()) {
             log.info("[SENTRY] DSN non configuré — Sentry désactivé pour la synchronisation");
