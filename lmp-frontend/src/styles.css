@@ -407,6 +407,10 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+.lmp-dashboard-theme .lmpd-table th.text-right,
+.lmp-dashboard-theme .lmpd-table td.text-right {
+  text-align: right;
+}
 .lmp-dashboard-theme .lmpd-table td {
   padding: 11px 16px;
   border-bottom: 1px solid var(--lmpd-border);
@@ -436,6 +440,7 @@
 .lmp-dashboard-theme .lmpd-badge {
   display: inline-flex;
   align-items: center;
+  vertical-align: middle;
   gap: 5px;
   padding: 2px 7px;
   border-radius: 5px;
