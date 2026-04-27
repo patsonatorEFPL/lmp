@@ -57,10 +57,16 @@ export class LineChartComponent {
   readonly W = 720;
   readonly pad = { l: 32, r: 16, t: 14, b: 22 };
 
-  private readonly max = computed(() =>
-    Math.max(...this.data(), ...(this.secondary() ?? [0])),
-  );
-  private readonly range = computed(() => this.max() || 1);
+  private readonly max = computed(() => {
+    const d = this.data();
+    const s = this.secondary() ?? [];
+    if (d.length === 0 && s.length === 0) return 0;
+    return Math.max(...d, ...s);
+  });
+  private readonly range = computed(() => {
+    const m = this.max();
+    return m > 0 ? m : 1;
+  });
 
   xAt(i: number): number {
     const n = this.data().length;
