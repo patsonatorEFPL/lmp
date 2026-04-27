@@ -45,4 +45,19 @@ public class SentryBootstrapListener implements SpringApplicationRunListener {
             log.error("[SENTRY] Échec de l'initialisation bootstrap : {}", e.getMessage());
         }
     }
+
+    @Override
+    public void failed(ConfigurableApplicationContext context, Throwable exception) {
+        if (Sentry.getCurrentHub().getClient() == null) {
+            log.debug("[SENTRY] Client non initialisé — impossible de rapporter l'erreur de démarrage");
+            return;
+        }
+        log.error("[SENTRY] Application failed to start — capturing exception", exception);
+        Sentry.captureException(exception);
+        try {
+            Sentry.flush(5000);
+        } catch (Exception ignored) {
+            // ignore
+        }
+    }
 }
