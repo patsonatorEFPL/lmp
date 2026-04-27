@@ -30,7 +30,7 @@ public class SentrySyncConfig {
     @PostConstruct
     public void initSentry() {
         // Si Sentry a déjà été initialisé par le bootstrap listener, ne pas réinitialiser
-        if (Sentry.getCurrentHub().getClient() != null) {
+        if (Sentry.isEnabled()) {
             log.info("[SENTRY] Déjà initialisé en bootstrap — skipping");
             return;
         }
@@ -57,11 +57,10 @@ public class SentrySyncConfig {
 
     @PreDestroy
     public void closeSentry() {
-        try {
-            Sentry.close();
-            log.debug("[SENTRY] Client fermé");
-        } catch (Exception ignored) {
-            // ignore
-        }
+        // Ne pas fermer Sentry ici — le client global doit rester actif
+        // pour que les listeners d'échec de démarrage (ApplicationFailedEvent)
+        // puissent encore envoyer des événements. Sentry se fermera
+        // automatiquement à l'arrêt de la JVM.
+        log.debug("[SENTRY] Client laissé actif pour les listeners de shutdown");
     }
 }
