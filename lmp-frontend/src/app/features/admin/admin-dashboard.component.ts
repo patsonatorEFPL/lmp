@@ -166,13 +166,11 @@ interface AdminUsersResponse {
             label="Utilisateurs"
             [value]="formatNumber(s.totalUsers)"
             [icon]="UsersIcon"
-            footer="47 nouveaux ce mois"
           />
           <lmp-stat-card
             label="Revenus · 30j"
             [value]="revenueDisplay()"
             [icon]="CreditCardIcon"
-            [footer]="'MRR 12 840 ' + currencySymbol()"
             [accent]="true"
           />
           <lmp-stat-card
@@ -185,7 +183,6 @@ interface AdminUsersResponse {
             label="Rendez-vous"
             [value]="formatNumber(s.totalAppointments)"
             [icon]="CalendarIcon"
-            footer="8 aujourd'hui"
           />
         </div>
 
@@ -196,8 +193,7 @@ interface AdminUsersResponse {
               <div>
                 <h3>Revenus · {{ revenueRangeLabel() }}</h3>
                 <div style="font-size:11.5px;color:var(--lmpd-fg-mute);margin-top:2px">
-                  Récurrent <b style="color:var(--lmpd-fg)">12 840 {{ currencySymbol() }}</b>
-                  · Ponctuel <b style="color:var(--lmpd-fg)">71 280 {{ currencySymbol() }}</b>
+                  Total des commandes sur la période
                 </div>
               </div>
               <div class="lmpd-tabs">
@@ -367,7 +363,7 @@ interface AdminUsersResponse {
           </div>
         </div>
 
-        <!-- Santé des services (démo — pas de monitoring API côté back) -->
+        @if (monitoring.length > 0) {
         <section class="lmpd-panel">
           <header class="lmpd-panel-head">
             <h3>
@@ -402,6 +398,7 @@ interface AdminUsersResponse {
             }
           </div>
         </section>
+        }
 
         <!-- Bandeau temps réel -->
         <div class="lmpd-insight">
