@@ -63,7 +63,7 @@ import { AuthService } from '../../core/services/auth.service';
       }"
     >
       <nav
-        class="relative mx-auto flex min-h-14 max-w-7xl items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8 overflow-visible md:min-h-0"
+        class="relative mx-auto flex min-h-14 max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 lg:px-8 overflow-visible md:min-h-0 md:py-3"
         [ngClass]="{
           'max-md:items-start max-md:pt-2 md:items-center': isAtTop(),
           'items-center': !isAtTop(),
