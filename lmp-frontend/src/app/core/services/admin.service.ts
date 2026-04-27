@@ -43,6 +43,11 @@ export interface AdminDashboardStats {
   activeUsers: number;
   totalOrders: number;
   totalAppointments: number;
+  newUsersThisMonth?: number;
+  appointmentsToday?: number;
+  mrr?: number;
+  recurringRevenue30d?: number;
+  oneTimeRevenue30d?: number;
   ordersByStatus: Record<string, { count: number; revenue: number }>;
 }
 

@@ -166,12 +166,14 @@ interface AdminUsersResponse {
             label="Utilisateurs"
             [value]="formatNumber(s.totalUsers)"
             [icon]="UsersIcon"
+            [footer]="usersFooter()"
           />
           <lmp-stat-card
             label="Revenus · 30j"
             [value]="revenueDisplay()"
             [icon]="CreditCardIcon"
             [accent]="true"
+            [footer]="mrrFooter()"
           />
           <lmp-stat-card
             label="Services"
@@ -183,6 +185,7 @@ interface AdminUsersResponse {
             label="Rendez-vous"
             [value]="formatNumber(s.totalAppointments)"
             [icon]="CalendarIcon"
+            [footer]="appointmentsFooter()"
           />
         </div>
 
@@ -193,7 +196,11 @@ interface AdminUsersResponse {
               <div>
                 <h3>Revenus · {{ revenueRangeLabel() }}</h3>
                 <div style="font-size:11.5px;color:var(--lmpd-fg-mute);margin-top:2px">
-                  Total des commandes sur la période
+                  @if (revenueBreakdown()) {
+                    {{ revenueBreakdown() }}
+                  } @else {
+                    Total des commandes sur la période
+                  }
                 </div>
               </div>
               <div class="lmpd-tabs">
@@ -557,6 +564,39 @@ export class AdminDashboardComponent implements OnInit {
     const c = this.catalogStats();
     if (!c) return 'Catalogue non disponible';
     return `${c.activeServices} actifs · ${c.featuredServices} en vedette`;
+  });
+
+  readonly usersFooter = computed(() => {
+    const s = this.stats();
+    if (!s?.newUsersThisMonth || s.newUsersThisMonth <= 0) return '';
+    return `${s.newUsersThisMonth} nouveaux ce mois`;
+  });
+
+  readonly mrrFooter = computed(() => {
+    const s = this.stats();
+    if (s?.mrr == null || s.mrr <= 0) return '';
+    return `MRR ${this.formatNumber(Math.round(s.mrr))} ${this.currencySymbol()}`;
+  });
+
+  readonly appointmentsFooter = computed(() => {
+    const s = this.stats();
+    if (s?.appointmentsToday == null || s.appointmentsToday <= 0) return '';
+    return `${s.appointmentsToday} aujourd'hui`;
+  });
+
+  readonly revenueBreakdown = computed(() => {
+    const s = this.stats();
+    const rec = s?.recurringRevenue30d;
+    const one = s?.oneTimeRevenue30d;
+    if ((rec == null || rec <= 0) && (one == null || one <= 0)) return '';
+    const parts: string[] = [];
+    if (rec != null && rec > 0) {
+      parts.push(`Récurrent ${this.formatNumber(Math.round(rec))} ${this.currencySymbol()}`);
+    }
+    if (one != null && one > 0) {
+      parts.push(`Ponctuel ${this.formatNumber(Math.round(one))} ${this.currencySymbol()}`);
+    }
+    return parts.join(' · ');
   });
 
   readonly revenuePeriod = signal<RevenuePeriod>('week');
