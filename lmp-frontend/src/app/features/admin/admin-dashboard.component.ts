@@ -1,4 +1,4 @@
-import { isPlatformBrowser, DecimalPipe } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -153,7 +153,6 @@ interface AdminUsersResponse {
   imports: [
     RouterLink,
     LucideAngularModule,
-    DecimalPipe,
     StatCardComponent,
     QuickActionComponent,
     PageHeadComponent,
@@ -208,7 +207,7 @@ interface AdminUsersResponse {
             [value]="revenueDisplay()"
             [icon]="CreditCardIcon"
             [delta]="14"
-            footer="MRR 12 840 $"
+            [footer]="'MRR 12 840 ' + currencySymbol()"
             [accent]="true"
             [spark]="sparkRevenue"
           />
@@ -236,8 +235,8 @@ interface AdminUsersResponse {
               <div>
                 <h3>Revenus · {{ revenueRangeLabel() }}</h3>
                 <div style="font-size:11.5px;color:var(--lmpd-fg-mute);margin-top:2px">
-                  Récurrent <b style="color:var(--lmpd-fg)">12 840 $</b>
-                  · Ponctuel <b style="color:var(--lmpd-fg)">71 280 $</b>
+                  Récurrent <b style="color:var(--lmpd-fg)">12 840 {{ currencySymbol() }}</b>
+                  · Ponctuel <b style="color:var(--lmpd-fg)">71 280 {{ currencySymbol() }}</b>
                 </div>
               </div>
               <div class="lmpd-tabs">
@@ -534,7 +533,7 @@ export class AdminDashboardComponent implements OnInit {
       // des indicateurs cohérents (orders / revenue / growth) en gardant les
       // titres réels — la maquette montre ce panneau mais sans data API derrière.
       const seedNumbers = [42, 38, 29, 17, 96];
-      const seedRev = ['134 400 $', '68 220 $', '52 100 $', '35 700 $', '12 384 $'];
+      const seedRev = ['134 400 ' + this.currencySymbol(), '68 220 ' + this.currencySymbol(), '52 100 ' + this.currencySymbol(), '35 700 ' + this.currencySymbol(), '12 384 ' + this.currencySymbol()];
       const seedGrowth = [18, 24, -6, 12, 5];
       return services.slice(0, 5).map((svc, i) => ({
         name: svc.title || 'Service',
@@ -608,12 +607,12 @@ export class AdminDashboardComponent implements OnInit {
   /** Affichage des revenus 30j — agrégés depuis ordersByStatus si disponible. */
   readonly revenueDisplay = computed(() => {
     const s = this.stats();
-    if (!s?.ordersByStatus) return '0 $';
+    if (!s?.ordersByStatus) return '0 ' + this.currencySymbol();
     const total = Object.values(s.ordersByStatus).reduce(
       (sum, v) => sum + (v?.revenue ?? 0),
       0,
     );
-    return `${this.formatNumber(Math.round(total))} $`;
+    return `${this.formatNumber(Math.round(total))} ${this.currencySymbol()}`;
   });
 
   readonly catalogFooter = computed(() => {
@@ -685,6 +684,11 @@ export class AdminDashboardComponent implements OnInit {
 
   formatNumber(v: number): string {
     return new Intl.NumberFormat('fr-FR').format(v);
+  }
+
+  currencySymbol(code: string = environment.defaultCurrency): string {
+    const map: Record<string, string> = { EUR: '€', USD: '$', GBP: '£', CAD: '$' };
+    return map[code] ?? code;
   }
 
   absoluteValue(v: number): number {

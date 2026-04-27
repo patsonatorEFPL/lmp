@@ -10,6 +10,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.integration.sync.SyncProperties;
 import com.lmp.shared.geo.GetIPIntelService;
 import com.lmp.shared.geo.IPHubService;
 import com.lmp.shared.geo.IpApiComGeoService;
@@ -46,6 +47,7 @@ public class ApiHealthProbeService {
     private final StripeClient stripeClient;
     private final ApiHealthRecorder recorder;
     private final RestTemplate fxProbeTemplate;
+    private final SyncProperties syncProperties;
 
     @Value("${mailtrap.api.token:}")
     private String mailtrapApiToken;
@@ -64,7 +66,8 @@ public class ApiHealthProbeService {
                                   IPHubService ipHubService,
                                   ViesVatValidationService viesService,
                                   StripeClient stripeClient,
-                                  ApiHealthRecorder recorder) {
+                                  ApiHealthRecorder recorder,
+                                  SyncProperties syncProperties) {
         this.ipApiComGeoService = ipApiComGeoService;
         this.ipWhoIsGeoService = ipWhoIsGeoService;
         this.getIPIntelService = getIPIntelService;
@@ -72,6 +75,7 @@ public class ApiHealthProbeService {
         this.viesService = viesService;
         this.stripeClient = stripeClient;
         this.recorder = recorder;
+        this.syncProperties = syncProperties;
         this.fxProbeTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(5))
@@ -114,6 +118,9 @@ public class ApiHealthProbeService {
 
         // Stripe — balance.retrieve() est gratuit et en lecture seule
         results.put("Stripe", probeStripe());
+
+        // Sentry — heartbeat léger via le SDK
+        results.put("Sentry", probeSentry());
 
         logger.info("[API-PROBE] Probe terminé : {}", results);
         return results;
@@ -196,6 +203,32 @@ public class ApiHealthProbeService {
             return "empty response";
         } catch (Exception e) {
             recorder.record("FX Rates", System.currentTimeMillis() - t0, false, e.getMessage());
+            return e.getMessage();
+        }
+    }
+
+    private String probeSentry() {
+        String dsn = syncProperties.getAlert().getSentryDsn();
+        if (dsn == null || dsn.isBlank()) {
+            recorder.record("Sentry", 0, false, "DSN non configuré");
+            return "DSN non configuré";
+        }
+        long t0 = System.currentTimeMillis();
+        try {
+            io.sentry.SentryEvent event = new io.sentry.SentryEvent();
+            event.setLevel(io.sentry.SentryLevel.INFO);
+            io.sentry.protocol.Message message = new io.sentry.protocol.Message();
+            message.setFormatted("[PROBE] Sentry connectivity test");
+            event.setMessage(message);
+            event.setTag("probe", "true");
+            io.sentry.Sentry.captureEvent(event);
+            long latency = System.currentTimeMillis() - t0;
+            recorder.record("Sentry", latency, true, null);
+            return "ok";
+        } catch (Exception e) {
+            long latency = System.currentTimeMillis() - t0;
+            recorder.record("Sentry", latency, false, e.getMessage());
+            logger.warn("[API-PROBE] Sentry failed: {}", e.getMessage());
             return e.getMessage();
         }
     }
