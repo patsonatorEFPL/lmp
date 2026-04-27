@@ -50,8 +50,8 @@ export function app(): ReturnType<typeof express> {
    */
   const backendUrl = process.env['BACKEND_URL'] || 'http://localhost:8080';
 
-  // Proxy API, OAuth2, login callbacks and Actuator requests to Spring Boot backend
-  const proxyPaths = ['/api', '/oauth2', '/login/oauth2', '/actuator'];
+  // Proxy API, OAuth2, and Actuator requests to Spring Boot backend
+  const proxyPaths = ['/api', '/oauth2', '/actuator'];
   for (const path of proxyPaths) {
     server.use(
       path,
@@ -61,6 +61,16 @@ export function app(): ReturnType<typeof express> {
       }),
     );
   }
+
+  // Special handling for /login/oauth2 — Express strips the mount point from req.url,
+  // so we append the path to the target URL to preserve the full path for Spring Security
+  server.use(
+    '/login/oauth2',
+    createProxyMiddleware({
+      target: backendUrl + '/login/oauth2',
+      changeOrigin: true,
+    }),
+  );
 
   // Serve static files from /browser
   server.use(
