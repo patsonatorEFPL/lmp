@@ -61,6 +61,9 @@ public class DataInitializer implements CommandLineRunner {
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
 
+    @org.springframework.beans.factory.annotation.Value("${ADMIN_EMAIL:admin@lmp.ca}")
+    private String adminEmail;
+
     public DataInitializer(UserRepository userRepository,
                            RoleRepository roleRepository,
                            org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
@@ -90,7 +93,7 @@ public class DataInitializer implements CommandLineRunner {
         logger.info("📦 Nombre total de catégories de services: {}", serviceCategoryRepository.count());
         logger.info("🛒 Nombre total de services: {}", serviceRepository.count());
 
-        userRepository.findByEmail("admin@lmp.ca").ifPresentOrElse(
+        userRepository.findByEmail(adminEmail).ifPresentOrElse(
             admin -> logger.info("✅ Compte administrateur configuré: {}", admin.getEmail()),
             () -> logger.error("❌ Erreur: Compte administrateur non trouvé!")
         );
@@ -123,7 +126,7 @@ public class DataInitializer implements CommandLineRunner {
                 .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
 
         boolean envProvided = adminPassword != null && !adminPassword.isBlank();
-        var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
+        var existingAdmin = userRepository.findByEmail(adminEmail);
 
         if (existingAdmin.isPresent()) {
             User admin = existingAdmin.get();
@@ -142,6 +145,16 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
+        // Garde-fou : si un admin existe déjà sous un autre email, ne pas créer de doublon
+        var otherAdmins = userRepository.findByRoleName("ADMIN");
+        if (!otherAdmins.isEmpty()) {
+            logger.warn("⚠️  Un administrateur existe déjà en base ({}), mais ADMIN_EMAIL est configuré sur '{}'. "
+                    + "Aucun nouveau compte admin ne sera créé pour éviter un doublon. "
+                    + "Mettez à jour ADMIN_EMAIL pour correspondre à l'admin existant.",
+                    otherAdmins.get(0).getEmail(), adminEmail);
+            return;
+        }
+
         if (!envProvided) {
             throw new IllegalStateException(
                 "❌ Aucun compte admin en base et ADMIN_PASSWORD non défini. "
@@ -149,7 +162,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         User admin = new User();
-        admin.setEmail("admin@lmp.ca");
+        admin.setEmail(adminEmail);
         admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setFirstName("Admin");
         admin.setLastName("LMP");
@@ -160,7 +173,7 @@ public class DataInitializer implements CommandLineRunner {
         admin.setRoles(Set.of(adminRole));
 
         userRepository.save(admin);
-        logger.info("✅ Administrateur créé : admin@lmp.ca");
+        logger.info("✅ Administrateur créé : {}", adminEmail);
     }
 
     /**

@@ -308,12 +308,19 @@ public class AdminRestController {
 
                     // Send verification to new email
                     try {
-                        emailService.sendSimpleEmail(newEmail,
+                        String base = frontendUrl != null ? frontendUrl.replaceAll("/$", "") : "http://localhost:4200";
+                        String verificationUrl = base + "/verify-email?token=" + token;
+
+                        Map<String, Object> emailVars = new HashMap<>();
+                        emailVars.put("userName", user.getDisplayName() != null ? user.getDisplayName() : newEmail);
+                        emailVars.put("companyName", "LMP Services");
+                        emailVars.put("verificationUrl", verificationUrl);
+
+                        emailService.sendHtmlEmail(
+                                newEmail,
                                 "LMP — Vérifiez votre nouvel email",
-                                "Bonjour,\n\nVotre email a été modifié par l'administrateur.\n"
-                                + "Veuillez vérifier votre compte en cliquant sur ce lien :\n"
-                                + "Un email de confirmation vous a été envoyé.\n\n"
-                                + "Cordialement,\nL'équipe LMP");
+                                "emails/email-verification",
+                                emailVars);
                     } catch (Exception e) {
                         // Non-blocking
                     }
