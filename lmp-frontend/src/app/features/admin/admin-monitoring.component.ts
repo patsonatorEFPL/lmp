@@ -32,6 +32,7 @@ import {
   List,
   Server,
   HardDrive,
+  Bug,
 } from 'lucide-angular';
 import {
   ApiHealthService,
@@ -58,6 +59,7 @@ const API_ICONS: Record<string, typeof Activity> = {
   'Stripe': CreditCard,
   'Mailtrap': Mail,
   'FX Rates': DollarSign,
+  'Sentry': Bug,
 };
 
 type Tab = 'realtime' | 'statistics';
@@ -222,6 +224,7 @@ type Tab = 'realtime' | 'statistics';
                     </div>
                     <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" [class]="statusDotClass(normalizeInfraStatus(snapshot()!.infra.diskSpace))"></span>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -352,6 +355,7 @@ type Tab = 'realtime' | 'statistics';
                 </div>
                 <span class="ml-auto h-2.5 w-2.5 shrink-0 rounded-full" [class]="statusDotClass(normalizeInfraStatus(snapshot()!.infra.diskSpace))"></span>
               </div>
+
             </div>
           </div>
         }

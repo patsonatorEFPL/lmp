@@ -49,8 +49,8 @@ import { QuickActionComponent } from '../../shared/ui/quick-action.component';
 import { PanelComponent } from '../../shared/ui/panel.component';
 import { PageHeadComponent } from '../../shared/ui/page-head.component';
 import { LineChartComponent } from '../../shared/ui/line-chart.component';
-import { DonutChartComponent, DonutSegment } from '../../shared/ui/donut-chart.component';
-import { ActivityFeedComponent, ActivityFeedItem } from '../../shared/ui/activity-feed.component';
+import type { DonutSegment } from '../../shared/ui/donut-chart.component';
+import type { ActivityFeedItem } from '../../shared/ui/activity-feed.component';
 
 const EMPTY_DASHBOARD_STATS: DashboardStats = {
   totalOrders: 0,
@@ -124,8 +124,6 @@ const SPARK = {
     PanelComponent,
     PageHeadComponent,
     LineChartComponent,
-    DonutChartComponent,
-    ActivityFeedComponent,
   ],
   template: `
     @if (blockingLoader()) {

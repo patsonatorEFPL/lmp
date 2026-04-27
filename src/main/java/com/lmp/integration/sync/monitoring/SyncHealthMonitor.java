@@ -38,6 +38,7 @@ public class SyncHealthMonitor {
     private final ExternalSystemClient externalClient;
     private final SyncVerificationService verificationService;
     private final SyncProperties syncProperties;
+    private final SentryHealthController sentryHealthController;
 
     private Instant lastRun = Instant.now().minusSeconds(3600);
 
@@ -47,7 +48,8 @@ public class SyncHealthMonitor {
                              SyncAlertingService alertingService,
                              ExternalSystemClient externalClient,
                              SyncVerificationService verificationService,
-                             SyncProperties syncProperties) {
+                             SyncProperties syncProperties,
+                             SentryHealthController sentryHealthController) {
         this.syncEventRepository = syncEventRepository;
         this.snapshotRepository = snapshotRepository;
         this.patternRepository = patternRepository;
@@ -55,6 +57,7 @@ public class SyncHealthMonitor {
         this.externalClient = externalClient;
         this.verificationService = verificationService;
         this.syncProperties = syncProperties;
+        this.sentryHealthController = sentryHealthController;
     }
 
     /**
@@ -131,6 +134,9 @@ public class SyncHealthMonitor {
         for (SyncErrorPattern pattern : unalertedUnknown) {
             alertingService.alertOnUnknownError(pattern);
         }
+
+        // 12. Sentry heartbeat — confirme que le backend communique avec Sentry
+        sentryHealthController.sendHeartbeat();
 
         lastRun = now;
     }
