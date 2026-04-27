@@ -65,6 +65,12 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
     List<Appointment> findByAppointmentDate(@Param("date") LocalDateTime date);
 
     /**
+     * Compte le nombre de rendez-vous d'une journée spécifique
+     */
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE DATE(a.appointmentDate) = DATE(:date)")
+    long countByAppointmentDate(@Param("date") LocalDateTime date);
+
+    /**
      * Trouve tous les rendez-vous actifs (PENDING, CONFIRMED, IN_PROGRESS)
      */
     @Query("SELECT a FROM Appointment a WHERE a.status IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS') ORDER BY a.appointmentDate ASC")

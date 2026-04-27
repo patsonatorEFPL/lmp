@@ -5,6 +5,7 @@ import com.lmp.auth.domain.UserStatus;
 import com.lmp.auth.dto.AdminChangeUserPasswordRequest;
 import com.lmp.auth.dto.RegisterDto;
 import com.lmp.auth.dto.UserResponse;
+import com.lmp.auth.repository.UserRepository;
 import com.lmp.auth.service.AuthService;
 import com.lmp.auth.service.SessionSecurityService;
 import com.lmp.auth.service.UserService;
@@ -89,6 +90,7 @@ public class AdminRestController {
     private String frontendUrl;
 
     private final UserService userService;
+    private final UserRepository userRepository;
     private final AuthService authService;
     private final SessionSecurityService sessionSecurityService;
     private final OrderRepository orderRepository;
@@ -104,6 +106,7 @@ public class AdminRestController {
     private final SyncProperties syncProperties;
 
     public AdminRestController(UserService userService,
+                               UserRepository userRepository,
                                AuthService authService,
                                SessionSecurityService sessionSecurityService,
                                OrderRepository orderRepository,
@@ -118,6 +121,7 @@ public class AdminRestController {
                                JdbcTemplate jdbcTemplate,
                                SyncProperties syncProperties) {
         this.userService = userService;
+        this.userRepository = userRepository;
         this.authService = authService;
         this.sessionSecurityService = sessionSecurityService;
         this.orderRepository = orderRepository;
@@ -141,6 +145,62 @@ public class AdminRestController {
         stats.put("activeUsers", userService.countActiveUsers());
         stats.put("totalOrders", orderRepository.count());
         stats.put("totalAppointments", appointmentRepository.count());
+
+        // Nouveaux utilisateurs ce mois
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        stats.put("newUsersThisMonth", userRepository.countByRegistrationDateBetween(startOfMonth, LocalDateTime.now()));
+
+        // Rendez-vous aujourd'hui
+        stats.put("appointmentsToday", appointmentRepository.countByAppointmentDate(LocalDateTime.now()));
+
+        // MRR et répartition récurrent / ponctuel (30 derniers jours)
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        String mrrSql = """
+            SELECT
+                CASE
+                    WHEN so.duration_type = 'MONTHLY' THEN 'MONTHLY'
+                    WHEN so.duration_type = 'YEARLY' THEN 'YEARLY'
+                    ELSE 'ONE_TIME'
+                END AS rev_type,
+                SUM(o.total_amount) AS total
+            FROM orders o
+            LEFT JOIN services s ON LOWER(o.service_name) = LOWER(s.title)
+            LEFT JOIN service_offers so ON so.service_id = s.id AND so.is_default = true
+            WHERE o.created_at >= ?
+              AND o.status NOT IN ('CANCELLED', 'REFUNDED', 'PAYMENT_PENDING')
+            GROUP BY CASE
+                    WHEN so.duration_type = 'MONTHLY' THEN 'MONTHLY'
+                    WHEN so.duration_type = 'YEARLY' THEN 'YEARLY'
+                    ELSE 'ONE_TIME'
+                END
+            """;
+        BigDecimal mrr = BigDecimal.ZERO;
+        BigDecimal recurringRevenue = BigDecimal.ZERO;
+        BigDecimal oneTimeRevenue = BigDecimal.ZERO;
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(mrrSql, thirtyDaysAgo);
+            for (Map<String, Object> row : rows) {
+                String type = (String) row.get("rev_type");
+                BigDecimal total = (BigDecimal) row.get("total");
+                if (total == null) continue;
+                switch (type) {
+                    case "MONTHLY" -> {
+                        mrr = mrr.add(total);
+                        recurringRevenue = recurringRevenue.add(total);
+                    }
+                    case "YEARLY" -> {
+                        mrr = mrr.add(total.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP));
+                        recurringRevenue = recurringRevenue.add(total);
+                    }
+                    default -> oneTimeRevenue = oneTimeRevenue.add(total);
+                }
+            }
+        } catch (Exception e) {
+            // Non-blocking — si le schema diffère, on retourne 0
+        }
+        stats.put("mrr", mrr);
+        stats.put("recurringRevenue30d", recurringRevenue);
+        stats.put("oneTimeRevenue30d", oneTimeRevenue);
 
         // Statistiques par statut de commande
         var orderStatsByStatus = orderRepository.getOrderStatsByStatus();
