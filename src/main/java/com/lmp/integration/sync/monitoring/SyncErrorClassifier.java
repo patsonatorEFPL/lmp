@@ -95,9 +95,22 @@ public class SyncErrorClassifier {
                 .map(KnownPattern::category)
                 .orElse(SyncErrorPattern.Category.UNKNOWN);
 
-        // 3. Persister le nouveau pattern
+        // 3. Persister le nouveau pattern (vérifier l'unicité par phrase exacte)
+        String keyPhrase = extractKeyPhrase(normalized);
+        Optional<SyncErrorPattern> existingByPhrase = patternRepository.findByPatternIgnoreCase(keyPhrase);
+        if (existingByPhrase.isPresent()) {
+            SyncErrorPattern pattern = existingByPhrase.get();
+            pattern.setOccurrences(pattern.getOccurrences() + 1);
+            pattern.setLastSeenAt(LocalDateTime.now());
+            pattern.setLastSyncEventId(syncEventId);
+            patternRepository.save(pattern);
+            log.debug("🔍 [SYNC CLASSIFIER] Matched existing pattern by exact phrase '{}' → {}",
+                    pattern.getPattern(), pattern.getCategory());
+            return pattern.getCategory();
+        }
+
         SyncErrorPattern newPattern = new SyncErrorPattern();
-        newPattern.setPattern(extractKeyPhrase(normalized));
+        newPattern.setPattern(keyPhrase);
         newPattern.setCategory(category);
         newPattern.setLastSyncEventId(syncEventId);
         newPattern.setAlerted(false);
