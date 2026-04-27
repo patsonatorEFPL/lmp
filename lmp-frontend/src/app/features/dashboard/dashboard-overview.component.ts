@@ -79,36 +79,10 @@ const ORDER_FILTERS: { key: OrderFilter; label: string }[] = [
  * Séries de démo pour le graphique d'activité (données back non disponibles
  * pour les courbes temps-réel). Conçues pour reproduire fidèlement la maquette.
  */
-const ACTIVITY_SERIES: Record<Period, { current: number[]; previous: number[]; labels: string[] }> = {
-  '7j': {
-    current: [3, 5, 4, 7, 6, 8, 9],
-    previous: [2, 3, 4, 5, 4, 6, 7],
-    labels: ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
-  },
-  '30j': {
-    current: [14, 18, 22, 19, 28, 32, 30, 38, 42, 40, 48, 52],
-    previous: [12, 15, 18, 17, 22, 25, 27, 30, 33, 35, 38, 41],
-    labels: ['Jan', '', 'Mar', '', 'Mai', '', 'Juil', '', 'Sep', '', 'Nov', ''],
-  },
-  '90j': {
-    current: [22, 28, 32, 35, 40, 44, 48, 52, 56, 60, 65, 70],
-    previous: [18, 22, 26, 28, 32, 35, 38, 42, 46, 50, 54, 58],
-    labels: ['S1', '', 'S3', '', 'S5', '', 'S7', '', 'S9', '', 'S11', ''],
-  },
-  '12m': {
-    current: [40, 48, 55, 60, 68, 72, 80, 88, 92, 100, 108, 116],
-    previous: [32, 38, 44, 50, 56, 62, 68, 74, 80, 86, 92, 98],
-    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
-  },
-};
+const ACTIVITY_SERIES = {} as Record<Period, { current: number[]; previous: number[]; labels: string[] }>;
 
 /** Sparklines fixes pour les stat cards — purement décoratives. */
-const SPARK = {
-  orders: [3, 4, 3, 5, 7, 6, 8, 9, 8, 11, 10, 12, 14],
-  inProgress: [1, 2, 2, 3, 2, 3, 4, 3, 2, 3, 3, 3, 3],
-  appointments: [0, 1, 0, 1, 2, 2, 1, 2, 2, 1, 2, 2, 2],
-  reviews: [1, 1, 2, 2, 3, 4, 5, 5, 6, 6, 7, 7, 8],
-};
+const SPARK = {};
 
 @Component({
   selector: 'lmp-dashboard-overview',
@@ -183,9 +157,7 @@ const SPARK = {
             label="Commandes"
             [value]="s.totalOrders"
             [icon]="ShoppingCartIcon"
-            [delta]="22"
             [footer]="s.completedOrders + ' terminée(s)'"
-            [spark]="sparkOrders"
           />
           <lmp-stat-card
             label="En cours"
@@ -193,22 +165,18 @@ const SPARK = {
             [icon]="ClockIcon"
             footer="Commandes actives"
             [accent]="true"
-            [spark]="sparkInProgress"
           />
           <lmp-stat-card
             label="Rendez-vous"
             [value]="s.upcomingAppointments"
             [icon]="CalendarIcon"
             footer="À venir · 7 jours"
-            [spark]="sparkAppointments"
           />
           <lmp-stat-card
             label="Avis donnés"
             [value]="s.totalReviews"
             [icon]="StarIcon"
-            [delta]="12"
             footer="Merci pour vos retours"
-            [spark]="sparkReviews"
           />
         </div>
 
@@ -451,10 +419,7 @@ export class DashboardOverviewComponent implements OnInit {
 
   readonly insightTitle = computed(() => 'Recommandation IA');
 
-  readonly insightBody = computed(
-    () =>
-      'Vos campagnes Google Ads performent 23 % au-dessus du secteur. Un budget +15 % pourrait générer ~41 leads/mois.',
-  );
+  readonly insightBody = computed(() => '');
 
   /** Période sélectionnée pour la courbe d'activité (UI seulement, séries mock). */
   readonly period = signal<Period>('30j');
@@ -462,7 +427,7 @@ export class DashboardOverviewComponent implements OnInit {
     this.period.set(p);
   }
   readonly periods = PERIODS;
-  readonly series = computed(() => ACTIVITY_SERIES[this.period()]);
+  readonly series = computed(() => ACTIVITY_SERIES[this.period()] ?? { current: [], previous: [], labels: [] });
 
   /** Filtre rapide sur le tableau des commandes. */
   readonly orderFilter = signal<OrderFilter>('all');
@@ -559,10 +524,10 @@ export class DashboardOverviewComponent implements OnInit {
   readonly DownloadIcon = Download;
   readonly CloseIcon = X;
 
-  readonly sparkOrders = SPARK.orders;
-  readonly sparkInProgress = SPARK.inProgress;
-  readonly sparkAppointments = SPARK.appointments;
-  readonly sparkReviews = SPARK.reviews;
+  readonly sparkOrders = undefined;
+  readonly sparkInProgress = undefined;
+  readonly sparkAppointments = undefined;
+  readonly sparkReviews = undefined;
 
   readonly quickActions = [
     {

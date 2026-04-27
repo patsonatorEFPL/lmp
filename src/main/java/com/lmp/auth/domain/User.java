@@ -251,9 +251,15 @@ public class User {
     @Column(name = "external_contact_id", length = 140)
     private String externalContactId;
 
+    @Column(name = "external_address_id", length = 140)
+    private String externalAddressId;
+
     public String getExternalCustomerId() { return externalCustomerId; }
     public void setExternalCustomerId(String externalCustomerId) { this.externalCustomerId = externalCustomerId; }
 
     public String getExternalContactId() { return externalContactId; }
     public void setExternalContactId(String externalContactId) { this.externalContactId = externalContactId; }
+
+    public String getExternalAddressId() { return externalAddressId; }
+    public void setExternalAddressId(String externalAddressId) { this.externalAddressId = externalAddressId; }
 }

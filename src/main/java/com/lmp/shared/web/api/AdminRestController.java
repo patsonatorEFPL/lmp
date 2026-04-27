@@ -26,12 +26,17 @@ import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.notification.service.EmailService;
 import com.lmp.portal.dto.ChangePasswordRequest;
+import com.lmp.integration.sync.SyncProperties;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.dto.admin.RevenueSeriesDto;
+import com.lmp.shared.dto.admin.TopServiceDto;
+import com.lmp.shared.dto.admin.HealthServiceDto;
 import com.lmp.shared.pricing.VatCalculationService;
 
 import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
 
+import io.sentry.Sentry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -46,6 +51,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -53,13 +59,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.time.format.TextStyle;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -89,6 +100,8 @@ public class AdminRestController {
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
     private final StripeClient stripeClient;
     private final VatCalculationService vatCalculationService;
+    private final JdbcTemplate jdbcTemplate;
+    private final SyncProperties syncProperties;
 
     public AdminRestController(UserService userService,
                                AuthService authService,
@@ -101,7 +114,9 @@ public class AdminRestController {
                                ApplicationEventPublisher eventPublisher,
                                OrderRealtimeEventPublisher orderRealtimeEventPublisher,
                                StripeClient stripeClient,
-                               VatCalculationService vatCalculationService) {
+                               VatCalculationService vatCalculationService,
+                               JdbcTemplate jdbcTemplate,
+                               SyncProperties syncProperties) {
         this.userService = userService;
         this.authService = authService;
         this.sessionSecurityService = sessionSecurityService;
@@ -114,6 +129,8 @@ public class AdminRestController {
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.stripeClient = stripeClient;
         this.vatCalculationService = vatCalculationService;
+        this.jdbcTemplate = jdbcTemplate;
+        this.syncProperties = syncProperties;
     }
 
     @GetMapping("/stats")
@@ -156,6 +173,7 @@ public class AdminRestController {
             try {
                 users = userService.findByStatus(UserStatus.valueOf(status), pageRequest);
             } catch (IllegalArgumentException e) {
+                if (Sentry.isEnabled()) Sentry.captureException(e);
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
@@ -182,6 +200,7 @@ public class AdminRestController {
                         OrderStatus.valueOf(status), pageRequest)
                         .map(o -> OrderResponse.forAdmin(o, frontendUrl));
             } catch (IllegalArgumentException e) {
+                if (Sentry.isEnabled()) Sentry.captureException(e);
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
@@ -244,6 +263,7 @@ public class AdminRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Utilisateur créé : " + email, UserResponse.from(newUser)));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -329,6 +349,7 @@ public class AdminRestController {
 
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur mis à jour", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -556,6 +577,7 @@ public class AdminRestController {
 
             return ResponseEntity.ok(ApiResponse.ok("Commande mise à jour", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -606,6 +628,7 @@ public class AdminRestController {
                 appointments = appointmentRepository.findByStatusOrderByAppointmentDateAsc(
                         AppointmentStatus.valueOf(status), pageRequest);
             } catch (IllegalArgumentException e) {
+                if (Sentry.isEnabled()) Sentry.captureException(e);
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
@@ -674,6 +697,7 @@ public class AdminRestController {
             appointmentRepository.save(appt);
             return ResponseEntity.ok(ApiResponse.ok("Rendez-vous mis à jour", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -686,6 +710,7 @@ public class AdminRestController {
             appointmentRepository.deleteById(id);
             return ResponseEntity.ok(ApiResponse.ok("Rendez-vous supprimé", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -775,6 +800,7 @@ public class AdminRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Commande créée pour " + user.getEmail(), OrderResponse.from(order)));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -877,6 +903,7 @@ public class AdminRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok(message, payload));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -894,6 +921,7 @@ public class AdminRestController {
             userService.save(user);
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur désactivé (soft delete)", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -906,6 +934,7 @@ public class AdminRestController {
             userService.hardDeleteUser(id);
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur supprimé définitivement", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -936,6 +965,7 @@ public class AdminRestController {
 
             return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -1104,6 +1134,7 @@ public class AdminRestController {
 
             return ResponseEntity.ok(ApiResponse.ok("Un email de confirmation a été envoyé à " + currentEmail, null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -1132,6 +1163,197 @@ public class AdminRestController {
         }).toList();
 
         return ResponseEntity.ok(ApiResponse.ok(refundList));
+    }
+
+    // ========== Dashboard Analytics ==========
+
+    @GetMapping("/revenue-series")
+    @Operation(summary = "Série de revenus", description = "Retourne les données pour le line chart de revenus (week, month, quarter)")
+    public ResponseEntity<ApiResponse<RevenueSeriesDto>> getRevenueSeries(@RequestParam String period) {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            List<Number> current = new ArrayList<>();
+            List<Number> previous = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+
+            List<OrderStatus> excluded = List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED);
+            LocalDateTime startDate = now.minusYears(2).minusMonths(3);
+            List<Order> orders = orderRepository.findRecentOrdersExcludingStatuses(startDate, excluded);
+
+            switch (period) {
+                case "week" -> {
+                    LocalDate today = LocalDate.now();
+                    WeekFields wf = WeekFields.ISO;
+                    for (int i = 15; i >= 0; i--) {
+                        LocalDate weekDate = today.minusWeeks(i);
+                        int week = weekDate.get(wf.weekOfWeekBasedYear());
+                        int year = weekDate.get(wf.weekBasedYear());
+                        int prevYear = year - 1;
+
+                        labels.add("S" + week);
+                        current.add(sumRevenueForWeek(orders, year, week, wf));
+                        previous.add(sumRevenueForWeek(orders, prevYear, week, wf));
+                    }
+                }
+                case "month" -> {
+                    LocalDate today = LocalDate.now();
+                    for (int i = 11; i >= 0; i--) {
+                        LocalDate monthDate = today.minusMonths(i);
+                        int month = monthDate.getMonthValue();
+                        int year = monthDate.getYear();
+                        int prevYear = year - 1;
+
+                        labels.add(monthDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.FRENCH));
+                        current.add(sumRevenueForMonth(orders, year, month));
+                        previous.add(sumRevenueForMonth(orders, prevYear, month));
+                    }
+                }
+                case "quarter" -> {
+                    LocalDate today = LocalDate.now();
+                    for (int i = 3; i >= 0; i--) {
+                        LocalDate quarterDate = today.minusMonths(i * 3L);
+                        int quarter = (quarterDate.getMonthValue() - 1) / 3 + 1;
+                        int year = quarterDate.getYear();
+                        int prevYear = year - 1;
+
+                        labels.add("T" + quarter);
+                        current.add(sumRevenueForQuarter(orders, year, quarter));
+                        previous.add(sumRevenueForQuarter(orders, prevYear, quarter));
+                    }
+                }
+                default -> {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Invalid period: " + period));
+                }
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(new RevenueSeriesDto(current, previous, labels)));
+        } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    private BigDecimal sumRevenueForWeek(List<Order> orders, int year, int week, WeekFields wf) {
+        return orders.stream()
+                .filter(o -> {
+                    LocalDate d = o.getCreatedAt().toLocalDate();
+                    return d.get(wf.weekBasedYear()) == year && d.get(wf.weekOfWeekBasedYear()) == week;
+                })
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumRevenueForMonth(List<Order> orders, int year, int month) {
+        return orders.stream()
+                .filter(o -> {
+                    LocalDate d = o.getCreatedAt().toLocalDate();
+                    return d.getYear() == year && d.getMonthValue() == month;
+                })
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumRevenueForQuarter(List<Order> orders, int year, int quarter) {
+        return orders.stream()
+                .filter(o -> {
+                    LocalDate d = o.getCreatedAt().toLocalDate();
+                    return d.getYear() == year && (d.getMonthValue() - 1) / 3 + 1 == quarter;
+                })
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @GetMapping("/top-services")
+    @Operation(summary = "Top 5 services", description = "Retourne les top 5 services par chiffre d'affaires réel sur les 90 derniers jours")
+    public ResponseEntity<ApiResponse<List<TopServiceDto>>> getTopServices() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startCurrent = now.minusDays(90);
+            LocalDateTime startPrevious = startCurrent.minusDays(90);
+            List<OrderStatus> excluded = List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED);
+            PageRequest top5 = PageRequest.ofSize(5);
+
+            List<Object[]> currentRows = orderRepository.getTopServicesByRevenue(startCurrent, excluded, top5);
+            List<Object[]> previousRows = orderRepository.getTopServicesByRevenue(startPrevious, excluded, top5);
+
+            Map<String, BigDecimal> previousRevenueMap = new HashMap<>();
+            for (Object[] row : previousRows) {
+                String name = (String) row[0];
+                BigDecimal revenue = (BigDecimal) row[2];
+                previousRevenueMap.put(name, revenue != null ? revenue : BigDecimal.ZERO);
+            }
+
+            List<TopServiceDto> result = new ArrayList<>();
+            for (Object[] row : currentRows) {
+                String name = (String) row[0];
+                long orders = ((Number) row[1]).longValue();
+                BigDecimal revenue = (BigDecimal) row[2];
+                if (revenue == null) revenue = BigDecimal.ZERO;
+
+                BigDecimal prevRevenue = previousRevenueMap.getOrDefault(name, BigDecimal.ZERO);
+                int growthPercent = 0;
+                if (prevRevenue.compareTo(BigDecimal.ZERO) > 0) {
+                    growthPercent = revenue.subtract(prevRevenue)
+                            .multiply(BigDecimal.valueOf(100))
+                            .divide(prevRevenue, 0, RoundingMode.HALF_UP)
+                            .intValue();
+                }
+                result.add(new TopServiceDto(name, orders, revenue, growthPercent));
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(result));
+        } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/health/services")
+    @Operation(summary = "Santé des services", description = "Retourne un snapshot de santé des services (DB, Stripe, ERPNext)")
+    public ResponseEntity<ApiResponse<List<HealthServiceDto>>> getServicesHealth() {
+        try {
+            List<HealthServiceDto> healthList = new ArrayList<>();
+
+            // DB
+            long dbStart = System.currentTimeMillis();
+            String dbStatus;
+            String dbLatency;
+            String dbTone;
+            try {
+                jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+                long dbMs = System.currentTimeMillis() - dbStart;
+                dbLatency = dbMs + " ms";
+                if (dbMs < 100) {
+                    dbStatus = "UP";
+                    dbTone = "is-ok";
+                } else {
+                    dbStatus = "DEGRADED";
+                    dbTone = "is-warn";
+                }
+            } catch (Exception e) {
+                dbStatus = "DOWN";
+                dbLatency = "-";
+                dbTone = "is-danger";
+            }
+            healthList.add(new HealthServiceDto("Base de données", dbStatus, dbLatency, "100 %", dbTone));
+
+            // Stripe
+            String stripeStatus = stripeClient != null ? "UP" : "DOWN";
+            String stripeTone = stripeClient != null ? "is-ok" : "is-danger";
+            healthList.add(new HealthServiceDto("Stripe", stripeStatus, "-", "100 %", stripeTone));
+
+            // ERPNext
+            String erpUrl = syncProperties.getExternal() != null ? syncProperties.getExternal().getBaseUrl() : null;
+            boolean erpConfigured = erpUrl != null && !erpUrl.isBlank();
+            String erpStatus = erpConfigured ? "UP" : "DOWN";
+            String erpTone = erpConfigured ? "is-ok" : "is-danger";
+            healthList.add(new HealthServiceDto("ERPNext", erpStatus, "-", "100 %", erpTone));
+
+            return ResponseEntity.ok(ApiResponse.ok(healthList));
+        } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     private static boolean isPlausibleEmailAddress(String email) {

@@ -193,15 +193,8 @@ export class AdminLogsComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     setTimeout(() => {
-      const mock: LogItem[] = [
-        { id: '1', date: new Date().toISOString(), level: 'INFO', user: 'admin@lmp.com', action: 'CONNEXION', details: 'Connexion réussie depuis le dashboard' },
-        { id: '2', date: new Date(Date.now() - 300000).toISOString(), level: 'WARN', user: 'user@lmp.com', action: 'MODIFICATION', details: 'Tentative de modification de rôle sans autorisation' },
-        { id: '3', date: new Date(Date.now() - 600000).toISOString(), level: 'ERROR', user: 'system', action: 'PAIEMENT', details: 'Échec de traitement du webhook Stripe' },
-        { id: '4', date: new Date(Date.now() - 900000).toISOString(), level: 'INFO', user: 'jdoe@lmp.com', action: 'COMMANDE', details: 'Nouvelle commande créée #ORD-2026-001' },
-        { id: '5', date: new Date(Date.now() - 1200000).toISOString(), level: 'WARN', user: 'admin@lmp.com', action: 'UTILISATEUR', details: 'Verrouillage temporaire du compte spam@lmp.com' },
-      ];
-      this.items.set(mock);
-      this.filteredItems.set(mock);
+      this.items.set([]);
+      this.filteredItems.set([]);
       this.loading.set(false);
     }, 300);
   }
