@@ -56,6 +56,11 @@ public class OrderSyncMapper {
         payload.put("po_no", order.getId().toString());
         payload.put("order_type", "Shopping Cart");
 
+        // Lien vers le Quotation ERPNext d'origine (si la commande vient d'un devis)
+        if (order.getQuotation() != null && order.getQuotation().getExternalQuotationId() != null) {
+            payload.put("quotation", order.getQuotation().getExternalQuotationId());
+        }
+
         // Traçabilité bidirectionnelle — UUID LMP stocké côté système externe
         payload.put("lmp_order_id", order.getId().toString());
 
