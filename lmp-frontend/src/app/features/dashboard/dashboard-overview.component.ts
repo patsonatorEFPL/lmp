@@ -412,7 +412,7 @@ export class DashboardOverviewComponent implements OnInit {
 
   /** Bandeau d'astuce — s'inspire de la « Recommandation IA » de la maquette. */
   readonly insightVisible = signal(true);
-  readonly showInsight = computed(() => this.insightVisible());
+  readonly showInsight = computed(() => this.insightVisible() && this.insightBody().trim().length > 0);
   dismissInsight() {
     this.insightVisible.set(false);
   }
