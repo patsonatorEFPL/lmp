@@ -378,4 +378,63 @@ public class DevSyncController {
                 )))
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    // ==================== Address E2E Test ====================
+
+    /**
+     * DEV-only: Met à jour l'adresse du user admin et déclenche la synchronisation Address.
+     */
+    @PostMapping("/address/update-admin")
+    public ResponseEntity<?> updateAdminAddress(
+            @RequestParam String address,
+            @RequestParam String city,
+            @RequestParam String postalCode,
+            @RequestParam String country) {
+        log.warn("🔧 [DEV] Updating admin address: {}, {}, {}, {}", address, city, postalCode, country);
+        try {
+            var adminUser = userRepository.findByEmail("admin@lmp.ca").orElse(null);
+            if (adminUser == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("User admin@lmp.ca not found"));
+            }
+
+            adminUser.setAddress(address);
+            adminUser.setCity(city);
+            adminUser.setPostalCode(postalCode);
+            adminUser.setCountry(country);
+            userRepository.save(adminUser);
+
+            // Publier l'événement USER_UPDATED pour déclencher le sync d'adresse
+            eventPublisher.publishEvent(LmpBusinessEvent.of(
+                    LmpBusinessEvent.EventType.USER_UPDATED, "auth", adminUser.getId(), Map.of()
+            ));
+
+            return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                    "userId", adminUser.getId(),
+                    "externalCustomerId", adminUser.getExternalCustomerId(),
+                    "externalAddressId", adminUser.getExternalAddressId() != null ? adminUser.getExternalAddressId() : "null",
+                    "message", "Address updated and USER_UPDATED event published"
+            )));
+        } catch (Exception e) {
+            log.error("🔧 [DEV] Update admin address failed: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * DEV-only: Statut sync d'adresse du user admin.
+     */
+    @GetMapping("/address/admin-status")
+    public ResponseEntity<?> getAdminAddressStatus() {
+        return userRepository.findByEmail("admin@lmp.ca")
+                .map(user -> ResponseEntity.ok(Map.of(
+                        "userId", user.getId(),
+                        "externalCustomerId", user.getExternalCustomerId() != null ? user.getExternalCustomerId() : "null",
+                        "externalAddressId", user.getExternalAddressId() != null ? user.getExternalAddressId() : "null",
+                        "address", user.getAddress() != null ? user.getAddress() : "null",
+                        "city", user.getCity() != null ? user.getCity() : "null",
+                        "postalCode", user.getPostalCode() != null ? user.getPostalCode() : "null",
+                        "country", user.getCountry() != null ? user.getCountry() : "null"
+                )))
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

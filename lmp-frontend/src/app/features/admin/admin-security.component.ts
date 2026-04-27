@@ -203,14 +203,8 @@ export class AdminSecurityComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     setTimeout(() => {
-      const mock: SecurityItem[] = [
-        { id: '1', user: 'admin@lmp.com', role: 'Admin', lastLogin: new Date().toISOString(), ip: '192.168.1.1', status: 'Actif' },
-        { id: '2', user: 'user@lmp.com', role: 'Utilisateur', lastLogin: new Date(Date.now() - 86400000).toISOString(), ip: '10.0.0.5', status: 'Actif' },
-        { id: '3', user: 'jdoe@lmp.com', role: 'Modérateur', lastLogin: new Date(Date.now() - 172800000).toISOString(), ip: '172.16.0.10', status: 'Inactif' },
-        { id: '4', user: 'spam@lmp.com', role: 'Utilisateur', lastLogin: new Date(Date.now() - 604800000).toISOString(), ip: '203.0.113.7', status: 'Bloqué' },
-      ];
-      this.items.set(mock);
-      this.filteredItems.set(mock);
+      this.items.set([]);
+      this.filteredItems.set([]);
       this.loading.set(false);
     }, 300);
   }

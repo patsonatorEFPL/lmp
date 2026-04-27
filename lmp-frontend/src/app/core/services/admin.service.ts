@@ -63,6 +63,27 @@ export interface AdminChangeUserPasswordRequest {
   confirmPassword: string;
 }
 
+export interface RevenueSeries {
+  current: number[];
+  previous: number[];
+  labels: string[];
+}
+
+export interface TopServiceItem {
+  name: string;
+  orders: number;
+  revenue: number;
+  growthPercent: number;
+}
+
+export interface HealthServiceItem {
+  name: string;
+  status: string;
+  latency: string;
+  uptime: string;
+  tone: string;
+}
+
 const COMPANY_PROFILE_PATH = '/api/v1/admin/company-profile';
 
 interface ApiResponse<T> {
@@ -81,6 +102,24 @@ export class AdminService {
     return this.http
       .get<ApiResponse<AdminDashboardStats>>(getDashboardStats1.PATH)
       .pipe(map((res) => res.data!));
+  }
+
+  getRevenueSeries(period: 'week' | 'month' | 'quarter'): Observable<RevenueSeries> {
+    return this.http
+      .get<ApiResponse<RevenueSeries>>('/api/v1/admin/revenue-series', { params: { period } })
+      .pipe(map((res) => res.data!));
+  }
+
+  getTopServices(): Observable<TopServiceItem[]> {
+    return this.http
+      .get<ApiResponse<TopServiceItem[]>>('/api/v1/admin/top-services')
+      .pipe(map((res) => res.data ?? []));
+  }
+
+  getHealthServices(): Observable<HealthServiceItem[]> {
+    return this.http
+      .get<ApiResponse<HealthServiceItem[]>>('/api/v1/admin/health/services')
+      .pipe(map((res) => res.data ?? []));
   }
 
   // ========== Catalog Stats ==========

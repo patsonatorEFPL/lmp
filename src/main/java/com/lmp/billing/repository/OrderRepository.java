@@ -304,4 +304,24 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findOrdersForExport(@Param("startDate") LocalDateTime startDate,
                                    @Param("endDate") LocalDateTime endDate,
                                    @Param("status") OrderStatus status);
+
+    /**
+     * Top services par chiffre d'affaires en excluant certains statuts.
+     */
+    @Query("SELECT o.serviceName, COUNT(o), SUM(o.totalAmount) " +
+           "FROM Order o " +
+           "WHERE o.createdAt >= :startDate " +
+           "AND o.status NOT IN (:excludedStatuses) " +
+           "GROUP BY o.serviceName " +
+           "ORDER BY SUM(o.totalAmount) DESC")
+    List<Object[]> getTopServicesByRevenue(@Param("startDate") LocalDateTime startDate,
+                                           @Param("excludedStatuses") List<OrderStatus> excludedStatuses,
+                                           Pageable pageable);
+
+    /**
+     * Commandes récentes en excluant certains statuts.
+     */
+    @Query("SELECT o FROM Order o WHERE o.createdAt >= :startDate AND o.status NOT IN (:excludedStatuses)")
+    List<Order> findRecentOrdersExcludingStatuses(@Param("startDate") LocalDateTime startDate,
+                                                  @Param("excludedStatuses") List<OrderStatus> excludedStatuses);
 }
