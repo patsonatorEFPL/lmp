@@ -21,6 +21,10 @@ import {
   Search,
   ShieldCheck,
   FileSearch,
+  FileText,
+  Receipt,
+  FolderKanban,
+  LifeBuoy,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminSseService } from '../../core/services/admin-sse.service';
@@ -304,6 +308,82 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <p
               class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500"
             >
+              Gestion client
+            </p>
+          }
+          <a
+            routerLink="/admin/quotations"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Devis' : undefined"
+            title="Devis"
+          >
+            <lucide-icon [img]="QuotationsIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Devis</span>
+            }
+          </a>
+          <a
+            routerLink="/admin/invoices"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Factures' : undefined"
+            title="Factures"
+          >
+            <lucide-icon [img]="InvoicesIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Factures</span>
+            }
+          </a>
+          <a
+            routerLink="/admin/projects"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Projets' : undefined"
+            title="Projets"
+          >
+            <lucide-icon [img]="ProjectsIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Projets</span>
+            }
+          </a>
+          <a
+            routerLink="/admin/tickets"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Tickets' : undefined"
+            title="Tickets"
+          >
+            <lucide-icon [img]="TicketsIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Tickets</span>
+            }
+          </a>
+
+          @if (!sidebarCollapsed()) {
+            <p
+              class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400 dark:text-zinc-500"
+            >
               Système
             </p>
           }
@@ -496,6 +576,31 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
                 <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span>
               }
             </a>
+            <p class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400">Gestion client</p>
+            <a routerLink="/admin/quotations" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="QuotationsIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Devis</span>
+            </a>
+            <a routerLink="/admin/invoices" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="InvoicesIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Factures</span>
+            </a>
+            <a routerLink="/admin/projects" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="ProjectsIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Projets</span>
+            </a>
+            <a routerLink="/admin/tickets" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="TicketsIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Tickets</span>
+            </a>
             <p class="px-4 pb-2 pt-4 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-zinc-400">Système</p>
             <a routerLink="/admin/monitoring" [routerLinkActive]="sidebarLinkActive"
               class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
@@ -658,6 +763,14 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
           return 'Sécurité';
         case 'logs':
           return 'Logs & audit';
+        case 'quotations':
+          return 'Devis';
+        case 'invoices':
+          return 'Factures';
+        case 'projects':
+          return 'Projets';
+        case 'tickets':
+          return 'Tickets support';
         default:
           return 'Administration';
       }
@@ -686,6 +799,10 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly SearchIcon = Search;
   readonly ShieldCheckIcon = ShieldCheck;
   readonly FileSearchIcon = FileSearch;
+  readonly QuotationsIcon = FileText;
+  readonly InvoicesIcon = Receipt;
+  readonly ProjectsIcon = FolderKanban;
+  readonly TicketsIcon = LifeBuoy;
 
   /** Lien actif : fond blanc, léger relief (style liste / navigation) */
   readonly sidebarLinkActive =

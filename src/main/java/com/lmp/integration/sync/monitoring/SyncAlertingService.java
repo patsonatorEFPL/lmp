@@ -2,6 +2,7 @@ package com.lmp.integration.sync.monitoring;
 
 import com.lmp.integration.sync.SyncProperties;
 import com.lmp.notification.service.NotificationService;
+import com.lmp.shared.monitoring.ApiHealthRecorder;
 import io.sentry.Sentry;
 import io.sentry.SentryEvent;
 import io.sentry.SentryLevel;
@@ -35,15 +36,18 @@ public class SyncAlertingService {
 
     private final SyncProperties syncProperties;
     private final NotificationService notificationService;
+    private final ApiHealthRecorder recorder;
     private final RestClient restClient;
 
     /** Dernière alerte envoyée par type (cooldown). */
     private final Map<String, Instant> lastAlertByType = new ConcurrentHashMap<>();
 
     public SyncAlertingService(SyncProperties syncProperties,
-                               NotificationService notificationService) {
+                               NotificationService notificationService,
+                               ApiHealthRecorder recorder) {
         this.syncProperties = syncProperties;
         this.notificationService = notificationService;
+        this.recorder = recorder;
         this.restClient = RestClient.builder().build();
     }
 
@@ -204,22 +208,29 @@ public class SyncAlertingService {
      * évitant l'"alert fatigue" des emails directs.
      */
     private void sendToSentry(String alertType, String subject, String body) {
-        SentryEvent event = new SentryEvent();
-        event.setLevel(alertType.startsWith("UNKNOWN") ? SentryLevel.FATAL : SentryLevel.WARNING);
+        long t0 = System.currentTimeMillis();
+        try {
+            SentryEvent event = new SentryEvent();
+            event.setLevel(alertType.startsWith("UNKNOWN") ? SentryLevel.FATAL : SentryLevel.WARNING);
 
-        Message message = new Message();
-        message.setFormatted(subject);
-        message.setMessage(body.length() > 200 ? body.substring(0, 200) + "..." : body);
-        event.setMessage(message);
+            Message message = new Message();
+            message.setFormatted(subject);
+            message.setMessage(body.length() > 200 ? body.substring(0, 200) + "..." : body);
+            event.setMessage(message);
 
-        // Tags pour filtrage et dashboard
-        event.setTag("alert.type", alertType);
-        event.setTag("alert.source", "sync-monitor");
-        event.setTag("service", "lmp-erp-sync");
+            // Tags pour filtrage et dashboard
+            event.setTag("alert.type", alertType);
+            event.setTag("alert.source", "sync-monitor");
+            event.setTag("service", "lmp-erp-sync");
 
-        // Fingerprint pour grouping intelligent — même pattern = même Issue
-        event.setFingerprints(java.util.List.of("sync-alert", alertType));
+            // Fingerprint pour grouping intelligent — même pattern = même Issue
+            event.setFingerprints(java.util.List.of("sync-alert", alertType));
 
-        Sentry.captureEvent(event);
+            Sentry.captureEvent(event);
+            recorder.record("Sentry", System.currentTimeMillis() - t0, true, null);
+        } catch (Exception e) {
+            recorder.record("Sentry", System.currentTimeMillis() - t0, false, e.getMessage());
+            throw e;
+        }
     }
 }

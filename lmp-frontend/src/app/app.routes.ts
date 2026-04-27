@@ -279,6 +279,48 @@ export const routes: Routes = [
             (m) => m.AdminSettingsComponent,
           ),
       },
+      {
+        path: 'security',
+        loadComponent: () =>
+          import('./features/admin/admin-security.component').then(
+            (m) => m.AdminSecurityComponent,
+          ),
+      },
+      {
+        path: 'logs',
+        loadComponent: () =>
+          import('./features/admin/admin-logs.component').then(
+            (m) => m.AdminLogsComponent,
+          ),
+      },
+      {
+        path: 'quotations',
+        loadComponent: () =>
+          import('./features/admin/admin-quotations.component').then(
+            (m) => m.AdminQuotationsComponent,
+          ),
+      },
+      {
+        path: 'invoices',
+        loadComponent: () =>
+          import('./features/admin/admin-invoices.component').then(
+            (m) => m.AdminInvoicesComponent,
+          ),
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./features/admin/admin-projects.component').then(
+            (m) => m.AdminProjectsComponent,
+          ),
+      },
+      {
+        path: 'tickets',
+        loadComponent: () =>
+          import('./features/admin/admin-tickets.component').then(
+            (m) => m.AdminTicketsComponent,
+          ),
+      },
     ],
   },
 

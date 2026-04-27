@@ -111,6 +111,10 @@ public class SecurityConfig {
                                 "/api/payment-status/**")
                         .permitAll()
 
+                        // Sentry health check (monitoring externe)
+                        .requestMatchers("/api/sentry/health")
+                        .permitAll()
+
                         // Endpoints legacy publics
                         .requestMatchers(
                                 "/api/orders/save-purchase-intent",
