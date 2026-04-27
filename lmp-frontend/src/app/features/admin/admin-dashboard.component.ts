@@ -294,9 +294,9 @@ interface AdminUsersResponse {
                     <th>Utilisateur</th>
                     <th>Rôle</th>
                     <th>Statut</th>
-                    <th class="text-right">Commandes</th>
-                    <th class="text-right">Dépensé</th>
-                    <th class="text-right">Dernier</th>
+                    <th class="lmpd-num text-right">Commandes</th>
+                    <th class="lmpd-num text-right">Dépensé</th>
+                    <th class="lmpd-num text-right">Dernier</th>
                   </tr>
                 </thead>
                 <tbody>
