@@ -18,7 +18,7 @@ public class SentryStartupFailureListener implements ApplicationListener<Applica
 
     @Override
     public void onApplicationEvent(ApplicationFailedEvent event) {
-        if (Sentry.getCurrentHub().getClient() == null) {
+        if (!Sentry.isEnabled()) {
             log.debug("[SENTRY] Client non initialisé — impossible de rapporter l'erreur de démarrage");
             return;
         }
