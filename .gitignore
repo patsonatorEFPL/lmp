@@ -126,7 +126,6 @@ docker-compose.test.yml
 lmp-frontend/Dockerfile.test
 lmp-frontend/nginx.test.conf
 application-secrets.properties
-src/main/resources/application-staging.properties
 
 ### Debug session NDJSON (local agent) ###
 debug-e89717.log
