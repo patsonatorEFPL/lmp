@@ -517,6 +517,17 @@ public class ErpEventListener {
                 serviceRepository.save(service);
                 logger.info("🔧 [SYNC] Auto-provisioned Item '{}' for Service '{}'",
                         response.externalId(), service.getTitle());
+            } else if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
+                // L'Item existe déjà — chercher son ID exact dans l'ERP et le lier
+                String existingId = findExistingItemId(service.getTitle());
+                if (existingId != null) {
+                    service.setExternalItemCode(existingId);
+                    serviceRepository.save(service);
+                    logger.info("🔗 [SYNC] Linked existing Item '{}' to Service '{}'",
+                            existingId, service.getTitle());
+                } else {
+                    logger.debug("📋 [SYNC] Item '{}' already exists — OK", service.getTitle());
+                }
             } else {
                 logger.warn("⚠️ [SYNC] Failed to auto-provision Item for Service '{}': {}",
                         service.getTitle(), response.errorMessage());
@@ -525,6 +536,28 @@ public class ErpEventListener {
             logger.error("❌ [SYNC] Error auto-provisioning Item for Service '{}': {}",
                     service.getTitle(), e.getMessage());
         }
+    }
+
+    /**
+     * Cherche un Item existant dans l'ERP par son item_code (name).
+     * @return le name de l'item, ou null si non trouvé
+     */
+    private String findExistingItemId(String itemCode) {
+        try {
+            ExternalResponse response = externalClient.getEntity(SyncEntityType.ITEM, itemCode);
+            if (response.success() && response.data() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) response.data();
+                if (data.containsKey("data")) {
+                    data = (Map<String, Object>) data.get("data");
+                }
+                Object name = data.get("name");
+                return name != null ? name.toString() : null;
+            }
+        } catch (Exception e) {
+            logger.debug("🔍 [SYNC] Could not find existing Item '{}': {}", itemCode, e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -546,13 +579,10 @@ public class ErpEventListener {
 
             if (response.success()) {
                 logger.info("🔧 [SYNC] Auto-provisioned generic Item '{}'", itemName);
+            } else if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
+                logger.debug("📋 [SYNC] Item '{}' already exists — OK", itemName);
             } else {
-                // Si l'Item existe déjà (DuplicateEntryError), c'est OK
-                if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
-                    logger.debug("📋 [SYNC] Item '{}' already exists — OK", itemName);
-                } else {
-                    logger.warn("⚠️ [SYNC] Failed to auto-provision Item '{}': {}", itemName, response.errorMessage());
-                }
+                logger.warn("⚠️ [SYNC] Failed to auto-provision Item '{}': {}", itemName, response.errorMessage());
             }
         } catch (Exception e) {
             logger.error("❌ [SYNC] Error auto-provisioning Item '{}': {}", itemName, e.getMessage());
