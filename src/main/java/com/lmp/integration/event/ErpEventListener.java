@@ -14,6 +14,7 @@ import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncProperties;
+import com.lmp.integration.sync.mapper.AddressSyncMapper;
 import com.lmp.integration.sync.mapper.CustomerSyncMapper;
 import com.lmp.integration.sync.mapper.ItemSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
@@ -73,6 +74,7 @@ public class ErpEventListener {
     private final ItemSyncMapper itemSyncMapper;
     private final PaymentSyncMapper paymentSyncMapper;
     private final QuotationSyncMapper quotationSyncMapper;
+    private final AddressSyncMapper addressSyncMapper;
 
     public ErpEventListener(SyncOutboundService syncOutboundService,
                             SyncProperties syncProperties,
@@ -85,7 +87,8 @@ public class ErpEventListener {
                             OrderSyncMapper orderSyncMapper,
                             ItemSyncMapper itemSyncMapper,
                             PaymentSyncMapper paymentSyncMapper,
-                            QuotationSyncMapper quotationSyncMapper) {
+                            QuotationSyncMapper quotationSyncMapper,
+                            AddressSyncMapper addressSyncMapper) {
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
         this.externalClient = externalClient;
@@ -98,6 +101,7 @@ public class ErpEventListener {
         this.itemSyncMapper = itemSyncMapper;
         this.paymentSyncMapper = paymentSyncMapper;
         this.quotationSyncMapper = quotationSyncMapper;
+        this.addressSyncMapper = addressSyncMapper;
     }
 
     @Async
@@ -320,6 +324,55 @@ public class ErpEventListener {
                 user.getExternalCustomerId(),
                 updatePayload
         );
+
+        // Synchroniser l'adresse si le user en a une
+        syncUserAddress(user);
+    }
+
+    /**
+     * Synchronise l'adresse du User vers ERPNext (création ou mise à jour).
+     * Appel synchrone — ne passe pas par la queue car l'Address dépend du Customer
+     * qui doit déjà exister.
+     */
+    private void syncUserAddress(User user) {
+        if (!addressSyncMapper.hasAddressData(user)) {
+            return;
+        }
+        if (user.getExternalCustomerId() == null) {
+            logger.debug("📋 [SYNC] User {} has no externalCustomerId — skipping address sync", user.getId());
+            return;
+        }
+
+        try {
+            if (user.getExternalAddressId() != null) {
+                // Mise à jour
+                Map<String, Object> payload = addressSyncMapper.toUpdatePayload(user);
+                ExternalResponse response = externalClient.updateEntity(
+                        SyncEntityType.ADDRESS, user.getExternalAddressId(), payload);
+                if (response.success()) {
+                    logger.info("✅ [SYNC] Updated Address {} for User {}",
+                            user.getExternalAddressId(), user.getId());
+                } else {
+                    logger.warn("⚠️ [SYNC] Failed to update Address for User {}: {}",
+                            user.getId(), response.errorMessage());
+                }
+            } else {
+                // Création (peut arriver si le Customer existait déjà sans Address)
+                Map<String, Object> payload = addressSyncMapper.toCreatePayload(user, user.getExternalCustomerId());
+                ExternalResponse response = externalClient.createEntity(SyncEntityType.ADDRESS, payload);
+                if (response.success() && response.externalId() != null) {
+                    user.setExternalAddressId(response.externalId());
+                    userRepository.save(user);
+                    logger.info("🔗 [SYNC] Created Address {} for User {}",
+                            response.externalId(), user.getId());
+                } else {
+                    logger.warn("⚠️ [SYNC] Failed to create Address for User {}: {}",
+                            user.getId(), response.errorMessage());
+                }
+            }
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] Error syncing Address for User {}: {}", user.getId(), e.getMessage());
+        }
     }
 
     /**

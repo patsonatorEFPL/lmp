@@ -15,6 +15,7 @@ import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
+import com.lmp.integration.sync.mapper.AddressSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
 import com.lmp.integration.sync.mapper.PaymentSyncMapper;
 import com.lmp.project.repository.ProjectRepository;
@@ -53,6 +54,7 @@ public class SyncCallbackService {
     private final ExternalSystemClient externalClient;
     private final OrderSyncMapper orderSyncMapper;
     private final PaymentSyncMapper paymentSyncMapper;
+    private final AddressSyncMapper addressSyncMapper;
     private final SyncOutboundService syncOutboundService;
 
     public SyncCallbackService(UserRepository userRepository,
@@ -67,6 +69,7 @@ public class SyncCallbackService {
                                ExternalSystemClient externalClient,
                                OrderSyncMapper orderSyncMapper,
                                PaymentSyncMapper paymentSyncMapper,
+                               AddressSyncMapper addressSyncMapper,
                                @Lazy SyncOutboundService syncOutboundService) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
@@ -80,6 +83,7 @@ public class SyncCallbackService {
         this.externalClient = externalClient;
         this.orderSyncMapper = orderSyncMapper;
         this.paymentSyncMapper = paymentSyncMapper;
+        this.addressSyncMapper = addressSyncMapper;
         this.syncOutboundService = syncOutboundService;
     }
 
@@ -105,6 +109,7 @@ public class SyncCallbackService {
             case TASK -> clearTaskExternalId(localEntityId);
             case ISSUE -> clearTicketExternalId(localEntityId);
             case QUOTATION -> clearQuotationExternalId(localEntityId);
+            case ADDRESS -> clearUserExternalAddressId(localEntityId);
             default -> log.debug("📋 [CALLBACK] No cleanup needed for {}", entityType);
         }
     }
@@ -139,9 +144,31 @@ public class SyncCallbackService {
                     user.setExternalCustomerId(externalId);
                     userRepository.save(user);
                     log.info("🔗 [CALLBACK] User {} linked to external Customer {}", userId, externalId);
+
+                    // Enchaîner la création de l'Address si le user a une adresse
+                    if (addressSyncMapper.hasAddressData(user)) {
+                        createAddressForUser(user, externalId);
+                    }
                 },
                 () -> log.warn("⚠️ [CALLBACK] User {} not found for customer link", userId)
         );
+    }
+
+    private void createAddressForUser(User user, String customerExternalId) {
+        try {
+            Map<String, Object> payload = addressSyncMapper.toCreatePayload(user, customerExternalId);
+            ExternalResponse response = externalClient.createEntity(SyncEntityType.ADDRESS, payload);
+            if (response.success() && response.externalId() != null) {
+                user.setExternalAddressId(response.externalId());
+                userRepository.save(user);
+                log.info("🔗 [CALLBACK] User {} linked to external Address {}", user.getId(), response.externalId());
+            } else {
+                log.warn("⚠️ [CALLBACK] Failed to create Address for User {}: {}",
+                        user.getId(), response.errorMessage());
+            }
+        } catch (Exception e) {
+            log.error("❌ [CALLBACK] Error creating Address for User {}: {}", user.getId(), e.getMessage());
+        }
     }
 
     private void updateUserExternalContactId(UUID userId, String externalId) {
@@ -538,6 +565,14 @@ public class SyncCallbackService {
             user.setExternalContactId(null);
             userRepository.save(user);
             log.info("🧹 [CALLBACK] Cleared external Contact ID on User {}", userId);
+        });
+    }
+
+    private void clearUserExternalAddressId(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setExternalAddressId(null);
+            userRepository.save(user);
+            log.info("🧹 [CALLBACK] Cleared external Address ID on User {}", userId);
         });
     }
 

@@ -100,43 +100,11 @@ interface AdminDashboardPayload {
 
 type RevenuePeriod = 'week' | 'month' | 'quarter';
 
-const REVENUE_SERIES: Record<RevenuePeriod, { current: number[]; previous: number[]; labels: string[] }> = {
-  week: {
-    current:  [44, 52, 48, 60, 55, 68, 72, 65, 78, 82, 75, 88, 92, 85, 96, 90],
-    previous: [38, 42, 40, 50, 46, 55, 60, 54, 64, 68, 62, 72, 76, 70, 80, 75],
-    labels: ['S1', 'S3', 'S5', 'S7', 'S9', 'S11', 'S13', 'S15'],
-  },
-  month: {
-    current:  [55, 62, 70, 65, 72, 78, 84, 80, 88, 92, 86, 95],
-    previous: [45, 50, 56, 52, 58, 64, 68, 65, 72, 76, 70, 78],
-    labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'],
-  },
-  quarter: {
-    current:  [60, 72, 80, 88],
-    previous: [48, 58, 65, 72],
-    labels: ['T1', 'T2', 'T3', 'T4'],
-  },
-};
+const REVENUE_SERIES = {} as Record<RevenuePeriod, { current: number[]; previous: number[]; labels: string[] }>;
 
-const SPARK = {
-  users: [20, 22, 25, 28, 31, 35, 40, 44, 49, 54, 60, 68, 75],
-  revenue: [40, 45, 50, 48, 55, 60, 65, 70, 68, 75, 80, 82, 84],
-  services: [8, 9, 10, 10, 11, 12, 12, 13, 13, 14, 14, 14, 14],
-  appointments: [10, 12, 9, 11, 14, 12, 10, 13, 8, 9, 11, 10, 8],
-};
+const SPARK = {};
 
-/**
- * Données démo pour le panneau « Santé des services ». Le backend ne publie
- * pas (encore) de métriques infra : ces lignes restent statiques jusqu'à ce
- * qu'un endpoint /admin/health/services existe.
- */
-const MONITORING_DEMO: MonitoringRow[] = [
-  { name: 'API principale', uptime: '99.98 %', latency: '82 ms', status: 'Opérationnel', tone: 'is-ok', warnIndices: [] },
-  { name: 'Authentification', uptime: '99.99 %', latency: '34 ms', status: 'Opérationnel', tone: 'is-ok', warnIndices: [] },
-  { name: 'Base de données', uptime: '99.95 %', latency: '12 ms', status: 'Dégradé', tone: 'is-warn', warnIndices: [22, 23] },
-  { name: 'Paiements Stripe', uptime: '100 %', latency: '140 ms', status: 'Opérationnel', tone: 'is-ok', warnIndices: [] },
-  { name: 'CDN / Images', uptime: '99.92 %', latency: '48 ms', status: 'Opérationnel', tone: 'is-ok', warnIndices: [] },
-];
+const MONITORING_DEMO: MonitoringRow[] = [];
 
 interface AdminUsersResponse {
   success: boolean;
@@ -192,39 +160,32 @@ interface AdminUsersResponse {
           </div>
         </lmp-page-head>
 
-        <!-- 4 KPIs avec sparklines (séries de démo) -->
+        <!-- 4 KPIs -->
         <div class="lmpd-stat-grid">
           <lmp-stat-card
             label="Utilisateurs"
             [value]="formatNumber(s.totalUsers)"
             [icon]="UsersIcon"
-            [delta]="8"
             footer="47 nouveaux ce mois"
-            [spark]="sparkUsers"
           />
           <lmp-stat-card
             label="Revenus · 30j"
             [value]="revenueDisplay()"
             [icon]="CreditCardIcon"
-            [delta]="14"
             [footer]="'MRR 12 840 ' + currencySymbol()"
             [accent]="true"
-            [spark]="sparkRevenue"
           />
           <lmp-stat-card
             label="Services"
             [value]="catalogStats()?.totalServices || 0"
             [icon]="PackageIcon"
             [footer]="catalogFooter()"
-            [spark]="sparkServices"
           />
           <lmp-stat-card
             label="Rendez-vous"
             [value]="formatNumber(s.totalAppointments)"
             [icon]="CalendarIcon"
-            [delta]="-4"
             footer="8 aujourd'hui"
-            [spark]="sparkAppointments"
           />
         </div>
 
@@ -527,23 +488,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private async fetchTopServices(): Promise<TopService[]> {
-    try {
-      const services = await firstValueFrom(this.adminService.getServices());
-      // Le back ne renvoie pas de chiffre d'affaires par service ; on simule
-      // des indicateurs cohérents (orders / revenue / growth) en gardant les
-      // titres réels — la maquette montre ce panneau mais sans data API derrière.
-      const seedNumbers = [42, 38, 29, 17, 96];
-      const seedRev = ['134 400 ' + this.currencySymbol(), '68 220 ' + this.currencySymbol(), '52 100 ' + this.currencySymbol(), '35 700 ' + this.currencySymbol(), '12 384 ' + this.currencySymbol()];
-      const seedGrowth = [18, 24, -6, 12, 5];
-      return services.slice(0, 5).map((svc, i) => ({
-        name: svc.title || 'Service',
-        orders: seedNumbers[i] ?? 0,
-        revenue: seedRev[i] ?? '—',
-        growth: seedGrowth[i] ?? 0,
-      }));
-    } catch {
-      return [];
-    }
+    return [];
   }
 
   private toRecentUser(u: AdminUserPageItem): RecentUser {
@@ -589,11 +534,7 @@ export class AdminDashboardComponent implements OnInit {
     return `Aperçu · ${month}`;
   });
 
-  readonly headerSubtitle = computed(() => {
-    const s = this.stats();
-    if (!s) return 'Pilotage global de la plateforme.';
-    return '1 incident mineur sur la base de données · tout le reste est nominal.';
-  });
+  readonly headerSubtitle = computed(() => 'Pilotage global de la plateforme.');
 
   readonly completedPercent = computed(() => {
     const s = this.stats();
@@ -625,7 +566,7 @@ export class AdminDashboardComponent implements OnInit {
   setRevenuePeriod(p: RevenuePeriod) {
     this.revenuePeriod.set(p);
   }
-  readonly revenueSeries = computed(() => REVENUE_SERIES[this.revenuePeriod()]);
+  readonly revenueSeries = computed(() => REVENUE_SERIES[this.revenuePeriod()] ?? { current: [], previous: [], labels: [] });
   readonly revenueRangeLabel = computed(() => {
     switch (this.revenuePeriod()) {
       case 'week':
@@ -661,10 +602,10 @@ export class AdminDashboardComponent implements OnInit {
   readonly ArrowUpIcon = ArrowUp;
   readonly ArrowDownIcon = ArrowDown;
 
-  readonly sparkUsers = SPARK.users;
-  readonly sparkRevenue = SPARK.revenue;
-  readonly sparkServices = SPARK.services;
-  readonly sparkAppointments = SPARK.appointments;
+  readonly sparkUsers = undefined;
+  readonly sparkRevenue = undefined;
+  readonly sparkServices = undefined;
+  readonly sparkAppointments = undefined;
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {

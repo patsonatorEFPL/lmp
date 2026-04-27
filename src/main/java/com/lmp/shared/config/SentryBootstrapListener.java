@@ -49,7 +49,7 @@ public class SentryBootstrapListener implements SpringApplicationRunListener {
 
     @Override
     public void failed(ConfigurableApplicationContext context, Throwable exception) {
-        if (Sentry.getCurrentHub().getClient() == null) {
+        if (!Sentry.isEnabled()) {
             log.debug("[SENTRY] Client non initialisé — impossible de rapporter l'erreur de démarrage");
             return;
         }
