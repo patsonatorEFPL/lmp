@@ -257,12 +257,12 @@ public class DevSyncController {
                 return ResponseEntity.badRequest().body(ApiResponse.error("User admin@lmp.ca not found"));
             }
 
-            // Trouver le premier service actif
-            var services = serviceRepository.findAll();
-            if (services.isEmpty()) {
+            // Trouver un service qui correspond à un Item existant dans external ERP
+            var service = serviceRepository.findBySlug("referencement-seo")
+                    .orElseGet(() -> serviceRepository.findAll().stream().findFirst().orElse(null));
+            if (service == null) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("No services found in database"));
             }
-            var service = services.get(0);
 
             // Créer le devis
             var itemRequest = new QuotationService.QuotationItemRequest(
