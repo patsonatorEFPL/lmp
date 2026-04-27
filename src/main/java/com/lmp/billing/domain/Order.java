@@ -356,6 +356,12 @@ public class Order {
     @jakarta.persistence.OrderBy("installmentNumber ASC")
     private Set<OrderInstallment> installments;
 
+    // --- Lien vers le devis d'origine ---
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quotation_id")
+    private Quotation quotation;
+
     // --- Champs de liaison système externe (agnostique ERP) ---
 
     @Column(name = "external_order_id", length = 140)
@@ -380,6 +386,9 @@ public class Order {
     public boolean isInstallmentOrder() {
         return installmentCount != null && installmentCount > 1;
     }
+
+    public Quotation getQuotation() { return quotation; }
+    public void setQuotation(Quotation quotation) { this.quotation = quotation; }
 
     public String getExternalOrderId() { return externalOrderId; }
     public void setExternalOrderId(String externalOrderId) { this.externalOrderId = externalOrderId; }

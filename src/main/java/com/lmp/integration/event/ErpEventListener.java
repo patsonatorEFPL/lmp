@@ -962,8 +962,9 @@ public class ErpEventListener {
 
             // 3. Créer le SO directement à partir de l'Order (évite les problèmes de template
             //    make_sales_order qui contient des champs calculés incompatible avec external CRM.client.insert)
+            //    Le lien Quotation est injecté automatiquement par OrderSyncMapper.toSalesOrderPayload()
+            //    via order.getQuotation().getExternalQuotationId().
             Map<String, Object> soData = orderSyncMapper.toSalesOrderPayload(order);
-            soData.put("quotation", externalQuotationId);
 
             ExternalResponse createResponse = externalClient.createEntity(SyncEntityType.SALES_ORDER, soData);
 

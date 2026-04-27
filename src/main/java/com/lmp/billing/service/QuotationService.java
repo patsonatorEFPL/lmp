@@ -231,6 +231,7 @@ public class QuotationService {
         order.setCurrency(quotation.getCurrency());
         order.setBillingName(quotation.getBillingName());
         order.setNotes("Converti depuis devis " + quotation.getId());
+        order.setQuotation(quotation);
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
 
