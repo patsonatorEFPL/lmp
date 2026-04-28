@@ -152,6 +152,36 @@
 		<artifactId>caffeine</artifactId>
 	</dependency>
 
+	<!-- Resilience4j — Circuit breaker & retry pour appels ERP -->
+	<dependency>
+		<groupId>io.github.resilience4j</groupId>
+		<artifactId>resilience4j-spring-boot3</artifactId>
+		<version>2.2.0</version>
+	</dependency>
+	<dependency>
+		<groupId>io.github.resilience4j</groupId>
+		<artifactId>resilience4j-micrometer</artifactId>
+		<version>2.2.0</version>
+	</dependency>
+
+	<!-- Micrometer Prometheus registry -->
+	<dependency>
+		<groupId>io.micrometer</groupId>
+		<artifactId>micrometer-registry-prometheus</artifactId>
+	</dependency>
+
+	<!-- Bucket4j — Rate limiting avec Caffeine backend -->
+	<dependency>
+		<groupId>com.bucket4j</groupId>
+		<artifactId>bucket4j-core</artifactId>
+		<version>8.10.1</version>
+	</dependency>
+	<dependency>
+		<groupId>com.bucket4j</groupId>
+		<artifactId>bucket4j-caffeine</artifactId>
+		<version>8.10.1</version>
+	</dependency>
+
 		<!-- OpenPDF pour génération de factures PDF -->
 		<dependency>
 			<groupId>com.github.librepdf</groupId>
@@ -219,6 +249,11 @@
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

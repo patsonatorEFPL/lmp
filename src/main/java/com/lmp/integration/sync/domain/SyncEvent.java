@@ -73,6 +73,10 @@ public class SyncEvent {
     @Column(name = "verification_error", columnDefinition = "TEXT")
     private String verificationError;
 
+    /** Version du mapper utilisé pour générer ce payload (permet re-jouer/retry ciblés). */
+    @Column(name = "mapper_version", nullable = false, length = 20)
+    private String mapperVersion = "1";
+
     public SyncEvent() {}
 
     // --- Getters / Setters ---
@@ -127,4 +131,7 @@ public class SyncEvent {
 
     public String getVerificationError() { return verificationError; }
     public void setVerificationError(String verificationError) { this.verificationError = verificationError; }
+
+    public String getMapperVersion() { return mapperVersion; }
+    public void setMapperVersion(String mapperVersion) { this.mapperVersion = mapperVersion; }
 }

@@ -32,11 +32,14 @@ public class SyncRetryScheduler {
 
     private final SyncEventRepository syncEventRepository;
     private final SyncProperties syncProperties;
+    private final com.lmp.integration.sync.monitoring.SyncMetricsService metricsService;
 
     public SyncRetryScheduler(SyncEventRepository syncEventRepository,
-                              SyncProperties syncProperties) {
+                              SyncProperties syncProperties,
+                              com.lmp.integration.sync.monitoring.SyncMetricsService metricsService) {
         this.syncEventRepository = syncEventRepository;
         this.syncProperties = syncProperties;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -64,6 +67,7 @@ public class SyncRetryScheduler {
                 event.setProcessedAt(LocalDateTime.now());
                 syncEventRepository.save(event);
                 dead++;
+                metricsService.recordEventDead(event.getEntityType());
                 log.error("💀 [SYNC RETRY] Event {} ({} {}) — max retries ({}) reached — DEAD",
                         event.getId(), event.getEntityType(), event.getEventType(), event.getMaxRetries());
             } else {
@@ -75,6 +79,7 @@ public class SyncRetryScheduler {
                 event.setErrorMessage(null);
                 syncEventRepository.save(event);
                 requeued++;
+                metricsService.recordEventRetried(event.getEntityType());
                 log.info("🔁 [SYNC RETRY] Requeued event {} ({} {}) — retry {}/{} — next in {}s",
                         event.getId(), event.getEntityType(), event.getEventType(),
                         event.getRetryCount() + 1, event.getMaxRetries(), backoffSeconds);
