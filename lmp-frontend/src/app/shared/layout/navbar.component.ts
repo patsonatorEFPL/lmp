@@ -603,6 +603,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   readonly navLinks = [
     { path: '/', label: 'Accueil' },
     { path: '/services', label: 'Services' },
+    { path: '/blog', label: 'Blog' },
     { path: '/map', label: 'Carte' },
     { path: '/about', label: 'À propos' },
     { path: '/contact', label: 'Contact' },

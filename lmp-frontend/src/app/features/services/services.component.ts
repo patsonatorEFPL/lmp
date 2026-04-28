@@ -322,6 +322,65 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       keywords: 'services marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, gestion avis, présence locale',
     });
 
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Services LMP Digital Services',
+      url: 'https://lmp-services.ca/services',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          item: {
+            '@type': 'Service',
+            name: 'Référencement SEO',
+            description: 'Optimisation technique et sémantique pour dominer les résultats Google.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          item: {
+            '@type': 'Service',
+            name: 'Gestion Google My Business',
+            description: 'Optimisation complète de votre fiche établissement Google.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          item: {
+            '@type': 'Service',
+            name: 'Création de Site Web',
+            description: 'Sites web professionnels avec SSL, référencement optimisé et design responsive.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 4,
+          item: {
+            '@type': 'Service',
+            name: 'Publicité en Ligne',
+            description: 'Campagnes Google Ads et Meta Ads avec ciblage géolocalisé.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 5,
+          item: {
+            '@type': 'Service',
+            name: 'Gestion des Avis',
+            description: 'Stratégie de collecte et gestion de la e-réputation.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+      ],
+    });
+
     const u = this.authService.user();
     if (u) {
       this.checkoutTaxForm = {

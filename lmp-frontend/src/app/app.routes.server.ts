@@ -17,6 +17,8 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'map', renderMode: RenderMode.Server },
   { path: 'privacy', renderMode: RenderMode.Server },
   { path: 'terms', renderMode: RenderMode.Server },
+  { path: 'blog', renderMode: RenderMode.Server },
+  { path: 'blog/**', renderMode: RenderMode.Server },
 
   // Auth pages — client-only
   { path: 'login', renderMode: RenderMode.Client },

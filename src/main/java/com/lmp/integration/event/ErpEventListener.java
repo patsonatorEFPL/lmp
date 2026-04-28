@@ -19,8 +19,17 @@ import com.lmp.integration.sync.mapper.CustomerSyncMapper;
 import com.lmp.integration.sync.mapper.ItemSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
 import com.lmp.integration.sync.mapper.PaymentSyncMapper;
+import com.lmp.integration.sync.mapper.ProjectSyncMapper;
 import com.lmp.integration.sync.mapper.QuotationSyncMapper;
+import com.lmp.integration.sync.mapper.TaskSyncMapper;
+import com.lmp.integration.sync.mapper.TicketSyncMapper;
 import com.lmp.integration.sync.service.SyncOutboundService;
+import com.lmp.project.domain.Project;
+import com.lmp.project.domain.ProjectTask;
+import com.lmp.project.repository.ProjectRepository;
+import com.lmp.project.repository.ProjectTaskRepository;
+import com.lmp.support.domain.Ticket;
+import com.lmp.support.repository.TicketRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -69,12 +78,18 @@ public class ErpEventListener {
     private final OrderRepository orderRepository;
     private final QuotationRepository quotationRepository;
     private final ServiceRepository serviceRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectTaskRepository projectTaskRepository;
+    private final TicketRepository ticketRepository;
     private final CustomerSyncMapper customerSyncMapper;
     private final OrderSyncMapper orderSyncMapper;
     private final ItemSyncMapper itemSyncMapper;
     private final PaymentSyncMapper paymentSyncMapper;
     private final QuotationSyncMapper quotationSyncMapper;
     private final AddressSyncMapper addressSyncMapper;
+    private final ProjectSyncMapper projectSyncMapper;
+    private final TaskSyncMapper taskSyncMapper;
+    private final TicketSyncMapper ticketSyncMapper;
 
     public ErpEventListener(SyncOutboundService syncOutboundService,
                             SyncProperties syncProperties,
@@ -83,12 +98,18 @@ public class ErpEventListener {
                             OrderRepository orderRepository,
                             QuotationRepository quotationRepository,
                             ServiceRepository serviceRepository,
+                            ProjectRepository projectRepository,
+                            ProjectTaskRepository projectTaskRepository,
+                            TicketRepository ticketRepository,
                             CustomerSyncMapper customerSyncMapper,
                             OrderSyncMapper orderSyncMapper,
                             ItemSyncMapper itemSyncMapper,
                             PaymentSyncMapper paymentSyncMapper,
                             QuotationSyncMapper quotationSyncMapper,
-                            AddressSyncMapper addressSyncMapper) {
+                            AddressSyncMapper addressSyncMapper,
+                            ProjectSyncMapper projectSyncMapper,
+                            TaskSyncMapper taskSyncMapper,
+                            TicketSyncMapper ticketSyncMapper) {
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
         this.externalClient = externalClient;
@@ -96,12 +117,18 @@ public class ErpEventListener {
         this.orderRepository = orderRepository;
         this.quotationRepository = quotationRepository;
         this.serviceRepository = serviceRepository;
+        this.projectRepository = projectRepository;
+        this.projectTaskRepository = projectTaskRepository;
+        this.ticketRepository = ticketRepository;
         this.customerSyncMapper = customerSyncMapper;
         this.orderSyncMapper = orderSyncMapper;
         this.itemSyncMapper = itemSyncMapper;
         this.paymentSyncMapper = paymentSyncMapper;
         this.quotationSyncMapper = quotationSyncMapper;
         this.addressSyncMapper = addressSyncMapper;
+        this.projectSyncMapper = projectSyncMapper;
+        this.taskSyncMapper = taskSyncMapper;
+        this.ticketSyncMapper = ticketSyncMapper;
     }
 
     @Async
@@ -223,45 +250,45 @@ public class ErpEventListener {
             // --- Projets → PROJECT / TASK ---
             case PROJECT_CREATED -> {
                 logEvent("Projet créé — synchronisation externe", event);
-                dispatchSync(SyncEntityType.PROJECT, "CREATED", event);
+                handleProjectCreated(event);
             }
             case PROJECT_UPDATED -> {
                 logEvent("Projet mis à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.PROJECT, "UPDATED", event);
+                handleProjectUpdated(event);
             }
             case PROJECT_DELETED -> {
                 logEvent("Projet supprimé — suppression externe", event);
-                dispatchSync(SyncEntityType.PROJECT, "DELETED", event);
+                handleProjectDeleted(event);
             }
             case TASK_CREATED -> {
                 logEvent("Tâche créée — synchronisation externe", event);
-                dispatchSync(SyncEntityType.TASK, "CREATED", event);
+                handleTaskCreated(event);
             }
             case TASK_UPDATED -> {
                 logEvent("Tâche mise à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.TASK, "UPDATED", event);
+                handleTaskUpdated(event);
             }
             case TASK_DELETED -> {
                 logEvent("Tâche supprimée — suppression externe", event);
-                dispatchSync(SyncEntityType.TASK, "DELETED", event);
+                handleTaskDeleted(event);
             }
 
             // --- Support → ISSUE ---
             case TICKET_CREATED -> {
                 logEvent("Ticket créé — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "CREATED", event);
+                handleTicketCreated(event);
             }
             case TICKET_UPDATED -> {
                 logEvent("Ticket mis à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "UPDATED", event);
+                handleTicketUpdated(event);
             }
             case TICKET_RESOLVED -> {
                 logEvent("Ticket résolu — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "UPDATED", event);
+                handleTicketResolved(event);
             }
             case TICKET_DELETED -> {
                 logEvent("Ticket supprimé — suppression externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "DELETED", event);
+                handleTicketDeleted(event);
             }
 
             default -> logger.debug("📡 [EVENT BUS] Événement non routé : {}", event.type());
@@ -1092,6 +1119,195 @@ public class ErpEventListener {
                     SyncEntityType.QUOTATION, "DELETED",
                     event.entityId(), externalQuotationId, Map.of()
             );
+        }
+    }
+
+    // ==================== Project Handlers ====================
+
+    private void handleProjectCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) {
+            logger.debug("🔇 [SYNC] Project sync disabled — skipping");
+            return;
+        }
+        try {
+            Optional<Project> opt = projectRepository.findById(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Project {} not found for sync", event.entityId());
+                return;
+            }
+            Project project = opt.get();
+            if (project.getExternalProjectId() != null) {
+                logger.debug("📋 [SYNC] Project {} already has externalProjectId {} — skipping",
+                        project.getId(), project.getExternalProjectId());
+                return;
+            }
+            Map<String, Object> payload = projectSyncMapper.toOutboundPayload(project);
+            syncOutboundService.syncEntity(SyncEntityType.PROJECT, "CREATED", project.getId(), null, payload);
+            logger.info("📤 [SYNC] Project {} enqueued for external creation", project.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleProjectCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleProjectUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        try {
+            Optional<Project> opt = projectRepository.findById(event.entityId());
+            if (opt.isEmpty()) return;
+            Project project = opt.get();
+            if (project.getExternalProjectId() == null) {
+                logger.debug("📋 [SYNC] Project {} has no externalProjectId — skipping update", project.getId());
+                return;
+            }
+            Map<String, Object> payload = projectSyncMapper.toOutboundPayload(project);
+            syncOutboundService.syncEntity(SyncEntityType.PROJECT, "UPDATED",
+                    project.getId(), project.getExternalProjectId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleProjectUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleProjectDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalProjectId = payload != null ? (String) payload.get("externalProjectId") : null;
+        if (externalProjectId != null && !externalProjectId.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.PROJECT, "DELETED", event.entityId(), externalProjectId, Map.of());
+        }
+    }
+
+    // ==================== Task Handlers ====================
+
+    private void handleTaskCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) {
+            logger.debug("🔇 [SYNC] Project sync disabled — skipping task sync");
+            return;
+        }
+        try {
+            Optional<ProjectTask> opt = projectTaskRepository.findByIdWithProject(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Task {} not found for sync", event.entityId());
+                return;
+            }
+            ProjectTask task = opt.get();
+            if (task.getExternalTaskId() != null) {
+                logger.debug("📋 [SYNC] Task {} already has externalTaskId {} — skipping",
+                        task.getId(), task.getExternalTaskId());
+                return;
+            }
+            String externalProjectId = task.getProject() != null ? task.getProject().getExternalProjectId() : null;
+            if (externalProjectId == null) {
+                logger.warn("⚠️ [SYNC] Task {} parent project has no externalProjectId — skipping", task.getId());
+                return;
+            }
+            Map<String, Object> payload = taskSyncMapper.toOutboundPayload(task, externalProjectId);
+            syncOutboundService.syncEntity(SyncEntityType.TASK, "CREATED", task.getId(), null, payload);
+            logger.info("📤 [SYNC] Task {} enqueued for external creation", task.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTaskCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTaskUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        try {
+            Optional<ProjectTask> opt = projectTaskRepository.findByIdWithProject(event.entityId());
+            if (opt.isEmpty()) return;
+            ProjectTask task = opt.get();
+            if (task.getExternalTaskId() == null) {
+                logger.debug("📋 [SYNC] Task {} has no externalTaskId — skipping update", task.getId());
+                return;
+            }
+            String externalProjectId = task.getProject() != null ? task.getProject().getExternalProjectId() : null;
+            Map<String, Object> payload = taskSyncMapper.toOutboundPayload(task, externalProjectId);
+            syncOutboundService.syncEntity(SyncEntityType.TASK, "UPDATED",
+                    task.getId(), task.getExternalTaskId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTaskUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTaskDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalTaskId = payload != null ? (String) payload.get("externalTaskId") : null;
+        if (externalTaskId != null && !externalTaskId.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.TASK, "DELETED", event.entityId(), externalTaskId, Map.of());
+        }
+    }
+
+    // ==================== Ticket Handlers ====================
+
+    private void handleTicketCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) {
+            logger.debug("🔇 [SYNC] Ticket sync disabled — skipping");
+            return;
+        }
+        try {
+            Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Ticket {} not found for sync", event.entityId());
+                return;
+            }
+            Ticket ticket = opt.get();
+            if (ticket.getExternalIssueId() != null) {
+                logger.debug("📋 [SYNC] Ticket {} already has externalIssueId {} — skipping",
+                        ticket.getId(), ticket.getExternalIssueId());
+                return;
+            }
+            String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
+            Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
+            syncOutboundService.syncEntity(SyncEntityType.ISSUE, "CREATED", ticket.getId(), null, payload);
+            logger.info("📤 [SYNC] Ticket {} enqueued for external creation", ticket.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTicketCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTicketUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) return;
+        try {
+            Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
+            if (opt.isEmpty()) return;
+            Ticket ticket = opt.get();
+            if (ticket.getExternalIssueId() == null) {
+                logger.debug("📋 [SYNC] Ticket {} has no externalIssueId — skipping update", ticket.getId());
+                return;
+            }
+            String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
+            Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
+            syncOutboundService.syncEntity(SyncEntityType.ISSUE, "UPDATED",
+                    ticket.getId(), ticket.getExternalIssueId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTicketUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTicketResolved(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) return;
+        try {
+            Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
+            if (opt.isEmpty()) return;
+            Ticket ticket = opt.get();
+            if (ticket.getExternalIssueId() == null) {
+                logger.debug("📋 [SYNC] Ticket {} has no externalIssueId — skipping resolve", ticket.getId());
+                return;
+            }
+            String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
+            Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
+            syncOutboundService.syncEntity(SyncEntityType.ISSUE, "UPDATED",
+                    ticket.getId(), ticket.getExternalIssueId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTicketResolved failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTicketDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalIssueId = payload != null ? (String) payload.get("externalIssueId") : null;
+        if (externalIssueId != null && !externalIssueId.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.ISSUE, "DELETED", event.entityId(), externalIssueId, Map.of());
         }
     }
 

@@ -54,6 +54,20 @@ export const routes: Routes = [
             (m) => m.TermsComponent,
           ),
       },
+      {
+        path: 'blog',
+        loadComponent: () =>
+          import('./features/blog/blog-list.component').then(
+            (m) => m.BlogListComponent,
+          ),
+      },
+      {
+        path: 'blog/:slug',
+        loadComponent: () =>
+          import('./features/blog/blog-detail.component').then(
+            (m) => m.BlogDetailComponent,
+          ),
+      },
     ],
   },
 
