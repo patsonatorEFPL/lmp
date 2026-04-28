@@ -12,6 +12,20 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.util.JSONObjectUtils;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.text.ParseException;
+import java.util.function.Function;
+
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -80,13 +94,21 @@ public class AuthorizationServerConfig {
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
     private String issuerUri;
 
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.path:lmp-oauth2-jwk.json}")
+    private String jwkPath;
+
     @Bean
     @Order(0) // Avant les autres SecurityFilterChains
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
+                                                                       com.lmp.auth.repository.UserRepository userRepository) throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
 
         http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+                .oidc(oidc -> oidc
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userInfoMapper(oidcUserInfoMapper(userRepository))
+                        )
+                );
 
         http
                 .exceptionHandling(ex -> ex
@@ -156,6 +178,7 @@ public class AuthorizationServerConfig {
                     .scope(OidcScopes.EMAIL)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
+                            .requireProofKey(true)
                             .build())
                     .tokenSettings(TokenSettings.builder()
                             .accessTokenTimeToLive(Duration.ofHours(4))
@@ -184,6 +207,18 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> lmpOAuth2TokenCustomizer(
+            com.lmp.auth.repository.UserRepository userRepository) {
+        return new com.lmp.auth.oauth.LmpOAuth2TokenCustomizer(userRepository);
+    }
+
+    @Bean
+    public Function<OidcUserInfoAuthenticationContext, OidcUserInfo> oidcUserInfoMapper(
+            com.lmp.auth.repository.UserRepository userRepository) {
+        return new com.lmp.auth.oauth.LmpOidcUserInfoMapper(userRepository);
+    }
+
+    @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
                 .issuer(issuerUri)
@@ -192,16 +227,47 @@ public class AuthorizationServerConfig {
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        Path path = Path.of(jwkPath);
+        JWKSet jwkSet;
 
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
+        if (Files.exists(path)) {
+            try {
+                String json = Files.readString(path);
+                jwkSet = JWKSet.parse(json);
+                logger.info("JWK chargé depuis le fichier : {}", path.toAbsolutePath());
+            } catch (IOException | ParseException e) {
+                throw new IllegalStateException("Impossible de charger le JWK depuis le fichier : " + path, e);
+            }
+        } else {
+            KeyPair keyPair = generateRsaKey();
+            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
 
-        JWKSet jwkSet = new JWKSet(rsaKey);
+            String keyId = UUID.randomUUID().toString();
+            RSAKey rsaKey = new RSAKey.Builder(publicKey)
+                    .privateKey(privateKey)
+                    .keyID(keyId)
+                    .build();
+
+            jwkSet = new JWKSet(rsaKey);
+
+            try {
+                Path parent = path.getParent();
+                Path tempFile;
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                    tempFile = Files.createTempFile(parent, path.getFileName().toString(), ".tmp");
+                } else {
+                    tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
+                }
+                Files.writeString(tempFile, JSONObjectUtils.toJSONString(jwkSet.toJSONObject()));
+                Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                logger.info("Nouveau JWK généré et sauvegardé dans : {}", path.toAbsolutePath());
+            } catch (IOException e) {
+                throw new IllegalStateException("Impossible de sauvegarder le JWK dans le fichier : " + path, e);
+            }
+        }
+
         return new ImmutableJWKSet<>(jwkSet);
     }
 

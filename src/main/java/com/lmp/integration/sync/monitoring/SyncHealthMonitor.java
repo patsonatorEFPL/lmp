@@ -39,6 +39,7 @@ public class SyncHealthMonitor {
     private final SyncVerificationService verificationService;
     private final SyncProperties syncProperties;
     private final SentryHealthController sentryHealthController;
+    private final SyncMetricsService metricsService;
 
     private Instant lastRun = Instant.now().minusSeconds(3600);
 
@@ -49,7 +50,8 @@ public class SyncHealthMonitor {
                              ExternalSystemClient externalClient,
                              SyncVerificationService verificationService,
                              SyncProperties syncProperties,
-                             SentryHealthController sentryHealthController) {
+                             SentryHealthController sentryHealthController,
+                             SyncMetricsService metricsService) {
         this.syncEventRepository = syncEventRepository;
         this.snapshotRepository = snapshotRepository;
         this.patternRepository = patternRepository;
@@ -58,6 +60,7 @@ public class SyncHealthMonitor {
         this.verificationService = verificationService;
         this.syncProperties = syncProperties;
         this.sentryHealthController = sentryHealthController;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -104,6 +107,7 @@ public class SyncHealthMonitor {
         // 6. ERP availability + latency
         boolean erpAvailable = externalClient.isAvailable();
         snapshot.setErpAvailable(erpAvailable);
+        metricsService.setErpAvailable(erpAvailable);
         // Latency pourrait être mesurée via un ping dédié — pour l'instant on ne l'a pas
 
         // 7. New unknown patterns

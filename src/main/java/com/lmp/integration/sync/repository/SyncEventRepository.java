@@ -5,6 +5,7 @@ import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncStatus;
 import com.lmp.integration.sync.domain.SyncEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -113,4 +114,19 @@ public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID> {
     long countByStatusAndDirectionAndCreatedAtAfter(SyncStatus status, SyncDirection direction, LocalDateTime since);
 
     List<SyncEvent> findTop10ByStatusAndErrorMessageNotNullOrderByCreatedAtDesc(SyncStatus status);
+
+    // ==================== Purge ====================
+
+    /**
+     * Supprime les événements dans un statut donné plus anciens qu'une date.
+     * Retourne le nombre de lignes supprimées.
+     */
+    @Modifying
+    @Query(value = """
+            DELETE FROM sync_event_log
+            WHERE status = :status
+              AND created_at < :before
+            """, nativeQuery = true)
+    int deleteByStatusAndCreatedAtBefore(@Param("status") String status,
+                                          @Param("before") LocalDateTime before);
 }

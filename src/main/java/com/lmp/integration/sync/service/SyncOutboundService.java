@@ -39,6 +39,7 @@ public class SyncOutboundService {
     private final ObjectMapper objectMapper;
 
     private final com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier;
+    private final com.lmp.integration.sync.monitoring.SyncMetricsService metricsService;
 
     public SyncOutboundService(ExternalSystemClient externalClient,
                                SyncEventRepository syncEventRepository,
@@ -46,7 +47,8 @@ public class SyncOutboundService {
                                SyncCallbackService syncCallbackService,
                                @Lazy SyncVerificationService verificationService,
                                ObjectMapper objectMapper,
-                               com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier) {
+                               com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier,
+                               com.lmp.integration.sync.monitoring.SyncMetricsService metricsService) {
         this.externalClient = externalClient;
         this.syncEventRepository = syncEventRepository;
         this.syncProperties = syncProperties;
@@ -54,6 +56,7 @@ public class SyncOutboundService {
         this.verificationService = verificationService;
         this.objectMapper = objectMapper;
         this.errorClassifier = errorClassifier;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -196,6 +199,7 @@ public class SyncOutboundService {
     private void handleResponse(SyncEvent syncEvent, ExternalResponse response) {
         if (response.success()) {
             syncEvent.setStatus(SyncStatus.SUCCESS);
+            metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.SUCCESS);
             syncEvent.setExternalEntityId(response.externalId());
             syncEvent.setProcessedAt(LocalDateTime.now());
             log.info("✅ [SYNC OUT] {} {} → externalId={}",
@@ -234,9 +238,12 @@ public class SyncOutboundService {
             // Si max retries atteint → DEAD
             if (syncEvent.getRetryCount() >= syncEvent.getMaxRetries()) {
                 syncEvent.setStatus(SyncStatus.DEAD);
+                metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.DEAD);
+                metricsService.recordEventDead(syncEvent.getEntityType());
                 log.error("💀 [SYNC OUT] {} {} — max retries reached ({}) — marking DEAD",
                         syncEvent.getEntityType(), syncEvent.getEventType(), syncEvent.getMaxRetries());
             } else {
+                metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.FAILED);
                 // Calculer le prochain scheduled_at avec backoff exponentiel
                 long backoffSeconds = syncProperties.getRetry().getDelaySeconds()
                         * (long) Math.pow(2, syncEvent.getRetryCount() - 1);
@@ -262,10 +269,13 @@ public class SyncOutboundService {
         boolean isDead = syncEvent.getRetryCount() >= syncEvent.getMaxRetries();
         if (isDead) {
             syncEvent.setStatus(SyncStatus.DEAD);
+            metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.DEAD);
+            metricsService.recordEventDead(syncEvent.getEntityType());
             log.error("💀 [SYNC OUT] Exception during {} {} — max retries — DEAD: {}",
                     syncEvent.getEntityType(), syncEvent.getEventType(), e.getMessage(), e);
         } else {
             syncEvent.setStatus(SyncStatus.FAILED);
+            metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.FAILED);
             long backoffSeconds = syncProperties.getRetry().getDelaySeconds()
                     * (long) Math.pow(2, syncEvent.getRetryCount() - 1);
             syncEvent.setScheduledAt(LocalDateTime.now().plusSeconds(backoffSeconds));

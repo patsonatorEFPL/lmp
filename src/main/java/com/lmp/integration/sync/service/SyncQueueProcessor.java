@@ -29,13 +29,16 @@ public class SyncQueueProcessor {
     private final SyncEventRepository syncEventRepository;
     private final SyncOutboundService syncOutboundService;
     private final SyncProperties syncProperties;
+    private final com.lmp.integration.sync.monitoring.SyncMetricsService metricsService;
 
     public SyncQueueProcessor(SyncEventRepository syncEventRepository,
                               SyncOutboundService syncOutboundService,
-                              SyncProperties syncProperties) {
+                              SyncProperties syncProperties,
+                              com.lmp.integration.sync.monitoring.SyncMetricsService metricsService) {
         this.syncEventRepository = syncEventRepository;
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -50,6 +53,10 @@ public class SyncQueueProcessor {
     public void processNextBatch() {
         int batchSize = syncProperties.getQueue().getBatchSize();
         List<SyncEvent> batch = syncEventRepository.findNextBatch(batchSize);
+
+        long queueDepth = syncEventRepository.countByStatus(
+                com.lmp.integration.sync.SyncStatus.QUEUED);
+        metricsService.setQueueDepth((int) queueDepth);
 
         if (batch.isEmpty()) {
             return;

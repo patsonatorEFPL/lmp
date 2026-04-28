@@ -39,6 +39,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   DashboardService,
   DashboardStats,
+  RecentOrder,
 } from '../../core/services/dashboard.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
@@ -76,10 +77,73 @@ const ORDER_FILTERS: { key: OrderFilter; label: string }[] = [
 ];
 
 /**
- * Séries de démo pour le graphique d'activité (données back non disponibles
- * pour les courbes temps-réel). Conçues pour reproduire fidèlement la maquette.
+ * Génère les séries d'activité à partir des commandes réelles.
+ * Agrège le nombre de commandes par période.
  */
-const ACTIVITY_SERIES = {} as Record<Period, { current: number[]; previous: number[]; labels: string[] }>;
+function buildActivitySeries(
+  orders: RecentOrder[],
+  period: Period,
+): { current: number[]; previous: number[]; labels: string[] } {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  let bucketCount: number;
+  let bucketDays: number;
+  let labelFmt: (d: Date) => string;
+
+  switch (period) {
+    case '7j':
+      bucketCount = 7;
+      bucketDays = 1;
+      labelFmt = (d) => d.toLocaleDateString('fr-FR', { weekday: 'narrow' });
+      break;
+    case '30j':
+      bucketCount = 10;
+      bucketDays = 3;
+      labelFmt = (d) => `${d.getDate()}/${d.getMonth() + 1}`;
+      break;
+    case '90j':
+      bucketCount = 12;
+      bucketDays = 7;
+      labelFmt = (d) => `S${Math.ceil(d.getDate() / 7)}`;
+      break;
+    case '12m':
+      bucketCount = 12;
+      bucketDays = 30;
+      labelFmt = (d) => d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
+      break;
+  }
+
+  const current = new Array(bucketCount).fill(0);
+  const previous = new Array(bucketCount).fill(0);
+  const labels: string[] = [];
+
+  for (let i = 0; i < bucketCount; i++) {
+    const bucketStart = new Date(now);
+    bucketStart.setDate(bucketStart.getDate() - (bucketCount - i) * bucketDays);
+    labels.push(labelFmt(bucketStart));
+
+    const bucketEnd = new Date(bucketStart);
+    bucketEnd.setDate(bucketEnd.getDate() + bucketDays);
+
+    const prevBucketStart = new Date(bucketStart);
+    prevBucketStart.setDate(prevBucketStart.getDate() - bucketCount * bucketDays);
+    const prevBucketEnd = new Date(prevBucketStart);
+    prevBucketEnd.setDate(prevBucketEnd.getDate() + bucketDays);
+
+    for (const o of orders) {
+      const d = new Date(o.createdAt);
+      if (d >= bucketStart && d < bucketEnd) {
+        current[i]++;
+      }
+      if (d >= prevBucketStart && d < prevBucketEnd) {
+        previous[i]++;
+      }
+    }
+  }
+
+  return { current, previous, labels };
+}
 
 /** Sparklines fixes pour les stat cards — purement décoratives. */
 const SPARK = {};
@@ -421,13 +485,16 @@ export class DashboardOverviewComponent implements OnInit {
 
   readonly insightBody = computed(() => '');
 
-  /** Période sélectionnée pour la courbe d'activité (UI seulement, séries mock). */
+  /** Période sélectionnée pour la courbe d'activité (générée depuis les commandes réelles). */
   readonly period = signal<Period>('30j');
   setPeriod(p: Period) {
     this.period.set(p);
   }
   readonly periods = PERIODS;
-  readonly series = computed(() => ACTIVITY_SERIES[this.period()] ?? { current: [], previous: [], labels: [] });
+  readonly series = computed(() => {
+    const orders = this.stats()?.recentOrders ?? [];
+    return buildActivitySeries(orders, this.period());
+  });
 
   /** Filtre rapide sur le tableau des commandes. */
   readonly orderFilter = signal<OrderFilter>('all');

@@ -40,6 +40,7 @@ import {
   AdminService,
   AdminDashboardStats,
   CatalogStats,
+  RevenueSeries,
 } from '../../core/services/admin.service';
 import { AdminSseService } from '../../core/services/admin-sse.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
@@ -459,6 +460,20 @@ export class AdminDashboardComponent implements OnInit {
     },
   });
 
+  readonly revenueSeriesResource = resource<RevenueSeries, { period: RevenuePeriod; browser: boolean }>({
+    params: () => ({ period: this.revenuePeriod(), browser: isPlatformBrowser(this.platformId) }),
+    loader: async ({ params }) => {
+      if (!params.browser) {
+        return { current: [], previous: [], labels: [] };
+      }
+      try {
+        return await firstValueFrom(this.adminService.getRevenueSeries(params.period));
+      } catch {
+        return { current: [], previous: [], labels: [] };
+      }
+    },
+  });
+
   private async fetchStats(): Promise<AdminDashboardStats | null> {
     try {
       return await firstValueFrom(this.adminService.getDashboardStats());
@@ -492,7 +507,17 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private async fetchTopServices(): Promise<TopService[]> {
-    return [];
+    try {
+      const items = await firstValueFrom(this.adminService.getTopServices());
+      return items.map((s) => ({
+        name: s.name,
+        orders: s.orders,
+        revenue: `${this.formatNumber(Math.round(s.revenue))} ${this.currencySymbol()}`,
+        growth: s.growthPercent,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   private toRecentUser(u: AdminUserPageItem): RecentUser {
@@ -603,7 +628,7 @@ export class AdminDashboardComponent implements OnInit {
   setRevenuePeriod(p: RevenuePeriod) {
     this.revenuePeriod.set(p);
   }
-  readonly revenueSeries = computed(() => REVENUE_SERIES[this.revenuePeriod()] ?? { current: [], previous: [], labels: [] });
+  readonly revenueSeries = computed(() => this.revenueSeriesResource.value() ?? { current: [], previous: [], labels: [] });
   readonly revenueRangeLabel = computed(() => {
     switch (this.revenuePeriod()) {
       case 'week':
@@ -649,7 +674,10 @@ export class AdminDashboardComponent implements OnInit {
       this.visiblePoll.subscribeWhileVisible(
         this.destroyRef,
         environment.dashboardPollIntervalMs,
-        () => this.dashboardResource.reload(),
+        () => {
+          this.dashboardResource.reload();
+          this.revenueSeriesResource.reload();
+        },
       );
     }
   }
@@ -657,6 +685,7 @@ export class AdminDashboardComponent implements OnInit {
   reload(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.dashboardResource.reload();
+      this.revenueSeriesResource.reload();
     }
   }
 
