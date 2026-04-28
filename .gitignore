@@ -138,3 +138,6 @@ mvn-compile.log
 
 ### Test Payloads ###
 test_*.json
+
+# OAuth2 JWK keys (generated locally)
+lmp-oauth2-jwk*.json

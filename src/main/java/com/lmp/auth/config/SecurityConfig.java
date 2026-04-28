@@ -56,6 +56,7 @@ public class SecurityConfig {
         private final CustomUserDetailsService userDetailsService;
 
         private final PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler;
+    private final AdminRateLimitFilter adminRateLimitFilter;
 
     @Autowired(required = false)
     private CustomOAuth2UserService customOAuth2UserService;
@@ -71,9 +72,11 @@ public class SecurityConfig {
 
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
-                           PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler) {
+                           PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler,
+                           AdminRateLimitFilter adminRateLimitFilter) {
         this.userDetailsService = userDetailsService;
         this.purchaseIntentAuthenticationSuccessHandler = purchaseIntentAuthenticationSuccessHandler;
+        this.adminRateLimitFilter = adminRateLimitFilter;
     }
 
     // =========================================================================
@@ -165,6 +168,10 @@ public class SecurityConfig {
                             response.getWriter().write(
                                     "{\"error\":\"FORBIDDEN\",\"message\":\"Access denied\",\"status\":403}");
                         }))
+
+                // Rate limiting for admin endpoints
+                .addFilterBefore(adminRateLimitFilter,
+                        org.springframework.security.web.csrf.CsrfFilter.class)
 
                 // Filter to eagerly load CSRF token (sets cookie on every response)
                 .addFilterAfter(csrfCookieFilter(),

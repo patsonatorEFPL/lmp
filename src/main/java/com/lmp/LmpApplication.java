@@ -3,6 +3,7 @@ package com.lmp;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -11,8 +12,9 @@ import com.lmp.shared.pricing.RegionalPricingProperties;
 
 @SpringBootApplication
 @EnableConfigurationProperties({MailAddressConfig.class, RegionalPricingProperties.class})
-@EnableScheduling // Pour l'auto-répondeur noreply
+@EnableScheduling // Pour l'auto-répondeur noreply + purge scheduler
 @EnableAsync // Pour le bus d'événements vers l’ERP (traitement asynchrone)
+@EnableCaching // Caffeine pour agrégats ERP + GeoIP
 public class LmpApplication {
 
 	public static void main(String[] args) {
