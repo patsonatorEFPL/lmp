@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, computed, DestroyRef, ElementRef, inject, input, signal } from '@angular/core';
 
 interface GridLine {
   y: number;
@@ -16,13 +16,12 @@ interface GridLine {
   template: `
     <svg
       class="lmpd-chart"
-      [attr.viewBox]="'0 0 ' + W + ' ' + height()"
-      preserveAspectRatio="xMidYMid meet"
+      [attr.viewBox]="'0 0 ' + svgWidth() + ' ' + height()"
       role="img"
     >
       <g class="lmpd-chart-grid">
         @for (g of gridLines(); track $index) {
-          <line [attr.x1]="pad.l" [attr.x2]="W - pad.r" [attr.y1]="g.y" [attr.y2]="g.y" />
+          <line [attr.x1]="pad.l" [attr.x2]="svgWidth() - pad.r" [attr.y1]="g.y" [attr.y2]="g.y" />
         }
       </g>
       <g class="lmpd-chart-axis">
@@ -48,13 +47,16 @@ interface GridLine {
     </svg>
   `,
 })
-export class LineChartComponent {
+export class LineChartComponent implements AfterViewInit {
+  private readonly el = inject(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly data = input.required<readonly number[]>();
   readonly secondary = input<readonly number[] | null>(null);
   readonly labels = input<readonly string[] | null>(null);
   readonly height = input(200);
 
-  readonly W = 720;
+  readonly svgWidth = signal(720);
   readonly pad = { l: 32, r: 16, t: 14, b: 22 };
 
   private readonly max = computed(() => {
@@ -68,10 +70,23 @@ export class LineChartComponent {
     return m > 0 ? m : 1;
   });
 
+  ngAfterViewInit(): void {
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = Math.floor(entry.contentRect.width);
+        if (w > 0) {
+          this.svgWidth.set(w);
+        }
+      }
+    });
+    ro.observe(this.el.nativeElement);
+    this.destroyRef.onDestroy(() => ro.disconnect());
+  }
+
   xAt(i: number): number {
     const n = this.data().length;
     const denom = Math.max(n - 1, 1);
-    return this.pad.l + (i / denom) * (this.W - this.pad.l - this.pad.r);
+    return this.pad.l + (i / denom) * (this.svgWidth() - this.pad.l - this.pad.r);
   }
 
   yAt(v: number): number {
