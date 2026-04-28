@@ -514,6 +514,34 @@ public class RestExternalClient implements ExternalSystemClient {
         return 500;
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public java.util.Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson) {
+        String docType = entityTypeMapping.toExternalDocType(type);
+        try {
+            Map<String, Object> response = restClient.get()
+                    .uri(uri -> uri
+                            .path("/api/resource/{docType}")
+                            .queryParam("filters", filterJson)
+                            .queryParam("fields", "[\"name\"]")
+                            .queryParam("limit_page_length", 1)
+                            .build(docType))
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("data")) {
+                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("data");
+                if (results != null && !results.isEmpty()) {
+                    return java.util.Optional.of(results.get(0));
+                }
+            }
+        } catch (Exception e) {
+            log.debug("⚠️ [SYNC] findFirstByFilters failed for {} (filters={}): {}",
+                    type, filterJson, e.getMessage());
+        }
+        return java.util.Optional.empty();
+    }
+
     private String toJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);
