@@ -25,6 +25,9 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
            "ORDER BY s.displayOrder")
     List<Service> findByActiveTrue();
 
+    @Query("SELECT s FROM Service s LEFT JOIN FETCH s.offers WHERE s.id = :id")
+    Optional<Service> findByIdWithOffers(@Param("id") UUID id);
+
     @Query("SELECT DISTINCT s FROM Service s " +
            "LEFT JOIN FETCH s.category " +
            "LEFT JOIN FETCH s.benefits " +

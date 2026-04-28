@@ -99,4 +99,13 @@ public interface ExternalSystemClient {
      * @return réponse contenant les données retournées par la méthode
      */
     ExternalResponse callMethod(String method, Map<String, Object> args);
+
+    /**
+     * Recherche la première entité correspondant aux filtres external ERP.
+     *
+     * @param type   type d'entité
+     * @param filterJson filtres au format external ERP (ex: [["item_code","=","ABC"],["price_list","=","Standard Selling"]])
+     * @return Optional contenant la map du document trouvé, ou empty
+     */
+    java.util.Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson);
 }

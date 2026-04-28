@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Client no-op — log uniquement. Actif quand {@code lmp.sync.enabled=false} (défaut).
@@ -76,5 +77,11 @@ public class NoOpExternalClient implements ExternalSystemClient {
     public ExternalResponse callMethod(String method, Map<String, Object> args) {
         log.info("🔇 [SYNC NO-OP] callMethod({}) — args keys: {}", method, args != null ? args.keySet() : "null");
         return ExternalResponse.unavailable();
+    }
+
+    @Override
+    public Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson) {
+        log.info("🔇 [SYNC NO-OP] findFirstByFilters({}, {})", type, filterJson);
+        return Optional.empty();
     }
 }

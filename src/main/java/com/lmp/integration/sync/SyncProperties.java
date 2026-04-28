@@ -61,6 +61,8 @@ public class SyncProperties {
         private String paymentAccount = "";
         /** Compte débiteur pour les Payment Entry (paid_from). */
         private String receivableAccount = "";
+        /** Price List pour les Item Price (ex: Standard Selling). */
+        private String priceList = "Standard Selling";
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -82,6 +84,8 @@ public class SyncProperties {
         public void setPaymentAccount(String paymentAccount) { this.paymentAccount = paymentAccount; }
         public String getReceivableAccount() { return receivableAccount; }
         public void setReceivableAccount(String receivableAccount) { this.receivableAccount = receivableAccount; }
+        public String getPriceList() { return priceList; }
+        public void setPriceList(String priceList) { this.priceList = priceList; }
 
         /**
          * Résout le compte comptable de taxe pour un taux donné (en %).

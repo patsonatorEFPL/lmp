@@ -9,6 +9,7 @@ import com.lmp.billing.domain.QuotationItem;
 import com.lmp.billing.repository.OrderRepository;
 import com.lmp.billing.repository.QuotationRepository;
 import com.lmp.catalog.domain.Service;
+import com.lmp.catalog.domain.ServiceOffer;
 import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
@@ -16,6 +17,7 @@ import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncProperties;
 import com.lmp.integration.sync.mapper.AddressSyncMapper;
 import com.lmp.integration.sync.mapper.CustomerSyncMapper;
+import com.lmp.integration.sync.mapper.ItemPriceSyncMapper;
 import com.lmp.integration.sync.mapper.ItemSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
 import com.lmp.integration.sync.mapper.PaymentSyncMapper;
@@ -90,6 +92,7 @@ public class ErpEventListener {
     private final ProjectSyncMapper projectSyncMapper;
     private final TaskSyncMapper taskSyncMapper;
     private final TicketSyncMapper ticketSyncMapper;
+    private final ItemPriceSyncMapper itemPriceSyncMapper;
 
     public ErpEventListener(SyncOutboundService syncOutboundService,
                             SyncProperties syncProperties,
@@ -109,7 +112,8 @@ public class ErpEventListener {
                             AddressSyncMapper addressSyncMapper,
                             ProjectSyncMapper projectSyncMapper,
                             TaskSyncMapper taskSyncMapper,
-                            TicketSyncMapper ticketSyncMapper) {
+                            TicketSyncMapper ticketSyncMapper,
+                            ItemPriceSyncMapper itemPriceSyncMapper) {
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
         this.externalClient = externalClient;
@@ -129,6 +133,7 @@ public class ErpEventListener {
         this.projectSyncMapper = projectSyncMapper;
         this.taskSyncMapper = taskSyncMapper;
         this.ticketSyncMapper = ticketSyncMapper;
+        this.itemPriceSyncMapper = itemPriceSyncMapper;
     }
 
     @Async
@@ -233,18 +238,18 @@ public class ErpEventListener {
             case CONTACT_FORM_SUBMITTED ->
                     logEvent("Lead — synchronisation externe (CRM)", event);
 
-            // --- Catalogue → ITEM ---
+            // --- Catalogue → ITEM + ItemPrice ---
             case SERVICE_CREATED -> {
                 logEvent("Service créé — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ITEM, "CREATED", event);
+                handleServiceCreated(event);
             }
             case SERVICE_UPDATED -> {
                 logEvent("Service mis à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ITEM, "UPDATED", event);
+                handleServiceUpdated(event);
             }
             case SERVICE_DELETED -> {
                 logEvent("Service supprimé — suppression externe", event);
-                dispatchSync(SyncEntityType.ITEM, "DELETED", event);
+                handleServiceDeleted(event);
             }
 
             // --- Projets → PROJECT / TASK ---
@@ -1119,6 +1124,79 @@ public class ErpEventListener {
                     SyncEntityType.QUOTATION, "DELETED",
                     event.entityId(), externalQuotationId, Map.of()
             );
+        }
+    }
+
+    // ==================== Service / ItemPrice Handlers ====================
+
+    private void handleServiceCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isCatalogSync()) {
+            logger.debug("🔇 [SYNC] Catalog sync disabled — skipping");
+            return;
+        }
+        try {
+            Optional<Service> opt = serviceRepository.findByIdWithOffers(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Service {} not found for sync", event.entityId());
+                return;
+            }
+            Service service = opt.get();
+
+            // 1. Sync Item
+            Map<String, Object> itemPayload = itemSyncMapper.toItemCreatePayload(service);
+            syncOutboundService.syncEntity(SyncEntityType.ITEM, "CREATED", service.getId(), null, itemPayload);
+
+            // 2. Sync Item Prices for active offers
+            if (service.getOffers() != null) {
+                for (ServiceOffer offer : service.getOffers()) {
+                    if (Boolean.TRUE.equals(offer.getActive()) && offer.isCurrentlyValid()) {
+                        itemPriceSyncMapper.upsertItemPrice(offer, service);
+                    }
+                }
+            }
+            logger.info("📤 [SYNC] Service {} enqueued with {} offers", service.getId(),
+                    service.getOffers() != null ? service.getOffers().size() : 0);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleServiceCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleServiceUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isCatalogSync()) return;
+        try {
+            Optional<Service> opt = serviceRepository.findByIdWithOffers(event.entityId());
+            if (opt.isEmpty()) return;
+            Service service = opt.get();
+
+            String externalItemCode = service.getExternalItemCode();
+            if (externalItemCode == null || externalItemCode.isBlank()) {
+                logger.debug("📋 [SYNC] Service {} has no externalItemCode — skipping update", service.getId());
+                return;
+            }
+
+            // 1. Update Item
+            Map<String, Object> itemPayload = itemSyncMapper.toItemCreatePayload(service);
+            syncOutboundService.syncEntity(SyncEntityType.ITEM, "UPDATED", service.getId(), externalItemCode, itemPayload);
+
+            // 2. Upsert Item Prices for active offers
+            if (service.getOffers() != null) {
+                for (ServiceOffer offer : service.getOffers()) {
+                    if (Boolean.TRUE.equals(offer.getActive()) && offer.isCurrentlyValid()) {
+                        itemPriceSyncMapper.upsertItemPrice(offer, service);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleServiceUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleServiceDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isCatalogSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalItemCode = payload != null ? (String) payload.get("externalItemCode") : null;
+        if (externalItemCode != null && !externalItemCode.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.ITEM, "DELETED", event.entityId(), externalItemCode, Map.of());
         }
     }
 
