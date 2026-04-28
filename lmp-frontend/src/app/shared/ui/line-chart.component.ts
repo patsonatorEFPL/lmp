@@ -13,6 +13,7 @@ interface GridLine {
   selector: 'lmp-line-chart',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: [`:host { display: block; }`],
   template: `
     <svg
       class="lmpd-chart"
