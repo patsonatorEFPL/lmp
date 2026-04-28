@@ -5,6 +5,7 @@ import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.content.domain.BlogPost;
 import com.lmp.content.persistence.BlogPostRepository;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,8 +21,10 @@ import java.util.List;
 @RestController
 public class SitemapController {
 
-    private static final String BASE_URL = "https://lmp-services.ca";
     private static final DateTimeFormatter W3C_DATE = DateTimeFormatter.ISO_DATE;
+
+    @Value("${app.base.url:https://lmp-services.ca}")
+    private String baseUrl;
 
     private final ServiceRepository serviceRepository;
     private final BlogPostRepository blogPostRepository;
@@ -39,18 +42,19 @@ public class SitemapController {
         xml.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
 
         // Pages statiques
-        addUrl(xml, BASE_URL + "/", "1.0", LocalDate.now());
-        addUrl(xml, BASE_URL + "/services", "0.9", LocalDate.now());
-        addUrl(xml, BASE_URL + "/about", "0.8", LocalDate.now());
-        addUrl(xml, BASE_URL + "/contact", "0.8", LocalDate.now());
-        addUrl(xml, BASE_URL + "/map", "0.6", LocalDate.now());
-        addUrl(xml, BASE_URL + "/privacy", "0.3", LocalDate.now());
-        addUrl(xml, BASE_URL + "/terms", "0.3", LocalDate.now());
+        addUrl(xml, baseUrl + "/", "1.0", LocalDate.now());
+        addUrl(xml, baseUrl + "/services", "0.9", LocalDate.now());
+        addUrl(xml, baseUrl + "/blog", "0.8", LocalDate.now());
+        addUrl(xml, baseUrl + "/about", "0.8", LocalDate.now());
+        addUrl(xml, baseUrl + "/contact", "0.8", LocalDate.now());
+        addUrl(xml, baseUrl + "/map", "0.6", LocalDate.now());
+        addUrl(xml, baseUrl + "/privacy", "0.3", LocalDate.now());
+        addUrl(xml, baseUrl + "/terms", "0.3", LocalDate.now());
 
         // Services actifs
         List<Service> services = serviceRepository.findByActiveTrue();
         for (Service service : services) {
-            addUrl(xml, BASE_URL + "/services/" + service.getSlug(), "0.7",
+            addUrl(xml, baseUrl + "/services/" + service.getSlug(), "0.7",
                     service.getUpdatedAt() != null
                             ? service.getUpdatedAt().toLocalDate()
                             : LocalDate.now());
@@ -60,7 +64,7 @@ public class SitemapController {
         List<BlogPost> posts = blogPostRepository.findAllByPublishedTrueOrderByPublishedAtDesc(null)
                 .getContent();
         for (BlogPost post : posts) {
-            addUrl(xml, BASE_URL + "/blog/" + post.getSlug(), "0.6",
+            addUrl(xml, baseUrl + "/blog/" + post.getSlug(), "0.6",
                     post.getUpdatedAt() != null
                             ? post.getUpdatedAt().toLocalDate()
                             : post.getPublishedAt() != null
