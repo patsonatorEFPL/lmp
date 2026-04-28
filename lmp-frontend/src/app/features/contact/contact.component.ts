@@ -276,6 +276,27 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       url: '/contact',
       keywords: 'contact LMP, consultation SEO gratuite, marketing digital contact, devis référencement, Québec Canada',
     });
+
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'ContactPage',
+      name: 'Contact — LMP Digital Services',
+      url: 'https://lmp-services.ca/contact',
+      description: 'Contactez LMP Digital Services pour une consultation SEO gratuite et sans engagement.',
+      mainEntity: {
+        '@type': 'Organization',
+        name: 'LMP Digital Services',
+        url: 'https://lmp-services.ca',
+        logo: 'https://lmp-services.ca/images/logo-lmp.webp',
+        contactPoint: {
+          '@type': 'ContactPoint',
+          telephone: '+1-418-555-0199',
+          contactType: 'sales',
+          areaServed: ['CA', 'FR', 'BE', 'CH'],
+          availableLanguage: ['French', 'English'],
+        },
+      },
+    });
   }
 
   readonly SendIcon = Send;
