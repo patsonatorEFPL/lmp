@@ -791,6 +791,64 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       url: '/',
       keywords: 'marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, LMP, référencement local, Canada, Québec',
     });
+
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          name: 'LMP Digital Services',
+          url: 'https://lmp-services.ca',
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: 'https://lmp-services.ca/services?q={search_term_string}',
+            'query-input': 'required name=search_term_string',
+          },
+        },
+        {
+          '@type': 'Organization',
+          name: 'LMP Digital Services',
+          url: 'https://lmp-services.ca',
+          logo: 'https://lmp-services.ca/images/logo-lmp.webp',
+          sameAs: [
+            'https://www.facebook.com/lmpservices',
+            'https://www.linkedin.com/company/lmp-digital-services',
+          ],
+          contactPoint: {
+            '@type': 'ContactPoint',
+            telephone: '+1-418-555-0199',
+            contactType: 'customer service',
+            areaServed: ['CA', 'FR', 'BE', 'CH'],
+            availableLanguage: ['French', 'English'],
+          },
+        },
+        {
+          '@type': 'LocalBusiness',
+          name: 'LMP Digital Services',
+          image: 'https://lmp-services.ca/images/logo-lmp.webp',
+          url: 'https://lmp-services.ca',
+          telephone: '+1-418-555-0199',
+          priceRange: '$$',
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: 'Québec',
+            addressRegion: 'QC',
+            addressCountry: 'CA',
+          },
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: 46.8139,
+            longitude: -71.2082,
+          },
+          openingHoursSpecification: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            opens: '09:00',
+            closes: '17:00',
+          },
+        },
+      ],
+    });
   }
 
   private loadFeaturedServices(): void {
