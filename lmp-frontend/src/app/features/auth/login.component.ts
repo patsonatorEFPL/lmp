@@ -279,7 +279,8 @@ export class LoginComponent {
       })
       .subscribe({
         next: (response: any) => {
-          const user = response.data ?? response;
+          const payload = response.data ?? response;
+          const user = payload.user ?? payload;
           this.authService.setUser({
             id: user.id,
             email: user.email,
@@ -293,6 +294,14 @@ export class LoginComponent {
             city: user.city,
             country: user.country,
           });
+
+          const redirectUrl = payload.redirectUrl as string | undefined;
+          if (redirectUrl?.includes('/oauth2/authorize')) {
+            // Full page reload so the session cookie is sent to the OAuth2 endpoint
+            window.location.href = redirectUrl;
+            return;
+          }
+
           const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'));
           if (back) {
             void this.router.navigateByUrl(back);

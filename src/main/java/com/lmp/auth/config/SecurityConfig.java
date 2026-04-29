@@ -202,6 +202,17 @@ public class SecurityConfig {
                         // Routes publiques (redirections vers Angular + endpoints backend)
                         .requestMatchers(
                                 "/",
+                                "/index.html",
+                                "/*.js",
+                                "/*.css",
+                                "/*.map",
+                                "/*.ico",
+                                "/*.png",
+                                "/*.jpg",
+                                "/*.jpeg",
+                                "/*.svg",
+                                "/*.woff2",
+                                "/images/**",
                                 "/about",
                                 "/services",
                                 "/contact",
@@ -213,8 +224,7 @@ public class SecurityConfig {
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
                                 "/login",
-                                "/backend-login",
-                                "/backend-login.html",
+
                                 "/forgot-password",
                                 "/reset-password",
                                 "/verify-email",
@@ -269,7 +279,7 @@ public class SecurityConfig {
 
                 // Configuration du formulaire de connexion (session-based auth pour backend)
                 .formLogin(form -> form
-                        .loginPage("/backend-login")
+                        .loginPage("/login")
                         .loginProcessingUrl("/perform-login")
                         .usernameParameter("email")
                         .passwordParameter("password")
@@ -279,7 +289,7 @@ public class SecurityConfig {
 
                 // Configuration OAuth2 Login (Google & Microsoft)
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/backend-login")
+                        .loginPage("/login")
                         .userInfoEndpoint(userInfo -> {
                             if (customOAuth2UserService != null) {
                                 userInfo.userService(customOAuth2UserService);
@@ -323,7 +333,6 @@ public class SecurityConfig {
                                 "/auth/register-and-checkout",
                                 "/appointments/create",
                                 "/appointments/available-slots",
-                                "/backend-login",
                                 "/perform-login"))
 
                 // CORS

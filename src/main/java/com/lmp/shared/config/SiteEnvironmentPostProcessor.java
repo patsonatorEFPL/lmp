@@ -41,19 +41,41 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
             return;
         }
 
+        boolean isLocal = "localhost".equals(host) || "127.0.0.1".equals(host);
+        String hostNoWww = host.startsWith("www.") ? host.substring(4) : host;
+
         Map<String, Object> derived = new HashMap<>();
 
         // URLs applicatives
         putIfAbsent(environment, derived, "app.base.url", siteUrl);
         putIfAbsent(environment, derived, "app.frontend.url", siteUrl);
         putIfAbsent(environment, derived, "company.website", siteUrl);
-        putIfAbsent(environment, derived, "app.oauth2.issuer-uri", siteUrl);
 
-        // CORS : en localhost autoriser tous les ports (dev), sinon domaine exact
-        String corsOrigins = "localhost".equals(host) || "127.0.0.1".equals(host)
-            ? "http://localhost:*"
-            : siteUrl;
+        // OAuth2 issuer : sous-domaine "auth.<host>" en non-local, sinon siteUrl
+        // Permet d'avoir auth.lmp-services.ca en prod et auth.dev.lmp-services.ca en test
+        // sans rien configurer manuellement.
+        String issuerUri = isLocal ? siteUrl : "https://auth." + hostNoWww;
+        putIfAbsent(environment, derived, "app.oauth2.issuer-uri", issuerUri);
+
+        // CORS : en localhost tout port permis ; sinon root + www + auth subdomain
+        String corsOrigins;
+        if (isLocal) {
+            corsOrigins = "http://localhost:*";
+        } else {
+            corsOrigins = "https://" + hostNoWww
+                    + ",https://www." + hostNoWww
+                    + ",https://auth." + hostNoWww;
+        }
         putIfAbsent(environment, derived, "app.cors.allowed-origins", corsOrigins);
+
+        // Frappe / ERPNext callback : dérivé de lmp.crm.url (par défaut crm.lmp-services.ca)
+        // permet à un environnement isolé de pointer vers une autre instance Frappe.
+        String crmUrl = environment.getProperty("lmp.crm.url");
+        if (crmUrl != null && !crmUrl.isBlank()) {
+            crmUrl = crmUrl.replaceAll("/+$", "");
+            putIfAbsent(environment, derived, "app.oauth2.erp.redirect-uri",
+                    crmUrl + "/api/method/frappe.integrations.oauth2_logins.custom/lmp_sso");
+        }
 
         // Emails dérivés du host
         putIfAbsent(environment, derived, "mail.from.noreply", "noreply@" + host);

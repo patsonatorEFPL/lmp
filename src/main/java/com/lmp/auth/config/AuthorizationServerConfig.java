@@ -118,7 +118,7 @@ public class AuthorizationServerConfig {
         http
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/backend-login"),
+                                new LoginUrlAuthenticationEntryPoint("/login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()));
 
