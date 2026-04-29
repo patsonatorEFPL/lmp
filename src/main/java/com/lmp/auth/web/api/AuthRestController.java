@@ -34,6 +34,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -75,7 +77,7 @@ public class AuthRestController {
 
     @PostMapping("/login")
     @Operation(summary = "Connexion", description = "Authentifie l'utilisateur et crée une session HTTP")
-    public ResponseEntity<ApiResponse<UserResponse>> login(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> login(
             @Valid @RequestBody LoginDto loginDto,
             HttpServletRequest request,
             HttpServletResponse response) {
@@ -97,8 +99,25 @@ public class AuthRestController {
 
             userService.updateLastLoginDate(user.getEmail());
 
-            logger.info("API login successful for: {}", user.getEmail());
-            return ResponseEntity.ok(ApiResponse.ok("Login successful", UserResponse.from(user)));
+            // Restore any saved request (e.g. /oauth2/authorize flow)
+            HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+            SavedRequest savedRequest = requestCache.getRequest(request, response);
+            String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : "/dashboard";
+            // Convert absolute URLs to relative so the browser stays on the same origin
+            // (important when served through a reverse proxy / tunnel)
+            try {
+                java.net.URI uri = new java.net.URI(redirectUrl);
+                redirectUrl = uri.getRawPath() + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
+            } catch (java.net.URISyntaxException e) {
+                // keep original relative URL
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("user", UserResponse.from(user));
+            data.put("redirectUrl", redirectUrl);
+
+            logger.info("API login successful for: {} — redirectUrl={}", user.getEmail(), redirectUrl);
+            return ResponseEntity.ok(ApiResponse.ok("Login successful", data));
 
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

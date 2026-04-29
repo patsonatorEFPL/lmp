@@ -1,10 +1,33 @@
 # ========================================
 # Dockerfile pour Dokploy Deployment
-# Application Spring Boot LMP - Java 21
+# Application Spring Boot LMP + Angular Frontend — Monolithique
 # ========================================
 
-# Étape 1: Build de l'application avec Java 21
-FROM maven:3.9.5-eclipse-temurin-21-alpine AS build
+# ----------------------------------------
+# Étape 0: Build Angular Frontend (CSR)
+# ----------------------------------------
+FROM node:20-alpine AS angular-build
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances du frontend (mise en cache Docker)
+COPY lmp-frontend/package.json lmp-frontend/package-lock.json ./
+RUN npm ci --legacy-peer-deps
+
+# Copier tout le code source du frontend
+COPY lmp-frontend/ .
+
+# Générer le client API OpenAPI (si openapi.json est présent)
+RUN if [ -f ng-openapi-gen.json ]; then npx ng-openapi-gen --config ng-openapi-gen.json; fi
+
+# Build de production Angular en mode CSR (pas SSR)
+# Le résultat va dans dist/lmp-frontend/browser/
+RUN npx ng build --configuration=production --ssr=false
+
+# ----------------------------------------
+# Étape 1: Build Spring Boot Backend
+# ----------------------------------------
+FROM maven:3.9.5-eclipse-temurin-21-alpine AS maven-build
 
 WORKDIR /app
 
@@ -12,21 +35,24 @@ WORKDIR /app
 COPY pom.xml .
 COPY .mvn .mvn
 COPY mvnw .
-
-# Donner les permissions d'exécution au wrapper Maven
 RUN chmod +x mvnw
 
 # Télécharger les dépendances (mise en cache des layers Docker)
 RUN ./mvnw dependency:go-offline -B
 
-# Copier le code source
+# Copier le code source Java
 COPY src ./src
 
-# Compiler l'application avec Java 21
+# Copier le build Angular dans les ressources statiques du backend
+# Spring Boot servira automatiquement ces fichiers depuis classpath:/static/
+COPY --from=angular-build /app/dist/lmp-frontend/browser/ ./src/main/resources/static/
+
+# Compiler l'application avec le frontend embarqué
 RUN ./mvnw clean package -DskipTests -B
 
-# ========================================
+# ----------------------------------------
 # Étape 2: Runtime optimisé avec Java 21
+# ----------------------------------------
 FROM eclipse-temurin:21-jre-alpine
 
 # Installation des outils nécessaires
@@ -48,7 +74,7 @@ RUN addgroup -g 1001 -S spring && \
 WORKDIR /app
 
 # Copier le JAR depuis l'étape de build
-COPY --from=build --chown=spring:spring /app/target/*.jar app.jar
+COPY --from=maven-build --chown=spring:spring /app/target/*.jar app.jar
 
 # Créer les répertoires nécessaires
 RUN mkdir -p /app/invoices /app/logs && \
