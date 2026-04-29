@@ -11,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -45,8 +46,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Laisse passer les ResponseStatusException levées intentionnellement
+     * (par ex. par FrontendRedirectController.marketingPage pour bloquer
+     * les pages marketing sur les sous-domaines auth.*) au resolver Spring
+     * built-in, qui respecte le statut HTTP demandé. Sans cela, le handler
+     * RuntimeException.class ci-dessous les avalerait et renverrait une
+     * vue d'erreur 500.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public void handleResponseStatus(ResponseStatusException ex) {
+        throw ex;
+    }
+
+    /**
      * Gère les erreurs de ressource non trouvée.
-     * 
+     *
      * @param ex L'exception de ressource non trouvée
      * @param model Le modèle pour la vue
      * @return La vue d'erreur 404
@@ -58,10 +72,10 @@ public class GlobalExceptionHandler {
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("errorCode", "404");
             model.addAttribute("returnUrl", "/");
-            
+
             return "error/404";
         }
-        
+
         // Pour les autres RuntimeException, rediriger vers l'erreur 500
         return handleGeneralException(ex, model);
     }
