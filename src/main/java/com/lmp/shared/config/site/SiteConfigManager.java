@@ -201,13 +201,17 @@ public class SiteConfigManager {
         }
         siteUrl = siteUrl.replaceAll("/+$", "");
         String host = extractHost(siteUrl);
+        boolean isLocal = "localhost".equals(host) || "127.0.0.1".equals(host);
+        String hostNoWww = host.startsWith("www.") ? host.substring(4) : host;
 
         derived.put("app.base.url", siteUrl);
         derived.put("app.frontend.url", siteUrl);
         derived.put("company.website", siteUrl);
-        derived.put("app.oauth2.issuer-uri", siteUrl);
+        derived.put("app.oauth2.issuer-uri", isLocal ? siteUrl : "https://auth." + hostNoWww);
         derived.put("app.cors.allowed-origins",
-            ("localhost".equals(host) || "127.0.0.1".equals(host)) ? "http://localhost:*" : siteUrl);
+            isLocal
+                ? "http://localhost:*"
+                : "https://" + hostNoWww + ",https://www." + hostNoWww + ",https://auth." + hostNoWww);
 
         derived.put("mail.from.noreply", "noreply@" + host);
         derived.put("mail.from.support", "support@" + host);
