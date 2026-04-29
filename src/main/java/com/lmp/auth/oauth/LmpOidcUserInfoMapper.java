@@ -1,9 +1,11 @@
 package com.lmp.auth.oauth;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
@@ -44,12 +46,15 @@ public class LmpOidcUserInfoMapper implements Function<OidcUserInfoAuthenticatio
         claims.put("name", user.getDisplayName());
         claims.put("given_name", user.getFirstName());
         claims.put("family_name", user.getLastName());
-        claims.put("picture", null);
-        claims.put("gender", user.getGender());
-        claims.put("phone_number", user.getPhone());
-        claims.put("roles", user.getRoles().stream()
+        if (user.getGender() != null && !user.getGender().isBlank()) {
+            claims.put("gender", user.getGender());
+        }
+        if (user.getPhone() != null && !user.getPhone().isBlank()) {
+            claims.put("phone_number", user.getPhone());
+        }
+        claims.put("roles", new ArrayList<>(user.getRoles().stream()
                 .map(role -> role.getName())
-                .toList());
+                .collect(Collectors.toList())));
 
         if (user.getExternalCustomerId() != null && !user.getExternalCustomerId().isBlank()) {
             claims.put("lmp_external_customer_id", user.getExternalCustomerId());

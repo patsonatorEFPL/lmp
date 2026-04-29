@@ -198,7 +198,7 @@ public class EmailService {
     }
 
     /**
-     * Envoie un email de support (From et Reply-To = support@lmp-services.ca)
+     * Envoie un email de support (From et Reply-To = support@domaine.com)
      */
     public void sendSupportEmail(String to, String subject, String body) {
         try {
@@ -222,7 +222,7 @@ public class EmailService {
 
     /**
      * Envoie un email de bienvenue HTML avec template
-     * Utilise TOUJOURS noreply@lmp-services.ca comme expéditeur ET Reply-To
+     * Utilise TOUJOURS noreply@domaine.com comme expéditeur ET Reply-To
      */
     public void sendWelcomeEmail(String to, String firstName) {
         logger.info("📞 Email de bienvenue - De: {} vers: {} (Prénom: {})", 

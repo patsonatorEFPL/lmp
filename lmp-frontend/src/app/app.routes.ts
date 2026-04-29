@@ -98,6 +98,13 @@ export const routes: Routes = [
         (m) => m.ResetPasswordComponent,
       ),
   },
+  {
+    path: 'accept-invitation',
+    loadComponent: () =>
+      import('./features/auth/accept-invitation.component').then(
+        (m) => m.AcceptInvitationComponent,
+      ),
+  },
 
   // Checkout for an existing order (must be before :offerId wildcard)
   {
@@ -263,6 +270,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/admin-users.component').then(
             (m) => m.AdminUsersComponent,
+          ),
+      },
+      {
+        path: 'staff-invitations',
+        loadComponent: () =>
+          import('./features/admin/admin-staff-invitations.component').then(
+            (m) => m.AdminStaffInvitationsComponent,
           ),
       },
       {

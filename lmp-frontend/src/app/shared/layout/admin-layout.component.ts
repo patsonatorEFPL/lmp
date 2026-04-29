@@ -25,6 +25,7 @@ import {
   Receipt,
   FolderKanban,
   LifeBuoy,
+  Mail,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminSseService } from '../../core/services/admin-sse.service';
@@ -249,6 +250,23 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
                 [ngClass]="sidebarCollapsed() ? 'right-1 top-1' : 'right-2 top-1.5'"
                 >{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span
               >
+            }
+          </a>
+          <a
+            routerLink="/admin/staff-invitations"
+            [routerLinkActive]="sidebarLinkActive"
+            class="relative my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'Invitations' : undefined"
+            title="Invitations"
+          >
+            <lucide-icon [img]="MailIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">Invitations</span>
             }
           </a>
           <a
@@ -556,6 +574,12 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
                 <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span>
               }
             </a>
+            <a routerLink="/admin/staff-invitations" [routerLinkActive]="sidebarLinkActive"
+              class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="MailIcon" [size]="16"></lucide-icon>
+              <span class="truncate">Invitations</span>
+            </a>
             <a routerLink="/admin/orders" [routerLinkActive]="sidebarLinkActive"
               class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false); adminSse.badgeOrders.set(0)">
@@ -803,6 +827,7 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly InvoicesIcon = Receipt;
   readonly ProjectsIcon = FolderKanban;
   readonly TicketsIcon = LifeBuoy;
+  readonly MailIcon = Mail;
 
   /** Lien actif : fond blanc, léger relief (style liste / navigation) */
   readonly sidebarLinkActive =

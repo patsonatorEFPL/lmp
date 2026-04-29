@@ -96,7 +96,7 @@ export class BlogDetailComponent implements OnInit {
           headline: p.title,
           description: p.excerpt,
           image: p.coverImage ? [p.coverImage] : undefined,
-          url: `https://lmp-services.ca/blog/${p.slug}`,
+          url: `${this.seo.baseUrl}/blog/${p.slug}`,
           datePublished: p.publishedAt,
           dateModified: p.updatedAt ?? p.publishedAt,
           author: p.authorName
@@ -107,7 +107,7 @@ export class BlogDetailComponent implements OnInit {
             name: 'LMP Digital Services',
             logo: {
               '@type': 'ImageObject',
-              url: 'https://lmp-services.ca/images/logo-lmp.webp',
+              url: `${this.seo.baseUrl}/images/logo-lmp.webp`,
             },
           },
         });

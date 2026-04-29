@@ -17,6 +17,7 @@ import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncProperties;
 import com.lmp.integration.sync.mapper.AddressSyncMapper;
 import com.lmp.integration.sync.mapper.CustomerSyncMapper;
+import com.lmp.integration.sync.mapper.ErpUserSyncMapper;
 import com.lmp.integration.sync.mapper.ItemPriceSyncMapper;
 import com.lmp.integration.sync.mapper.ItemSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
@@ -93,6 +94,7 @@ public class ErpEventListener {
     private final TaskSyncMapper taskSyncMapper;
     private final TicketSyncMapper ticketSyncMapper;
     private final ItemPriceSyncMapper itemPriceSyncMapper;
+    private final ErpUserSyncMapper erpUserSyncMapper;
 
     public ErpEventListener(SyncOutboundService syncOutboundService,
                             SyncProperties syncProperties,
@@ -113,7 +115,8 @@ public class ErpEventListener {
                             ProjectSyncMapper projectSyncMapper,
                             TaskSyncMapper taskSyncMapper,
                             TicketSyncMapper ticketSyncMapper,
-                            ItemPriceSyncMapper itemPriceSyncMapper) {
+                            ItemPriceSyncMapper itemPriceSyncMapper,
+                            ErpUserSyncMapper erpUserSyncMapper) {
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
         this.externalClient = externalClient;
@@ -134,6 +137,7 @@ public class ErpEventListener {
         this.taskSyncMapper = taskSyncMapper;
         this.ticketSyncMapper = ticketSyncMapper;
         this.itemPriceSyncMapper = itemPriceSyncMapper;
+        this.erpUserSyncMapper = erpUserSyncMapper;
     }
 
     @Async
@@ -301,14 +305,13 @@ public class ErpEventListener {
     }
 
     /**
-     * Provisioning d'un nouveau Customer + Contact pour un User inscrit.
+     * Provisioning d'un nouveau User inscrit.
+     * <ul>
+     *   <li>STAFF/ADMIN → DocType "User" ERPNext (login)</li>
+     *   <li>USER classique → DocType "Customer" ERPNext (compte client)</li>
+     * </ul>
      */
     private void handleUserProvisioning(LmpBusinessEvent event) {
-        if (!syncProperties.getFeatures().isUserProvisioning()) {
-            logger.debug("🔇 [SYNC] User provisioning disabled — skipping");
-            return;
-        }
-
         Optional<User> userOpt = userRepository.findById(event.entityId());
         if (userOpt.isEmpty()) {
             logger.warn("⚠️ [SYNC] User {} not found for provisioning", event.entityId());
@@ -316,8 +319,20 @@ public class ErpEventListener {
         }
 
         User user = userOpt.get();
-        Map<String, Object> customerPayload = customerSyncMapper.toCreatePayload(user);
 
+        if (user.isStaff()) {
+            provisionErpUser(user);
+        } else {
+            provisionCustomer(user);
+        }
+    }
+
+    private void provisionCustomer(User user) {
+        if (!syncProperties.getFeatures().isUserProvisioning()) {
+            logger.debug("🔇 [SYNC] Customer provisioning disabled — skipping");
+            return;
+        }
+        Map<String, Object> customerPayload = customerSyncMapper.toCreatePayload(user);
         syncOutboundService.syncEntity(
                 SyncEntityType.CUSTOMER,
                 "CREATED",
@@ -327,12 +342,25 @@ public class ErpEventListener {
         );
     }
 
+    private void provisionErpUser(User user) {
+        if (!syncProperties.getFeatures().isStaffProvisioning()) {
+            logger.debug("🔇 [SYNC] Staff provisioning disabled — skipping");
+            return;
+        }
+        Map<String, Object> userPayload = erpUserSyncMapper.toCreatePayload(user);
+        syncOutboundService.syncEntity(
+                SyncEntityType.ERP_USER,
+                "CREATED",
+                user.getId(),
+                null,
+                userPayload
+        );
+    }
+
     /**
-     * Mise à jour d'un Customer existant pour un User modifié.
+     * Mise à jour d'un User : Customer (clients) ou ERPNext User (collaborateurs).
      */
     private void handleUserUpdate(LmpBusinessEvent event) {
-        if (!syncProperties.getFeatures().isUserProvisioning()) return;
-
         Optional<User> userOpt = userRepository.findById(event.entityId());
         if (userOpt.isEmpty()) {
             logger.warn("⚠️ [SYNC] User {} not found for update", event.entityId());
@@ -341,7 +369,16 @@ public class ErpEventListener {
 
         User user = userOpt.get();
 
-        // Si pas encore provisionné, créer au lieu de mettre à jour
+        if (user.isStaff()) {
+            updateErpUser(user);
+        } else {
+            updateCustomer(user);
+        }
+    }
+
+    private void updateCustomer(User user) {
+        if (!syncProperties.getFeatures().isUserProvisioning()) return;
+
         if (user.getExternalCustomerId() == null) {
             Map<String, Object> createPayload = customerSyncMapper.toCreatePayload(user);
             syncOutboundService.syncEntity(SyncEntityType.CUSTOMER, "CREATED", user.getId(), null, createPayload);
@@ -357,8 +394,26 @@ public class ErpEventListener {
                 updatePayload
         );
 
-        // Synchroniser l'adresse si le user en a une
         syncUserAddress(user);
+    }
+
+    private void updateErpUser(User user) {
+        if (!syncProperties.getFeatures().isStaffProvisioning()) return;
+
+        if (user.getExternalErpUserId() == null) {
+            Map<String, Object> createPayload = erpUserSyncMapper.toCreatePayload(user);
+            syncOutboundService.syncEntity(SyncEntityType.ERP_USER, "CREATED", user.getId(), null, createPayload);
+            return;
+        }
+
+        Map<String, Object> updatePayload = erpUserSyncMapper.toUpdatePayload(user);
+        syncOutboundService.syncEntity(
+                SyncEntityType.ERP_USER,
+                "UPDATED",
+                user.getId(),
+                user.getExternalErpUserId(),
+                updatePayload
+        );
     }
 
     /**
@@ -800,11 +855,22 @@ public class ErpEventListener {
      * L'ordre FIFO de la queue garantit que les enfants sont traités avant le parent.
      */
     private void handleUserDelete(LmpBusinessEvent event) {
-        if (!syncProperties.getFeatures().isUserProvisioning()) return;
-
-        // Le payload doit contenir l'externalCustomerId (set avant la suppression)
         Map<String, Object> payload = event.payload();
+        String externalErpUserId = payload != null ? (String) payload.get("externalErpUserId") : null;
         String externalCustomerId = payload != null ? (String) payload.get("externalCustomerId") : null;
+
+        // Cas collaborateur : supprimer le User ERPNext s'il existe
+        if (externalErpUserId != null && !externalErpUserId.isBlank()
+                && syncProperties.getFeatures().isStaffProvisioning()) {
+            logger.info("🗑️ [SYNC] Deleting ERPNext User '{}' for User {}",
+                    externalErpUserId, event.entityId());
+            syncOutboundService.enqueue(
+                    SyncEntityType.ERP_USER, "DELETED",
+                    event.entityId(), externalErpUserId, Map.of()
+            );
+        }
+
+        if (!syncProperties.getFeatures().isUserProvisioning()) return;
 
         if (externalCustomerId == null || externalCustomerId.isBlank()) {
             logger.debug("📋 [SYNC] User {} has no externalCustomerId — nothing to delete externally",

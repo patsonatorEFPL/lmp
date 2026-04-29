@@ -19,25 +19,25 @@ class MailAddressConfigTest {
         mailAddressConfig = new MailAddressConfig();
         
         // Configuration des propriétés comme elles seraient chargées depuis application.properties
-        ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@lmp-services.ca");
-        ReflectionTestUtils.setField(mailAddressConfig, "support", "support@lmp-services.ca");
-        ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@lmp-services.ca");
+        ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@example.com");
+        ReflectionTestUtils.setField(mailAddressConfig, "support", "support@example.com");
+        ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@example.com");
         ReflectionTestUtils.setField(mailAddressConfig, "name", "LMP Digital Services");
     }
 
     @Test
     void testGetNoreply() {
-        assertEquals("noreply@lmp-services.ca", mailAddressConfig.getNoreply());
+        assertEquals("noreply@example.com", mailAddressConfig.getNoreply());
     }
 
     @Test
     void testGetSupport() {
-        assertEquals("support@lmp-services.ca", mailAddressConfig.getSupport());
+        assertEquals("support@example.com", mailAddressConfig.getSupport());
     }
 
     @Test
     void testGetReplyToSupport() {
-        assertEquals("noreply@lmp-services.ca", mailAddressConfig.getReplyToSupport());
+        assertEquals("noreply@example.com", mailAddressConfig.getReplyToSupport());
     }
 
     @Test
@@ -47,18 +47,18 @@ class MailAddressConfigTest {
 
     @Test
     void testIsNoReplyAddress() {
-        assertTrue(mailAddressConfig.isNoReplyAddress("noreply@lmp-services.ca"));
-        assertTrue(mailAddressConfig.isNoReplyAddress("NOREPLY@lmp-services.ca")); // Case insensitive
-        assertFalse(mailAddressConfig.isNoReplyAddress("support@lmp-services.ca"));
+        assertTrue(mailAddressConfig.isNoReplyAddress("noreply@example.com"));
+        assertTrue(mailAddressConfig.isNoReplyAddress("NOREPLY@example.com")); // Case insensitive
+        assertFalse(mailAddressConfig.isNoReplyAddress("support@example.com"));
         assertFalse(mailAddressConfig.isNoReplyAddress("lmp.assistance@gmail.com"));
         assertFalse(mailAddressConfig.isNoReplyAddress(null));
     }
 
     @Test
     void testIsSupportAddress() {
-        assertTrue(mailAddressConfig.isSupportAddress("support@lmp-services.ca"));
-        assertTrue(mailAddressConfig.isSupportAddress("SUPPORT@lmp-services.ca")); // Case insensitive
-        assertFalse(mailAddressConfig.isSupportAddress("noreply@lmp-services.ca"));
+        assertTrue(mailAddressConfig.isSupportAddress("support@example.com"));
+        assertTrue(mailAddressConfig.isSupportAddress("SUPPORT@example.com")); // Case insensitive
+        assertFalse(mailAddressConfig.isSupportAddress("noreply@example.com"));
         assertFalse(mailAddressConfig.isSupportAddress("lmp.assistance@gmail.com"));
         assertFalse(mailAddressConfig.isSupportAddress(null));
     }
@@ -66,22 +66,22 @@ class MailAddressConfigTest {
     @Test
     void testGetAppropriateFromAddress() {
         // Email transactionnel -> noreply
-        assertEquals("noreply@lmp-services.ca", 
+        assertEquals("noreply@example.com", 
                     mailAddressConfig.getAppropriateFromAddress(true));
         
         // Email support -> support
-        assertEquals("support@lmp-services.ca", 
+        assertEquals("support@example.com", 
                     mailAddressConfig.getAppropriateFromAddress(false));
     }
 
     @Test
     void testGetAppropriateReplyTo() {
         // Email transactionnel -> Reply-To cohérent avec From (noreply)
-        assertEquals("noreply@lmp-services.ca", 
+        assertEquals("noreply@example.com", 
                     mailAddressConfig.getAppropriateReplyTo(true));
         
         // Email support -> Reply-To cohérent avec From (support)
-        assertEquals("support@lmp-services.ca", 
+        assertEquals("support@example.com", 
                     mailAddressConfig.getAppropriateReplyTo(false));
     }
 
@@ -89,8 +89,8 @@ class MailAddressConfigTest {
     void testToString() {
         String result = mailAddressConfig.toString();
         assertNotNull(result);
-        assertTrue(result.contains("noreply@lmp-services.ca"));
-        assertTrue(result.contains("support@lmp-services.ca"));
+        assertTrue(result.contains("noreply@example.com"));
+        assertTrue(result.contains("support@example.com"));
         assertTrue(result.contains("LMP Digital Services"));
     }
 
@@ -99,9 +99,9 @@ class MailAddressConfigTest {
         // Test avec une instance par défaut
         MailAddressConfig defaultConfig = new MailAddressConfig();
         
-        assertEquals("noreply@lmp-services.ca", defaultConfig.getNoreply());
-        assertEquals("support@lmp-services.ca", defaultConfig.getSupport());
-        assertEquals("noreply@lmp-services.ca", defaultConfig.getReplyToSupport());
+        assertEquals("noreply@example.com", defaultConfig.getNoreply());
+        assertEquals("support@example.com", defaultConfig.getSupport());
+        assertEquals("noreply@example.com", defaultConfig.getReplyToSupport());
         assertEquals("LMP Digital Services", defaultConfig.getName());
     }
 
@@ -109,9 +109,9 @@ class MailAddressConfigTest {
     void testEmailValidationScenarios() {
         // Test avec différents formats d'email
         String[] validNoReplyEmails = {
-            "noreply@lmp-services.ca",
-            "NoReply@lmp-services.ca", 
-            "NOREPLY@lmp-services.ca"
+            "noreply@example.com",
+            "NoReply@example.com", 
+            "NOREPLY@example.com"
         };
         
         for (String email : validNoReplyEmails) {
@@ -120,9 +120,9 @@ class MailAddressConfigTest {
         }
         
         String[] validSupportEmails = {
-            "support@lmp-services.ca",
-            "Support@lmp-services.ca",
-            "SUPPORT@lmp-services.ca"
+            "support@example.com",
+            "Support@example.com",
+            "SUPPORT@example.com"
         };
         
         for (String email : validSupportEmails) {

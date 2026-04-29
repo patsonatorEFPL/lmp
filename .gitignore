@@ -141,3 +141,39 @@ test_*.json
 
 # OAuth2 JWK keys (generated locally)
 lmp-oauth2-jwk*.json
+
+### Root-level debug/temp artifacts (scripts, screenshots, logs, binaries) ###
+# Shell debug scripts at root
+/check_*.sh
+/get_*.sh
+/trace_*.sh
+/update_frappe*.sh
+/find_frappe*.sh
+/describe_*.sh
+# Python test/check scripts at root
+/test_*.py
+/check_*.py
+/e2e_verify.py
+# Screenshots at root
+/*.png
+# Runtime logs / tunnels
+/ngrok.log
+/tunnel*.log
+/backend.log
+/backend.log.old
+/backend.err
+/backend.err.old
+/backend2.log
+/backend2.err
+# Debug SQL at root
+/update_password.sql
+/check_latest_error.sql
+# Compiled Java at root (debug)
+/CheckHash.class
+/CheckHash.java
+# Binaries at root
+/cloudflared.exe
+# Playwright MCP temp
+/.playwright-mcp/
+# MVN simulate crash log
+/mvn-simulate-crash.log

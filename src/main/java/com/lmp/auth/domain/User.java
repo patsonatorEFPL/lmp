@@ -254,6 +254,9 @@ public class User {
     @Column(name = "external_address_id", length = 140)
     private String externalAddressId;
 
+    @Column(name = "external_erp_user_id", length = 140)
+    private String externalErpUserId;
+
     public String getExternalCustomerId() { return externalCustomerId; }
     public void setExternalCustomerId(String externalCustomerId) { this.externalCustomerId = externalCustomerId; }
 
@@ -262,4 +265,15 @@ public class User {
 
     public String getExternalAddressId() { return externalAddressId; }
     public void setExternalAddressId(String externalAddressId) { this.externalAddressId = externalAddressId; }
+
+    public String getExternalErpUserId() { return externalErpUserId; }
+    public void setExternalErpUserId(String externalErpUserId) { this.externalErpUserId = externalErpUserId; }
+
+    public boolean isStaff() {
+        if (roles == null) return false;
+        return roles.stream().anyMatch(r -> {
+            String name = r.getName();
+            return "STAFF".equals(name) || "ADMIN".equals(name);
+        });
+    }
 }

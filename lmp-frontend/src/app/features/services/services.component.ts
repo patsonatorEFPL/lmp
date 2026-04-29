@@ -326,7 +326,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: 'Services LMP Digital Services',
-      url: 'https://lmp-services.ca/services',
+      url: `${this.seo.baseUrl}/services`,
       itemListElement: [
         {
           '@type': 'ListItem',

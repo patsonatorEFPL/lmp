@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Title, Meta } from '@angular/platform-browser';
 import { DOCUMENT } from '@angular/common';
+import { SiteConfigService } from './site-config.service';
 
 export interface SeoConfig {
   title: string;
@@ -11,8 +12,6 @@ export interface SeoConfig {
   ogType?: string;
 }
 
-const BASE_URL = 'https://lmp-services.ca';
-const DEFAULT_OG_IMAGE = `${BASE_URL}/images/logo-lmp.webp`;
 const SITE_NAME = 'LMP Digital Services';
 
 @Injectable({ providedIn: 'root' })
@@ -20,6 +19,9 @@ export class SeoService {
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
   private readonly document = inject(DOCUMENT);
+  private readonly siteConfig = inject(SiteConfigService);
+
+  readonly baseUrl = this.siteConfig.baseUrl;
 
   /**
    * Update all SEO meta tags for the current page.
@@ -34,8 +36,8 @@ export class SeoService {
       : `${config.title} | ${SITE_NAME}`;
     const fullUrl = config.url.startsWith('http')
       ? config.url
-      : `${BASE_URL}${config.url}`;
-    const ogImage = config.ogImage ?? DEFAULT_OG_IMAGE;
+      : `${this.siteConfig.baseUrl}${config.url}`;
+    const ogImage = config.ogImage ?? `${this.siteConfig.baseUrl}/images/logo-lmp.webp`;
 
     // Title
     this.titleService.setTitle(fullTitle);
