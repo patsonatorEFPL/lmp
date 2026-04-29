@@ -97,9 +97,12 @@ public class SecurityConfig {
                                 "/api/v1/auth/resend-verification",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
+                                "/api/v1/auth/staff-invitations/preview",
+                                "/api/v1/auth/staff-invitations/accept",
                                 "/api/v1/services/**",
                                 "/api/v1/contact",
-                                "/api/v1/appointments/**")
+                                "/api/v1/appointments/**",
+                                "/api/v1/config")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/guest-order/preview/**")
                         .permitAll()
@@ -147,6 +150,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
+                                "/api/v1/auth/staff-invitations/accept",
                                 "/api/v1/contact",
                                 "/api/v1/appointments",
                                 "/api/v1/payments/guest-order/prepare"))
@@ -209,6 +213,8 @@ public class SecurityConfig {
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
                                 "/login",
+                                "/backend-login",
+                                "/backend-login.html",
                                 "/forgot-password",
                                 "/reset-password",
                                 "/verify-email",
@@ -263,7 +269,7 @@ public class SecurityConfig {
 
                 // Configuration du formulaire de connexion (session-based auth pour backend)
                 .formLogin(form -> form
-                        .loginPage("/login")
+                        .loginPage("/backend-login")
                         .loginProcessingUrl("/perform-login")
                         .usernameParameter("email")
                         .passwordParameter("password")
@@ -273,7 +279,7 @@ public class SecurityConfig {
 
                 // Configuration OAuth2 Login (Google & Microsoft)
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")
+                        .loginPage("/backend-login")
                         .userInfoEndpoint(userInfo -> {
                             if (customOAuth2UserService != null) {
                                 userInfo.userService(customOAuth2UserService);
@@ -316,7 +322,9 @@ public class SecurityConfig {
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
                                 "/appointments/create",
-                                "/appointments/available-slots"))
+                                "/appointments/available-slots",
+                                "/backend-login",
+                                "/perform-login"))
 
                 // CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));

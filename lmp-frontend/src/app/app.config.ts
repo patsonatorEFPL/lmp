@@ -16,6 +16,7 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 import { routes } from './app.routes';
 import { credentialsInterceptor, csrfInterceptor, errorInterceptor } from './core/interceptors';
 import { ThemeService, AuthService } from './core/services';
+import { SiteConfigService, initSiteConfig } from './core/services/site-config.service';
 
 registerLocaleData(localeFr);
 
@@ -33,6 +34,7 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([credentialsInterceptor, csrfInterceptor, errorInterceptor]),
     ),
+    provideAppInitializer(() => inject(SiteConfigService).load()),
     provideAppInitializer(() => {
       inject(ThemeService).init();
     }),

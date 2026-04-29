@@ -38,10 +38,15 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -113,7 +118,7 @@ public class AuthorizationServerConfig {
         http
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                new LoginUrlAuthenticationEntryPoint("/backend-login"),
                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)))
                 .oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()));
 
@@ -178,7 +183,7 @@ public class AuthorizationServerConfig {
                     .scope(OidcScopes.EMAIL)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
-                            .requireProofKey(true)
+                            .requireProofKey(false)
                             .build())
                     .tokenSettings(TokenSettings.builder()
                             .accessTokenTimeToLive(Duration.ofHours(4))
@@ -197,13 +202,39 @@ public class AuthorizationServerConfig {
     @Bean
     public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
                                                             RegisteredClientRepository clientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate, clientRepository);
+        // Use in-memory in dev to avoid Jackson serialization issues with immutable collections
+        OAuth2AuthorizationService delegate = new InMemoryOAuth2AuthorizationService();
+        return new OAuth2AuthorizationService() {
+            @Override
+            public void save(OAuth2Authorization authorization) {
+                var code = authorization.getToken(OAuth2AuthorizationCode.class);
+                logger.info(">>> AUTH-SERVICE SAVE id={} code={} principal={}",
+                    authorization.getId(),
+                    code != null ? code.getToken().getTokenValue() : null,
+                    authorization.getPrincipalName());
+                delegate.save(authorization);
+            }
+            @Override
+            public void remove(OAuth2Authorization authorization) {
+                delegate.remove(authorization);
+            }
+            @Override
+            public OAuth2Authorization findById(String id) {
+                return delegate.findById(id);
+            }
+            @Override
+            public OAuth2Authorization findByToken(String token, OAuth2TokenType tokenType) {
+                OAuth2Authorization result = delegate.findByToken(token, tokenType);
+                logger.info(">>> AUTH-SERVICE FIND token={} type={} found={}", token, tokenType, result != null);
+                return result;
+            }
+        };
     }
 
     @Bean
     public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
                                                                          RegisteredClientRepository clientRepository) {
-        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, clientRepository);
+        return new InMemoryOAuth2AuthorizationConsentService();
     }
 
     @Bean
@@ -260,7 +291,7 @@ public class AuthorizationServerConfig {
                 } else {
                     tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
                 }
-                Files.writeString(tempFile, JSONObjectUtils.toJSONString(jwkSet.toJSONObject()));
+                Files.writeString(tempFile, JSONObjectUtils.toJSONString(jwkSet.toJSONObject(false)));
                 Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 logger.info("Nouveau JWK généré et sauvegardé dans : {}", path.toAbsolutePath());
             } catch (IOException e) {

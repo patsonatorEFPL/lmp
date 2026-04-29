@@ -1,7 +1,9 @@
 package com.lmp.auth.oauth;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
@@ -51,10 +53,10 @@ public class LmpOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEncodi
         claims.claim("name", user.getDisplayName());
         claims.claim("given_name", user.getFirstName());
         claims.claim("family_name", user.getLastName());
-        claims.claim("picture", null);
-        claims.claim("roles", user.getRoles().stream()
+        // picture claim omitted — Frappe does not require it
+        claims.claim("roles", new ArrayList<>(user.getRoles().stream()
                 .map(role -> role.getName())
-                .toList());
+                .collect(Collectors.toList())));
         claims.claim("lmp_user_id", user.getId().toString());
 
         if (user.getExternalCustomerId() != null && !user.getExternalCustomerId().isBlank()) {

@@ -35,12 +35,11 @@ export function app(): ReturnType<typeof express> {
   const server = express();
   // Pour que req.ip reflète X-Forwarded-For / X-Real-IP derrière Traefik, Caddy, etc.
   server.set('trust proxy', true);
+  const allowedHosts = process.env['ALLOWED_HOSTS']
+    ? process.env['ALLOWED_HOSTS'].split(',').map(h => h.trim())
+    : ['localhost'];
   const commonEngine = new CommonEngine({
-    allowedHosts: [
-      'localhost',
-      'lmp-services.ca',
-      'dev.lmp-services.ca',
-    ],
+    allowedHosts,
   });
 
   /**

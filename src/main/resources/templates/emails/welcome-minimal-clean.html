@@ -49,7 +49,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td align="center" style="padding:8px 0 32px;">
-                                        <a th:href="${frontendUrl + '/login'}" href="https://lmp-services.ca/login"
+                                        <a th:href="${frontendUrl + '/login'}" href="#"
                                            style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
                                             Se connecter
                                         </a>
@@ -102,9 +102,9 @@
                             <div style="background-color:#f0f4ff;border-radius:8px;padding:16px;text-align:center;">
                                 <div style="font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:6px;">Besoin d'aide ?</div>
                                 <span style="font-size:13px;color:#4b5563;">
-                                    <a th:href="'mailto:' + ${companyEmail}" href="mailto:support@lmp-services.ca" style="color:#4f6df5;text-decoration:none;" th:text="${companyEmail}">support@lmp-services.ca</a>
+                                    <a th:href="'mailto:' + ${companyEmail}" href="mailto:support@example.com" style="color:#4f6df5;text-decoration:none;" th:text="${companyEmail}">support@example.com</a>
                                     &nbsp;·&nbsp;
-                                    <a th:href="${companyWebsite}" href="https://lmp-services.ca" style="color:#4f6df5;text-decoration:none;" th:text="${companyWebsite.replace('https://', '')}">lmp-services.ca</a>
+                                    <a th:href="${companyWebsite}" href="#" style="color:#4f6df5;text-decoration:none;" th:text="${companyWebsite.replace('https://', '')}">Site web</a>
                                 </span>
                             </div>
                         </td>

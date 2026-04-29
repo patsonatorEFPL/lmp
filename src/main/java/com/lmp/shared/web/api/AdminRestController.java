@@ -282,6 +282,7 @@ public class AdminRestController {
         String lastName = data.get("lastName") != null ? ((String) data.get("lastName")).trim() : null;
         String password = data.get("password") != null ? (String) data.get("password") : null;
         boolean admin = Boolean.TRUE.equals(data.get("admin"));
+        boolean staff = Boolean.TRUE.equals(data.get("staff"));
 
         // --- Validation AVANT toute opération transactionnelle ---
         if (email == null || email.isEmpty()) {
@@ -313,12 +314,25 @@ public class AdminRestController {
 
             User newUser = authService.registerUser(registerDto);
 
-            // Grant admin role if requested
-            if (admin) {
-                User actor = userService.findByEmail(authentication.getName())
+            User actor = null;
+            if (admin || staff) {
+                actor = userService.findByEmail(authentication.getName())
                         .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
+            }
+            if (admin) {
                 userService.setUserAdminRole(newUser.getId(), true, actor.getId());
             }
+            if (staff) {
+                userService.setUserStaffRole(newUser.getId(), true, actor.getId());
+            }
+
+            // Publier l'événement de provisioning. Le routage Customer vs ERPNext User
+            // est géré dans ErpEventListener selon les rôles du user (STAFF/ADMIN → User).
+            Map<String, Object> regPl = new HashMap<>();
+            regPl.put(BusinessEventPayloadKeys.EMAIL, newUser.getEmail());
+            regPl.put("displayName", newUser.getDisplayName() != null ? newUser.getDisplayName() : newUser.getEmail());
+            regPl.put("createdBy", "admin");
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "admin", newUser.getId(), regPl));
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Utilisateur créé : " + email, UserResponse.from(newUser)));
@@ -824,7 +838,7 @@ public class AdminRestController {
                 emailVars.put("customerName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
                 emailVars.put("order", order);
                 emailVars.put("companyName", "LMP Digital Services");
-                emailVars.put("frontendUrl", "https://lmp-services.ca");
+                emailVars.put("frontendUrl", frontendUrl);
                 emailVars.put("currentDate", LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
 
                 emailService.sendHtmlEmail(

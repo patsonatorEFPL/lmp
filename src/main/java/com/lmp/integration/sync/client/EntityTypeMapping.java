@@ -29,7 +29,8 @@ public class EntityTypeMapping {
             Map.entry(SyncEntityType.COMMUNICATION, "Communication"),
             Map.entry(SyncEntityType.NOTIFICATION, "Notification Log"),
             Map.entry(SyncEntityType.QUOTATION, "Quotation"),
-            Map.entry(SyncEntityType.ADDRESS, "Address")
+            Map.entry(SyncEntityType.ADDRESS, "Address"),
+            Map.entry(SyncEntityType.ERP_USER, "User")
     );
 
     /**

@@ -281,13 +281,13 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       '@context': 'https://schema.org',
       '@type': 'ContactPage',
       name: 'Contact — LMP Digital Services',
-      url: 'https://lmp-services.ca/contact',
+      url: `${this.seo.baseUrl}/contact`,
       description: 'Contactez LMP Digital Services pour une consultation SEO gratuite et sans engagement.',
       mainEntity: {
         '@type': 'Organization',
         name: 'LMP Digital Services',
-        url: 'https://lmp-services.ca',
-        logo: 'https://lmp-services.ca/images/logo-lmp.webp',
+        url: this.seo.baseUrl,
+        logo: `${this.seo.baseUrl}/images/logo-lmp.webp`,
         contactPoint: {
           '@type': 'ContactPoint',
           telephone: '+1-418-555-0199',

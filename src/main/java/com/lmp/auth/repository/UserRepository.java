@@ -53,4 +53,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<User> findByRoleName(@Param("roleName") String roleName);
 
     Optional<User> findByExternalCustomerId(String externalCustomerId);
+
+    Optional<User> findByExternalErpUserId(String externalErpUserId);
 }

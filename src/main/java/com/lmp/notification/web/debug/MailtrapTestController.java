@@ -164,7 +164,7 @@ public class MailtrapTestController {
             String htmlContent = String.format("""
                 <h2>%s</h2>
                 <p>%s</p>
-                <p><strong>Envoyé depuis:</strong> support@lmp-services.ca</p>
+                <p><strong>Envoyé depuis:</strong> support@domaine-configuré.com</p>
                 <p><strong>Heure:</strong> %s</p>
                 <hr>
                 <p><em>Email envoyé via Mailtrap SDK officiel pour test</em></p>

@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -102,6 +103,18 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
             // Continue avec la redirection normale même en cas d'erreur
         }
         
+        // Vérifier s'il y a une requête sauvegardée (ex: /oauth2/authorize en flow SSO)
+        Object savedRequestObj = request.getSession().getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+        if (savedRequestObj instanceof DefaultSavedRequest savedRequest) {
+            String targetUrl = savedRequest.getRequestURL();
+            if (savedRequest.getQueryString() != null) {
+                targetUrl += "?" + savedRequest.getQueryString();
+            }
+            logger.info("Redirecting user {} to saved request: {}", userEmail, targetUrl);
+            response.sendRedirect(targetUrl);
+            return;
+        }
+
         // Redirection normale vers le dashboard
         String defaultRedirectUrl = "/dashboard";
         logger.info("Standard authentication redirect for user {} to {}", userEmail, defaultRedirectUrl);
