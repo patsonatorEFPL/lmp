@@ -110,6 +110,7 @@ public class SyncCallbackService {
             case ISSUE -> clearTicketExternalId(localEntityId);
             case QUOTATION -> clearQuotationExternalId(localEntityId);
             case ADDRESS -> clearUserExternalAddressId(localEntityId);
+            case ERP_USER -> clearUserExternalErpUserId(localEntityId);
             default -> log.debug("📋 [CALLBACK] No cleanup needed for {}", entityType);
         }
     }
@@ -125,6 +126,7 @@ public class SyncCallbackService {
         switch (entityType) {
             case CUSTOMER -> updateUserExternalCustomerId(localEntityId, externalId);
             case CONTACT -> updateUserExternalContactId(localEntityId, externalId);
+            case ERP_USER -> updateUserExternalErpUserId(localEntityId, externalId);
             case SALES_ORDER -> updateOrderExternalOrderId(localEntityId, externalId);
             case SALES_INVOICE -> updateOrderExternalInvoiceId(localEntityId, externalId, responseData);
             case PAYMENT -> updateOrderExternalPaymentId(localEntityId, externalId);
@@ -179,6 +181,22 @@ public class SyncCallbackService {
                     log.info("🔗 [CALLBACK] User {} linked to external Contact {}", userId, externalId);
                 },
                 () -> log.warn("⚠️ [CALLBACK] User {} not found for contact link", userId)
+        );
+    }
+
+    /**
+     * Pour le DocType external ERP "User", la clé primaire est l'email lui-même.
+     * On stocke donc cet email comme externalErpUserId pour pouvoir cibler le bon document
+     * lors d'un update / delete ultérieur.
+     */
+    private void updateUserExternalErpUserId(UUID userId, String externalId) {
+        userRepository.findById(userId).ifPresentOrElse(
+                user -> {
+                    user.setExternalErpUserId(externalId);
+                    userRepository.save(user);
+                    log.info("🔗 [CALLBACK] User {} linked to external external ERP User {}", userId, externalId);
+                },
+                () -> log.warn("⚠️ [CALLBACK] User {} not found for external ERP User link", userId)
         );
     }
 
@@ -573,6 +591,14 @@ public class SyncCallbackService {
             user.setExternalAddressId(null);
             userRepository.save(user);
             log.info("🧹 [CALLBACK] Cleared external Address ID on User {}", userId);
+        });
+    }
+
+    private void clearUserExternalErpUserId(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setExternalErpUserId(null);
+            userRepository.save(user);
+            log.info("🧹 [CALLBACK] Cleared external external ERP User ID on User {}", userId);
         });
     }
 

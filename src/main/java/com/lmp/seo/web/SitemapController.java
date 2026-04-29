@@ -23,7 +23,7 @@ public class SitemapController {
 
     private static final DateTimeFormatter W3C_DATE = DateTimeFormatter.ISO_DATE;
 
-    @Value("${app.base.url:https://lmp-services.ca}")
+    @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
 
     private final ServiceRepository serviceRepository;

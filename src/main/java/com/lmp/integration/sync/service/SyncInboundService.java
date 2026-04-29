@@ -219,6 +219,15 @@ public class SyncInboundService {
                     },
                     () -> log.debug("📋 [SYNC IN] No User found for external Customer '{}' — ignoring", externalId)
             );
+            case ERP_USER -> userRepository.findByExternalErpUserId(externalId).ifPresentOrElse(
+                    user -> {
+                        user.setExternalErpUserId(null);
+                        userRepository.save(user);
+                        log.info("🗑️ [SYNC IN] Unlinked User '{}' (external external ERP User '{}' deleted)",
+                                user.getEmail(), externalId);
+                    },
+                    () -> log.debug("📋 [SYNC IN] No User found for external external ERP User '{}' — ignoring", externalId)
+            );
             default -> log.info("📥 [SYNC IN] Delete for {} not implemented — ignoring", entityType);
         }
     }

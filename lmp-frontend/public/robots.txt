@@ -13,4 +13,4 @@ Disallow: /register
 Disallow: /payment/
 
 # Sitemap
-Sitemap: https://lmp-services.ca/sitemap.xml
+Sitemap: /sitemap.xml

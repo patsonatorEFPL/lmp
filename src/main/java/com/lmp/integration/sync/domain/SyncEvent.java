@@ -4,6 +4,7 @@ import com.lmp.integration.sync.SyncDirection;
 import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -75,6 +76,7 @@ public class SyncEvent {
 
     /** Version du mapper utilisé pour générer ce payload (permet re-jouer/retry ciblés). */
     @Column(name = "mapper_version", nullable = false, length = 20)
+    @ColumnDefault("'1'")
     private String mapperVersion = "1";
 
     public SyncEvent() {}

@@ -47,6 +47,7 @@ public class SyncProperties {
         private String apiSecret = "";
         private String currency = "EUR";
         private String company = "LMP Services";
+        private ErpUser erpUser = new ErpUser();
         /** Compte comptable de TVA par défaut (fallback). */
         private String taxAccount = "";
         /**
@@ -86,6 +87,8 @@ public class SyncProperties {
         public void setReceivableAccount(String receivableAccount) { this.receivableAccount = receivableAccount; }
         public String getPriceList() { return priceList; }
         public void setPriceList(String priceList) { this.priceList = priceList; }
+        public ErpUser getErpUser() { return erpUser; }
+        public void setErpUser(ErpUser erpUser) { this.erpUser = erpUser; }
 
         /**
          * Résout le compte comptable de taxe pour un taux donné (en %).
@@ -112,8 +115,28 @@ public class SyncProperties {
         public void setHmacSecret(String hmacSecret) { this.hmacSecret = hmacSecret; }
     }
 
+    /**
+     * Configuration des collaborateurs poussés vers external ERP en tant que DocType "User".
+     * <p>
+     * {@code userType} : "System User" (login backend) ou "Website User" (login portail).
+     * {@code roles} : rôles external ERP attribués par défaut (ex: "Sales User", "Employee").
+     */
+    public static class ErpUser {
+        private String userType = "System User";
+        private java.util.List<String> roles = java.util.List.of("Sales User");
+        private boolean sendWelcomeEmail = false;
+
+        public String getUserType() { return userType; }
+        public void setUserType(String userType) { this.userType = userType; }
+        public java.util.List<String> getRoles() { return roles; }
+        public void setRoles(java.util.List<String> roles) { this.roles = roles; }
+        public boolean isSendWelcomeEmail() { return sendWelcomeEmail; }
+        public void setSendWelcomeEmail(boolean sendWelcomeEmail) { this.sendWelcomeEmail = sendWelcomeEmail; }
+    }
+
     public static class Features {
         private boolean userProvisioning = true;
+        private boolean staffProvisioning = true;
         private boolean catalogSync = true;
         private boolean orderSync = true;
         private boolean quotationSync = true;
@@ -122,6 +145,8 @@ public class SyncProperties {
 
         public boolean isUserProvisioning() { return userProvisioning; }
         public void setUserProvisioning(boolean userProvisioning) { this.userProvisioning = userProvisioning; }
+        public boolean isStaffProvisioning() { return staffProvisioning; }
+        public void setStaffProvisioning(boolean staffProvisioning) { this.staffProvisioning = staffProvisioning; }
         public boolean isCatalogSync() { return catalogSync; }
         public void setCatalogSync(boolean catalogSync) { this.catalogSync = catalogSync; }
         public boolean isOrderSync() { return orderSync; }
@@ -177,7 +202,7 @@ public class SyncProperties {
         private int unverifiedThreshold = 3;
         private boolean unknownErrorAlert = true;
         private int cooldownMinutes = 60;
-        private String adminEmail = "admin@lmp-services.ca";
+        private String adminEmail = "admin@localhost";
         private String webhookUrl = "";
         /** DSN Sentry pour l'alerting avancé (grouping, rate-limiting, dashboard). */
         private String sentryDsn = "";

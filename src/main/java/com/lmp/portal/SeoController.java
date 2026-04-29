@@ -24,7 +24,7 @@ public class SeoController {
 
     /**
      * Génère le robots.txt optimisé pour SEO.
-     * Accessible via : https://lmp-services.ca/robots.txt
+     * Accessible via : /robots.txt
      */
     @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody

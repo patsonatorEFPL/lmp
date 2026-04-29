@@ -156,6 +156,12 @@ public interface UserService {
      * @param actingAdminId administrateur qui effectue l’action
      */
     void setUserAdminRole(UUID targetUserId, boolean grantAdmin, UUID actingAdminId);
+
+    /**
+     * Accorde ou retire le rôle STAFF (collaborateur — sera provisionné comme
+     * DocType "User" côté external ERP, et non comme Customer).
+     */
+    void setUserStaffRole(UUID targetUserId, boolean grantStaff, UUID actingAdminId);
     
     // Méthodes avec JOIN FETCH pour éviter LazyInitializationException
     

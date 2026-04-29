@@ -207,7 +207,7 @@ public class MailtrapServiceHttp {
             <h2>Test Email Configuration</h2>
             <p>Ce message de test confirme que la configuration Mailtrap fonctionne correctement.</p>
             <p><strong>Expéditeur:</strong> %s</p>
-            <p><strong>Authentification:</strong> Domaine lmp-services.ca via API REST</p>
+            <p><strong>Authentification:</strong> Domaine configuré via API REST</p>
             <p><strong>Heure d'envoi:</strong> %s</p>
             <hr>
             <p><em>Email envoyé via Mailtrap REST API - Authentification domaine native</em></p>
@@ -219,7 +219,7 @@ public class MailtrapServiceHttp {
             Ce message de test confirme que la configuration Mailtrap fonctionne correctement.
             
             Expéditeur: %s
-            Authentification: Domaine lmp-services.ca via API REST
+            Authentification: Domaine configuré via API REST
             Heure d'envoi: %s
             
             Email envoyé via Mailtrap REST API - Authentification domaine native

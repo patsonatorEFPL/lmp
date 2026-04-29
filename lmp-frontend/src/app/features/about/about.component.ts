@@ -203,13 +203,13 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       '@context': 'https://schema.org',
       '@type': 'AboutPage',
       name: 'À Propos — LMP Digital Services',
-      url: 'https://lmp-services.ca/about',
+      url: `${this.seo.baseUrl}/about`,
       description: 'Découvrez LMP Digital Services : notre mission, notre vision et notre équipe d\'experts en marketing digital et référencement local.',
       mainEntity: {
         '@type': 'Organization',
         name: 'LMP Digital Services',
-        url: 'https://lmp-services.ca',
-        logo: 'https://lmp-services.ca/images/logo-lmp.webp',
+        url: this.seo.baseUrl,
+        logo: `${this.seo.baseUrl}/images/logo-lmp.webp`,
         foundingDate: '2016',
         sameAs: [
           'https://www.facebook.com/lmpservices',
