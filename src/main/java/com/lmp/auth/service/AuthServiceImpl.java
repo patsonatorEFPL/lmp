@@ -85,6 +85,14 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    /**
+     * URL de base de l'host auth (issuer OIDC). Utilisée pour construire les
+     * liens de verify-email et reset-password — ces flux ne sont accessibles
+     * QUE sur l'host auth (les autres hosts retournent 404 via OidcHostGuardFilter).
+     */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
 
     public AuthServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -279,7 +287,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void sendVerificationEmail(User user) {
         try {
-            String verificationUrl = baseUrl + "/verify-email?token=" + user.getVerificationToken();
+            // Lien sur l'host auth (canonique) — verify-email n'est accessible que sur auth.*
+            String verificationUrl = authBaseUrl + "/verify-email?token=" + user.getVerificationToken();
 
             Context context = new Context();
             context.setVariable("userName", user.getDisplayName());
@@ -364,7 +373,8 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
         try {
-            String resetUrl = frontendUrl + "/reset-password?token=" + payload.token();
+            // Lien sur l'host auth (canonique) — reset-password n'est accessible que sur auth.*
+            String resetUrl = authBaseUrl + "/reset-password?token=" + payload.token();
 
             Context context = new Context();
             context.setVariable("userName", payload.userDisplayName());

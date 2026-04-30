@@ -59,6 +59,10 @@ public class AuthController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    /** URL de base de l'host auth — utilisée pour rediriger vers /login (canonique). */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
     public AuthController(AuthService authService,
                            UserService userService,
                            OrderRepository orderRepository,
@@ -82,12 +86,12 @@ public class AuthController {
         try {
             boolean verified = authService.verifyEmail(token);
             if (verified) {
-                return "redirect:" + frontendUrl + "/login?verified=true";
+                return "redirect:" + authBaseUrl + "/login?verified=true";
             }
         } catch (Exception e) {
             // Log silently
         }
-        return "redirect:" + frontendUrl + "/login?error=verification_failed";
+        return "redirect:" + authBaseUrl + "/login?error=verification_failed";
     }
 
     /**
@@ -99,7 +103,7 @@ public class AuthController {
             HttpServletRequest request) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:" + frontendUrl + "/login";
+            return "redirect:" + authBaseUrl + "/login";
         }
 
         // Rate limit basé sur la session (1 renvoi / 2 minutes)

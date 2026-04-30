@@ -43,6 +43,10 @@ public class DashboardController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    /** URL de base de l'host auth — utilisée pour les redirects vers /login. */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
         private final UserService userService;
 
         private final StripeCheckoutPaymentProcessor stripeCheckoutProcessor;
@@ -79,7 +83,7 @@ public class DashboardController {
                               @RequestParam(name = "processPurchase", required = false) Boolean processPurchase,
                               HttpServletRequest request) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:" + frontendUrl + "/login";
+            return "redirect:" + authBaseUrl + "/login";
         }
 
         // Vérifier s'il faut traiter une intention de paiement

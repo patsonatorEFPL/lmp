@@ -18,6 +18,7 @@ public class AuthHostResolver {
 
     private final String issuerUri;
     private String authHost;
+    private String authBaseUrl;
 
     public AuthHostResolver(@Value("${app.oauth2.issuer-uri:}") String issuerUri) {
         this.issuerUri = issuerUri;
@@ -27,12 +28,16 @@ public class AuthHostResolver {
     void init() {
         if (issuerUri == null || issuerUri.isBlank()) {
             this.authHost = null;
+            this.authBaseUrl = null;
             return;
         }
         try {
             this.authHost = URI.create(issuerUri).getHost();
+            // Normaliser : sans trailing slash
+            this.authBaseUrl = issuerUri.replaceAll("/+$", "");
         } catch (Exception e) {
             this.authHost = null;
+            this.authBaseUrl = null;
         }
     }
 
@@ -42,6 +47,14 @@ public class AuthHostResolver {
      */
     public String getAuthHost() {
         return authHost;
+    }
+
+    /**
+     * @return URL complète de l'host auth (ex. {@code https://auth.lmp-services.ca}),
+     *         ou {@code null} si non résolu.
+     */
+    public String getAuthBaseUrl() {
+        return authBaseUrl;
     }
 
     /**
