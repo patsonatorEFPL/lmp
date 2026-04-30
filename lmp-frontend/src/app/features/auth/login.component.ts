@@ -8,6 +8,7 @@ import { HlmLabel } from '@spartan-ng/helm/label';
 import { HlmSeparator } from '@spartan-ng/helm/separator';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -183,7 +184,7 @@ import { environment } from '../../../environments/environment';
               <a
                 hlmBtn
                 variant="outline"
-                [href]="oauthGoogleUrl"
+                [href]="siteConfig.oauthGoogleHref"
                 class="cursor-pointer gap-2"
               >
                 <svg class="h-4 w-4" viewBox="0 0 24 24">
@@ -197,7 +198,7 @@ import { environment } from '../../../environments/environment';
               <a
                 hlmBtn
                 variant="outline"
-                [href]="oauthMicrosoftUrl"
+                [href]="siteConfig.oauthMicrosoftHref"
                 class="cursor-pointer gap-2"
               >
                 <svg class="h-4 w-4" viewBox="0 0 24 24">
@@ -236,9 +237,7 @@ export class LoginComponent {
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
 
-  // OAuth URLs need absolute backend URL (browser redirect, not AJAX)
-  readonly oauthGoogleUrl = '/oauth2/authorization/google';
-  readonly oauthMicrosoftUrl = '/oauth2/authorization/microsoft';
+  protected readonly siteConfig = inject(SiteConfigService);
 
   readonly showPassword = signal(false);
   readonly submitting = signal(false);

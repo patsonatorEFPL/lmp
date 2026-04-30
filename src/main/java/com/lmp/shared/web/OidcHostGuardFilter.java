@@ -25,8 +25,8 @@ import java.util.List;
  */
 public class OidcHostGuardFilter extends OncePerRequestFilter {
 
-    // Préfixes/paths gérés par Spring Authorization Server qu'on doit
-    // restreindre à l'host auth.
+    // Endpoints OIDC purs (Spring Authorization Server) — préfixes à bloquer
+    // hors host auth. Match par préfixe (path commence par X).
     private static final List<String> OIDC_PATH_PREFIXES = List.of(
             "/oauth2/",
             "/.well-known/openid-configuration",
@@ -35,6 +35,20 @@ public class OidcHostGuardFilter extends OncePerRequestFilter {
             "/userinfo",
             "/connect/",
             "/login/oauth2/"
+    );
+
+    // Pages d'authentification — accessibles UNIQUEMENT sur host auth.
+    // Match exact OU début "/path/..." (pas startsWith greedy qui matcherait "/login123").
+    private static final List<String> AUTH_EXACT_PATHS = List.of(
+            "/login",
+            "/register",
+            "/perform-login",
+            "/perform-logout",
+            "/logout",
+            "/forgot-password",
+            "/reset-password",
+            "/verify-email",
+            "/resend-verification"
     );
 
     private final AuthHostResolver authHostResolver;
@@ -48,19 +62,26 @@ public class OidcHostGuardFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (isOidcPath(path) && !authHostResolver.isAuthHost(request.getServerName())) {
+        if (shouldBlock(path) && !authHostResolver.isAuthHost(request.getServerName())) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
         filterChain.doFilter(request, response);
     }
 
-    private boolean isOidcPath(String path) {
+    private boolean shouldBlock(String path) {
         if (path == null) {
             return false;
         }
+        // Préfixes OIDC : startsWith
         for (String prefix : OIDC_PATH_PREFIXES) {
             if (path.equals(prefix) || path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        // Paths exact : equals OU "/path/..." (pas "/path123")
+        for (String authPath : AUTH_EXACT_PATHS) {
+            if (path.equals(authPath) || path.startsWith(authPath + "/")) {
                 return true;
             }
         }

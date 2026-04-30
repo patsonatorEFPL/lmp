@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 
 import { AuthService } from '../services/auth.service';
+import { SiteConfigService } from '../services/site-config.service';
 import { AUTH_GUARD_LOADING_TIMEOUT_MS } from './guard-timeout';
 
 /**
@@ -19,7 +20,7 @@ import { AUTH_GUARD_LOADING_TIMEOUT_MS } from './guard-timeout';
  */
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
-  const router = inject(Router);
+  const siteConfig = inject(SiteConfigService);
   const platformId = inject(PLATFORM_ID);
 
   if (isPlatformServer(platformId)) {
@@ -30,16 +31,17 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
+  const goToLogin = (): false => {
+    siteConfig.goToLogin(window.location.pathname + window.location.search);
+    return false;
+  };
+
   return toObservable(authService.loading).pipe(
     filter((loading) => !loading),
     take(1),
-    map(() =>
-      authService.isLoggedIn()
-        ? true
-        : router.createUrlTree(['/login']),
-    ),
+    map(() => (authService.isLoggedIn() ? true : goToLogin())),
     timeout(AUTH_GUARD_LOADING_TIMEOUT_MS),
-    catchError(() => of(router.createUrlTree(['/login']))),
+    catchError(() => of(goToLogin())),
   );
 };
 
@@ -47,18 +49,24 @@ export const moduleGuard = (requiredModule: string): CanActivateFn => {
   return () => {
     const authService = inject(AuthService);
     const router = inject(Router);
+    const siteConfig = inject(SiteConfigService);
     const platformId = inject(PLATFORM_ID);
 
     if (isPlatformServer(platformId) || !isPlatformBrowser(platformId)) {
       return true;
     }
 
+    const goToLogin = (): false => {
+      siteConfig.goToLogin(window.location.pathname + window.location.search);
+      return false;
+    };
+
     return toObservable(authService.loading).pipe(
       filter((loading) => !loading),
       take(1),
       map(() => {
         if (!authService.isLoggedIn()) {
-          return router.createUrlTree(['/login']);
+          return goToLogin();
         }
         if (!authService.hasModule(requiredModule)) {
           return router.createUrlTree(['/dashboard'], {
@@ -68,7 +76,7 @@ export const moduleGuard = (requiredModule: string): CanActivateFn => {
         return true;
       }),
       timeout(AUTH_GUARD_LOADING_TIMEOUT_MS),
-      catchError(() => of(router.createUrlTree(['/login']))),
+      catchError(() => of(goToLogin())),
     );
   };
 };

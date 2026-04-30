@@ -33,6 +33,7 @@ import {
 } from 'lucide-angular';
 import { ThemeService, type ThemePreference } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 @Component({
   selector: 'lmp-navbar',
@@ -332,7 +333,7 @@ import { AuthService } from '../../core/services/auth.service';
 
                   <div class="w-full py-1">
                     <a
-                      routerLink="/login"
+                      [href]="siteConfig.loginHref"
                       role="menuitem"
                       class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
                       (click)="closeAccountMenu()"
@@ -341,7 +342,7 @@ import { AuthService } from '../../core/services/auth.service';
                       <span>Se connecter</span>
                     </a>
                     <a
-                      routerLink="/register"
+                      [href]="siteConfig.registerHref"
                       role="menuitem"
                       class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
                       (click)="closeAccountMenu()"
@@ -513,6 +514,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class NavbarComponent implements OnInit, OnDestroy {
   protected readonly themeService = inject(ThemeService);
   protected readonly authService = inject(AuthService);
+  protected readonly siteConfig = inject(SiteConfigService);
 
   readonly accountMenuHost = viewChild<ElementRef<HTMLElement>>('accountMenuHost');
 
