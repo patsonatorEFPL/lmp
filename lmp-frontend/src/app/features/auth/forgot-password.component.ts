@@ -6,6 +6,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { environment } from '../../../environments/environment';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 @Component({
   selector: 'lmp-forgot-password',
@@ -15,7 +16,7 @@ import { environment } from '../../../environments/environment';
     <div class="flex min-h-screen">
       <div class="relative hidden w-1/2 lg:flex flex-col justify-between bg-(--card) border-r border-(--border)">
         <div class="p-8">
-          <a routerLink="/" class="flex items-center gap-3">
+          <a [href]="siteConfig.baseUrl" class="flex items-center gap-3">
             <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-8 w-auto rounded-xs" />
             <span class="text-base font-semibold text-(--foreground)">LMP Digital Services</span>
           </a>
@@ -27,10 +28,10 @@ import { environment } from '../../../environments/environment';
           </p>
         </div>
         <div class="p-8 pt-0 flex items-center gap-6">
-          <a routerLink="/privacy" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors"
+          <a [href]="siteConfig.baseUrl + '/privacy'" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors"
             >Politique de confidentialité</a
           >
-          <a routerLink="/terms" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors"
+          <a [href]="siteConfig.baseUrl + '/terms'" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors"
             >Conditions d'utilisation</a
           >
         </div>
@@ -115,6 +116,7 @@ import { environment } from '../../../environments/environment';
 })
 export class ForgotPasswordComponent {
   private readonly http = inject(HttpClient);
+  protected readonly siteConfig = inject(SiteConfigService);
 
   readonly submitting = signal(false);
   readonly errorMessage = signal('');
