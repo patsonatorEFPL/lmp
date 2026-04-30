@@ -150,11 +150,11 @@ import { switchMap } from 'rxjs';
               />
               <label for="terms" class="text-sm text-(--muted-foreground)">
                 J'accepte les
-                <a routerLink="/terms" class="text-(--primary) hover:underline">
+                <a [href]="siteConfig.baseUrl + '/terms'" class="text-(--primary) hover:underline">
                   conditions d'utilisation
                 </a>
                 et la
-                <a routerLink="/privacy" class="text-(--primary) hover:underline">
+                <a [href]="siteConfig.baseUrl + '/privacy'" class="text-(--primary) hover:underline">
                   politique de confidentialité
                 </a>
               </label>
@@ -340,13 +340,17 @@ export class RegisterComponent {
             country: user.country,
           });
           this.submitting.set(false);
-          this.router.navigate(['/dashboard']);
+          // Cross-host : on quitte auth host pour le site principal
+          if (typeof window !== 'undefined') {
+            window.location.href = this.siteConfig.baseUrl + '/dashboard';
+          }
         },
         error: (err) => {
           // Registration may have succeeded but auto-login failed
           if (err.url?.includes('/login')) {
             this.successMessage.set('Compte créé ! Connectez-vous pour accéder à votre espace.');
             this.submitting.set(false);
+            // Stays on auth host (login is here) — Angular Router OK
             this.router.navigate(['/login']);
           } else {
             this.errorMessage.set(
