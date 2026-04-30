@@ -1,5 +1,6 @@
 package com.lmp.portal;
 
+import com.lmp.shared.web.AuthHostResolver;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -23,10 +24,12 @@ import java.util.List;
  * inexistant sous ces préfixes retourne 404 plutôt qu'un index.html
  * (sinon le frontend tenterait de parser du HTML en JSON).
  *
- * Sur les sous-domaines auth.* (réservés au flux OIDC), on ne sert
- * le SPA QUE pour les pages d'authentification (/login, /register, etc.).
- * Les pages marketing (/services, /blog, /about, etc.) retournent 404
- * pour éviter le duplicate-content SEO et garder une séparation propre.
+ * Sur l'host auth (résolu depuis {@code app.oauth2.issuer-uri}, ex.
+ * {@code auth.lmp-services.ca}), on ne sert le SPA QUE pour les pages
+ * d'authentification ({@code /login}, {@code /register}, etc.). Les
+ * pages marketing ({@code /services}, {@code /blog}, {@code /about},
+ * etc.) retournent 404 pour éviter le duplicate-content SEO et garder
+ * une séparation propre.
  *
  * Cela permet à Dokploy de n'avoir qu'une seule règle de routage
  * par domaine : Host=X, Path=/, Port=8080.
@@ -35,12 +38,18 @@ import java.util.List;
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class SpaWebMvcConfigurer implements WebMvcConfigurer {
 
+    private final AuthHostResolver authHostResolver;
+
+    public SpaWebMvcConfigurer(AuthHostResolver authHostResolver) {
+        this.authHostResolver = authHostResolver;
+    }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
                 .resourceChain(true)
-                .addResolver(new SpaResourceResolver());
+                .addResolver(new SpaResourceResolver(authHostResolver));
     }
 
     static class SpaResourceResolver extends PathResourceResolver {
@@ -64,9 +73,9 @@ public class SpaWebMvcConfigurer implements WebMvcConfigurer {
                 "error"
         );
 
-        // Sur l'host auth.*, on n'autorise le fallback SPA que pour ces
+        // Sur l'host auth, on n'autorise le fallback SPA que pour ces
         // premiers segments (pages d'authentification nécessaires au flux OIDC).
-        // Tout le reste retourne 404 sur auth.*.
+        // Tout le reste retourne 404 sur l'host auth.
         private static final List<String> AUTH_HOST_ALLOWED_SPA_FIRST_SEGMENTS = List.of(
                 "login",
                 "register",
@@ -74,6 +83,12 @@ public class SpaWebMvcConfigurer implements WebMvcConfigurer {
                 "reset-password",
                 "verify-email"
         );
+
+        private final AuthHostResolver authHostResolver;
+
+        SpaResourceResolver(AuthHostResolver authHostResolver) {
+            this.authHostResolver = authHostResolver;
+        }
 
         @Override
         protected Resource getResource(String resourcePath, Resource location) throws IOException {
@@ -86,7 +101,7 @@ public class SpaWebMvcConfigurer implements WebMvcConfigurer {
             if (isBackendPath(resourcePath)) {
                 return null;
             }
-            if (isAuthSubdomain() && !isAuthSpaPath(resourcePath)) {
+            if (isOnAuthHost() && !isAuthSpaPath(resourcePath)) {
                 return null;
             }
             return super.getResource("index.html", location);
@@ -104,15 +119,14 @@ public class SpaWebMvcConfigurer implements WebMvcConfigurer {
             return false;
         }
 
-        private static boolean isAuthSubdomain() {
+        private boolean isOnAuthHost() {
             try {
                 ServletRequestAttributes attrs =
                         (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
                 if (attrs == null) {
                     return false;
                 }
-                String host = attrs.getRequest().getServerName();
-                return host != null && host.startsWith("auth.");
+                return authHostResolver.isAuthHost(attrs.getRequest().getServerName());
             } catch (Exception e) {
                 return false;
             }
