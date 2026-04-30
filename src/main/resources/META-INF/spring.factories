@@ -1,1 +1,2 @@
 org.springframework.boot.SpringApplicationRunListener=com.lmp.shared.config.SentryBootstrapListener
+org.springframework.boot.env.EnvironmentPostProcessor=com.lmp.shared.config.SiteEnvironmentPostProcessor
