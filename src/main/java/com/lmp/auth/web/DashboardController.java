@@ -43,9 +43,17 @@ public class DashboardController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
+
     /** URL de base de l'host auth — utilisée pour les redirects vers /login. */
     @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
     private String authBaseUrl;
+
+    /** Mode monolithique : split frontendUrl absent → cascade vers baseUrl → frontendUrl == baseUrl. */
+    private boolean isMonolithicMode() {
+        return frontendUrl == null || frontendUrl.isBlank() || frontendUrl.equals(baseUrl);
+    }
 
         private final UserService userService;
 
@@ -100,8 +108,8 @@ public class DashboardController {
         }
 
         // Mode split : redirect vers frontend Angular externe.
-        // Mode monolithique (frontendUrl vide) : forward vers index.html → SPA.
-        if (frontendUrl == null || frontendUrl.isBlank()) {
+        // Mode monolithique : forward vers index.html → SPA.
+        if (isMonolithicMode()) {
             return "forward:/index.html";
         }
         return "redirect:" + frontendUrl + "/dashboard";
