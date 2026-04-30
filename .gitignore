@@ -171,8 +171,6 @@ lmp-oauth2-jwk*.json
 # Compiled Java at root (debug)
 /CheckHash.class
 /CheckHash.java
-# Binaries at root
-/cloudflared.exe
 # Playwright MCP temp
 /.playwright-mcp/
 # MVN simulate crash log
@@ -195,3 +193,13 @@ src/main/resources/static/*.css.map
 ### Local cookie jars (curl -c / Invoke-WebRequest dumps) ###
 /cookies.txt
 *.cookies.txt
+
+### Cloudflare Tunnel local state ###
+bin/cloudflared/config.yml
+bin/cloudflared/.cloudflared.pid
+bin/cloudflared/.ssh-pg.pid
+tunnel-cloudflared.log
+tunnel-cloudflared.log.err
+tunnel-ssh-pg.log
+tunnel-ssh-pg.log.err
+.spring-boot.pid
