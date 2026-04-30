@@ -8,6 +8,7 @@ import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@strip
 
 import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { AuthService, UserInfo } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 interface ApiOk<T> {
   success: boolean;
@@ -53,8 +54,8 @@ interface ApiOk<T> {
             <p>{{ guestAttachError() }}</p>
             <a
               class="inline-block font-medium text-(--primary) underline cursor-pointer"
-              routerLink="/login"
-              [queryParams]="loginReturnQueryParams()"
+              [href]="siteConfig.loginHref"
+              (click)="goToLoginCrossHost($event)"
               >Se connecter avec un autre compte</a
             >
           </div>
@@ -162,6 +163,7 @@ export class PaymentGuestComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly authService = inject(AuthService);
+  protected readonly siteConfig = inject(SiteConfigService);
   private readonly platformId = inject(PLATFORM_ID);
 
   @ViewChild('stripeHost') stripeHost?: ElementRef<HTMLDivElement>;
@@ -231,9 +233,10 @@ export class PaymentGuestComponent implements OnDestroy {
     return `lmp_guest_resume_${token}`;
   }
 
-  loginReturnQueryParams(): { returnUrl: string } {
-    const path = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
-    return { returnUrl: path };
+  goToLoginCrossHost(event?: MouseEvent): void {
+    event?.preventDefault();
+    const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
+    this.siteConfig.goToLogin(returnUrl);
   }
 
   private resetGuestPaymentState(): void {
@@ -316,7 +319,7 @@ export class PaymentGuestComponent implements OnDestroy {
           this.guestAttachPending.set(false);
           if (err.status === 401) {
             const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
-            void this.router.navigate(['/login'], { queryParams: { returnUrl } });
+            this.siteConfig.goToLogin(returnUrl);
             return;
           }
           this.guestAttachError.set(err.error?.message || 'Impossible de préparer le paiement.');
@@ -421,7 +424,7 @@ export class PaymentGuestComponent implements OnDestroy {
           this.preparing.set(false);
           if (err.status === 409) {
             const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
-            void this.router.navigate(['/login'], { queryParams: { returnUrl } });
+            this.siteConfig.goToLogin(returnUrl);
             return;
           }
           this.formError.set(err.error?.message || 'Erreur lors de l’inscription.');

@@ -9,6 +9,7 @@ import { HlmSeparator } from '@spartan-ng/helm/separator';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 import { switchMap } from 'rxjs';
 
 @Component({
@@ -194,7 +195,7 @@ import { switchMap } from 'rxjs';
             <a
               hlmBtn
               variant="outline"
-              href="/oauth2/authorization/google"
+              [href]="siteConfig.oauthGoogleHref"
               class="cursor-pointer gap-2"
             >
               <svg class="h-4 w-4" viewBox="0 0 24 24">
@@ -208,7 +209,7 @@ import { switchMap } from 'rxjs';
             <a
               hlmBtn
               variant="outline"
-              href="/oauth2/authorization/microsoft"
+              [href]="siteConfig.oauthMicrosoftHref"
               class="cursor-pointer gap-2"
             >
               <svg class="h-4 w-4" viewBox="0 0 24 24">
@@ -237,6 +238,7 @@ export class RegisterComponent {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  protected readonly siteConfig = inject(SiteConfigService);
 
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;

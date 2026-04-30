@@ -117,17 +117,10 @@ public class FrontendRedirectController {
         return marketingPage("/terms");
     }
 
-    // ===== Pages d'authentification (accessibles même sur auth.*) =====
-
-    @GetMapping("/login")
-    public String login() {
-        return redirectOrForward("/login");
-    }
-
-    @GetMapping("/register")
-    public String register() {
-        return redirectOrForward("/register");
-    }
+    // ===== Pages auth =====
+    // /login, /register, /forgot-password, etc. : NON gérés par ce contrôleur.
+    // - Sur host auth → SpaResourceResolver sert index.html (Angular SPA)
+    // - Sur autres hosts → OidcHostGuardFilter retourne 404 avant que le SPA ne soit atteint
 
     // ===== Pages utilisateur (404 sur auth.*) =====
 
