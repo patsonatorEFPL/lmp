@@ -74,6 +74,11 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${server.servlet.session.cookie.domain:}")
     private String cookieDomain;
 
+    /** URL de base de l'host auth (issuer OIDC). Utilisée pour les redirects Spring Security
+     *  vers /login depuis n'importe quel host — la page login n'existe QUE sur auth.*. */
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:}")
+    private String authBaseUrl;
+
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                            PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler,
@@ -281,19 +286,21 @@ public class SecurityConfig {
                         // Toutes les autres requêtes nécessitent une authentification
                         .anyRequest().authenticated())
 
-                // Configuration du formulaire de connexion (session-based auth pour backend)
+                // Configuration du formulaire de connexion (session-based auth pour backend).
+                // loginPage absolu = host auth (la page n'existe QUE sur auth.* — sur les
+                // autres hosts l'OidcHostGuardFilter retourne 404).
                 .formLogin(form -> form
-                        .loginPage("/login")
+                        .loginPage(absoluteAuthUrl("/login"))
                         .loginProcessingUrl("/perform-login")
                         .usernameParameter("email")
                         .passwordParameter("password")
                         .successHandler(purchaseIntentAuthenticationSuccessHandler)
-                        .failureUrl("/login?error=true")
+                        .failureUrl(absoluteAuthUrl("/login?error=true"))
                         .permitAll())
 
                 // Configuration OAuth2 Login (Google & Microsoft)
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")
+                        .loginPage(absoluteAuthUrl("/login"))
                         .userInfoEndpoint(userInfo -> {
                             if (customOAuth2UserService != null) {
                                 userInfo.userService(customOAuth2UserService);
@@ -303,7 +310,7 @@ public class SecurityConfig {
                             }
                         })
                         .successHandler(purchaseIntentAuthenticationSuccessHandler)
-                        .failureUrl("/login?error=true"))
+                        .failureUrl(absoluteAuthUrl("/login?error=true")))
 
                 // Configuration de la déconnexion
                 .logout(logout -> logout
@@ -411,6 +418,18 @@ public class SecurityConfig {
         // Setting to null forces eager CSRF token resolution (not deferred)
         handler.setCsrfRequestAttributeName(null);
         return handler;
+    }
+
+    /**
+     * Préfixe une URL relative avec authBaseUrl pour pointer vers l'host auth.
+     * Si authBaseUrl est vide (local/dev sans issuer configuré), retourne l'URL
+     * relative telle quelle — Spring Security gardera son comportement par défaut.
+     */
+    private String absoluteAuthUrl(String relativePath) {
+        if (authBaseUrl == null || authBaseUrl.isBlank()) {
+            return relativePath;
+        }
+        return authBaseUrl + relativePath;
     }
 
     /**
