@@ -5,7 +5,7 @@
 -- L'invité reçoit un lien avec token pour fixer son mot de passe et activer
 -- son compte (rôle STAFF + USER, email_verified=true par construction).
 
-CREATE TABLE staff_invitations (
+CREATE TABLE IF NOT EXISTS staff_invitations (
     id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     email           VARCHAR(255) NOT NULL,
     first_name      VARCHAR(100),
@@ -24,10 +24,10 @@ CREATE TABLE staff_invitations (
 );
 
 -- Une seule invitation PENDING par email à la fois
-CREATE UNIQUE INDEX idx_staff_invitations_email_pending
+CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_invitations_email_pending
     ON staff_invitations (email)
     WHERE status = 'PENDING';
 
-CREATE INDEX idx_staff_invitations_token        ON staff_invitations (token);
-CREATE INDEX idx_staff_invitations_status       ON staff_invitations (status);
-CREATE INDEX idx_staff_invitations_expires_at   ON staff_invitations (expires_at);
+CREATE INDEX IF NOT EXISTS idx_staff_invitations_token        ON staff_invitations (token);
+CREATE INDEX IF NOT EXISTS idx_staff_invitations_status       ON staff_invitations (status);
+CREATE INDEX IF NOT EXISTS idx_staff_invitations_expires_at   ON staff_invitations (expires_at);

@@ -198,7 +198,8 @@ public class ContactService {
             
             context.setVariable("contact", contact);
             context.setVariable("companyName", companyName);
-            
+            context.setVariable("companyEmail", mailAddressConfig.getSupport());
+
             // Rendu du template HTML pour l'utilisateur
             logger.info("CONTACT_USER_EMAIL_DEBUG - Rendu template 'emails/contact-confirmation'...");
             String htmlContent = templateEngine.process("emails/contact-confirmation", context);

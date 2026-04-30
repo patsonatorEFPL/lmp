@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title, accentH)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' — LMP Services'">LMP Services</title>
+    <link rel="icon" type="image/x-icon" th:href="@{/favicon.ico}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700&display=swap">
+    <style th:inline="css">
+        :root {
+            color-scheme: light dark;
+            --err-h: /*[[${accentH ?: 258}]]*/258;
+            --bg:         oklch(0.985 0.003 var(--err-h));
+            --fg:         oklch(0.12  0.010 var(--err-h));
+            --surface:    oklch(1.000 0.001 var(--err-h));
+            --muted:      oklch(0.48  0.007 var(--err-h));
+            --border:     oklch(0.91  0.007 var(--err-h));
+            --ring:       oklch(0.38  0.012 var(--err-h));
+            --primary-fg: oklch(0.985 0.003 var(--err-h));
+            --accent:     oklch(0.62  0.22  var(--err-h));
+            --accent-glow:oklch(0.62  0.22  var(--err-h) / 0.18);
+            --cxf: 0; --cyf: 0;
+            --cxs: 0; --cys: 0;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg:         oklch(0.09  0.009 var(--err-h));
+                --fg:         oklch(0.97  0.003 var(--err-h));
+                --surface:    oklch(0.14  0.009 var(--err-h));
+                --muted:      oklch(0.65  0.007 var(--err-h));
+                --border:     oklch(0.22  0.009 var(--err-h));
+                --ring:       oklch(0.82  0.007 var(--err-h));
+                --primary-fg: oklch(0.14  0.009 var(--err-h));
+                --accent-glow:oklch(0.62  0.22  var(--err-h) / 0.28);
+            }
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .err-shell {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            overflow: hidden;
+        }
+
+        .err-aurora {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .err-aurora::before {
+            content: '';
+            position: absolute;
+            width: 40rem;
+            height: 40rem;
+            border-radius: 50%;
+            filter: blur(110px);
+            opacity: 0.28;
+            top: -12rem;
+            left: -10rem;
+            background: radial-gradient(closest-side,
+                oklch(0.62 0.22 var(--err-h) / 1),
+                transparent 70%);
+            animation: auroraFloat 16s ease-in-out infinite;
+            will-change: transform;
+            translate:
+                calc(var(--cxs) * 90px)
+                calc(var(--cys) * 65px);
+        }
+        .err-aurora::after {
+            content: '';
+            position: absolute;
+            width: 28rem;
+            height: 28rem;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.16;
+            bottom: -8rem;
+            right: -6rem;
+            background: radial-gradient(closest-side,
+                oklch(0.70 0.18 calc(var(--err-h) + 40) / 1),
+                transparent 70%);
+            animation: auroraFloat 20s ease-in-out infinite reverse;
+            will-change: transform;
+            translate:
+                calc(var(--cxs) * -50px)
+                calc(var(--cys) * -35px);
+        }
+        @keyframes auroraFloat {
+            0%,  100% { transform: translate(0,     0)     scale(1);    }
+            33%        { transform: translate(28px, -20px)  scale(1.07); }
+            66%        { transform: translate(-14px, 14px)  scale(0.95); }
+        }
+
+        .err-grid {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(to right,
+                    color-mix(in oklab, var(--border) 55%, transparent) 1px,
+                    transparent 1px),
+                linear-gradient(to bottom,
+                    color-mix(in oklab, var(--border) 55%, transparent) 1px,
+                    transparent 1px);
+            background-size: 56px 56px;
+            -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 75%);
+                    mask-image: radial-gradient(ellipse at center, black 35%, transparent 75%);
+        }
+
+        .err-card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 640px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            will-change: translate;
+            translate:
+                calc(var(--cxf) * -7px)
+                calc(var(--cyf) * -4px);
+        }
+
+        .err-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.625rem;
+            margin-bottom: 2rem;
+            color: var(--fg);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            opacity: 0;
+            animation: errFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0ms forwards;
+        }
+        .err-brand-mark {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            background: var(--accent);
+            display: inline-block;
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .err-brand:hover .err-brand-mark {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .err-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0;
+            animation: errFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 60ms forwards;
+        }
+        .err-badge-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: dotPulse 2.6s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1);   }
+            50%       { opacity: 0.4; transform: scale(0.65); }
+        }
+
+        .err-code {
+            font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+            font-weight: 700;
+            font-size: clamp(6rem, 22vw, 12rem);
+            line-height: 1;
+            letter-spacing: -0.05em;
+            margin: 1.5rem 0 0.25rem;
+            color: var(--accent);
+            will-change: translate;
+            translate:
+                calc(var(--cxf) * 5px)
+                calc(var(--cyf) * 3px);
+            opacity: 0;
+            animation: errCodeReveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+        }
+        @keyframes errCodeReveal {
+            from {
+                opacity: 0;
+                clip-path: inset(0 0 100% 0);
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                clip-path: inset(0 0 -10% 0);
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .err-title {
+            font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+            font-size: clamp(1.4rem, 3.6vw, 2rem);
+            font-weight: 600;
+            margin: 0 0 0.75rem;
+            color: var(--fg);
+            opacity: 0;
+            animation: errFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 270ms forwards;
+        }
+
+        .err-desc {
+            font-size: 0.9375rem;
+            line-height: 1.65;
+            color: var(--muted);
+            max-width: 460px;
+            margin: 0 auto 1.75rem;
+            opacity: 0;
+            animation: errFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 370ms forwards;
+        }
+
+        .err-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.625rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: errFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 470ms forwards;
+        }
+        .err-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition:
+                transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+                background 0.15s,
+                border-color 0.15s;
+        }
+        .err-btn-primary {
+            background: var(--fg);
+            color: var(--primary-fg);
+        }
+        .err-btn-primary:hover {
+            transform: translateY(-2px) scale(1.025);
+            box-shadow:
+                0 10px 30px oklch(0 0 0 / 0.12),
+                0 0 0 3px var(--accent-glow);
+        }
+        .err-btn-primary:active {
+            transform: translateY(0) scale(0.97);
+            transition-duration: 0.08s;
+        }
+        .err-btn-outline {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--fg);
+        }
+        .err-btn-outline:hover {
+            background: var(--surface);
+            border-color: var(--ring);
+            transform: translateY(-1px);
+        }
+        .err-btn-outline:active {
+            transform: translateY(0);
+            transition-duration: 0.08s;
+        }
+        .err-icon {
+            width: 1rem; height: 1rem;
+            stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .err-foot {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8125rem;
+            color: var(--muted);
+            width: 100%;
+            max-width: 460px;
+            opacity: 0;
+            animation: errFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) 570ms forwards;
+        }
+        .err-foot a {
+            color: var(--fg);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            transition: opacity 0.15s;
+        }
+        .err-foot a:hover { opacity: 0.7; }
+
+        .err-tech {
+            margin-top: 1rem;
+            text-align: left;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            max-height: 180px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .err-tech-toggle {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            font-family: inherit;
+            transition: color 0.15s;
+        }
+        .err-tech-toggle:hover { color: var(--fg); }
+
+        @keyframes errFadeUp {
+            from { opacity: 0; transform: translateY(12px); filter: blur(5px); }
+            to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .err-brand, .err-badge, .err-code, .err-title,
+            .err-desc, .err-actions, .err-foot {
+                animation: none !important;
+                opacity: 1 !important;
+            }
+            .err-badge-dot { animation: none !important; }
+            .err-aurora::before,
+            .err-aurora::after { animation: none !important; translate: none !important; }
+            .err-card  { translate: none !important; }
+            .err-code  { translate: none !important; clip-path: none !important; }
+        }
+    </style>
+</head>
+<body>
+<script th:fragment="cursor-script">
+(function () {
+    var cxf = 0, cyf = 0, cxs = 0, cys = 0, tx = 0, ty = 0;
+    var r = document.documentElement;
+    document.addEventListener('mousemove', function (e) {
+        tx = (e.clientX / innerWidth  - 0.5) * 2;
+        ty = (e.clientY / innerHeight - 0.5) * 2;
+    });
+    (function tick() {
+        cxf += (tx - cxf) * 0.09;
+        cyf += (ty - cyf) * 0.09;
+        cxs += (tx - cxs) * 0.04;
+        cys += (ty - cys) * 0.04;
+        r.style.setProperty('--cxf', cxf.toFixed(3));
+        r.style.setProperty('--cyf', cyf.toFixed(3));
+        r.style.setProperty('--cxs', cxs.toFixed(3));
+        r.style.setProperty('--cys', cys.toFixed(3));
+        requestAnimationFrame(tick);
+    })();
+})();
+</script>
+
+<div th:fragment="background" class="err-aurora"></div>
+<div th:fragment="grid" class="err-grid"></div>
+<a th:fragment="brand" class="err-brand" th:href="${returnUrl} ?: '/'">
+    <span class="err-brand-mark"></span>
+    <span>LMP Services</span>
+</a>
+</body>
+</html>

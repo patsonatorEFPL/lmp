@@ -341,11 +341,18 @@ public class SecurityConfig {
                         .expiredUrl("/login?expired=true")
                         .sessionRegistry(sessionRegistry()))
 
-                // CSRF exceptions pour webhooks et endpoints publics
+                // CSRF aligné avec chain 1 : cookie-based + plain token (Angular lit
+                // XSRF-TOKEN cookie et envoie X-XSRF-TOKEN header).
+                // Les endpoints JSON admin /admin/**/api/** sont skip — même profil de
+                // sécurité que /api/v1/admin/** (auth via @PreAuthorize, SPA same-origin).
                 .csrf(csrf -> csrf
+                        .csrfTokenRepository(buildCsrfRepository())
+                        .csrfTokenRequestHandler(spaCsrfTokenRequestHandler())
                         .ignoringRequestMatchers(
                                 "/webhook/**",
                                 "/stripe/**",
+                                "/admin/*/api/**",
+                                "/admin/api/**",
                                 "/register-and-checkout",
                                 "/auth/register-and-checkout",
                                 "/appointments/create",

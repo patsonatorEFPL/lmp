@@ -41,6 +41,6 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'admin', renderMode: RenderMode.Client },
   { path: 'admin/**', renderMode: RenderMode.Client },
 
-  // Fallback — server-render
-  { path: '**', renderMode: RenderMode.Server },
+  // Fallback — server-render avec status HTTP 404 explicite (SEO + monitoring)
+  { path: '**', renderMode: RenderMode.Server, status: 404 },
 ];
