@@ -99,7 +99,11 @@ public class DashboardController {
             }
         }
 
-        // Rediriger vers le frontend Angular
+        // Mode split : redirect vers frontend Angular externe.
+        // Mode monolithique (frontendUrl vide) : forward vers index.html → SPA.
+        if (frontendUrl == null || frontendUrl.isBlank()) {
+            return "forward:/index.html";
+        }
         return "redirect:" + frontendUrl + "/dashboard";
     }
 
