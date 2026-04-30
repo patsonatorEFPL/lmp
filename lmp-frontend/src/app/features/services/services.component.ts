@@ -23,6 +23,7 @@ import {
   ServiceItem,
 } from '../../core/services/catalog.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 import { ProfileService } from '../../core/services/profile.service';
 
 @Component({
@@ -258,6 +259,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly catalogService = inject(CatalogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly siteConfig = inject(SiteConfigService);
   private readonly seo = inject(SeoService);
   private readonly profileService = inject(ProfileService);
 
@@ -509,7 +511,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCheckout(service: ServiceItem): void {
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      this.siteConfig.goToLogin('/services');
       return;
     }
 
