@@ -10,8 +10,9 @@ import java.net.URI;
  * Source de vérité du nom d'host "auth" à partir de {@code app.oauth2.issuer-uri}.
  *
  * <p>Évite tout hardcode {@code "auth."} dans le code applicatif : le sous-domaine
- * peut changer (ex. {@code auth.dev.lmp-services.ca} en staging, {@code localhost}
- * en local). Tout ce qui veut savoir "suis-je sur l'host auth ?" passe par ici.</p>
+ * peut changer (ex. {@code auth-dev.lmp-services.ca} en staging single-level,
+ * {@code localhost} en local). Tout ce qui veut savoir "suis-je sur l'host auth ?"
+ * passe par ici.</p>
  */
 @Component
 public class AuthHostResolver {

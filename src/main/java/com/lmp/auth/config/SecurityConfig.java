@@ -79,6 +79,10 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:}")
     private String authBaseUrl;
 
+    /** URL de base du site principal — pour redirects post-logout (le site, pas l'host auth). */
+    @org.springframework.beans.factory.annotation.Value("${app.base.url:}")
+    private String siteBaseUrl;
+
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                            PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler,
@@ -312,11 +316,13 @@ public class SecurityConfig {
                         .successHandler(purchaseIntentAuthenticationSuccessHandler)
                         .failureUrl(absoluteAuthUrl("/login?error=true")))
 
-                // Configuration de la déconnexion
+                // Configuration de la déconnexion.
+                // logoutSuccessUrl absolu vers baseUrl (sur auth.* "/" est 404).
+                // deleteCookies couvre Spring Session (SESSION) + JSESSIONID legacy + XSRF-TOKEN.
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/")
-                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessUrl(absoluteBaseUrl("/"))
+                        .deleteCookies("SESSION", "JSESSIONID", "XSRF-TOKEN")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .permitAll())
@@ -430,6 +436,13 @@ public class SecurityConfig {
             return relativePath;
         }
         return authBaseUrl + relativePath;
+    }
+
+    private String absoluteBaseUrl(String relativePath) {
+        if (siteBaseUrl == null || siteBaseUrl.isBlank()) {
+            return relativePath;
+        }
+        return siteBaseUrl + relativePath;
     }
 
     /**
