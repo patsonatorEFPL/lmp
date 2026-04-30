@@ -31,15 +31,26 @@ import java.util.Optional;
  */
 @Component
 public class PurchaseIntentAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(PurchaseIntentAuthenticationSuccessHandler.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + PurchaseIntentAuthenticationSuccessHandler.class.getName());
 
         private final UserRepository userRepository;
 
+    /** Base URL du site principal — utilisée pour redirects absolus cross-host
+     *  (form login fire sur auth.*, mais le user doit atterrir sur le site principal). */
+    @org.springframework.beans.factory.annotation.Value("${app.base.url:}")
+    private String baseUrl;
+
 
     public PurchaseIntentAuthenticationSuccessHandler(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    /** Préfixe le path avec baseUrl pour cross-host redirect (form login sur auth.* → site sur baseUrl). */
+    private String absoluteUrl(String path) {
+        if (baseUrl == null || baseUrl.isBlank()) return path;
+        return baseUrl + path;
     }
 
     @Override
@@ -82,8 +93,8 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
                                purchaseIntent.getAmount(), purchaseIntent.getCurrency());
                 
                 // Rediriger vers le dashboard avec un paramètre indiquant qu'il faut traiter le paiement
-                String redirectUrl = "/dashboard?processPurchase=true";
-                
+                String redirectUrl = absoluteUrl("/dashboard?processPurchase=true");
+
                 logger.info("Redirecting user {} to {} for purchase processing", userEmail, redirectUrl);
                 response.sendRedirect(redirectUrl);
                 return;
@@ -115,8 +126,8 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
             return;
         }
 
-        // Redirection normale vers le dashboard
-        String defaultRedirectUrl = "/dashboard";
+        // Redirection normale vers le dashboard sur le site principal (cross-host depuis auth.*).
+        String defaultRedirectUrl = absoluteUrl("/dashboard");
         logger.info("Standard authentication redirect for user {} to {}", userEmail, defaultRedirectUrl);
         response.sendRedirect(defaultRedirectUrl);
     }

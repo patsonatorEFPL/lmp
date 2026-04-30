@@ -35,8 +35,17 @@ public class FrontendRedirectController {
      * URL du frontend externe. Si vide ou non renseignée, le backend
      * sert directement le frontend embarqué (mode monolithique).
      */
-    @Value("${app.frontend.url:}")
+    /**
+     * URL externe du frontend Angular (mode split) — fallback sur app.base.url
+     * en mode monolithique. La détection split vs monolithique se fait en
+     * comparant cette URL à app.base.url : si différent → split (redirect),
+     * sinon → monolithique (forward index.html embarqué).
+     */
+    @Value("${app.frontend.url:${app.base.url:http://localhost:8080}}")
     private String frontendUrl;
+
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
 
     private final AuthHostResolver authHostResolver;
 
@@ -45,7 +54,9 @@ public class FrontendRedirectController {
     }
 
     private String redirectOrForward(String path) {
-        if (frontendUrl != null && !frontendUrl.isBlank()) {
+        // Split mode : frontendUrl distinct du baseUrl → redirect vers Angular dev server.
+        // Monolithique : frontendUrl == baseUrl (via cascade @Value) → forward index.html embarqué.
+        if (frontendUrl != null && !frontendUrl.isBlank() && !frontendUrl.equals(baseUrl)) {
             return "redirect:" + frontendUrl + path;
         }
         return "forward:/index.html";
