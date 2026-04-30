@@ -495,13 +495,13 @@ export class DashboardLayoutComponent implements OnInit {
 
   readonly navigationItems = [
     { label: "Tableau de bord", route: '/dashboard', icon: LayoutDashboard, exact: true, badge: null as string | null },
-    { label: 'Devis', route: '/dashboard/quotations', icon: FileText, exact: false, badge: '2' },
-    { label: 'Commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false, badge: '14' },
-    { label: 'Factures', route: '/dashboard/invoices', icon: Receipt, exact: false, badge: null },
-    { label: 'Projets', route: '/dashboard/projects', icon: FolderKanban, exact: false, badge: '3' },
-    { label: 'Tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false, badge: '1' },
-    { label: 'Rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false, badge: '2' },
-    { label: 'Adresses', route: '/dashboard/addresses', icon: MapPin, exact: false, badge: null },
+    { label: 'Devis', route: '/dashboard/quotations', icon: FileText, exact: false, badge: null as string | null },
+    { label: 'Commandes', route: '/dashboard/orders', icon: ShoppingCart, exact: false, badge: null as string | null },
+    { label: 'Factures', route: '/dashboard/invoices', icon: Receipt, exact: false, badge: null as string | null },
+    { label: 'Projets', route: '/dashboard/projects', icon: FolderKanban, exact: false, badge: null as string | null },
+    { label: 'Tickets', route: '/dashboard/tickets', icon: LifeBuoy, exact: false, badge: null as string | null },
+    { label: 'Rendez-vous', route: '/dashboard/appointments', icon: Calendar, exact: false, badge: null as string | null },
+    { label: 'Adresses', route: '/dashboard/addresses', icon: MapPin, exact: false, badge: null as string | null },
   ];
 
   readonly compteItems = [
