@@ -42,25 +42,25 @@
                                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#4b5563;">
                                     <tr>
                                         <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Nom</td>
-                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${contact.firstName + ' ' + contact.lastName}">Prénom Nom</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${contactForm.name}">Nom</td>
                                     </tr>
                                     <tr>
                                         <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Email</td>
                                         <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;">
-                                            <a th:href="'mailto:' + ${contact.email}" th:text="${contact.email}" style="color:#4f6df5;text-decoration:none;" href="mailto:contact@example.com">contact@example.com</a>
+                                            <a th:href="'mailto:' + ${contactForm.email}" th:text="${contactForm.email}" style="color:#4f6df5;text-decoration:none;" href="mailto:contact@example.com">contact@example.com</a>
                                         </td>
                                     </tr>
-                                    <tr th:if="${contact.phone != null}">
+                                    <tr th:if="${contactForm.phone != null}">
                                         <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Téléphone</td>
-                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${contact.phone}">+33 1 23 45 67 89</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:500;color:#1a1f36;" th:text="${contactForm.phone}">+33 1 23 45 67 89</td>
                                     </tr>
                                     <tr>
                                         <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;">Sujet</td>
-                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#4f6df5;" th:text="${contact.subject}">Demande d'information</td>
+                                        <td align="right" style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#4f6df5;" th:text="${contactForm.subject}">Demande d'information</td>
                                     </tr>
                                     <tr>
                                         <td style="padding:8px 0;">Date d'envoi</td>
-                                        <td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;" th:text="${#temporals.format(contact.submittedAt, 'dd/MM/yyyy à HH:mm')}">22/08/2025 à 14:30</td>
+                                        <td align="right" style="padding:8px 0;font-weight:500;color:#1a1f36;" th:text="${currentDateTime}">22/08/2025 à 14:30</td>
                                     </tr>
                                 </table>
                             </div>
@@ -68,7 +68,7 @@
                             <!-- Message content -->
                             <div style="background-color:#f8f9fb;border-left:4px solid #4f6df5;border-radius:0 8px 8px 0;padding:20px;margin-bottom:24px;">
                                 <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Message</div>
-                                <p style="margin:0;font-size:14px;color:#1a1f36;line-height:1.6;white-space:pre-line;" th:text="${contact.message}">
+                                <p style="margin:0;font-size:14px;color:#1a1f36;line-height:1.6;white-space:pre-line;" th:text="${contactForm.message}">
                                     Contenu du message envoyé par le visiteur...
                                 </p>
                             </div>
@@ -77,7 +77,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td align="center" style="padding:8px 0 24px;">
-                                        <a th:href="'mailto:' + ${contact.email} + '?subject=Re: ' + ${contact.subject}"
+                                        <a th:href="'mailto:' + ${contactForm.email} + '?subject=Re: ' + ${contactForm.subject}"
                                            href="mailto:contact@example.com"
                                            style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
                                             Répondre au message
