@@ -70,6 +70,10 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${security.remember-me.secret:lmpRememberMe-dev-changeme}")
     private String rememberMeSecret;
 
+    /** Cookie domain partagé cross-subdomain (ex. lmp-services.ca pour partager auth.* ↔ dev.* ↔ apex). */
+    @org.springframework.beans.factory.annotation.Value("${server.servlet.session.cookie.domain:}")
+    private String cookieDomain;
+
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                            PurchaseIntentAuthenticationSuccessHandler purchaseIntentAuthenticationSuccessHandler,
@@ -140,7 +144,7 @@ public class SecurityConfig {
                 // Use plain CsrfTokenRequestAttributeHandler (no XOR/BREACH protection)
                 // so Angular can read the raw cookie value and send it back as header
                 .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRepository(buildCsrfRepository())
                         .csrfTokenRequestHandler(spaCsrfTokenRequestHandler())
                         .ignoringRequestMatchers(
                                 "/api/v1/dev/**",
@@ -407,6 +411,19 @@ public class SecurityConfig {
         // Setting to null forces eager CSRF token resolution (not deferred)
         handler.setCsrfRequestAttributeName(null);
         return handler;
+    }
+
+    /**
+     * Construit le CookieCsrfTokenRepository avec un Domain attribute partagé
+     * cross-subdomain (auth.* ↔ apex/dev.*). Sans Domain, le cookie XSRF reste
+     * scopé à l'host exact et le SPA cross-host ne peut pas l'envoyer.
+     */
+    private CookieCsrfTokenRepository buildCsrfRepository() {
+        CookieCsrfTokenRepository repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        if (cookieDomain != null && !cookieDomain.isBlank()) {
+            repo.setCookieCustomizer(c -> c.domain(cookieDomain));
+        }
+        return repo;
     }
 
     /**

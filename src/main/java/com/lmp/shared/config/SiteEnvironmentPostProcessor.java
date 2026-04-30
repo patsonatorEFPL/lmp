@@ -72,6 +72,13 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
         }
         putIfAbsent(environment, derived, "app.cors.allowed-origins", corsOrigins);
 
+        // Cookie domain — partage de session cross-subdomain (auth.* ↔ dev.* ↔ apex).
+        // Sur localhost, NE PAS définir (browsers rejettent Domain=localhost).
+        if (!isLocal) {
+            String rootDomain = extractRootDomain(hostNoWww);
+            putIfAbsent(environment, derived, "server.servlet.session.cookie.domain", rootDomain);
+        }
+
         // Frappe / ERPNext : URL dérivée comme "crm.<host>" en non-local, sinon localhost:8000.
         // Override possible via LMP_CRM_URL env var (Q1A : pointer vers Frappe partagée
         // depuis staging quand crm.dev.* n'existe pas).
@@ -124,6 +131,21 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
      * On part du host SANS www. Si 2 labels → root domain → préfixe "auth.".
      * Si plus → premier label = env, rest = root → "auth-{env}.{root}".
      */
+    /**
+     * Root domain = 2 derniers labels (heuristique simple pour .ca/.com/etc.).
+     * Note : ne gère pas Public Suffix List (.co.uk, .com.br) — étendre si besoin.
+     */
+    static String extractRootDomain(String hostNoWww) {
+        if (hostNoWww == null || hostNoWww.isBlank()) {
+            return hostNoWww;
+        }
+        String[] labels = hostNoWww.split("\\.");
+        if (labels.length <= 2) {
+            return hostNoWww;
+        }
+        return labels[labels.length - 2] + "." + labels[labels.length - 1];
+    }
+
     static String deriveAuthHost(String hostNoWww) {
         if (hostNoWww == null || hostNoWww.isBlank()) {
             return hostNoWww;
