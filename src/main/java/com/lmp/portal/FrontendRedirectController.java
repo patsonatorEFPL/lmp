@@ -1,5 +1,6 @@
 package com.lmp.portal;
 
+import com.lmp.shared.web.AuthHostResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -19,10 +20,10 @@ import org.springframework.web.server.ResponseStatusException;
  *   Fait un forward vers /index.html pour que Spring Boot serve
  *   directement le frontend embarqué dans le JAR.
  *
- * Sur les sous-domaines auth.* (réservés au flux OIDC), les pages
- * marketing retournent 404 — seules /login et /register restent
- * accessibles pour permettre le flux OAuth2 (Spring Auth Server
- * redirige vers /login si l'utilisateur n'est pas authentifié).
+ * Sur l'host auth (résolu depuis {@code app.oauth2.issuer-uri}, réservé
+ * au flux OIDC), les pages marketing retournent 404 — seules /login et
+ * /register restent accessibles pour permettre le flux OAuth2 (Spring
+ * Auth Server redirige vers /login si l'utilisateur n'est pas authentifié).
  *
  * Les endpoints API REST (/api/**), OAuth2 (/oauth2/**), webhooks
  * et autres endpoints backend ne sont pas affectés par ce contrôleur.
@@ -37,6 +38,12 @@ public class FrontendRedirectController {
     @Value("${app.frontend.url:}")
     private String frontendUrl;
 
+    private final AuthHostResolver authHostResolver;
+
+    public FrontendRedirectController(AuthHostResolver authHostResolver) {
+        this.authHostResolver = authHostResolver;
+    }
+
     private String redirectOrForward(String path) {
         if (frontendUrl != null && !frontendUrl.isBlank()) {
             return "redirect:" + frontendUrl + path;
@@ -45,25 +52,24 @@ public class FrontendRedirectController {
     }
 
     /**
-     * Pour les pages marketing : si on est sur l'host auth.*, retourner 404.
+     * Pour les pages marketing : si on est sur l'host auth, retourner 404.
      * Sinon comportement normal (forward ou redirect).
      */
     private String marketingPage(String path) {
-        if (isAuthSubdomain()) {
+        if (isOnAuthHost()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         return redirectOrForward(path);
     }
 
-    private static boolean isAuthSubdomain() {
+    private boolean isOnAuthHost() {
         try {
             ServletRequestAttributes attrs =
                     (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attrs == null) {
                 return false;
             }
-            String host = attrs.getRequest().getServerName();
-            return host != null && host.startsWith("auth.");
+            return authHostResolver.isAuthHost(attrs.getRequest().getServerName());
         } catch (Exception e) {
             return false;
         }
