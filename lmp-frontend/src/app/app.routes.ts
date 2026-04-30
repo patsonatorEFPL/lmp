@@ -68,6 +68,19 @@ export const routes: Routes = [
             (m) => m.BlogDetailComponent,
           ),
       },
+      // 404 sous PublicLayout : navbar/footer conservés pour permettre la navigation.
+      // Route nommée /not-found accessible via redirect explicite.
+      // PAS de wildcard "**" ici : il interférerait avec les routes top-level
+      // (login/register/forgot-password/dashboard/admin) car le PublicLayout
+      // 'path: ""' parent matche tout et descendrait dans le wildcard avant
+      // de laisser Angular essayer les routes sœurs.
+      {
+        path: 'not-found',
+        loadComponent: () =>
+          import('./features/errors/not-found.component').then(
+            (m) => m.NotFoundComponent,
+          ),
+      },
     ],
   },
 
@@ -234,6 +247,14 @@ export const routes: Routes = [
             (m) => m.SettingsComponent,
           ),
       },
+      // Sous-route inconnue dans /dashboard/* → 404 dans le shell dashboard
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./features/errors/not-found.component').then(
+            (m) => m.NotFoundComponent,
+          ),
+      },
     ],
   },
   {
@@ -349,12 +370,24 @@ export const routes: Routes = [
             (m) => m.AdminTicketsComponent,
           ),
       },
+      // Sous-route inconnue dans /admin/* → 404 dans le shell admin
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./features/errors/not-found.component').then(
+            (m) => m.NotFoundComponent,
+          ),
+      },
     ],
   },
 
-  // Fallback
+  // Catch-all racine : doit être la TOUTE DERNIÈRE route. Toute URL non
+  // matchée par les routes ci-dessus tombe ici → page 404 stylisée.
   {
     path: '**',
-    redirectTo: '',
+    loadComponent: () =>
+      import('./features/errors/not-found.component').then(
+        (m) => m.NotFoundComponent,
+      ),
   },
 ];
