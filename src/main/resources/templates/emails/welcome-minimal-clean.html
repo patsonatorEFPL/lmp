@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Bienvenue chez LMP Services</title>
+    <title th:text="|Bienvenue chez ${companyName ?: 'LMP Services'}|">Bienvenue chez LMP Services</title>
     <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
     <!-- Preheader -->
-    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;" th:text="|Bienvenue ! Votre compte ${companyName ?: 'LMP Services'} est prêt. Connectez-vous pour découvrir nos services.|">
         Bienvenue ! Votre compte LMP Services est prêt. Connectez-vous pour découvrir nos services.
     </div>
 
