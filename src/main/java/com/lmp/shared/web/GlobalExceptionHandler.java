@@ -27,6 +27,10 @@ public class GlobalExceptionHandler {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    /** URL de base de l'host auth — utilisée pour rediriger vers /login (canonique). */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
     /**
      * Gère les erreurs d'accès refusé (403 Forbidden).
      * 
@@ -99,7 +103,7 @@ public class GlobalExceptionHandler {
         }
         
         redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
-        return "redirect:" + frontendUrl + "/login?error=true";
+        return "redirect:" + authBaseUrl + "/login?error=true";
     }
 
     /**
@@ -113,7 +117,7 @@ public class GlobalExceptionHandler {
     public String handleDisabledException(DisabledException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", 
             "Votre compte est désactivé. Contactez l'administrateur.");
-        return "redirect:" + frontendUrl + "/login?error=true";
+        return "redirect:" + authBaseUrl + "/login?error=true";
     }
 
     /**
@@ -127,7 +131,7 @@ public class GlobalExceptionHandler {
     public String handleLockedException(LockedException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", 
             "Votre compte est temporairement verrouillé. Contactez l'administrateur.");
-        return "redirect:" + frontendUrl + "/login?error=true";
+        return "redirect:" + authBaseUrl + "/login?error=true";
     }
 
     /**
