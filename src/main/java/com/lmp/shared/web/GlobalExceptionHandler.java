@@ -44,7 +44,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Accès refusé");
         model.addAttribute("errorMessage", "Vous n'avez pas les permissions nécessaires pour accéder à cette page.");
         model.addAttribute("errorCode", "403");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         
         return "error/403";
     }
@@ -75,7 +75,7 @@ public class GlobalExceptionHandler {
             model.addAttribute("errorTitle", "Ressource non trouvée");
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("errorCode", "404");
-            model.addAttribute("returnUrl", "/");
+            model.addAttribute("returnUrl", frontendUrl);
 
             return "error/404";
         }
@@ -147,7 +147,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Données invalides");
         model.addAttribute("errorMessage", ex.getMessage());
         model.addAttribute("errorCode", "400");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         
         return "error/400";
     }
@@ -165,7 +165,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Opération non autorisée");
         model.addAttribute("errorMessage", ex.getMessage());
         model.addAttribute("errorCode", "400");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         
         return "error/400";
     }
@@ -183,7 +183,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Erreur interne du serveur");
         model.addAttribute("errorMessage", "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.");
         model.addAttribute("errorCode", "500");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         model.addAttribute("technicalDetails", ex.getMessage());
         
         // Log l'erreur pour le debugging
@@ -206,7 +206,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Erreur de configuration");
         model.addAttribute("errorMessage", "Une erreur de configuration s'est produite. Contactez l'administrateur.");
         model.addAttribute("errorCode", "500");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         model.addAttribute("technicalDetails", "NullPointerException: " + ex.getMessage());
         
         // Log l'erreur pour le debugging

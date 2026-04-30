@@ -55,6 +55,13 @@ public class OrderAdminController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
+
+    private boolean isMonolithicMode() {
+        return frontendUrl == null || frontendUrl.isBlank() || frontendUrl.equals(baseUrl);
+    }
+
         private final OrderAdminService orderAdminService;
         private final OrderStatusHistoryService historyService;
         private final RefundService refundService;
@@ -83,6 +90,9 @@ public class OrderAdminController {
      */
     @GetMapping
     public String ordersPage() {
+        if (isMonolithicMode()) {
+            return "forward:/index.html";
+        }
         return "redirect:" + frontendUrl + "/admin/orders";
     }
 
@@ -91,6 +101,9 @@ public class OrderAdminController {
      */
     @GetMapping("/{orderId}")
     public String orderDetailsRedirect(@PathVariable java.util.UUID orderId) {
+        if (isMonolithicMode()) {
+            return "forward:/index.html";
+        }
         return "redirect:" + frontendUrl + "/admin/orders/" + orderId;
     }
 
@@ -99,6 +112,9 @@ public class OrderAdminController {
      */
     @GetMapping("/reports")
     public String reportsPage() {
+        if (isMonolithicMode()) {
+            return "forward:/index.html";
+        }
         return "redirect:" + frontendUrl + "/admin/orders/reports";
     }
 

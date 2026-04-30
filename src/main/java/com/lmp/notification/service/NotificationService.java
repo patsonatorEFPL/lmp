@@ -243,9 +243,10 @@ public class NotificationService {
         context.setVariable("newStatus", getStatusDisplayName(newStatus));
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-status-change", context);
     }
 
@@ -255,9 +256,10 @@ public class NotificationService {
         context.setVariable("reason", reason);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-cancellation", context);
     }
 
@@ -268,9 +270,10 @@ public class NotificationService {
         context.setVariable("refundId", refundId);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-refund", context);
     }
 
@@ -279,9 +282,10 @@ public class NotificationService {
         context.setVariable("order", order);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-confirmation", context);
     }
 
@@ -291,9 +295,10 @@ public class NotificationService {
         context.setVariable("trackingNumber", trackingNumber);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-shipping", context);
     }
 
@@ -313,9 +318,10 @@ public class NotificationService {
         context.setVariable("message", message);
         context.setVariable("order", order);
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/admin-notification", context);
     }
 

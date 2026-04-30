@@ -66,6 +66,9 @@ public class StripeWebhookHandler {
     @Value("${stripe.webhook.secret}")
     private String webhookSecret;
 
+    @Value("${mail.from.support:support@lmp-services.ca}")
+    private String supportEmail;
+
         private final PaymentTransactionRepository paymentTransactionRepository;
 
         private final OrderRepository orderRepository;
@@ -1633,6 +1636,7 @@ public class StripeWebhookHandler {
             context.setVariable("amount", order.getTotalAmount());
             context.setVariable("currency", order.getCurrency() != null ? order.getCurrency() : "EUR");
             context.setVariable("paymentDate", formattedDate);
+            context.setVariable("companyEmail", supportEmail);
 
             return templateEngine.process("emails/invoice-receipt", context);
         } catch (Exception e) {
