@@ -92,16 +92,26 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
         putIfAbsent(environment, derived, "app.oauth2.erp.redirect-uri",
                 crmUrl + "/api/method/external CRM.integrations.oauth2_logins.custom/lmp_sso");
 
-        // Emails dérivés du host
-        putIfAbsent(environment, derived, "mail.from.noreply", "noreply@" + host);
-        putIfAbsent(environment, derived, "mail.from.support", "support@" + host);
-        putIfAbsent(environment, derived, "mail.replyto.support", "support@" + host);
+        // Email domain — Q2B : utilise le ROOT domain pour les From headers (SPF/DKIM/
+        // DMARC sont configurés sur la zone parente, pas sur les subdomains comme
+        // dev.* ou auth-dev.*). Override via MAIL_DOMAIN env var possible.
+        // Le contenu des emails (liens) utilise app.base.url séparément — ainsi un email
+        // envoyé depuis staging contient des liens vers dev.* mais part de
+        // noreply@lmp-services.ca (domaine vérifié auprès de Mailtrap/SES/etc.).
+        String mailDomain = environment.getProperty("mail.domain");
+        if (mailDomain == null || mailDomain.isBlank()) {
+            mailDomain = isLocal ? "localhost" : extractRootDomain(hostNoWww);
+            putIfAbsent(environment, derived, "mail.domain", mailDomain);
+        }
+        putIfAbsent(environment, derived, "mail.from.noreply", "noreply@" + mailDomain);
+        putIfAbsent(environment, derived, "mail.from.support", "support@" + mailDomain);
+        putIfAbsent(environment, derived, "mail.replyto.support", "support@" + mailDomain);
 
-        putIfAbsent(environment, derived, "company.email", "support@" + host);
-        putIfAbsent(environment, derived, "company.team.email", "support@" + host);
-        putIfAbsent(environment, derived, "company.admin.email", "admin@" + host);
+        putIfAbsent(environment, derived, "company.email", "support@" + mailDomain);
+        putIfAbsent(environment, derived, "company.team.email", "support@" + mailDomain);
+        putIfAbsent(environment, derived, "company.admin.email", "admin@" + mailDomain);
 
-        putIfAbsent(environment, derived, "lmp.sync.alert.admin-email", "admin@" + host);
+        putIfAbsent(environment, derived, "lmp.sync.alert.admin-email", "admin@" + mailDomain);
 
         if (!derived.isEmpty()) {
             MutablePropertySources propertySources = environment.getPropertySources();
