@@ -48,8 +48,10 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
         // URLs applicatives
         putIfAbsent(environment, derived, "app.base.url", siteUrl);
-        putIfAbsent(environment, derived, "app.frontend.url", siteUrl);
         putIfAbsent(environment, derived, "company.website", siteUrl);
+        // app.frontend.url volontairement non-dérivé : sémantique "URL externe du
+        // frontend en mode split (Angular SSR séparé)". Mode monolithique = vide.
+        // Profil dev override avec http://localhost:4200, prod/staging laisse vide.
 
         // OAuth2 issuer : sous-domaine "auth.<host>" en non-local, sinon siteUrl
         // Permet d'avoir auth.lmp-services.ca en prod et auth.dev.lmp-services.ca en test
@@ -68,14 +70,18 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
         }
         putIfAbsent(environment, derived, "app.cors.allowed-origins", corsOrigins);
 
-        // Frappe / ERPNext callback : dérivé de lmp.crm.url (par défaut crm.lmp-services.ca)
-        // permet à un environnement isolé de pointer vers une autre instance Frappe.
+        // Frappe / ERPNext : URL dérivée comme "crm.<host>" en non-local, sinon localhost:8000.
+        // Override possible via LMP_CRM_URL env var (Q1A : pointer vers Frappe partagée
+        // depuis staging quand crm.dev.* n'existe pas).
         String crmUrl = environment.getProperty("lmp.crm.url");
-        if (crmUrl != null && !crmUrl.isBlank()) {
+        if (crmUrl == null || crmUrl.isBlank()) {
+            crmUrl = isLocal ? "http://localhost:8000" : "https://crm." + hostNoWww;
+            putIfAbsent(environment, derived, "lmp.crm.url", crmUrl);
+        } else {
             crmUrl = crmUrl.replaceAll("/+$", "");
-            putIfAbsent(environment, derived, "app.oauth2.erp.redirect-uri",
-                    crmUrl + "/api/method/frappe.integrations.oauth2_logins.custom/lmp_sso");
         }
+        putIfAbsent(environment, derived, "app.oauth2.erp.redirect-uri",
+                crmUrl + "/api/method/frappe.integrations.oauth2_logins.custom/lmp_sso");
 
         // Emails dérivés du host
         putIfAbsent(environment, derived, "mail.from.noreply", "noreply@" + host);
