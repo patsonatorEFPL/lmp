@@ -61,7 +61,12 @@ public class DataInitializer implements CommandLineRunner {
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
 
-    @org.springframework.beans.factory.annotation.Value("${ADMIN_EMAIL:admin@lmp.ca}")
+    /**
+     * Email admin par défaut. Cascade sur company.admin.email dérivé par
+     * SiteEnvironmentPostProcessor (admin@<rootDomain>) — ainsi le default
+     * suit automatiquement la zone configurée. Override via env var ADMIN_EMAIL.
+     */
+    @org.springframework.beans.factory.annotation.Value("${ADMIN_EMAIL:${company.admin.email:admin@localhost}}")
     private String adminEmail;
 
     public DataInitializer(UserRepository userRepository,
