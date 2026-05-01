@@ -115,7 +115,8 @@ public class SecurityConfig {
                                 "/api/v1/services/**",
                                 "/api/v1/contact",
                                 "/api/v1/appointments/**",
-                                "/api/v1/config")
+                                "/api/v1/config",
+                                "/api/v1/blog/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/payments/guest-order/preview/**")
                         .permitAll()
