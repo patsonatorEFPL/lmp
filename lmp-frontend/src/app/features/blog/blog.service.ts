@@ -20,7 +20,7 @@ interface ApiResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class BlogService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiUrl}/blog`;
+  private readonly baseUrl = `${environment.apiBaseUrl}/blog`;
 
   getPosts(page = 0, size = 10): Observable<ApiResponse<PageResponse<BlogPost>>> {
     return this.http.get<ApiResponse<PageResponse<BlogPost>>>(
