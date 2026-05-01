@@ -18,18 +18,28 @@ public class AdminDashboardController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
+
+    private boolean isMonolithicMode() {
+        return frontendUrl == null || frontendUrl.isBlank() || frontendUrl.equals(baseUrl);
+    }
+
     @GetMapping("/dashboard")
     public String showAdminDashboard() {
+        if (isMonolithicMode()) return "forward:/index.html";
         return "redirect:" + frontendUrl + "/admin";
     }
 
     @GetMapping
     public String adminRoot() {
+        if (isMonolithicMode()) return "forward:/index.html";
         return "redirect:" + frontendUrl + "/admin";
     }
 
     @GetMapping("/statistics")
     public String showStatistics() {
+        if (isMonolithicMode()) return "forward:/index.html";
         return "redirect:" + frontendUrl + "/admin";
     }
 }
