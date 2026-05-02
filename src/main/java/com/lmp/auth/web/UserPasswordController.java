@@ -75,7 +75,7 @@ public class UserPasswordController {
 
             // Récupérer l'utilisateur actuel
             logger.info("🔐 DEBUG PASSWORD - Recherche utilisateur par email: {}", authentication.getName());
-            User currentUser = userService.findByEmail(authentication.getName())
+            User currentUser = userService.findByLogin(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             
             logger.info("🔐 DEBUG PASSWORD - Utilisateur trouvé: ID={}, Email={}",
@@ -155,7 +155,7 @@ public class UserPasswordController {
                     .body("{\"success\": false, \"message\": \"Utilisateur non authentifié\"}");
             }
 
-            User currentUser = userService.findByEmail(authentication.getName())
+            User currentUser = userService.findByLogin(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             boolean isValid = userService.checkCurrentPassword(currentUser.getId(), request.getCurrentPassword());

@@ -120,7 +120,7 @@ public class StaffInvitationAdminController {
     }
 
     private UUID currentUserId(Authentication authentication) {
-        User actor = userService.findByEmail(authentication.getName())
+        User actor = userService.findByLogin(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
         return actor.getId();
     }
