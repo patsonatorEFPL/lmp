@@ -34,7 +34,7 @@
 
         <div class="err-foot">
             Besoin d'aide&nbsp;?
-            <a href="mailto:lmp.assistance@gmail.com">lmp.assistance&#64;gmail.com</a>
+            <a th:href="|mailto:${companyEmail}|" th:text="${companyEmail}">support@localhost</a>
         </div>
     </div>
 </div>

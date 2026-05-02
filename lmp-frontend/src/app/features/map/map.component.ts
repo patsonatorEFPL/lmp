@@ -2,6 +2,7 @@ import { Component, AfterViewInit, OnDestroy, OnInit, signal, inject, PLATFORM_I
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeoService } from '../../core/services/seo.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 declare const L: any;
 
@@ -52,6 +53,7 @@ declare const L: any;
 })
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly seo = inject(SeoService);
+  private readonly siteConfig = inject(SiteConfigService);
   private readonly platformId = inject(PLATFORM_ID);
 
   searchQuery = signal('');
@@ -115,7 +117,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         <div style="font-family: sans-serif; min-width: 200px;">
           <strong style="font-size: 14px;">LMP Digital Services</strong><br/>
           <span style="color: #666; font-size: 12px;">1085 Rue de la Rivière<br/>Québec, QC G1Y 2A3, Canada</span><br/>
-          <a href="mailto:lmp.assistance@gmail.com" style="color: #10b981; font-size: 12px;">lmp.assistance@gmail.com</a>
+          <a href="mailto:${this.siteConfig.supportEmail}" style="color: #10b981; font-size: 12px;">${this.siteConfig.supportEmail}</a>
         </div>
       `);
   }
