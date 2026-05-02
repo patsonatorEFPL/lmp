@@ -43,15 +43,20 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        logger.debug("🔍 Tentative de connexion pour l'email: {}", email);
-        logger.error("🚨 [SESSION-SECURITY] loadUserByUsername appelé pour: {} - ATTENTION: cette méthode n'est appelée qu'une seule fois à la connexion", email);
-    
-        User user = userRepository.findByEmailWithRoles(email)
-                .orElseThrow(() -> {
-                    logger.warn("❌ Utilisateur non trouvé avec l'email: {}", email);
-                    return new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + email);
-                });
+    public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
+        logger.debug("Tentative de connexion: {}", login);
+
+        User user;
+        if ("Administrator".equals(login)) {
+            user = userRepository.findByUsernameWithRoles("Administrator")
+                    .orElseThrow(() -> new UsernameNotFoundException("Administrator not found"));
+        } else {
+            user = userRepository.findByEmailWithRoles(login)
+                    .orElseThrow(() -> {
+                        logger.warn("Utilisateur non trouvé: {}", login);
+                        return new UsernameNotFoundException("Utilisateur non trouvé: " + login);
+                    });
+        }
     
         logger.info("✅ Utilisateur trouvé: {} avec {} rôles", user.getEmail(), user.getRoles().size());
         logger.error("🔍 [SESSION-SECURITY] Statut utilisateur lors connexion: {} (Email: {})", user.getStatus(), user.getEmail());
