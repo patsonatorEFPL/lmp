@@ -1,6 +1,5 @@
 package com.lmp.auth.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -9,8 +8,7 @@ import jakarta.validation.constraints.Size;
  */
 public class LoginDto {
 
-    @NotBlank(message = "L'email est obligatoire")
-    @Email(message = "Format d'email invalide")
+    @NotBlank(message = "L'identifiant est obligatoire")
     private String email;
 
     @NotBlank(message = "Le mot de passe est obligatoire")

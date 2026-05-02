@@ -88,9 +88,9 @@ public class AuthRestController {
 
             programmaticHttpSessionLogin.login(request, response, authentication);
 
-            Optional<User> userOpt = userService.findByEmailWithRoles(loginDto.getEmail());
+            Optional<User> userOpt = userService.findByEmailWithRoles(authentication.getName());
             if (userOpt.isEmpty()) {
-                logger.error("Utilisateur introuvable après authentification réussie: {}", loginDto.getEmail());
+                logger.error("Utilisateur introuvable après authentification réussie: {}", authentication.getName());
                 programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ApiResponse.error("Login failed"));
