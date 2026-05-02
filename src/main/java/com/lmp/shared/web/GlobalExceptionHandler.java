@@ -59,11 +59,10 @@ public class GlobalExceptionHandler {
 
     /**
      * Laisse passer les ResponseStatusException levées intentionnellement
-     * (par ex. par FrontendRedirectController.marketingPage pour bloquer
-     * les pages marketing sur les sous-domaines auth.*) au resolver Spring
-     * built-in, qui respecte le statut HTTP demandé. Sans cela, le handler
-     * RuntimeException.class ci-dessous les avalerait et renverrait une
-     * vue d'erreur 500.
+     * (ex. FrontendRedirectController : 404 sur l'host auth pour pages marketing,
+     * ou préfixes backend sans handler) au resolver Spring built-in, qui respecte
+     * le statut HTTP demandé. Sans cela, le handler RuntimeException.class
+     * ci-dessous les avalerait et renverrait une vue d'erreur 500.
      */
     @ExceptionHandler(ResponseStatusException.class)
     public void handleResponseStatus(ResponseStatusException ex) {

@@ -59,13 +59,25 @@ public class AuthHostResolver {
     }
 
     /**
+     * @return true si un sous-domaine auth distinct est configuré (staging/prod).
+     *         false en dev local (pas d'issuer ou issuer = localhost) — pas de séparation de sous-domaine.
+     */
+    public boolean isAuthSubdomainEnabled() {
+        return authHost != null
+                && !authHost.equals("localhost")
+                && !authHost.startsWith("127.")
+                && !authHost.startsWith("0:");
+    }
+
+    /**
      * @param requestHost host extrait de la requête HTTP courante
      * @return true si {@code requestHost} correspond à l'host auth configuré (case-insensitive)
      */
     public boolean isAuthHost(String requestHost) {
-        // Pas d'issuer configuré ou issuer = localhost → pas de restriction de sous-domaine
+        // No issuer configured or localhost issuer → single-host dev mode, no subdomain split.
+        // Marketing pages and auth pages both served on every host.
         if (authHost == null || authHost.equals("localhost") || authHost.startsWith("127.") || authHost.startsWith("0:")) {
-            return true;
+            return false;
         }
         if (requestHost == null) {
             return false;
