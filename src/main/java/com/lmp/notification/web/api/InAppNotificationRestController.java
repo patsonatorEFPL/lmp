@@ -112,6 +112,6 @@ public class InAppNotificationRestController {
                 || "anonymousUser".equals(authentication.getName())) {
             return null;
         }
-        return userService.findByEmail(authentication.getName()).orElse(null);
+        return userService.findByLogin(authentication.getName()).orElse(null);
     }
 }

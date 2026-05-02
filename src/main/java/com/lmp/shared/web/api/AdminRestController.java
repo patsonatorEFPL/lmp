@@ -316,7 +316,7 @@ public class AdminRestController {
 
             User actor = null;
             if (admin || staff) {
-                actor = userService.findByEmail(authentication.getName())
+                actor = userService.findByLogin(authentication.getName())
                         .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
             }
             if (admin) {
@@ -353,7 +353,7 @@ public class AdminRestController {
 
             if (data.containsKey("admin")) {
                 boolean grantAdmin = Boolean.TRUE.equals(data.get("admin"));
-                User actor = userService.findByEmail(authentication.getName())
+                User actor = userService.findByLogin(authentication.getName())
                         .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
                 userService.setUserAdminRole(id, grantAdmin, actor.getId());
             }
@@ -454,7 +454,7 @@ public class AdminRestController {
                             + "incluant majuscules, minuscules, chiffres et caractères spéciaux"));
         }
 
-        User admin = userService.findByEmail(authentication.getName())
+        User admin = userService.findByLogin(authentication.getName())
                 .orElse(null);
         if (admin == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Administrateur non trouvé"));
@@ -501,7 +501,7 @@ public class AdminRestController {
                             + "incluant majuscules, minuscules, chiffres et caractères spéciaux"));
         }
 
-        User admin = userService.findByEmail(authentication.getName())
+        User admin = userService.findByLogin(authentication.getName())
                 .orElse(null);
         if (admin == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Administrateur non trouvé"));

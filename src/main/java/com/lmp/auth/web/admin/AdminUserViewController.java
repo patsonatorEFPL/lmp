@@ -217,7 +217,7 @@ public class AdminUserViewController {
 
             // Récupérer l'admin actuel
             logger.info("🔐 DEBUG ADMIN PASSWORD - Recherche admin par email: {}", authentication.getName());
-            User admin = userService.findByEmail(authentication.getName())
+            User admin = userService.findByLogin(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Administrateur non trouvé"));
             
             logger.info("🔐 DEBUG ADMIN PASSWORD - Admin trouvé: ID={}, Email={}", admin.getId(), admin.getEmail());
