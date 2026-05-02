@@ -50,22 +50,13 @@ public class DataInitializer implements CommandLineRunner {
     private final ServiceOfferRepository serviceOfferRepository;
     private final OfferBenefitRepository offerBenefitRepository;
 
-    /**
-     * Mot de passe admin — la variable d'environnement est prioritaire sur la DB.
-     *
-     * Règles :
-     *  • ENV présente → écrase le hash en base si différent (rotation/reset).
-     *  • ENV absente + admin existe → conserve le hash persisté en DB.
-     *  • ENV absente + admin absent → IllegalStateException (bootstrap initial obligatoire).
-     */
+    private static final String ADMIN_USERNAME = "Administrator";
+
+    // ENV présente → écrase le hash en base si différent. Absente + admin existe → conserve.
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
 
-    /**
-     * Email admin par défaut. Cascade sur company.admin.email dérivé par
-     * SiteEnvironmentPostProcessor (admin@<rootDomain>) — ainsi le default
-     * suit automatiquement la zone configurée. Override via env var ADMIN_EMAIL.
-     */
+    // Email réel de l'admin (pour les notifications). Le login se fait via "Administrator".
     @org.springframework.beans.factory.annotation.Value("${ADMIN_EMAIL:${company.admin.email:admin@localhost}}")
     private String adminEmail;
 
@@ -98,9 +89,9 @@ public class DataInitializer implements CommandLineRunner {
         logger.info("📦 Nombre total de catégories de services: {}", serviceCategoryRepository.count());
         logger.info("🛒 Nombre total de services: {}", serviceRepository.count());
 
-        userRepository.findByEmail(adminEmail).ifPresentOrElse(
-            admin -> logger.info("✅ Compte administrateur configuré: {}", admin.getEmail()),
-            () -> logger.error("❌ Erreur: Compte administrateur non trouvé!")
+        userRepository.findByUsernameWithRoles(ADMIN_USERNAME).ifPresentOrElse(
+            admin -> logger.info("Compte administrateur configure: login={} email={}", ADMIN_USERNAME, admin.getEmail()),
+            () -> logger.error("Erreur: compte Administrator introuvable en base!")
         );
 
         logger.info("🏁 === Initialisation des données LMP terminée ===");
@@ -128,49 +119,37 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initializeDefaultUsers() {
         Role adminRole = roleRepository.findByName("ADMIN")
-                .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Role ADMIN non trouve"));
 
         boolean envProvided = adminPassword != null && !adminPassword.isBlank();
-        var existingAdmin = userRepository.findByEmail(adminEmail);
+        var existing = userRepository.findByUsernameWithRoles(ADMIN_USERNAME);
 
-        if (existingAdmin.isPresent()) {
-            User admin = existingAdmin.get();
+        if (existing.isPresent()) {
+            User admin = existing.get();
             if (envProvided) {
-                // ENV prioritaire : synchronise le hash en base si différent
                 if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
                     admin.setPassword(passwordEncoder.encode(adminPassword));
                     userRepository.save(admin);
-                    logger.info("🔄 Mot de passe admin mis à jour depuis ADMIN_PASSWORD.");
-                } else {
-                    logger.debug("📋 Compte admin existant — mot de passe déjà synchronisé avec ADMIN_PASSWORD.");
+                    logger.info("Mot de passe Administrator mis a jour depuis ADMIN_PASSWORD.");
                 }
             } else {
-                logger.info("📋 ADMIN_PASSWORD non défini — conservation du mot de passe persisté en base.");
+                logger.info("ADMIN_PASSWORD absent — mot de passe Administrator conserve en base.");
             }
-            return;
-        }
-
-        // Garde-fou : si un admin existe déjà sous un autre email, ne pas créer de doublon
-        var otherAdmins = userRepository.findByRoleName("ADMIN");
-        if (!otherAdmins.isEmpty()) {
-            logger.warn("⚠️  Un administrateur existe déjà en base ({}), mais ADMIN_EMAIL est configuré sur '{}'. "
-                    + "Aucun nouveau compte admin ne sera créé pour éviter un doublon. "
-                    + "Mettez à jour ADMIN_EMAIL pour correspondre à l'admin existant.",
-                    otherAdmins.get(0).getEmail(), adminEmail);
             return;
         }
 
         if (!envProvided) {
             throw new IllegalStateException(
-                "❌ Aucun compte admin en base et ADMIN_PASSWORD non défini. "
-                + "Définissez la variable d'environnement ADMIN_PASSWORD pour le bootstrap initial.");
+                "Aucun compte Administrator en base et ADMIN_PASSWORD non defini. "
+                + "Definissez ADMIN_PASSWORD pour le bootstrap initial.");
         }
 
         User admin = new User();
+        admin.setUsername(ADMIN_USERNAME);
         admin.setEmail(adminEmail);
         admin.setPassword(passwordEncoder.encode(adminPassword));
-        admin.setFirstName("Admin");
-        admin.setLastName("LMP");
+        admin.setFirstName("Administrator");
+        admin.setLastName("");
         admin.setRegistrationDate(LocalDateTime.now());
         admin.setStatus(UserStatus.ACTIVE);
         admin.setAccountLocked(false);
@@ -178,7 +157,7 @@ public class DataInitializer implements CommandLineRunner {
         admin.setRoles(Set.of(adminRole));
 
         userRepository.save(admin);
-        logger.info("✅ Administrateur créé : {}", adminEmail);
+        logger.info("Administrateur cree: login=Administrator email={}", adminEmail);
     }
 
     /**

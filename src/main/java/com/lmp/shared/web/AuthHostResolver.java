@@ -63,7 +63,11 @@ public class AuthHostResolver {
      * @return true si {@code requestHost} correspond à l'host auth configuré (case-insensitive)
      */
     public boolean isAuthHost(String requestHost) {
-        if (authHost == null || requestHost == null) {
+        // Pas d'issuer configuré ou issuer = localhost → pas de restriction de sous-domaine
+        if (authHost == null || authHost.equals("localhost") || authHost.startsWith("127.") || authHost.startsWith("0:")) {
+            return true;
+        }
+        if (requestHost == null) {
             return false;
         }
         return authHost.equalsIgnoreCase(requestHost);
