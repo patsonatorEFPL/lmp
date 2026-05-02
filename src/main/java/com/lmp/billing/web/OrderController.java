@@ -467,7 +467,7 @@ public class OrderController {
 
             // Vérifier que l'utilisateur authentifié est le propriétaire de la commande ou
             // un admin
-            User authenticatedUser = userRepository.findByEmail(authentication.getName())
+            User authenticatedUser = userRepository.findByLogin(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             boolean isOwner = order.getUser().getId().equals(authenticatedUser.getId());
@@ -547,7 +547,7 @@ public class OrderController {
                     .orElseThrow(() -> new RuntimeException("Commande non trouvée"));
 
             // Vérifier l'accès
-            User authenticatedUser = userRepository.findByEmail(authentication.getName())
+            User authenticatedUser = userRepository.findByLogin(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
             boolean isOwner = order.getUser().getId().equals(authenticatedUser.getId());

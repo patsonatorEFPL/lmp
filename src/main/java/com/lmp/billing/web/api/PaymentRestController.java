@@ -1026,7 +1026,7 @@ public class PaymentRestController {
                 || "anonymousUser".equals(authentication.getName())) {
             return null;
         }
-        return userService.findByEmail(authentication.getName()).orElse(null);
+        return userService.findByLogin(authentication.getName()).orElse(null);
     }
 
     private static void applyVatSnapshotFromUser(Order order, User user) {
