@@ -198,7 +198,7 @@ public class AuthRestController {
                     .body(ApiResponse.error("Not authenticated"));
         }
 
-        return userService.findByEmailWithRoles(authentication.getName())
+        return userService.findByLogin(authentication.getName())
                 .map(user -> ResponseEntity.ok(ApiResponse.ok(UserResponse.from(user))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("User not found")));
