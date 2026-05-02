@@ -580,10 +580,18 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByIdWithRoles(id);
     }
     
-    /**
-     * Trouve un utilisateur par email avec ses rôles chargés.
-     */
     @Override
+    public Optional<User> findByLogin(String login) {
+        return userRepository.findByLogin(login);
+    }
+
+    @Override
+    @Transactional
+    public void updateLastLoginDate(User user) {
+        user.setLastLoginDate(LocalDateTime.now());
+        userRepository.save(user);
+    }
+
     public Optional<User> findByEmailWithRoles(String email) {
         return userRepository.findByEmailWithRoles(email);
     }
