@@ -274,8 +274,9 @@ public class SecurityConfig {
                                 "/appointments/create")
                         .permitAll()
 
-                        // Actuator health
+                        // Actuator : health public, reste ADMIN seulement
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
 
                         // Pages d'administration
                         .requestMatchers("/admin/**").hasRole("ADMIN")

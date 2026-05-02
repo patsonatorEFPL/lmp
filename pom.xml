@@ -282,6 +282,11 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- DevTools cause un fork automatique → 2 JVMs simultanés avec IntelliJ.
+					     fork=false : Maven et Spring Boot partagent le même JVM. -->
+					<fork>false</fork>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
