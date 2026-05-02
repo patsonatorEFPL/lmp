@@ -62,7 +62,8 @@ public class OidcHostGuardFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (shouldBlock(path) && !authHostResolver.isAuthHost(request.getServerName())) {
+        if (shouldBlock(path) && authHostResolver.isAuthSubdomainEnabled()
+                && !authHostResolver.isAuthHost(request.getServerName())) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
