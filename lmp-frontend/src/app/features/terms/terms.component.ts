@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { SeoService } from '../../core/services/seo.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 @Component({
   selector: 'lmp-terms',
@@ -41,6 +42,7 @@ import { SeoService } from '../../core/services/seo.service';
 })
 export class TermsComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly seo = inject(SeoService);
+  private readonly siteConfig = inject(SiteConfigService);
   private isBrowser: boolean;
   private scrollObserver?: IntersectionObserver;
 
@@ -52,7 +54,9 @@ export class TermsComponent implements OnInit, AfterViewInit, OnDestroy {
     .format(new Date())
     .replace(/^./, (c) => c.toUpperCase());
 
-  readonly sections = [
+  get sections() {
+    const email = this.siteConfig.supportEmail;
+    return [
     {
       title: 'Acceptation des conditions',
       content: `En accédant à ce site web, nous supposons que vous acceptez ces conditions d'utilisation.
@@ -87,9 +91,10 @@ export class TermsComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       title: 'Contact',
       content: `Pour toute question concernant ces conditions d'utilisation, vous pouvez nous contacter à
-        <a href="mailto:lmp.assistance@gmail.com" class="text-(--primary) hover:underline">lmp.assistance&#64;gmail.com</a>.`,
+        <a href="mailto:${email}" class="text-(--primary) hover:underline">${email}</a>.`,
     },
-  ];
+    ];
+  }
 
   ngOnInit(): void {
     this.seo.updateMeta({

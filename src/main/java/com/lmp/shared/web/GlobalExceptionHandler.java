@@ -31,6 +31,14 @@ public class GlobalExceptionHandler {
     @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
     private String authBaseUrl;
 
+    @Value("${company.email:support@localhost}")
+    private String companyEmail;
+
+    @org.springframework.web.bind.annotation.ModelAttribute("companyEmail")
+    public String globalCompanyEmail() {
+        return companyEmail;
+    }
+
     /**
      * Gère les erreurs d'accès refusé (403 Forbidden).
      * 

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { SeoService } from '../../core/services/seo.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 @Component({
   selector: 'lmp-privacy',
@@ -42,6 +43,7 @@ import { SeoService } from '../../core/services/seo.service';
 })
 export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly seo = inject(SeoService);
+  private readonly siteConfig = inject(SiteConfigService);
   private isBrowser: boolean;
   private scrollObserver?: IntersectionObserver;
 
@@ -53,7 +55,9 @@ export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
     .format(new Date())
     .replace(/^./, (c) => c.toUpperCase());
 
-  readonly sections = [
+  get sections() {
+    const email = this.siteConfig.supportEmail;
+    return [
     {
       title: 'Présentation',
       content: `Le site web <strong class="text-(--foreground)">LMP</strong> est détenu par
@@ -97,9 +101,10 @@ export class PrivacyComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       title: 'Contact',
       content: `Pour toute question concernant cette politique de confidentialité, vous pouvez nous contacter à
-        <a href="mailto:lmp.assistance@gmail.com" class="text-(--primary) hover:underline">lmp.assistance&#64;gmail.com</a>.`,
+        <a href="mailto:${email}" class="text-(--primary) hover:underline">${email}</a>.`,
     },
-  ];
+    ];
+  }
 
   ngOnInit(): void {
     this.seo.updateMeta({
