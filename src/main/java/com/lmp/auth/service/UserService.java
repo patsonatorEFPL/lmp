@@ -138,6 +138,10 @@ public interface UserService {
      */
     void updateLastLoginDate(String email);
 
+    void updateLastLoginDate(User user);
+
+    Optional<User> findByLogin(String login);
+
     /**
      * Vérifie si un utilisateur a un rôle spécifique.
      *
