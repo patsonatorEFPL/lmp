@@ -88,7 +88,7 @@ public class AuthRestController {
 
             programmaticHttpSessionLogin.login(request, response, authentication);
 
-            Optional<User> userOpt = userService.findByEmailWithRoles(authentication.getName());
+            Optional<User> userOpt = userService.findByLogin(authentication.getName());
             if (userOpt.isEmpty()) {
                 logger.error("Utilisateur introuvable après authentification réussie: {}", authentication.getName());
                 programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
@@ -97,7 +97,7 @@ public class AuthRestController {
             }
             User user = userOpt.get();
 
-            userService.updateLastLoginDate(user.getEmail());
+            userService.updateLastLoginDate(user);
 
             // Restore any saved request (e.g. /oauth2/authorize flow)
             HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
