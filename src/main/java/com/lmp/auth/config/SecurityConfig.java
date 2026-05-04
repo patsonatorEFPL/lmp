@@ -274,8 +274,9 @@ public class SecurityConfig {
                                 "/appointments/create")
                         .permitAll()
 
-                        // Actuator : health public, reste ADMIN seulement
-                        .requestMatchers("/actuator/health").permitAll()
+                        // Actuator : health + sous-probes (liveness/readiness) publics
+                        // pour Dokploy/k8s. Le reste (metrics, info, etc.) → ADMIN.
+                        .requestMatchers("/actuator/health/**", "/actuator/health").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
 
                         // Pages d'administration
