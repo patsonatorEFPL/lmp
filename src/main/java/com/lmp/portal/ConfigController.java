@@ -38,6 +38,7 @@ public class ConfigController {
         config.put("frontendUrl", siteConfigManager.getFrontendUrl());
         config.put("siteName", siteConfigManager.getSiteName());
         config.put("supportEmail", siteConfigManager.getSupportEmail());
+        config.put("contactEmail", siteConfigManager.getContactEmail());
         config.put("noreplyEmail", siteConfigManager.getNoreplyEmail());
 
         // URLs auth canoniques (dérivées de app.oauth2.issuer-uri).

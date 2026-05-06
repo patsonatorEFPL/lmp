@@ -129,8 +129,8 @@ public class ContactService {
             logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Début envoi email admin pour : {}", contactForm.getEmail());
             
             // LOG DE DIAGNOSTIC : Configuration email
-            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Config: fromEmail='{}' (support), adminEmail='{}', companyName='{}'",
-                       mailAddressConfig.getSupport(), adminEmail, companyName);
+            logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Config: fromEmail='{}' (contact), adminEmail='{}', companyName='{}'",
+                       mailAddressConfig.getContact(), adminEmail, companyName);
             
             // Création du contexte Thymeleaf pour l'admin
             logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Création contexte Thymeleaf admin...");
@@ -151,7 +151,7 @@ public class ContactService {
             
             // Configuration du message admin (vient de support@ - pas de reply-to)
             logger.info("CONTACT_ADMIN_EMAIL_DEBUG - Configuration message admin...");
-            helper.setFrom(mailAddressConfig.getSupport(), mailAddressConfig.getName());
+            helper.setFrom(mailAddressConfig.getContact(), mailAddressConfig.getName());
             helper.setTo(adminEmail);
             helper.setSubject("🔔 Nouveau contact reçu de " + contactForm.getName());
             helper.setText(htmlContent, true);
@@ -198,7 +198,7 @@ public class ContactService {
             
             context.setVariable("contact", contact);
             context.setVariable("companyName", companyName);
-            context.setVariable("companyEmail", mailAddressConfig.getSupport());
+            context.setVariable("companyEmail", mailAddressConfig.getContact());
 
             // Rendu du template HTML pour l'utilisateur
             logger.info("CONTACT_USER_EMAIL_DEBUG - Rendu template 'emails/contact-confirmation'...");
@@ -212,7 +212,7 @@ public class ContactService {
             
             // Configuration du message utilisateur (vient de support@ - pas de reply-to)
             logger.info("CONTACT_USER_EMAIL_DEBUG - Configuration message utilisateur...");
-            helper.setFrom(mailAddressConfig.getSupport(), mailAddressConfig.getName());
+            helper.setFrom(mailAddressConfig.getContact(), mailAddressConfig.getName());
             helper.setTo(contactForm.getEmail());
             helper.setSubject("✅ Confirmation de réception - " + companyName);
             helper.setText(htmlContent, true);

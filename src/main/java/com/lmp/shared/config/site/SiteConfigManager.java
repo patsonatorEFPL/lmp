@@ -98,6 +98,10 @@ public class SiteConfigManager {
         return getString("mail.from.support", "support@" + extractHost(getBaseUrl()));
     }
 
+    public String getContactEmail() {
+        return getString("mail.from.contact", "info@" + extractHost(getBaseUrl()));
+    }
+
     public String getNoreplyEmail() {
         return getString("mail.from.noreply", "noreply@" + extractHost(getBaseUrl()));
     }

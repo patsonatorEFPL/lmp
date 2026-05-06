@@ -56,8 +56,8 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
               </div>
               <div>
                 <p class="text-sm font-medium text-(--foreground)">Email</p>
-                <a [href]="'mailto:' + siteConfig.supportEmail" class="text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
-                  {{ siteConfig.supportEmail }}
+                <a [href]="'mailto:' + siteConfig.contactEmail" class="text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
+                  {{ siteConfig.contactEmail }}
                 </a>
               </div>
             </div>
@@ -221,7 +221,7 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
               </h2>
               <p class="mt-3 text-sm text-(--muted-foreground)">
                 Vous ne trouvez pas votre réponse ?
-                <a [href]="'mailto:' + siteConfig.supportEmail" class="text-(--primary) hover:underline">Écrivez-nous</a>
+                <a [href]="'mailto:' + siteConfig.contactEmail" class="text-(--primary) hover:underline">Écrivez-nous</a>
               </p>
             </div>
 
