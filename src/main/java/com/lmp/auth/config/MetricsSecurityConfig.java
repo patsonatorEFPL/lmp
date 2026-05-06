@@ -86,8 +86,11 @@ public class MetricsSecurityConfig {
         if (password == null || password.isBlank()) {
             return new InMemoryUserDetailsManager();
         }
+        // Pas de prefix {noop} : le DaoAuthenticationProvider est configuré explicitement
+        // avec NoOpPasswordEncoder dans metricsAuthenticationManager(). Avec un préfixe
+        // {noop} stocké, NoOp comparerait "{noop}<pass>" ↔ "<pass>" et tomberait en 401.
         UserDetails u = User.withUsername(username)
-                .password("{noop}" + password)
+                .password(password)
                 .roles("METRICS")
                 .build();
         return new InMemoryUserDetailsManager(u);
