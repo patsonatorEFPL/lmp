@@ -52,32 +52,23 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
         // frontend en mode split (Angular SSR séparé)". Mode monolithique = vide.
         // Profil dev override avec http://localhost:4200, prod/staging laisse vide.
 
-        // OAuth2 issuer : sous-domaine auth single-level pour rester couvert par
-        // Cloudflare Universal SSL (gratuit). Convention :
-        //   - root domain (lmp-services.ca)        → auth.lmp-services.ca
-        //   - sub-domain (dev.lmp-services.ca)     → auth-dev.lmp-services.ca
-        // Multi-level wildcards (auth.dev.*) nécessiteraient ACM payant — évité.
-        String authHost = isLocal ? host : deriveAuthHost(hostNoWww);
-        String issuerUri = isLocal ? siteUrl : "https://" + authHost;
-        putIfAbsent(environment, derived, "app.oauth2.issuer-uri", issuerUri);
+        // OAuth2 issuer : single-host monolith — issuer = site URL, pas de sous-domaine
+        // auth séparé. Marketing + auth servis sur le même host par Spring Boot.
+        putIfAbsent(environment, derived, "app.oauth2.issuer-uri", siteUrl);
 
-        // CORS : en localhost tout port permis ; sinon root + www + auth subdomain
+        // CORS : en localhost tout port permis ; sinon root + www (single-host, pas d'auth.*)
         String corsOrigins;
         if (isLocal) {
             corsOrigins = "http://localhost:*";
         } else {
             corsOrigins = "https://" + hostNoWww
-                    + ",https://www." + hostNoWww
-                    + ",https://" + authHost;
+                    + ",https://www." + hostNoWww;
         }
         putIfAbsent(environment, derived, "app.cors.allowed-origins", corsOrigins);
 
-        // Cookie domain — partage de session cross-subdomain (auth.* ↔ dev.* ↔ apex).
-        // Sur localhost, NE PAS définir (browsers rejettent Domain=localhost).
-        if (!isLocal) {
-            String rootDomain = extractRootDomain(hostNoWww);
-            putIfAbsent(environment, derived, "server.servlet.session.cookie.domain", rootDomain);
-        }
+        // Cookie domain : volontairement non défini en mode single-host.
+        // Le cookie reste scopé à l'host courant (pas de partage cross-subdomain
+        // car auth.* a été retiré). Permet SameSite=Lax sans contrainte.
 
         // Frappe / ERPNext : URL dérivée comme "crm.<host>" en non-local, sinon localhost:8000.
         // Override possible via LMP_CRM_URL env var (Q1A : pointer vers Frappe partagée
@@ -132,16 +123,6 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
     }
 
     /**
-     * Dérive l'host auth single-level pour rester sous Cloudflare Universal SSL.
-     * <ul>
-     *   <li>{@code lmp-services.ca}      → {@code auth.lmp-services.ca}</li>
-     *   <li>{@code dev.lmp-services.ca}  → {@code auth-dev.lmp-services.ca}</li>
-     *   <li>{@code staging.lmpeo.com}    → {@code auth-staging.lmpeo.com}</li>
-     * </ul>
-     * On part du host SANS www. Si 2 labels → root domain → préfixe "auth.".
-     * Si plus → premier label = env, rest = root → "auth-{env}.{root}".
-     */
-    /**
      * Root domain = 2 derniers labels (heuristique simple pour .ca/.com/etc.).
      * Note : ne gère pas Public Suffix List (.co.uk, .com.br) — étendre si besoin.
      */
@@ -154,19 +135,6 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
             return hostNoWww;
         }
         return labels[labels.length - 2] + "." + labels[labels.length - 1];
-    }
-
-    static String deriveAuthHost(String hostNoWww) {
-        if (hostNoWww == null || hostNoWww.isBlank()) {
-            return hostNoWww;
-        }
-        String[] labels = hostNoWww.split("\\.");
-        if (labels.length <= 2) {
-            return "auth." + hostNoWww;
-        }
-        String firstLabel = labels[0];
-        String rest = hostNoWww.substring(firstLabel.length() + 1);
-        return "auth-" + firstLabel + "." + rest;
     }
 
     private String extractHost(String url) {
