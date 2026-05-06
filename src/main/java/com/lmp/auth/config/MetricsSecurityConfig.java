@@ -1,6 +1,7 @@
 package com.lmp.auth.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -46,7 +47,12 @@ public class MetricsSecurityConfig {
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public SecurityFilterChain prometheusSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/actuator/prometheus")
+                // EndpointRequest.to(...) est le matcher Spring Boot dédié aux endpoints
+                // Actuator. `securityMatcher("/actuator/prometheus")` brut utilise le
+                // matcher MVC qui ne connaît pas les endpoints Actuator (mapping séparé)
+                // → la chaîne ne s'activait pas et la requête tombait sur la chaîne
+                // applicative globale.
+                .securityMatcher(EndpointRequest.to("prometheus"))
                 .authenticationManager(metricsAuthenticationManager())
                 .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("METRICS"))
                 .httpBasic(Customizer.withDefaults())
