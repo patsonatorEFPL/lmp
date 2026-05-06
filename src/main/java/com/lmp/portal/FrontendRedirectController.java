@@ -1,6 +1,5 @@
 package com.lmp.portal;
 
-import com.lmp.shared.web.AuthHostResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -19,8 +18,10 @@ import java.util.List;
  * un point et sont servis par le resource handler de Spring Boot avant d'atteindre
  * ce contrôleur.
  *
- * Sur l'host auth (staging/prod uniquement, pas localhost), seules les pages
- * d'authentification sont servies — les pages marketing retournent 404.
+ * Mode single-host : un seul domaine par environnement (dev = dev.lmp-services.ca,
+ * prod = lmp-services.ca). Pas de séparation auth/marketing par sous-domaine.
+ * Les pages d'auth (/login, /register…) sont servies sur le même host que le
+ * site marketing — Angular gère le routage côté client.
  */
 @Controller
 public class FrontendRedirectController {
@@ -31,33 +32,14 @@ public class FrontendRedirectController {
             "/stripe/"
     );
 
-    // Sur l'host auth, seuls ces préfixes de chemin sont autorisés.
-    private static final List<String> AUTH_HOST_ALLOWED_PREFIXES = List.of(
-            "/login",
-            "/register",
-            "/forgot-password",
-            "/reset-password",
-            "/verify-email",
-            "/resend-verification"
-    );
-
     @Value("${app.frontend.url:${app.base.url:http://localhost:8080}}")
     private String frontendUrl;
 
     @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
 
-    private final AuthHostResolver authHostResolver;
-
-    public FrontendRedirectController(AuthHostResolver authHostResolver) {
-        this.authHostResolver = authHostResolver;
-    }
-
     @GetMapping("/")
-    public String root(HttpServletRequest request) {
-        if (blockedOnAuthHost("/", request)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
+    public String root() {
         return forwardOrRedirect("/");
     }
 
@@ -69,9 +51,6 @@ public class FrontendRedirectController {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND);
             }
         }
-        if (blockedOnAuthHost(uri, request)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        }
         return forwardOrRedirect(uri);
     }
 
@@ -80,20 +59,5 @@ public class FrontendRedirectController {
             return "redirect:" + frontendUrl + path;
         }
         return "forward:/index.html";
-    }
-
-    private boolean blockedOnAuthHost(String uri, HttpServletRequest request) {
-        if (!authHostResolver.isAuthSubdomainEnabled()) {
-            return false;
-        }
-        if (!authHostResolver.isAuthHost(request.getServerName())) {
-            return false;
-        }
-        for (String prefix : AUTH_HOST_ALLOWED_PREFIXES) {
-            if (uri.equals(prefix) || uri.startsWith(prefix + "/")) {
-                return false;
-            }
-        }
-        return true;
     }
 }

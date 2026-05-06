@@ -211,11 +211,12 @@ public class SiteConfigManager {
         derived.put("app.base.url", siteUrl);
         derived.put("app.frontend.url", siteUrl);
         derived.put("company.website", siteUrl);
-        derived.put("app.oauth2.issuer-uri", isLocal ? siteUrl : "https://auth." + hostNoWww);
+        // Single-host monolith : issuer = site URL (auth pages servies sur le même host).
+        derived.put("app.oauth2.issuer-uri", siteUrl);
         derived.put("app.cors.allowed-origins",
             isLocal
                 ? "http://localhost:*"
-                : "https://" + hostNoWww + ",https://www." + hostNoWww + ",https://auth." + hostNoWww);
+                : "https://" + hostNoWww + ",https://www." + hostNoWww);
 
         derived.put("mail.from.noreply", "noreply@" + host);
         derived.put("mail.from.support", "support@" + host);
