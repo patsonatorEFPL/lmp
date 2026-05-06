@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, PLATFORM_ID, ViewChild, inject, signal } from '@angular/core';
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
@@ -19,7 +19,7 @@ interface ApiOk<T> {
 @Component({
   selector: 'lmp-payment-guest',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, RouterLink],
+  imports: [FormsModule, DecimalPipe],
   template: `
     <div class="flex min-h-screen flex-col bg-(--background) px-4 py-10">
       <div class="mx-auto w-full max-w-lg">
