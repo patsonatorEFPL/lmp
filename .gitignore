@@ -123,6 +123,8 @@ desktop.ini
 ### Deployment-Specific Config ###
 infra/*
 !infra/observability/
+!infra/traefik/
+!infra/MONOLITH-MIGRATION.md
 docker-compose.coolify.yml
 docker-compose.test.yml
 lmp-frontend/Dockerfile.test
