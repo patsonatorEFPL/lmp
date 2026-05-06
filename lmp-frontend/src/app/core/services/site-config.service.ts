@@ -7,6 +7,7 @@ export interface SiteConfig {
   frontendUrl: string;
   siteName: string;
   supportEmail: string;
+  contactEmail?: string;
   noreplyEmail?: string;
 
   // URLs canoniques d'authentification (host auth = OIDC issuer).
@@ -71,6 +72,10 @@ export class SiteConfigService {
 
   get supportEmail(): string {
     return this.config()?.supportEmail ?? 'support@localhost';
+  }
+
+  get contactEmail(): string {
+    return this.config()?.contactEmail ?? this.supportEmail;
   }
 
   /**

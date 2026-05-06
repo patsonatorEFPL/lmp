@@ -24,10 +24,14 @@ public class MailAddressConfig {
     private String noreply = "noreply@localhost";
     
     /**
-     * Adresse support pour emails bidirectionnels
-     * (formulaires de contact, communications client-service)
+     * Adresse support pour emails bidirectionnels (support client)
      */
     private String support = "support@localhost";
+
+    /**
+     * Adresse contact pour les formulaires publics du site
+     */
+    private String contact = "info@localhost";
     
     /**
      * Configuration du Reply-To pour les emails noreply (même adresse que l'expéditeur)
@@ -61,6 +65,14 @@ public class MailAddressConfig {
     
     public void setSupport(String support) {
         this.support = support;
+    }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
     }
     
     /**
