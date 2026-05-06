@@ -91,17 +91,17 @@ Ajouter A record `grafana.lmp-services.ca` → IP Oracle ARM (`140.238.216.231`)
 
 ### 5. Initialiser les fichiers de mots de passe Prometheus
 
-Sur l'Oracle host, après le premier déploiement (qui crée le mount path) :
+Les secrets vivent dans `/etc/lmp/prometheus-secrets/` sur l'Oracle host —
+**hors de la checkout Dokploy**, sinon le `git pull` / clone de chaque deploy
+réécrit le dossier et efface les fichiers untracked.
 
 ```bash
-# Trouver le path du compose Dokploy
-APP_DIR=/etc/dokploy/compose/<nom-app>
-cd "$APP_DIR/infra/observability/prometheus/secrets"
+sudo mkdir -p /etc/lmp/prometheus-secrets
 
-# Écrire les mots de passe sans newline final
-printf '%s' "PASS_PROD_VALUE" | sudo tee prom-prod-pass > /dev/null
-printf '%s' "PASS_DEV_VALUE"  | sudo tee prom-dev-pass  > /dev/null
-sudo chmod 0400 prom-*-pass
+# Écrire les mots de passe sans newline final (printf, pas echo)
+printf '%s' "PASS_PROD_VALUE" | sudo tee /etc/lmp/prometheus-secrets/prom-prod-pass > /dev/null
+printf '%s' "PASS_DEV_VALUE"  | sudo tee /etc/lmp/prometheus-secrets/prom-dev-pass  > /dev/null
+sudo chmod 0444 /etc/lmp/prometheus-secrets/prom-*-pass
 ```
 
 Reload Prometheus (sans restart du conteneur) :
