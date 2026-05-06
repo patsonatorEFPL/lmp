@@ -7,12 +7,13 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 
 /**
- * Source de vérité du nom d'host "auth" à partir de {@code app.oauth2.issuer-uri}.
+ * Source de vérité de l'URL d'issuer OIDC à partir de {@code app.oauth2.issuer-uri}.
  *
- * <p>Évite tout hardcode {@code "auth."} dans le code applicatif : le sous-domaine
- * peut changer (ex. {@code auth-dev.lmp-services.ca} en staging single-level,
- * {@code localhost} en local). Tout ce qui veut savoir "suis-je sur l'host auth ?"
- * passe par ici.</p>
+ * <p>Mode single-host (depuis 2026-05) : l'issuer URI est dérivé directement
+ * de {@code lmp.site.url} dans {@link com.lmp.shared.config.site.SiteConfigManager}
+ * — donc {@code authBaseUrl == siteBaseUrl} en pratique. Cette classe expose
+ * une URL absolue stable utilisée par les emails de vérification, reset
+ * password, et les redirections OAuth2 côté frontend.</p>
  */
 @Component
 public class AuthHostResolver {
@@ -34,7 +35,6 @@ public class AuthHostResolver {
         }
         try {
             this.authHost = URI.create(issuerUri).getHost();
-            // Normaliser : sans trailing slash
             this.authBaseUrl = issuerUri.replaceAll("/+$", "");
         } catch (Exception e) {
             this.authHost = null;
@@ -43,7 +43,7 @@ public class AuthHostResolver {
     }
 
     /**
-     * @return host configuré pour l'issuer OIDC (ex. {@code auth.lmp-services.ca}),
+     * @return host de l'issuer OIDC (ex. {@code lmp-services.ca}),
      *         ou {@code null} si non résolu.
      */
     public String getAuthHost() {
@@ -51,37 +51,10 @@ public class AuthHostResolver {
     }
 
     /**
-     * @return URL complète de l'host auth (ex. {@code https://auth.lmp-services.ca}),
+     * @return URL complète de l'issuer (ex. {@code https://lmp-services.ca}),
      *         ou {@code null} si non résolu.
      */
     public String getAuthBaseUrl() {
         return authBaseUrl;
-    }
-
-    /**
-     * @return true si un sous-domaine auth distinct est configuré (staging/prod).
-     *         false en dev local (pas d'issuer ou issuer = localhost) — pas de séparation de sous-domaine.
-     */
-    public boolean isAuthSubdomainEnabled() {
-        return authHost != null
-                && !authHost.equals("localhost")
-                && !authHost.startsWith("127.")
-                && !authHost.startsWith("0:");
-    }
-
-    /**
-     * @param requestHost host extrait de la requête HTTP courante
-     * @return true si {@code requestHost} correspond à l'host auth configuré (case-insensitive)
-     */
-    public boolean isAuthHost(String requestHost) {
-        // No issuer configured or localhost issuer → single-host dev mode, no subdomain split.
-        // Marketing pages and auth pages both served on every host.
-        if (authHost == null || authHost.equals("localhost") || authHost.startsWith("127.") || authHost.startsWith("0:")) {
-            return false;
-        }
-        if (requestHost == null) {
-            return false;
-        }
-        return authHost.equalsIgnoreCase(requestHost);
     }
 }
