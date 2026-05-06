@@ -14,7 +14,7 @@ Self-hostée sur Oracle ARM via Dokploy (Compose). Scrape **prod** (interne rés
              │    │  └──────────┘    └──────┬───────┘  │  │
              │    │                         │ scrape   │  │
              │    │   ┌─────────────┐       ▼          │  │
-             │    │   │  lmpback    │◄──────┘ HTTP     │  │
+             │    │   │  lmp-menkeps-lmpback-bekrag    │◄──────┘ HTTP     │  │
              │    │   │ (prod APP)  │  Basic Auth      │  │
              │    │   └─────────────┘                  │  │
              │    │   ┌─────────────────────┐          │  │
@@ -52,7 +52,7 @@ lmp.metrics.basic-auth.username=${PROMETHEUS_BASIC_USER:prometheus}
 lmp.metrics.basic-auth.password=${PROMETHEUS_BASIC_PASS:}
 ```
 
-Sur Dokploy → projet `lmpback` → Environment Variables :
+Sur Dokploy → projet `lmp-menkeps-lmpback-bekrag` → Environment Variables :
 
 ```
 PROMETHEUS_BASIC_USER=prometheus
@@ -63,7 +63,7 @@ Redémarrer l'application (Deploy, pas Rebuild — cf mémoire `dokploy-rebuild-
 
 Vérifier (depuis Oracle host) :
 ```bash
-docker exec lmpback curl -u prometheus:PASS http://localhost:8080/actuator/prometheus | head
+docker exec lmp-menkeps-lmpback-bekrag curl -u prometheus:PASS http://localhost:8080/actuator/prometheus | head
 ```
 
 ### 2. Idem pour dev (laptop)
@@ -181,8 +181,8 @@ Modifier `--storage.tsdb.retention.time` dans `docker-compose.yml`. Défaut : 30
 
 **Prometheus target prod = DOWN**
 - Vérifier `LMP_NETWORK_NAME` correspond au réseau Docker du backend
-- `docker network inspect <network>` doit lister Prometheus ET lmpback
-- Tester depuis le container : `docker exec <prom> wget -O- http://lmpback:8080/actuator/health`
+- `docker network inspect <network>` doit lister Prometheus ET lmp-menkeps-lmpback-bekrag
+- Tester depuis le container : `docker exec <prom> wget -O- http://lmp-menkeps-lmpback-bekrag:8080/actuator/health`
 
 **Prometheus target dev = DOWN**
 - Tunnel Cloudflare actif ? `https://dev.lmp-services.ca/actuator/health` doit répondre

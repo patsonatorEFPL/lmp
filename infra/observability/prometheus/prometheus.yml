@@ -23,7 +23,9 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # --------------------------------------------------------------------------
-  # LMP backend — PROD (réseau interne Docker, Basic Auth)
+  # LMP backend — PROD (overlay Swarm, Basic Auth, jamais via Traefik)
+  # Target = nom du service Swarm Dokploy (résolu via DNS interne overlay).
+  # Si le slug Dokploy change, mettre à jour ici.
   # --------------------------------------------------------------------------
   - job_name: lmp-backend-prod
     metrics_path: /actuator/prometheus
@@ -32,7 +34,7 @@ scrape_configs:
       username: prometheus
       password_file: /etc/prometheus/secrets/prom-prod-pass
     static_configs:
-      - targets: ['lmpback:8080']
+      - targets: ['lmp-menkeps-lmpback-bekrag:8080']
         labels:
           service: lmp-backend
           env: prod
