@@ -1,5 +1,6 @@
 package com.lmp.shared.web.api;
 
+import com.lmp.MockMvcSecurityTestConfiguration;
 import com.lmp.TestcontainersConfiguration;
 import com.lmp.auth.domain.Role;
 import com.lmp.auth.domain.User;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, MockMvcSecurityTestConfiguration.class})
 @Transactional
 class AdminCreateUserTest {
 
