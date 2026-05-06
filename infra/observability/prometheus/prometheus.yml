@@ -1,0 +1,92 @@
+# ============================================================================
+# Prometheus — config scrape LMP
+# ============================================================================
+# Secrets (passwords) chargés via fichiers dans /etc/prometheus/secrets
+# (voir compose volume mount). Chaque fichier contient le password en clair,
+# une seule ligne, pas de newline final si possible.
+# ============================================================================
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: lmp
+    region: oracle-arm-1
+
+scrape_configs:
+  # --------------------------------------------------------------------------
+  # Self-monitoring
+  # --------------------------------------------------------------------------
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # --------------------------------------------------------------------------
+  # LMP backend — PROD (réseau interne Docker, Basic Auth)
+  # --------------------------------------------------------------------------
+  - job_name: lmp-backend-prod
+    metrics_path: /actuator/prometheus
+    scheme: http
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/prom-prod-pass
+    static_configs:
+      - targets: ['lmpback:8080']
+        labels:
+          service: lmp-backend
+          env: prod
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'lmp-backend-prod'
+
+  # --------------------------------------------------------------------------
+  # LMP backend — DEV (laptop via tunnel Cloudflare, Basic Auth + TLS)
+  # Note : scrape échoue quand le tunnel est OFF (laptop éteint) — gaps OK.
+  # --------------------------------------------------------------------------
+  - job_name: lmp-backend-dev
+    metrics_path: /actuator/prometheus
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password_file: /etc/prometheus/secrets/prom-dev-pass
+    static_configs:
+      - targets: ['dev.lmp-services.ca']
+        labels:
+          service: lmp-backend
+          env: dev
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'lmp-backend-dev'
+
+  # --------------------------------------------------------------------------
+  # Host metrics (Oracle ARM)
+  # --------------------------------------------------------------------------
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          host: oracle-arm-1
+          env: prod
+
+  # --------------------------------------------------------------------------
+  # Container metrics (Docker)
+  # --------------------------------------------------------------------------
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          host: oracle-arm-1
+          env: prod
+
+  # --------------------------------------------------------------------------
+  # PostgreSQL prod
+  # --------------------------------------------------------------------------
+  - job_name: postgres-prod
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: lmp-db
+          env: prod

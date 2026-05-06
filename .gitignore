@@ -1,6 +1,7 @@
 HELP.md
 target/
 _bmad-output/
+graphify-out/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -207,3 +208,8 @@ tunnel-cloudflared.log.err
 tunnel-ssh-pg.log
 tunnel-ssh-pg.log.err
 .spring-boot.pid
+
+### Observability stack secrets (NEVER commit) ###
+infra/observability/.env
+infra/observability/prometheus/secrets/*
+!infra/observability/prometheus/secrets/.gitkeep
