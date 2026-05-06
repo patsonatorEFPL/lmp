@@ -6,7 +6,7 @@ Full-stack application for managing digital services — local marketing, SEO, w
 
 | Layer | Technology |
 |---|---|
-| Backend | Spring Boot 3.5.4, Java 21 |
+| Backend | Spring Boot 3.5.14, Java 25 |
 | Frontend | Angular 21 (SSR), Tailwind CSS v4 |
 | UI Components | Spartan UI / Helm, Lucide Angular |
 | Database | PostgreSQL (prod) / persistent local PostgreSQL via Docker in dev (`docker-compose.dev.yml`) |
@@ -35,7 +35,7 @@ Full-stack application for managing digital services — local marketing, SEO, w
 
 ### Prerequisites
 
-- Java 21+
+- Java 25+
 - Maven 3.9+
 - Node.js 20+ and npm 10+
 - Docker (recommended — for the development PostgreSQL with persistent data)

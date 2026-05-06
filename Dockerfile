@@ -27,7 +27,7 @@ RUN npx ng build --configuration=production --ssr=false
 # ----------------------------------------
 # Étape 1: Build Spring Boot Backend
 # ----------------------------------------
-FROM maven:3.9.5-eclipse-temurin-21-alpine AS maven-build
+FROM maven:3-eclipse-temurin-25-alpine AS maven-build
 
 WORKDIR /app
 
@@ -51,9 +51,9 @@ COPY --from=angular-build /app/dist/lmp-frontend/browser/ ./src/main/resources/s
 RUN ./mvnw clean package -DskipTests -B
 
 # ----------------------------------------
-# Étape 2: Runtime optimisé avec Java 21
+# Étape 2: Runtime optimisé avec Java 25
 # ----------------------------------------
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 # Installation des outils nécessaires
 RUN apk add --no-cache \
