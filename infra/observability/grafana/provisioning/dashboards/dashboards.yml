@@ -1,0 +1,18 @@
+# ============================================================================
+# Grafana dashboards provider — charge les JSONs dans /etc/grafana/.../dashboards
+# ============================================================================
+apiVersion: 1
+
+providers:
+  - name: lmp
+    orgId: 1
+    folder: LMP
+    folderUid: lmp
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false
