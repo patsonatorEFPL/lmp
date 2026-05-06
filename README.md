@@ -6,7 +6,7 @@ Full-stack application for managing digital services — local marketing, SEO, w
 
 | Layer | Technology |
 |---|---|
-| Backend | Spring Boot 3.5.14, Java 25 |
+| Backend | Spring Boot 4.0.6, Java 25 |
 | Frontend | Angular 21 (SSR), Tailwind CSS v4 |
 | UI Components | Spartan UI / Helm, Lucide Angular |
 | Database | PostgreSQL (prod) / persistent local PostgreSQL via Docker in dev (`docker-compose.dev.yml`) |
