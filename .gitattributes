@@ -1,3 +1,25 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
-bin/*.sh text eol=lf
+# Force LF endings for all text files (Windows/Linux/macOS uniformity).
+# Avoids 200+ phantom "modified" files caused by core.autocrlf=true on Windows.
+* text=auto eol=lf
+
+# Explicit overrides for files that MUST keep platform-specific endings:
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+/mvnw       text eol=lf
+bin/*.sh    text eol=lf
+*.sh        text eol=lf
+
+# Binary files — never normalize:
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.jar       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.eot       binary
+*.mmdb      binary
