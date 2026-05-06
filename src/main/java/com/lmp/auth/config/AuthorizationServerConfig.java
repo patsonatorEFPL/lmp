@@ -50,8 +50,8 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
@@ -106,16 +106,19 @@ public class AuthorizationServerConfig {
     @Order(0) // Avant les autres SecurityFilterChains
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
                                                                        com.lmp.auth.repository.UserRepository userRepository) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(oidc -> oidc
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userInfoMapper(oidcUserInfoMapper(userRepository))
-                        )
-                );
+        OAuth2AuthorizationServerConfigurer configurer = new OAuth2AuthorizationServerConfigurer();
 
         http
+                .securityMatcher(configurer.getEndpointsMatcher())
+                .with(configurer, server -> server
+                        .oidc(oidc -> oidc
+                                .userInfoEndpoint(userInfo -> userInfo
+                                        .userInfoMapper(oidcUserInfoMapper(userRepository))
+                                )
+                        )
+                )
+
+
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),

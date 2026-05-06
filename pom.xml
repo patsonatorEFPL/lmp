@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.14</version>
+		<version>4.0.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.lmp</groupId>
@@ -30,8 +30,8 @@
 		<java.version>25</java.version>
 		<maven.compiler.source>25</maven.compiler.source>
 		<maven.compiler.target>25</maven.compiler.target>
-		<testcontainers.version>1.20.4</testcontainers.version>
-		<spring-modulith.version>1.4.11</spring-modulith.version>
+		<testcontainers.version>1.21.4</testcontainers.version>
+		<spring-modulith.version>2.0.6</spring-modulith.version>
 	</properties>
 	<dependencies>
 
@@ -44,6 +44,18 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- Spring Boot RestClient (SB 4 separated artifact) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
+
+		<!-- Jackson 2 compat (SB 4 uses Jackson 3 by default) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-jackson2</artifactId>
 		</dependency>
 
 		<!-- Thymeleaf — utilisé pour les emails HTML et le back-office admin -->
@@ -152,6 +164,12 @@
 		<artifactId>caffeine</artifactId>
 	</dependency>
 
+		<!-- Spring Boot Cache Starter (SB 4 requires explicit dep for cache auto-config) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
 	<!-- Resilience4j — Circuit breaker & retry pour appels ERP -->
 	<dependency>
 		<groupId>io.github.resilience4j</groupId>
@@ -202,6 +220,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- WebMvc test starter (SB 4 split MockMvc auto-config) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

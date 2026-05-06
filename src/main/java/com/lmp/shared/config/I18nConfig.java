@@ -58,16 +58,15 @@ public class I18nConfig implements WebMvcConfigurer {
      */
     @Bean
     public LocaleResolver localeResolver() {
-        CookieLocaleResolver resolver = new CookieLocaleResolver();
+        CookieLocaleResolver resolver = new CookieLocaleResolver("lmp_locale");
         
         // Locale par défaut (français pour LMP - entreprise québécoise)
         resolver.setDefaultLocale(Locale.FRENCH);
         
         // Nom du cookie pour stocker la langue
-        resolver.setCookieName("lmp_locale");
         
         // Durée de vie du cookie (90 jours)
-        resolver.setCookieMaxAge(90 * 24 * 60 * 60);
+        resolver.setCookieMaxAge(java.time.Duration.ofDays(90));
         
         // Cookie accessible uniquement via HTTP (sécurité)
         resolver.setCookieHttpOnly(true);

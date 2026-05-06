@@ -1,7 +1,7 @@
 package com.lmp.auth.config;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -70,8 +70,8 @@ public class MetricsSecurityConfig {
      */
     @SuppressWarnings("deprecation")
     private AuthenticationManager metricsAuthenticationManager() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(metricsUserDetailsService());
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(metricsUserDetailsService());
+        
         // {noop} prefix dans le password stocké → NoOpPasswordEncoder. La valeur réelle
         // vient déjà d'un secret (env var) donc on ne hash pas une seconde fois.
         provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
