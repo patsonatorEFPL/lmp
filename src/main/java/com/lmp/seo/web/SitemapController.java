@@ -2,8 +2,8 @@ package com.lmp.seo.web;
 
 import com.lmp.catalog.domain.Service;
 import com.lmp.catalog.repository.ServiceRepository;
-import com.lmp.content.domain.BlogPost;
-import com.lmp.content.persistence.BlogPostRepository;
+import com.lmp.content.SitemapBlogQuery;
+import com.lmp.content.SitemapEntry;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -27,12 +27,12 @@ public class SitemapController {
     private String baseUrl;
 
     private final ServiceRepository serviceRepository;
-    private final BlogPostRepository blogPostRepository;
+    private final SitemapBlogQuery sitemapBlogQuery;
 
     public SitemapController(ServiceRepository serviceRepository,
-                             BlogPostRepository blogPostRepository) {
+                             SitemapBlogQuery sitemapBlogQuery) {
         this.serviceRepository = serviceRepository;
-        this.blogPostRepository = blogPostRepository;
+        this.sitemapBlogQuery = sitemapBlogQuery;
     }
 
     @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
@@ -61,14 +61,13 @@ public class SitemapController {
         }
 
         // Articles de blog publiés
-        List<BlogPost> posts = blogPostRepository.findAllByPublishedTrueOrderByPublishedAtDesc(null)
-                .getContent();
-        for (BlogPost post : posts) {
-            addUrl(xml, baseUrl + "/blog/" + post.getSlug(), "0.6",
-                    post.getUpdatedAt() != null
-                            ? post.getUpdatedAt().toLocalDate()
-                            : post.getPublishedAt() != null
-                                    ? post.getPublishedAt().toLocalDate()
+        List<SitemapEntry> posts = sitemapBlogQuery.findPublishedForSitemap();
+        for (SitemapEntry post : posts) {
+            addUrl(xml, baseUrl + "/blog/" + post.slug(), "0.6",
+                    post.updatedAt() != null
+                            ? post.updatedAt().toLocalDate()
+                            : post.publishedAt() != null
+                                    ? post.publishedAt().toLocalDate()
                                     : LocalDate.now());
         }
 
