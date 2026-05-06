@@ -1,0 +1,40 @@
+# TEST/STAGING — Spring Boot monolithique single-host.
+# Remplace les 4 routers actuels (dev.* + auth-dev.* × web/websecure) par 2 (dev.* uniquement).
+#
+# Refacto single-host : auth-dev.lmp-services.ca supprimé, dev.lmp-services.ca sert
+# tout (marketing + auth + API + OIDC).
+#
+# Déploiement :
+#   1. Backup : sudo cp /etc/dokploy/traefik/dynamic/lmp-test-lmptestback-6xvske.yml{,.bak}
+#   2. Replace: sudo cp infra/traefik/lmp-test-lmptestback-6xvske.monolith.yml \
+#                       /etc/dokploy/traefik/dynamic/lmp-test-lmptestback-6xvske.yml
+#   3. Stop   : Dokploy → lmp-test-lmptestfront-g8m81a → Stop Application
+#   4. Verify : curl https://dev.lmp-services.ca/login → 200
+#               curl -o /dev/null -w "%{http_code}" https://auth-dev.lmp-services.ca/ → SSL error attendue
+#                 (cert auth-dev plus émis automatiquement, mais c'est voulu — host abandonné)
+
+http:
+  routers:
+    lmp-test-lmptestback-6xvske-router-web:
+      rule: Host(`dev.lmp-services.ca`)
+      service: lmp-test-lmptestback-6xvske-service-main
+      middlewares:
+        - redirect-to-https
+      entryPoints:
+        - web
+
+    lmp-test-lmptestback-6xvske-router-websecure:
+      rule: Host(`dev.lmp-services.ca`)
+      service: lmp-test-lmptestback-6xvske-service-main
+      middlewares: []
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    lmp-test-lmptestback-6xvske-service-main:
+      loadBalancer:
+        servers:
+          - url: http://lmp-test-lmptestback-6xvske:8080
+        passHostHeader: true
