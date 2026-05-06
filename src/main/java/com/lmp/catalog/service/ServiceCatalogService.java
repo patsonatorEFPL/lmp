@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +44,10 @@ public class ServiceCatalogService {
 
     /**
      * Retourne tous les services actifs avec leur offre courante.
+     * Cache Caffeine — invalidation manuelle via {@link #evictCatalogCaches()}
+     * quand l'admin modifie un service (cf {@link com.lmp.catalog.web.api.AdminServiceRestController}).
      */
+    @Cacheable("catalog-active-services")
     public List<com.lmp.catalog.domain.Service> getActiveServices() {
         return serviceRepository.findByActiveTrue();
     }
@@ -50,6 +55,7 @@ public class ServiceCatalogService {
     /**
      * Retourne les services mis en avant (featured) pour la page d'accueil.
      */
+    @Cacheable("catalog-featured-services")
     public List<com.lmp.catalog.domain.Service> getFeaturedServices() {
         return serviceRepository.findByFeaturedTrueAndActiveTrue();
     }
@@ -57,8 +63,18 @@ public class ServiceCatalogService {
     /**
      * Retourne toutes les catégories avec leurs services.
      */
+    @Cacheable("catalog-categories")
     public List<ServiceCategory> getAllCategories() {
         return categoryRepository.findAll();
+    }
+
+    /**
+     * Invalide les caches du catalogue. À appeler depuis les endpoints admin
+     * qui modifient les services / offres / catégories.
+     */
+    @CacheEvict(value = {"catalog-active-services", "catalog-featured-services", "catalog-categories"}, allEntries = true)
+    public void evictCatalogCaches() {
+        logger.info("Catalog caches evicted");
     }
 
     /**
