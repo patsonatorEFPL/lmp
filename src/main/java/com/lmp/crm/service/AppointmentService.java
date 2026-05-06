@@ -490,10 +490,6 @@ public class AppointmentService {
             throw new IllegalArgumentException("L'heure du rendez-vous doit être entre 9h et 17h, par créneaux de 30 minutes");
         }
 
-        if (!form.isProfessionalSubject()) {
-            throw new IllegalArgumentException("Le sujet du rendez-vous contient des termes non professionnels ou inappropriés");
-        }
-        
         // Si le sujet contient "Autre", vérifier que la description est fournie
         if (form.getSubject() != null && form.getSubject().toLowerCase().contains("autre")) {
             if (form.getDescription() == null || form.getDescription().trim().length() < 20) {
