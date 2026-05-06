@@ -46,7 +46,11 @@ services:
     user: "65534:65534"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/secrets:/etc/prometheus/secrets:ro
+      # Secrets dir is mounted from a persistent host path that survives Dokploy
+      # git pulls (which wipe untracked files inside the compose checkout).
+      # Provision /etc/lmp/prometheus-secrets/{prom-prod-pass,prom-dev-pass} on the host
+      # before first deploy, mode 0444. Cf README.
+      - /etc/lmp/prometheus-secrets:/etc/prometheus/secrets:ro
       - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
