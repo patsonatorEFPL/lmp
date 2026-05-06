@@ -8,10 +8,10 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.health.HealthComponent;
-import org.springframework.boot.actuate.health.HealthEndpoint;
-import org.springframework.boot.actuate.health.CompositeHealth;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.actuate.endpoint.HealthDescriptor;
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;
+import org.springframework.boot.health.actuate.endpoint.CompositeHealthDescriptor;
+import org.springframework.boot.health.actuate.endpoint.IndicatedHealthDescriptor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,14 +66,14 @@ public class ApiHealthController {
         // Infrastructure via Actuator
         Map<String, Object> infra = new HashMap<>();
         try {
-            HealthComponent health = healthEndpoint.health();
-            if (health instanceof CompositeHealth composite) {
+            HealthDescriptor health = healthEndpoint.health();
+            if (health instanceof CompositeHealthDescriptor composite) {
                 var components = composite.getComponents();
                 infra.put("db", extractComponentStatus(components, "db"));
                 infra.put("diskSpace", extractComponentStatus(components, "diskSpace"));
                 infra.putAll(extractDiskSpaceDetails(components));
-            } else if (health instanceof Health h) {
-                infra.put("db", h.getStatus().getCode());
+            } else if (health != null && health.getStatus() != null) {
+                infra.put("db", health.getStatus().getCode());
                 infra.put("diskSpace", "UNKNOWN");
             } else {
                 infra.put("db", "UNKNOWN");
@@ -152,23 +152,23 @@ public class ApiHealthController {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private String extractComponentStatus(Map<String, HealthComponent> components, String key) {
+    private String extractComponentStatus(Map<String, HealthDescriptor> components, String key) {
         if (components == null) return "UNKNOWN";
-        HealthComponent component = components.get(key);
-        if (component instanceof Health h) {
+        HealthDescriptor component = components.get(key);
+        if (component instanceof IndicatedHealthDescriptor h) {
             return h.getStatus().getCode();
         }
-        if (component instanceof CompositeHealth c) {
+        if (component instanceof CompositeHealthDescriptor c) {
             return c.getStatus().getCode();
         }
         return "UNKNOWN";
     }
 
-    private Map<String, Object> extractDiskSpaceDetails(Map<String, HealthComponent> components) {
+    private Map<String, Object> extractDiskSpaceDetails(Map<String, HealthDescriptor> components) {
         Map<String, Object> details = new HashMap<>();
         if (components == null) return details;
-        HealthComponent component = components.get("diskSpace");
-        if (component instanceof Health h && h.getDetails() != null) {
+        HealthDescriptor component = components.get("diskSpace");
+        if (component instanceof IndicatedHealthDescriptor h && h.getDetails() != null) {
             var d = h.getDetails();
             if (d.containsKey("total")) details.put("diskTotal", ((Number) d.get("total")).longValue());
             if (d.containsKey("free")) details.put("diskFree", ((Number) d.get("free")).longValue());

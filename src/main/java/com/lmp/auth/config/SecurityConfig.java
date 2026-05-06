@@ -399,8 +399,8 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -442,17 +442,11 @@ public class SecurityConfig {
      * relative telle quelle — Spring Security gardera son comportement par défaut.
      */
     private String absoluteAuthUrl(String relativePath) {
-        if (authBaseUrl == null || authBaseUrl.isBlank()) {
-            return relativePath;
-        }
-        return authBaseUrl + relativePath;
+        return relativePath;
     }
 
     private String absoluteBaseUrl(String relativePath) {
-        if (siteBaseUrl == null || siteBaseUrl.isBlank()) {
-            return relativePath;
-        }
-        return siteBaseUrl + relativePath;
+        return relativePath;
     }
 
     /**
