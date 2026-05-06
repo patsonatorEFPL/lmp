@@ -90,8 +90,11 @@ ENV SERVER_PORT=8080
 EXPOSE 8080
 
 # Health check pour Dokploy
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
+# Healthcheck assoupli — sous load test (50+ VUs) le thread pool Tomcat traite
+# les requêtes utilisateur en priorité et /actuator/health peut tomber au-delà
+# de 10s. Avec 30s × 5 retries on tolère un pic CPU jusqu'à ~150s avant kill.
+HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
+    CMD curl -f -m 25 http://localhost:8080/actuator/health/liveness || exit 1
 
 # Point d'entrée — le profil est piloté par la variable d'env SPRING_PROFILES_ACTIVE (défaut: prod)
 ENTRYPOINT ["java", "-Xmx1024m", "-XX:+UseG1GC", "-jar", "app.jar"]
