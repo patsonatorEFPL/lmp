@@ -93,6 +93,9 @@ services:
       GF_INSTALL_PLUGINS: ""
     networks:
       - observability
+      # Joined to dokploy-network so Traefik can reach grafana via the
+      # labels below (Traefik only routes to containers on its own network).
+      - lmp-shared
     labels:
       - traefik.enable=true
       - traefik.docker.network=dokploy-network
