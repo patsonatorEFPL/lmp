@@ -19,25 +19,25 @@ class MailAddressConfigTest {
         mailAddressConfig = new MailAddressConfig();
         
         // Configuration des propriétés comme elles seraient chargées depuis application.properties
-        ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@example.com");
-        ReflectionTestUtils.setField(mailAddressConfig, "support", "support@example.com");
-        ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@example.com");
+        ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@localhost");
+        ReflectionTestUtils.setField(mailAddressConfig, "support", "support@localhost");
+        ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@localhost");
         ReflectionTestUtils.setField(mailAddressConfig, "name", "LMP Digital Services");
     }
 
     @Test
     void testGetNoreply() {
-        assertEquals("noreply@example.com", mailAddressConfig.getNoreply());
+        assertEquals("noreply@localhost", mailAddressConfig.getNoreply());
     }
 
     @Test
     void testGetSupport() {
-        assertEquals("support@example.com", mailAddressConfig.getSupport());
+        assertEquals("support@localhost", mailAddressConfig.getSupport());
     }
 
     @Test
     void testGetReplyToSupport() {
-        assertEquals("noreply@example.com", mailAddressConfig.getReplyToSupport());
+        assertEquals("noreply@localhost", mailAddressConfig.getReplyToSupport());
     }
 
     @Test
@@ -47,18 +47,18 @@ class MailAddressConfigTest {
 
     @Test
     void testIsNoReplyAddress() {
-        assertTrue(mailAddressConfig.isNoReplyAddress("noreply@example.com"));
-        assertTrue(mailAddressConfig.isNoReplyAddress("NOREPLY@example.com")); // Case insensitive
-        assertFalse(mailAddressConfig.isNoReplyAddress("support@example.com"));
+        assertTrue(mailAddressConfig.isNoReplyAddress("noreply@localhost"));
+        assertTrue(mailAddressConfig.isNoReplyAddress("NOREPLY@localhost")); // Case insensitive
+        assertFalse(mailAddressConfig.isNoReplyAddress("support@localhost"));
         assertFalse(mailAddressConfig.isNoReplyAddress("lmp.assistance@gmail.com"));
         assertFalse(mailAddressConfig.isNoReplyAddress(null));
     }
 
     @Test
     void testIsSupportAddress() {
-        assertTrue(mailAddressConfig.isSupportAddress("support@example.com"));
-        assertTrue(mailAddressConfig.isSupportAddress("SUPPORT@example.com")); // Case insensitive
-        assertFalse(mailAddressConfig.isSupportAddress("noreply@example.com"));
+        assertTrue(mailAddressConfig.isSupportAddress("support@localhost"));
+        assertTrue(mailAddressConfig.isSupportAddress("SUPPORT@localhost")); // Case insensitive
+        assertFalse(mailAddressConfig.isSupportAddress("noreply@localhost"));
         assertFalse(mailAddressConfig.isSupportAddress("lmp.assistance@gmail.com"));
         assertFalse(mailAddressConfig.isSupportAddress(null));
     }
@@ -66,22 +66,22 @@ class MailAddressConfigTest {
     @Test
     void testGetAppropriateFromAddress() {
         // Email transactionnel -> noreply
-        assertEquals("noreply@example.com", 
+        assertEquals("noreply@localhost", 
                     mailAddressConfig.getAppropriateFromAddress(true));
         
         // Email support -> support
-        assertEquals("support@example.com", 
+        assertEquals("support@localhost", 
                     mailAddressConfig.getAppropriateFromAddress(false));
     }
 
     @Test
     void testGetAppropriateReplyTo() {
         // Email transactionnel -> Reply-To cohérent avec From (noreply)
-        assertEquals("noreply@example.com", 
+        assertEquals("noreply@localhost", 
                     mailAddressConfig.getAppropriateReplyTo(true));
         
         // Email support -> Reply-To cohérent avec From (support)
-        assertEquals("support@example.com", 
+        assertEquals("support@localhost", 
                     mailAddressConfig.getAppropriateReplyTo(false));
     }
 
@@ -89,8 +89,8 @@ class MailAddressConfigTest {
     void testToString() {
         String result = mailAddressConfig.toString();
         assertNotNull(result);
-        assertTrue(result.contains("noreply@example.com"));
-        assertTrue(result.contains("support@example.com"));
+        assertTrue(result.contains("noreply@localhost"));
+        assertTrue(result.contains("support@localhost"));
         assertTrue(result.contains("LMP Digital Services"));
     }
 
@@ -99,9 +99,9 @@ class MailAddressConfigTest {
         // Test avec une instance par défaut
         MailAddressConfig defaultConfig = new MailAddressConfig();
         
-        assertEquals("noreply@example.com", defaultConfig.getNoreply());
-        assertEquals("support@example.com", defaultConfig.getSupport());
-        assertEquals("noreply@example.com", defaultConfig.getReplyToSupport());
+        assertEquals("noreply@localhost", defaultConfig.getNoreply());
+        assertEquals("support@localhost", defaultConfig.getSupport());
+        assertEquals("noreply@localhost", defaultConfig.getReplyToSupport());
         assertEquals("LMP Digital Services", defaultConfig.getName());
     }
 
@@ -109,9 +109,9 @@ class MailAddressConfigTest {
     void testEmailValidationScenarios() {
         // Test avec différents formats d'email
         String[] validNoReplyEmails = {
-            "noreply@example.com",
-            "NoReply@example.com", 
-            "NOREPLY@example.com"
+            "noreply@localhost",
+            "NoReply@localhost", 
+            "NOREPLY@localhost"
         };
         
         for (String email : validNoReplyEmails) {
@@ -120,9 +120,9 @@ class MailAddressConfigTest {
         }
         
         String[] validSupportEmails = {
-            "support@example.com",
-            "Support@example.com",
-            "SUPPORT@example.com"
+            "support@localhost",
+            "Support@localhost",
+            "SUPPORT@localhost"
         };
         
         for (String email : validSupportEmails) {
