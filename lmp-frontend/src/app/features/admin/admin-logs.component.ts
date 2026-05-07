@@ -6,7 +6,6 @@ import {
 import { NgClass, DatePipe } from '@angular/common';
 import {
   LucideAngularModule,
-  FileSearch,
   RefreshCw,
   Filter,
   Loader2,
@@ -31,10 +30,7 @@ interface LogItem {
     <div class="flex h-full flex-col overflow-hidden bg-(--background)">
       <!-- Toolbar -->
       <div class="flex items-center justify-between gap-2 px-5 py-4">
-        <div class="flex items-center gap-2">
-          <lucide-icon [img]="FileSearchIcon" [size]="18" class="text-zinc-500 dark:text-zinc-400"></lucide-icon>
-          <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Logs & audit</h2>
-        </div>
+        <div class="flex items-center"></div>
         <div class="flex items-center gap-0.5">
           <button
             hlmBtn variant="ghost" size="icon" type="button"
@@ -171,7 +167,6 @@ interface LogItem {
   `,
 })
 export class AdminLogsComponent implements OnInit {
-  readonly FileSearchIcon = FileSearch;
   readonly RefreshCwIcon = RefreshCw;
   readonly FilterIcon = Filter;
   readonly Loader2Icon = Loader2;
