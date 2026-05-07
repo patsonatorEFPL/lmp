@@ -124,6 +124,7 @@ desktop.ini
 infra/*
 !infra/observability/
 !infra/traefik/
+!infra/mailhog/
 !infra/MONOLITH-MIGRATION.md
 docker-compose.coolify.yml
 docker-compose.test.yml
