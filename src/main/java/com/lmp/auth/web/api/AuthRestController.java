@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * API REST d'authentification.
@@ -140,53 +141,61 @@ public class AuthRestController {
         }
     }
 
+    /**
+     * Inscription — retourne {@link Callable} pour libérer le thread Tomcat pendant
+     * que bcrypt (~150-200 ms CPU sur ARM) tourne. Spring MVC dispatch sur
+     * {@code applicationTaskExecutor} puis re-dispatch la requête une fois la
+     * Callable résolue. Net effet sous load : les reads ne queue plus derrière
+     * les bcrypt en cours, le pool Tomcat reste disponible.
+     */
     @PostMapping("/register")
     @Operation(summary = "Inscription", description = "Crée un nouveau compte utilisateur")
-    public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterDto registerDto) {
+    public Callable<ResponseEntity<ApiResponse<UserResponse>>> register(@Valid @RequestBody RegisterDto registerDto) {
+        return () -> {
+            if (authService.existsByEmail(registerDto.getEmail())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(ApiResponse.error("Email already registered"));
+            }
 
-        if (authService.existsByEmail(registerDto.getEmail())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error("Email already registered"));
-        }
+            if (!registerDto.isPasswordMatching()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Passwords do not match"));
+            }
 
-        if (!registerDto.isPasswordMatching()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Passwords do not match"));
-        }
+            if (authService.isDisposableEmail(registerDto.getEmail())) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Disposable email addresses are not allowed"));
+            }
 
-        if (authService.isDisposableEmail(registerDto.getEmail())) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Disposable email addresses are not allowed"));
-        }
+            try {
+                authService.validateRegistrationData(registerDto);
+                User user = authService.registerUser(registerDto);
 
-        try {
-            authService.validateRegistrationData(registerDto);
-            User user = authService.registerUser(registerDto);
+                // Send emails asynchronously via Spring proxy (@Async) — non-blocking
+                authService.sendVerificationEmail(user);
+                authService.sendWelcomeEmail(user);
 
-            // Send emails asynchronously via Spring proxy (@Async) — non-blocking
-            authService.sendVerificationEmail(user);
-            authService.sendWelcomeEmail(user);
+                Map<String, Object> regPl = new HashMap<>();
+                regPl.put(BusinessEventPayloadKeys.EMAIL, user.getEmail());
+                regPl.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
+                regPl.put(BusinessEventPayloadKeys.MESSAGE,
+                        "Nouvel utilisateur : " + user.getEmail());
+                eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "auth", user.getId(), regPl));
 
-            Map<String, Object> regPl = new HashMap<>();
-            regPl.put(BusinessEventPayloadKeys.EMAIL, user.getEmail());
-            regPl.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
-            regPl.put(BusinessEventPayloadKeys.MESSAGE,
-                    "Nouvel utilisateur : " + user.getEmail());
-            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "auth", user.getId(), regPl));
+                logger.info("API registration successful for: {}", user.getEmail());
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponse.ok("Registration successful — check your email for verification", UserResponse.from(user)));
 
-            logger.info("API registration successful for: {}", user.getEmail());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.ok("Registration successful — check your email for verification", UserResponse.from(user)));
-
-        } catch (IllegalArgumentException e) {
-            logger.warn("Registration validation: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Registration could not be completed"));
-        } catch (Exception e) {
-            logger.error("Registration failed", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Registration could not be completed"));
-        }
+            } catch (IllegalArgumentException e) {
+                logger.warn("Registration validation: {}", e.getMessage());
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Registration could not be completed"));
+            } catch (Exception e) {
+                logger.error("Registration failed", e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ApiResponse.error("Registration could not be completed"));
+            }
+        };
     }
 
     @GetMapping("/me")
