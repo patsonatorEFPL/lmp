@@ -190,6 +190,8 @@ src/main/resources/static/polyfills-*.js
 src/main/resources/static/styles-*.css
 src/main/resources/static/styles.css
 src/main/resources/static/index.html
+src/main/resources/static/index.csr.html
+src/main/resources/static/index.server.html
 src/main/resources/static/manifest.webmanifest
 src/main/resources/static/robots.txt
 src/main/resources/static/*.js.map
