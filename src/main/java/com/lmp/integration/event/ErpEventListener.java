@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.event.TransactionPhase;
 
@@ -141,13 +140,7 @@ public class ErpEventListener {
         this.erpUserSyncMapper = erpUserSyncMapper;
     }
 
-    // @Transactional(readOnly = true) — ouvre une session Hibernate pour l'async
-    // sinon les associations LAZY (User.roles, Order.items, etc.) chargées via
-    // userRepository.findById dans le handler explosent en LazyInitializationException
-    // une fois le commit business terminé. Sous load c'était 1 stack trace par
-    // register × 50 VUs = perf killer (formatting + IO).
     @Async
-    @Transactional(readOnly = true)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleBusinessEvent(LmpBusinessEvent event) {
         logger.info("📡 [EVENT BUS] {} — module={}, entityId={}, eventId={}",
