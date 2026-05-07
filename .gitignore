@@ -76,6 +76,8 @@ lmp-frontend/src/app/generated/
 .claude/
 .gemini/
 .mcp.json
+CLAUDE.md
+**/CLAUDE.md
 
 ### Dépôt Python local (jonction NTFS ; ne pas versionner) ###
 python/
