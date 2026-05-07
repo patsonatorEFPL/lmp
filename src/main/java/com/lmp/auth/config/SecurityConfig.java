@@ -232,6 +232,8 @@ public class SecurityConfig {
                                 "/contact",
                                 "/contact/success",
                                 "/map",
+                                "/blog",
+                                "/blog/**",
                                 "/privacy",
                                 "/terms",
                                 "/register",
