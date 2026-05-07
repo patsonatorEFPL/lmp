@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.event.TransactionPhase;
 
@@ -141,16 +140,19 @@ public class ErpEventListener {
         this.erpUserSyncMapper = erpUserSyncMapper;
     }
 
-    // @Transactional(readOnly=true) ouvre une session Hibernate pour ce thread async :
-    // les `findById` + accès à des collections LAZY (User.roles, Order.items, etc.)
-    // marchent. Sans, chaque event explose en LazyInitializationException une fois le
-    // commit business terminé (session originale fermée).
+    // Pas de @Transactional ici : combiné à @Async + @TransactionalEventListener,
+    // Spring AOP n'enchaîne pas les wrappers correctement (le proxy @Async appelle
+    // `this.method()` sur la cible et bypasse le proxy @Transactional). LazyInit
+    // continue à exploser malgré l'annotation.
     //
-    // RestExternalClient a un read-timeout de 8s : Hibernate libère sa connexion entre
-    // les SELECT et l'appel HTTP (handling_mode=DELAYED_ACQUISITION_AND_RELEASE_AFTER_STATEMENT,
-    // défaut JPA). La connexion DB n'est donc PAS bloquée pendant l'attente external CRM.
+    // Architecture choisie : eager-fetch via repository methods (findByIdWithRoles,
+    // findByIdWithUserAndItems, etc.) pour pré-charger les associations LAZY pendant
+    // que la session du commit business est encore ouverte (avant qu'AFTER_COMMIT
+    // ne déclenche ce listener async). User.roles est joinFetch dans findByIdWithRoles.
+    //
+    // RestExternalClient timeout 8s read garantit qu'un external CRM lent ne bloque pas
+    // le thread async indéfiniment (cf. AsyncConfig pour le pool borné).
     @Async
-    @Transactional(readOnly = true)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleBusinessEvent(LmpBusinessEvent event) {
         logger.info("📡 [EVENT BUS] {} — module={}, entityId={}, eventId={}",
@@ -322,7 +324,7 @@ public class ErpEventListener {
      * </ul>
      */
     private void handleUserProvisioning(LmpBusinessEvent event) {
-        Optional<User> userOpt = userRepository.findById(event.entityId());
+        Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
         if (userOpt.isEmpty()) {
             logger.warn("⚠️ [SYNC] User {} not found for provisioning", event.entityId());
             return;
@@ -371,7 +373,7 @@ public class ErpEventListener {
      * Mise à jour d'un User : Customer (clients) ou external ERP User (collaborateurs).
      */
     private void handleUserUpdate(LmpBusinessEvent event) {
-        Optional<User> userOpt = userRepository.findById(event.entityId());
+        Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
         if (userOpt.isEmpty()) {
             logger.warn("⚠️ [SYNC] User {} not found for update", event.entityId());
             return;
