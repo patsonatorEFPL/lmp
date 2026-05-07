@@ -219,3 +219,6 @@ tunnel-ssh-pg.log.err
 infra/observability/.env
 infra/observability/prometheus/secrets/*
 !infra/observability/prometheus/secrets/.gitkeep
+
+### Load test transient outputs ###
+tmp-loadtest/
