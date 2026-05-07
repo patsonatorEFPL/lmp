@@ -108,6 +108,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
 #   -XX:MaxRAMPercentage=50              : sécurité si Xmx supprimé/override
 ENTRYPOINT ["java", \
     "-Xms256m", "-Xmx320m", \
+    "-Xss512k", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=48m", \
     "-XX:ReservedCodeCacheSize=128m", \
