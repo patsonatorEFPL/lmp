@@ -11,12 +11,15 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,7 +49,21 @@ public class RestExternalClient implements ExternalSystemClient {
         this.entityTypeMapping = entityTypeMapping;
         this.objectMapper = objectMapper;
         this.autoSubmit = syncProperties.getExternal().isAutoSubmit();
+
+        // Timeouts agressifs : sans ces caps, RestClient.builder() défaut = JDK HttpClient
+        // sans read-timeout = bloque la requête appelante (et son thread carrier sous
+        // virtual threads) tant que ERP/external CRM n'a pas répondu. Sous load on accumule
+        // les threads en wait indéfini → backend health timeout → SIGKILL swarm.
+        // 2s connect / 8s read couvre les pires cas external CRM normaux ; au-delà l'erreur
+        // est meilleure que la latence pour un sync async (le caller log + retry plus tard).
+        HttpClient jdkClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(2))
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(jdkClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(8));
+
         this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
                 .baseUrl(syncProperties.getExternal().getBaseUrl())
                 .defaultHeader("Authorization",
                         "token " + syncProperties.getExternal().getApiKey()
