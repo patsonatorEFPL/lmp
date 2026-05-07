@@ -96,5 +96,20 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
     CMD curl -f -m 25 http://localhost:8080/actuator/health/liveness || exit 1
 
-# Point d'entrée — le profil est piloté par la variable d'env SPRING_PROFILES_ACTIVE (défaut: prod)
-ENTRYPOINT ["java", "-Xmx1024m", "-XX:+UseG1GC", "-jar", "app.jar"]
+# Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE (défaut: prod)
+#
+# JVM tuning (mesuré sur staging idle, 843 MB RSS avant) :
+#   -Xms256m -Xmx512m  : heap committed 545 → 280 MB (idle utilise 456 MB max,
+#                        on a marge confortable; bench déclenchera GC plus tôt)
+#   -XX:MaxMetaspaceSize=192m            : cap (idle = 139 MB, avec marge)
+#   -XX:CompressedClassSpaceSize=64m     : reserved 1 GB virtuel → 64 MB
+#   -XX:ReservedCodeCacheSize=128m       : default 240 MB → 128 MB (idle = 31 MB)
+#   -XX:+UseStringDeduplication          : G1 dedup char[] (gain memoire petit)
+#   -XX:MaxRAMPercentage=50              : sécurité si Xmx supprimé/override
+ENTRYPOINT ["java", \
+    "-Xms256m", "-Xmx512m", \
+    "-XX:MaxMetaspaceSize=192m", \
+    "-XX:CompressedClassSpaceSize=64m", \
+    "-XX:ReservedCodeCacheSize=128m", \
+    "-XX:+UseStringDeduplication", \
+    "-jar", "app.jar"]
