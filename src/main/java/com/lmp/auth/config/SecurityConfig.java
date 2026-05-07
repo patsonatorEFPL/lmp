@@ -11,7 +11,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -399,13 +398,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+    // Pas de @Bean DaoAuthenticationProvider : Spring Security 7 le construit
+    // automatiquement à partir des beans UserDetailsService + PasswordEncoder.
+    // Définir le bean masque cette discovery (WARN
+    // InitializeUserDetailsBeanManagerConfigurer au boot).
 
     @Bean
     public SessionRegistry sessionRegistry() {
