@@ -2,32 +2,34 @@ package com.lmp.shared.pricing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-
-import static org.mockito.Mockito.mock;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * Charge {@link FxRateCacheService} avec des taux statiques uniquement (pas d'appel Frankfurter).
+ *
+ * SB 4 / Spring Framework 7 : @SpringBootTest(classes = {...}) déclenche
+ * ImportsContextCustomizer qui tente de charger la classe test depuis le
+ * classpath (échec). Refactor en @SpringJUnitConfig + @Configuration locale
+ * pour bypasser le bootstrapper Spring Boot tout en gardant l'injection.
  */
-@SpringBootTest(classes = { FxRateCacheService.class, com.lmp.shared.monitoring.ApiHealthRecorder.class, FxRateCacheServiceSpringTest.MockConfig.class })
-@EnableConfigurationProperties(RegionalPricingProperties.class)
-@org.springframework.test.context.TestPropertySource(properties = {
+@SpringJUnitConfig(classes = FxRateCacheServiceSpringTest.TestContext.class)
+@TestPropertySource(properties = {
         "pricing.fx-auto-refresh=false",
         "pricing.fx-margin=0.015",
         "pricing.region.CA.currency=CAD",
         "pricing.region.CA.eur-rate=1.48"
 })
-@Disabled("SB 4 / Spring Framework 7 ImportsContextCustomizer cannot resolve test class on classpath; refactor to @ContextConfiguration without SpringBootTest bootstrapper")
 class FxRateCacheServiceSpringTest {
 
     @Autowired
@@ -57,8 +59,21 @@ class FxRateCacheServiceSpringTest {
         assertTrue(summary.contains("total="));
     }
 
-    @TestConfiguration
-    static class MockConfig {
+    @Configuration
+    @EnableConfigurationProperties(RegionalPricingProperties.class)
+    static class TestContext {
+
+        @Bean
+        FxRateCacheService fxRateCacheService(RegionalPricingProperties props,
+                                              com.lmp.shared.monitoring.ApiHealthRecorder recorder) {
+            return new FxRateCacheService(props, recorder);
+        }
+
+        @Bean
+        com.lmp.shared.monitoring.ApiHealthRecorder apiHealthRecorder() {
+            return new com.lmp.shared.monitoring.ApiHealthRecorder(apiHealthRecordRepository());
+        }
+
         @Bean
         com.lmp.shared.monitoring.ApiHealthRecordRepository apiHealthRecordRepository() {
             return mock(com.lmp.shared.monitoring.ApiHealthRecordRepository.class);
