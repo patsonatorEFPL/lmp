@@ -113,6 +113,12 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
+		<!-- SB 4 a déplacé l'auto-config Flyway hors de spring-boot-autoconfigure -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-flyway</artifactId>
+		</dependency>
+
 		<!-- Spring Security pour l'authentification et l'autorisation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
