@@ -107,13 +107,11 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
 #   -XX:+UseStringDeduplication          : G1 dedup char[] (gain memoire petit)
 #   -XX:MaxRAMPercentage=50              : sécurité si Xmx supprimé/override
 ENTRYPOINT ["java", \
-    "-Xms256m", "-Xmx320m", \
+    "-Xms256m", "-Xmx384m", \
     "-Xss512k", \
     "-XX:MaxMetaspaceSize=192m", \
-    "-XX:CompressedClassSpaceSize=48m", \
+    "-XX:CompressedClassSpaceSize=64m", \
     "-XX:ReservedCodeCacheSize=128m", \
-    "-XX:G1HeapRegionSize=4m", \
-    "-XX:MaxGCPauseMillis=100", \
     "-XX:+UseStringDeduplication", \
     "-XX:+ExitOnOutOfMemoryError", \
     "-jar", "app.jar"]
