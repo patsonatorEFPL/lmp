@@ -36,6 +36,9 @@ public class MailConfig {
     @Value("${spring.mail.properties.mail.smtp.starttls.enable:true}")
     private String starttls;
 
+    @Value("${spring.mail.properties.mail.smtp.starttls.required:true}")
+    private String starttlsRequired;
+
     @Value("${spring.mail.properties.mail.smtp.debug:false}")
     private String debug;
 
@@ -54,7 +57,7 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", auth);
         props.put("mail.smtp.starttls.enable", starttls);
-        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.starttls.required", starttlsRequired);
         props.put("mail.smtp.ssl.enable", "false");
         props.put("mail.debug", debug);
         
