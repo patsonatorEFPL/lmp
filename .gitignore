@@ -65,6 +65,9 @@ ${project.build.directory}/
 ### OpenAPI Generated Clients (auto-générés depuis openapi.json via npm run codegen) ###
 lmp-frontend/src/app/generated/
 
+### Local dev scripts (tunnel, dev-up) ###
+bin/
+
 ### Third-party Tool Directories ###
 .kilo/
 .kilocode/
