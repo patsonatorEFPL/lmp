@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.event.TransactionPhase;
 
@@ -140,7 +141,16 @@ public class ErpEventListener {
         this.erpUserSyncMapper = erpUserSyncMapper;
     }
 
+    // @Transactional(readOnly=true) ouvre une session Hibernate pour ce thread async :
+    // les `findById` + accès à des collections LAZY (User.roles, Order.items, etc.)
+    // marchent. Sans, chaque event explose en LazyInitializationException une fois le
+    // commit business terminé (session originale fermée).
+    //
+    // RestExternalClient a un read-timeout de 8s : Hibernate libère sa connexion entre
+    // les SELECT et l'appel HTTP (handling_mode=DELAYED_ACQUISITION_AND_RELEASE_AFTER_STATEMENT,
+    // défaut JPA). La connexion DB n'est donc PAS bloquée pendant l'attente Frappe.
     @Async
+    @Transactional(readOnly = true)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleBusinessEvent(LmpBusinessEvent event) {
         logger.info("📡 [EVENT BUS] {} — module={}, entityId={}, eventId={}",
