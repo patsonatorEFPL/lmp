@@ -1,0 +1,46 @@
+# ============================================================================
+# LMP — MailHog (catch-all SMTP for staging/dev)
+# ============================================================================
+# Faux serveur SMTP qui capture tout email envoyé par lmp-test-back sans
+# le forwarder en réel. Sert pour:
+#   - Load tests (pas de quota provider)
+#   - Dev local — voir templates emails rendus
+#   - QA — debug flux email (welcome, verification, reset)
+#
+# UI web: https://mail.lmp-services.ca (Basic Auth Traefik)
+# SMTP interne: lmp-mailhog:1025 (sans auth)
+#
+# Variables Dokploy "Compose" (cf .env.example) :
+#   - MAILHOG_BASIC_AUTH (htpasswd format pour Traefik UI)
+# ============================================================================
+
+version: '3.8'
+
+services:
+  lmp-mailhog:
+    image: mailhog/mailhog:v1.0.1
+    restart: unless-stopped
+    networks:
+      - lmp-shared
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025/api/v2/messages"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # UI Web (HTTP 8025) → mail.lmp-services.ca avec basic auth
+      - traefik.http.routers.mailhog.rule=Host(`mail.lmp-services.ca`)
+      - traefik.http.routers.mailhog.entrypoints=websecure
+      - traefik.http.routers.mailhog.tls=true
+      - traefik.http.routers.mailhog.tls.certresolver=letsencrypt
+      - traefik.http.routers.mailhog.middlewares=mailhog-auth
+      - traefik.http.middlewares.mailhog-auth.basicauth.users=${MAILHOG_BASIC_AUTH:?MAILHOG_BASIC_AUTH required}
+      - traefik.http.services.mailhog.loadbalancer.server.port=8025
+      # SMTP (1025) reste interne — jamais exposé via Traefik
+
+networks:
+  lmp-shared:
+    external: true
+    name: dokploy-network
