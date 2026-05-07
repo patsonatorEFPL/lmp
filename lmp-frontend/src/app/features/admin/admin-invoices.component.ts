@@ -2,7 +2,6 @@ import { Component, OnInit, signal } from '@angular/core';
 import { DatePipe, NgClass } from '@angular/common';
 import {
   LucideAngularModule,
-  Receipt,
   RefreshCw,
   Filter,
   Loader2,
@@ -29,10 +28,7 @@ interface InvoiceItem {
     <div class="flex h-full flex-col overflow-hidden">
       <!-- Toolbar -->
       <div class="flex items-center justify-between gap-2 px-5 py-4">
-        <div class="flex items-center gap-2">
-          <lucide-icon [img]="ReceiptIcon" [size]="18" class="text-zinc-500 dark:text-zinc-400"></lucide-icon>
-          <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Factures</h2>
-        </div>
+        <div class="flex items-center"></div>
         <div class="flex items-center gap-0.5">
           <button
             hlmBtn variant="ghost" size="icon" type="button"
@@ -163,7 +159,6 @@ interface InvoiceItem {
   `,
 })
 export class AdminInvoicesComponent implements OnInit {
-  readonly ReceiptIcon = Receipt;
   readonly RefreshCwIcon = RefreshCw;
   readonly FilterIcon = Filter;
   readonly Loader2Icon = Loader2;
