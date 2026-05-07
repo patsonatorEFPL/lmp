@@ -13,33 +13,26 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * Pool d'exécution borné pour {@code @Async}.
+ * Pool d'exécution borné pour {@code @Async} (event bus → ERP sync).
  * <p>
- * Sans configuration explicite, Spring Boot 4 instancie {@code SimpleAsyncTaskExecutor}
- * — non borné, spawn un thread par tâche. Sous load (50 VUs × 1 event par register
- * = 50 events/s) le thread count explose et la mémoire avec.
+ * Bean nommé {@code eventTaskExecutor} pour ne PAS shadower
+ * {@code applicationTaskExecutor} créé par Spring Boot pour Spring MVC Callable
+ * (configuré via {@code spring.task.execution.*} dans application-*.properties).
  * <p>
  * Bornage :
  * <ul>
- *   <li>core 4 — handles burst de la charge nominale (10 register/s × 1s ERP)</li>
- *   <li>max 16 — cap dur sous spike, 16 × 8s timeout ERP = 128s drain max</li>
- *   <li>queue 200 — backlog avant CallerRunsPolicy (back-pressure sur le caller)</li>
- *   <li>CallerRunsPolicy — quand pool + queue saturés, l'event run sync sur le thread Tomcat
- *       (ralentit register de l'ERP timeout au pire ; preferable to dropping events).</li>
+ *   <li>core 4 — burst nominal (10 register/s × ~1 event/s ERP)</li>
+ *   <li>max 16 — cap dur sous spike</li>
+ *   <li>queue 200 — backlog avant CallerRunsPolicy (back-pressure)</li>
  * </ul>
- * <p>
- * Quand virtual threads seront ré-activés (après bcrypt async), supprimer ce bean :
- * Spring Boot fournira un VirtualThreadTaskExecutor qui gère naturellement la borne
- * via le carrier ForkJoinPool.
  */
 @Configuration
 public class AsyncConfig implements AsyncConfigurer {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncConfig.class);
 
-    @Override
-    @Bean(name = "taskExecutor")
-    public Executor getAsyncExecutor() {
+    @Bean(name = "eventTaskExecutor")
+    public ThreadPoolTaskExecutor eventTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(16);
@@ -47,11 +40,14 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setKeepAliveSeconds(60);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadNamePrefix("lmp-async-");
-        // Back-pressure : si pool + queue pleins, l'event s'exécute sur le thread caller
-        // (Tomcat handler) plutôt que d'être perdu. Coût : latence register +ERP timeout.
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
+    }
+
+    @Override
+    public Executor getAsyncExecutor() {
+        return eventTaskExecutor();
     }
 
     @Override
