@@ -270,10 +270,20 @@
 			<artifactId>spring-session-jdbc</artifactId>
 		</dependency>
 
-		<!-- Spring Modulith — Architecture modulaire -->
+		<!-- Spring Modulith — Architecture modulaire.
+		     spring-modulith-api (compile, 11 KB) : juste les annotations @ApplicationModule
+		     utilisées dans les package-info.java pour marquer les boundaries.
+		     spring-modulith-starter-core (test) : pour ModulithArchitectureTest qui
+		     utilise ApplicationModules.of(...).verify() — ce starter charge ArchUnit
+		     (4.5 MB), inutile en runtime prod. Évite de pulluer le fat-jar. -->
+		<dependency>
+			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-api</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-core</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
