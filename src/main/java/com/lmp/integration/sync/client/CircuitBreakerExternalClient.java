@@ -5,6 +5,7 @@ import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,7 @@ import java.util.Optional;
  */
 @Component
 @Primary
+@ConditionalOnProperty(name = "lmp.sync.enabled", havingValue = "true")
 public class CircuitBreakerExternalClient implements ExternalSystemClient {
 
     private final ExternalSystemClient delegate;
