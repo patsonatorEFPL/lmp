@@ -143,12 +143,10 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
-		<!-- Mailtrap Java SDK pour l'authentification de domaine -->
-		<dependency>
-			<groupId>io.mailtrap</groupId>
-			<artifactId>mailtrap-java</artifactId>
-			<version>1.0.0</version>
-		</dependency>
+		<!-- Mailtrap Java SDK retiré : staging utilise Mailpit catch-all SMTP
+		     (lmp-mailhog:1025), prod migre vers Gmail App Password via JavaMailSender
+		     standard. Le SDK Mailtrap (~3 MB classes + okhttp transitif) n'est plus
+		     nécessaire. -->
 
 		<!-- Stripe pour les paiements -->
 		<dependency>
@@ -317,6 +315,9 @@
 					<!-- DevTools cause un fork automatique → 2 JVMs simultanés avec IntelliJ.
 					     fork=false : Maven et Spring Boot partagent le même JVM. -->
 					<fork>false</fork>
+					<!-- Exclut spring-boot-devtools du JAR repackagé (~5 MB classes
+					     + auto-config Spring chargée au boot, inutile en prod/staging). -->
+					<excludeDevtools>true</excludeDevtools>
 				</configuration>
 			</plugin>
 		</plugins>

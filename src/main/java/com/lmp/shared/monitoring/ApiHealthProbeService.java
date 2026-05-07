@@ -16,7 +16,6 @@ import com.lmp.shared.geo.IPHubService;
 import com.lmp.shared.geo.IpApiComGeoService;
 import com.lmp.shared.geo.IpWhoIsGeoService;
 import com.lmp.shared.vat.ViesVatValidationService;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.stripe.StripeClient;
 import com.stripe.param.BalanceRetrieveParams;
@@ -49,16 +48,9 @@ public class ApiHealthProbeService {
     private final RestTemplate fxProbeTemplate;
     private final SyncProperties syncProperties;
 
-    @Value("${mailtrap.api.token:}")
-    private String mailtrapApiToken;
-
     /** Frankfurter (même URL que FxRateCacheService). */
     private static final String FX_PROBE_URL =
             "https://api.frankfurter.app/latest?from=EUR&to=USD";
-
-    /** Mailtrap accounts endpoint — lecture seule, gratuit. */
-    private static final String MAILTRAP_ACCOUNTS_URL =
-            "https://mailtrap.io/api/accounts";
 
     public ApiHealthProbeService(IpApiComGeoService ipApiComGeoService,
                                   IpWhoIsGeoService ipWhoIsGeoService,
@@ -113,8 +105,8 @@ public class ApiHealthProbeService {
         // FX Rates — probe direct car le cache ne re-fetch pas à chaque appel
         results.put("FX Rates", probeFxRates());
 
-        // Mailtrap — probe via GET /api/accounts (lecture seule)
-        results.put("Mailtrap", probeMailtrap());
+        // Mailtrap probe retiré : staging utilise Mailpit (lmp-mailhog:1025) en
+        // catch-all SMTP. Plus de dépendance Mailtrap → plus de probe à faire.
 
         // Stripe — balance.retrieve() est gratuit et en lecture seule
         results.put("Stripe", probeStripe());
@@ -158,34 +150,6 @@ public class ApiHealthProbeService {
             long latency = System.currentTimeMillis() - t0;
             recorder.record("Stripe", latency, false, e.getMessage());
             logger.warn("[API-PROBE] Stripe failed: {}", e.getMessage());
-            return e.getMessage();
-        }
-    }
-
-    /**
-     * Probe Mailtrap via GET /api/accounts — lecture seule, gratuit.
-     * Vérifie la connectivité réseau + validité du token API.
-     */
-    private String probeMailtrap() {
-        if (mailtrapApiToken == null || mailtrapApiToken.isBlank()) {
-            recorder.record("Mailtrap", 0, false, "Token API non configuré");
-            return "Token API non configuré";
-        }
-        long t0 = System.currentTimeMillis();
-        try {
-            var headers = new org.springframework.http.HttpHeaders();
-            headers.set("Api-Token", mailtrapApiToken);
-            headers.set("Accept", "application/json");
-            var entity = new org.springframework.http.HttpEntity<>(null, headers);
-            fxProbeTemplate.exchange(MAILTRAP_ACCOUNTS_URL,
-                    org.springframework.http.HttpMethod.GET, entity, String.class);
-            long latency = System.currentTimeMillis() - t0;
-            recorder.record("Mailtrap", latency, true, null);
-            return "ok";
-        } catch (Exception e) {
-            long latency = System.currentTimeMillis() - t0;
-            recorder.record("Mailtrap", latency, false, e.getMessage());
-            logger.warn("[API-PROBE] Mailtrap failed: {}", e.getMessage());
             return e.getMessage();
         }
     }
