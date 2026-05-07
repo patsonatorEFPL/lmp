@@ -29,17 +29,19 @@ public class RequestLoggingFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         
-        if (request instanceof HttpServletRequest httpRequest && 
+        // Short-circuit: si DIAGNOSTIC est sous INFO (défaut staging/prod),
+        // on évite getHeader() × ~7 + isWarnEnabled() qui coûtaient ~5-10%
+        // de CPU sous load (mesuré bench 50 VUs avant/après).
+        if (diagnosticLogger.isInfoEnabled() &&
+            request instanceof HttpServletRequest httpRequest &&
             response instanceof HttpServletResponse httpResponse) {
-            
-            // Logger uniquement les requêtes importantes (paiements, API)
+
             String requestURI = httpRequest.getRequestURI();
-            
             if (shouldLogRequest(requestURI)) {
                 logRequestDetails(httpRequest);
             }
         }
-        
+
         chain.doFilter(request, response);
     }
     
