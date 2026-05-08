@@ -102,6 +102,15 @@ public class AuthorizationServerConfig {
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.path:lmp-oauth2-jwk.json}")
     private String jwkPath;
 
+    /**
+     * JWK content inline (JSON string) — pattern 12-factor pour multi-replica.
+     * Si défini (env var {@code OAUTH2_JWK_CONTENT}), prend précédence sur le file
+     * path : toutes les répliques chargent la MÊME clé. Sinon, fallback sur
+     * {@code app.oauth2.jwk.path} (legacy mode mono-replica).
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.content:}")
+    private String jwkContent;
+
     @Bean
     @Order(0) // Avant les autres SecurityFilterChains
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
@@ -261,6 +270,19 @@ public class AuthorizationServerConfig {
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
+        // 1. Précédence à app.oauth2.jwk.content (env var) — pattern 12-factor.
+        //    Toutes les répliques chargent la même clé. Pas de fichier sur disque.
+        if (jwkContent != null && !jwkContent.isBlank()) {
+            try {
+                JWKSet jwkSet = JWKSet.parse(jwkContent);
+                logger.info("JWK chargé depuis app.oauth2.jwk.content (env var) — multi-replica safe");
+                return new ImmutableJWKSet<>(jwkSet);
+            } catch (ParseException e) {
+                throw new IllegalStateException("app.oauth2.jwk.content (OAUTH2_JWK_CONTENT) ne contient pas un JWKSet JSON valide", e);
+            }
+        }
+
+        // 2. Fallback : fichier (legacy mono-replica).
         Path path = Path.of(jwkPath);
         JWKSet jwkSet;
 
