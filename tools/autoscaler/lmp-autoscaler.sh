@@ -23,14 +23,14 @@ set -uo pipefail
 
 # ===== CONFIG =====
 SERVICE_NAME="${SERVICE_NAME:-lmp-test-lmptestback-6xvske}"
-PROM_URL="${PROM_URL:-http://localhost:9090}"
-PROM_USER="${PROM_USER:-prometheus}"
-PROM_PASS="${PROM_PASS:-LDJLIrS6vLtYNQVVvkFOe244GSl26916}"
+# Prometheus container — autoscaler interroge via docker exec (pas besoin
+# d'exposer Prom sur le host, fonctionne même quand IP overlay change).
+PROM_CONTAINER="${PROM_CONTAINER:-lmp-menkeps-observability-siwy2b-prometheus-1}"
 MIN_REPLICAS=1
 MAX_REPLICAS=4
 SCALE_UP_THRESHOLD=80    # CPU%
 SCALE_DOWN_THRESHOLD=30  # CPU% (50 pts hysteresis vs 80)
-SCALE_UP_WINDOW="30s"
+SCALE_UP_WINDOW="1m"   # cAdvisor scrape 30s+, besoin de >= 2 échantillons pour rate()
 SCALE_DOWN_WINDOW="30m"
 COOLDOWN_FILE="/var/run/lmp-autoscaler.cooldown"
 SCALE_UP_COOLDOWN_S=60       # 1 min entre 2 scale-ups
@@ -58,12 +58,17 @@ set_cooldown() {
 # ===== PROMETHEUS QUERY =====
 # Returns avg CPU% (0-200% on 2-vCPU host) of all backend containers over $window.
 # Uses container_cpu_usage_seconds_total via cAdvisor (already running per memory).
+# Query via docker exec dans le container Prom (pas besoin de port bind sur host).
 prom_avg_cpu() {
   local window="$1"
-  local query="avg(rate(container_cpu_usage_seconds_total{container_label_com_docker_swarm_service_name=\"$SERVICE_NAME\"}[$window])) * 100"
-  local resp value
-  resp=$(curl -sS --max-time 10 -u "$PROM_USER:$PROM_PASS" \
-    --data-urlencode "query=$query" "$PROM_URL/api/v1/query") || { echo "ERR"; return 1; }
+  # cAdvisor publish container name (not docker swarm label) — match les tasks
+  # via regex sur le service name dans le container name (Docker swarm pattern :
+  # <service>.<replica>.<task_id>).
+  local query="avg(rate(container_cpu_usage_seconds_total{name=~\"$SERVICE_NAME.*\"}[$window])) * 100"
+  local encoded resp value
+  encoded=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$query")
+  resp=$(docker exec "$PROM_CONTAINER" wget -qO- --timeout=5 \
+    "http://localhost:9090/api/v1/query?query=$encoded" 2>/dev/null) || { echo "ERR"; return 1; }
   value=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('data',{}).get('result',[]); print(r[0]['value'][1] if r else 'NaN')" 2>/dev/null)
   echo "$value"
 }
@@ -92,22 +97,20 @@ main() {
     exit 1
   fi
 
-  local cpu_30s cpu_30m
-  cpu_30s=$(prom_avg_cpu "$SCALE_UP_WINDOW")
-  cpu_30m=$(prom_avg_cpu "$SCALE_DOWN_WINDOW")
+  local cpu_short cpu_long
+  cpu_short=$(prom_avg_cpu "$SCALE_UP_WINDOW")
+  cpu_long=$(prom_avg_cpu "$SCALE_DOWN_WINDOW")
 
-  log "replicas=$replicas cpu_30s=${cpu_30s}% cpu_30m=${cpu_30m}%"
+  log "replicas=$replicas cpu_${SCALE_UP_WINDOW}=${cpu_short}% cpu_${SCALE_DOWN_WINDOW}=${cpu_long}%"
 
-  # Skip if Prometheus query failed
-  case "$cpu_30s" in NaN|ERR|"") log "skip: prometheus 30s data unavailable"; exit 0 ;; esac
+  case "$cpu_short" in NaN|ERR|"") log "skip: prometheus ${SCALE_UP_WINDOW} data unavailable"; exit 0 ;; esac
+  local cpu_short_int
+  cpu_short_int=$(printf '%.0f' "$cpu_short" 2>/dev/null) || cpu_short_int=0
 
-  local cpu_30s_int
-  cpu_30s_int=$(printf '%.0f' "$cpu_30s" 2>/dev/null) || cpu_30s_int=0
-
-  # SCALE UP : CPU > 80% sustained 30s
-  if [ "$cpu_30s_int" -gt $SCALE_UP_THRESHOLD ] && [ "$replicas" -lt $MAX_REPLICAS ]; then
+  # SCALE UP : CPU > 80% sustained $SCALE_UP_WINDOW
+  if [ "$cpu_short_int" -gt $SCALE_UP_THRESHOLD ] && [ "$replicas" -lt $MAX_REPLICAS ]; then
     if in_cooldown scale-up; then
-      log "scale-up needed (cpu_30s=${cpu_30s}%) but in cooldown"
+      log "scale-up needed (cpu=${cpu_short}%) but in cooldown"
       exit 0
     fi
     scale $((replicas + 1))
@@ -115,14 +118,14 @@ main() {
     exit 0
   fi
 
-  # SCALE DOWN : CPU < 30% sustained 30 min
-  case "$cpu_30m" in NaN|ERR|"") log "skip: prometheus 30m data unavailable for scale-down"; exit 0 ;; esac
-  local cpu_30m_int
-  cpu_30m_int=$(printf '%.0f' "$cpu_30m" 2>/dev/null) || cpu_30m_int=999
+  # SCALE DOWN : CPU < 30% sustained $SCALE_DOWN_WINDOW
+  case "$cpu_long" in NaN|ERR|"") log "skip: prometheus ${SCALE_DOWN_WINDOW} data unavailable for scale-down"; exit 0 ;; esac
+  local cpu_long_int
+  cpu_long_int=$(printf '%.0f' "$cpu_long" 2>/dev/null) || cpu_long_int=999
 
-  if [ "$cpu_30m_int" -lt $SCALE_DOWN_THRESHOLD ] && [ "$replicas" -gt $MIN_REPLICAS ]; then
+  if [ "$cpu_long_int" -lt $SCALE_DOWN_THRESHOLD ] && [ "$replicas" -gt $MIN_REPLICAS ]; then
     if in_cooldown scale-down; then
-      log "scale-down possible (cpu_30m=${cpu_30m}%) but in cooldown"
+      log "scale-down possible (cpu=${cpu_long}%) but in cooldown"
       exit 0
     fi
     scale $((replicas - 1))
