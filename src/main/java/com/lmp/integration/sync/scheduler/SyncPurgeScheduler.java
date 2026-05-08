@@ -6,6 +6,7 @@ import com.lmp.integration.sync.monitoring.SyncHealthSnapshotRepository;
 import com.lmp.integration.sync.repository.SyncEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,8 @@ public class SyncPurgeScheduler {
     }
 
     @Scheduled(cron = "${lmp.sync.purge.cron:0 0 3 * * *}")
+    @SchedulerLock(name = "SyncPurgeScheduler.purge",
+                   lockAtMostFor = "PT15M", lockAtLeastFor = "PT5M")
     @Transactional
     public void purge() {
         LocalDateTime cutoff = LocalDateTime.now(ZoneId.systemDefault()).minusDays(retentionDays);
