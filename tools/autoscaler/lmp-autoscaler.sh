@@ -47,15 +47,28 @@ SCALE_DOWN_COOLDOWN_S=1800   # 30 min entre 2 scale-downs
 log() { echo "$(date -Iseconds) [autoscaler] $*"; }
 
 # ===== COOLDOWN =====
+# Direction-aware anti-flap :
+#   scale-up event :
+#     blocks scale-up   for $SCALE_UP_COOLDOWN_S      (60s, rapide)
+#     blocks scale-down for $SCALE_DOWN_COOLDOWN_S    (30m, anti-flap critique :
+#       sinon cpu_30m rolling average inclut le idle pre-load → scale-down
+#       false positive immédiat après scale-up)
+#   scale-down event :
+#     blocks scale-down for $SCALE_DOWN_COOLDOWN_S    (30m)
+#     blocks scale-up   for $SCALE_UP_COOLDOWN_S      (60s, permet réaction si load reprend)
 in_cooldown() {
   local now action; now=$(date +%s); action="$1"
   [ ! -f "$COOLDOWN_FILE" ] && return 1
   local last_action last_ts
   read -r last_action last_ts < "$COOLDOWN_FILE" 2>/dev/null || return 1
-  local cooldown=$SCALE_UP_COOLDOWN_S
-  [ "$last_action" = "scale-down" ] && cooldown=$SCALE_DOWN_COOLDOWN_S
   local elapsed=$((now - last_ts))
-  [ $elapsed -lt $cooldown ]
+  case "$last_action:$action" in
+    scale-up:scale-up)     [ $elapsed -lt $SCALE_UP_COOLDOWN_S ] ;;
+    scale-up:scale-down)   [ $elapsed -lt $SCALE_DOWN_COOLDOWN_S ] ;;  # anti-flap
+    scale-down:scale-up)   [ $elapsed -lt $SCALE_UP_COOLDOWN_S ] ;;
+    scale-down:scale-down) [ $elapsed -lt $SCALE_DOWN_COOLDOWN_S ] ;;
+    *) return 1 ;;
+  esac
 }
 
 set_cooldown() {
