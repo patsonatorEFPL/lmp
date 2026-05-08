@@ -461,10 +461,16 @@ public class SecurityConfig {
     }
 
     /**
-     * Eagerly loads the CSRF token so the XSRF-TOKEN cookie is always sent.
-     * Without this filter, Spring Security 6 defers token generation and the
-     * cookie may not be set on initial page load.
+     * Public read endpoints whose responses are cacheable on the CDN.
+     * Skipping the eager CSRF cookie here keeps Set-Cookie off the response so
+     * Cloudflare can store it. Angular still bootstraps the XSRF cookie on its
+     * first /api/v1/auth/me call (provideAppInitializer in app.config.ts).
      */
+    private static final List<String> CACHEABLE_PUBLIC_PATHS = List.of(
+            "/api/v1/config",
+            "/api/v1/blog",
+            "/api/v1/services");
+
     private OncePerRequestFilter csrfCookieFilter() {
         return new OncePerRequestFilter() {
             @Override
@@ -472,12 +478,24 @@ public class SecurityConfig {
                                             HttpServletResponse response,
                                             FilterChain filterChain)
                     throws ServletException, IOException {
-                CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-                if (csrfToken != null) {
-                    csrfToken.getToken(); // Force cookie to be set
+                if (!isCacheablePath(request)) {
+                    CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+                    if (csrfToken != null) {
+                        csrfToken.getToken();
+                    }
                 }
                 filterChain.doFilter(request, response);
             }
         };
+    }
+
+    private static boolean isCacheablePath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        for (String prefix : CACHEABLE_PUBLIC_PATHS) {
+            if (uri.equals(prefix) || uri.startsWith(prefix + "/")) {
+                return true;
+            }
+        }
+        return false;
     }
 }
