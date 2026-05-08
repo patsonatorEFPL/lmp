@@ -22,10 +22,16 @@
 set -uo pipefail
 
 # ===== CONFIG =====
-SERVICE_NAME="${SERVICE_NAME:-lmp-test-lmptestback-6xvske}"
+SERVICE_NAME="${SERVICE_NAME:-lmp-back-staging-wb2l6c}"
 # Prometheus container — autoscaler interroge via docker exec (pas besoin
 # d'exposer Prom sur le host, fonctionne même quand IP overlay change).
 PROM_CONTAINER="${PROM_CONTAINER:-lmp-menkeps-observability-siwy2b-prometheus-1}"
+# Dokploy API — sans update DB Dokploy, son reconcile loop reset les replicas
+# à la valeur stockée → annule scale via swarm. Update Dokploy + swarm =
+# atomique.
+DOKPLOY_URL="${DOKPLOY_URL:-https://dokploy.lmp-services.ca}"
+DOKPLOY_API_KEY="${DOKPLOY_API_KEY:-claudeYWyDldFiCtEmOiXTbDGRNqCJvRvELvrfNAVQrowSiOASqpIDIAbprGzHrJxPwaYK}"
+DOKPLOY_APP_ID="${DOKPLOY_APP_ID:-XaZn5qdN7QZzT3POl8ow-}"
 MIN_REPLICAS=1
 MAX_REPLICAS=4
 SCALE_UP_THRESHOLD=80    # CPU%
@@ -81,6 +87,14 @@ get_replicas() {
 scale() {
   local target="$1"
   log "scaling $SERVICE_NAME → $target replicas"
+  # Update Dokploy DB d'abord (sinon son reconcile loop reset à la valeur
+  # stockée). API trpc accepte applicationId + replicas via application.update.
+  curl -sS --max-time 10 -X POST -H "x-api-key: $DOKPLOY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"json\":{\"applicationId\":\"$DOKPLOY_APP_ID\",\"replicas\":$target}}" \
+    "$DOKPLOY_URL/api/trpc/application.update" >/dev/null 2>&1 || \
+    log "WARN: Dokploy API update failed — Dokploy may revert replicas count"
+  # Update swarm pour effet immédiat (sinon update DB seul = pas d'effet runtime)
   docker service scale "$SERVICE_NAME=$target" --detach 2>&1 | tail -1
 }
 
