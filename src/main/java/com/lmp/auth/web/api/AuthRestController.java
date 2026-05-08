@@ -76,69 +76,81 @@ public class AuthRestController {
         this.programmaticHttpSessionLogin = programmaticHttpSessionLogin;
     }
 
+    /**
+     * Login — wrap en Callable comme register : bcrypt verify (~150 ms ARM) tourne
+     * sur mvcTaskExecutor, thread Tomcat libéré pour servir des reads concurrents.
+     * <p>
+     * HttpServletRequest/Response sont safe à utiliser dans Callable car Spring MVC
+     * tient le request lifecycle ouvert pendant async (asyncStarted + dispatcherType
+     * gère ASYNC_DISPATCH au retour). La manipulation de session via
+     * programmaticHttpSessionLogin se fait DANS le Callable, avant que MVC
+     * re-dispatch la requête → cookies + Set-Cookie correctement écrits dans la
+     * réponse finale.
+     */
     @PostMapping("/login")
     @Operation(summary = "Connexion", description = "Authentifie l'utilisateur et crée une session HTTP")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> login(
+    public Callable<ResponseEntity<ApiResponse<Map<String, Object>>>> login(
             @Valid @RequestBody LoginDto loginDto,
             HttpServletRequest request,
             HttpServletResponse response) {
+        return () -> {
+            try {
+                Authentication authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
+                programmaticHttpSessionLogin.login(request, response, authentication);
 
-            programmaticHttpSessionLogin.login(request, response, authentication);
+                Optional<User> userOpt = userService.findByLogin(authentication.getName());
+                if (userOpt.isEmpty()) {
+                    logger.error("Utilisateur introuvable après authentification réussie: {}", authentication.getName());
+                    programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(ApiResponse.error("Login failed"));
+                }
+                User user = userOpt.get();
 
-            Optional<User> userOpt = userService.findByLogin(authentication.getName());
-            if (userOpt.isEmpty()) {
-                logger.error("Utilisateur introuvable après authentification réussie: {}", authentication.getName());
+                userService.updateLastLoginDate(user);
+
+                // Restore any saved request (e.g. /oauth2/authorize flow)
+                HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+                SavedRequest savedRequest = requestCache.getRequest(request, response);
+                String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : "/dashboard";
+                // Convert absolute URLs to relative so the browser stays on the same origin
+                // (important when served through a reverse proxy / tunnel)
+                try {
+                    java.net.URI uri = new java.net.URI(redirectUrl);
+                    redirectUrl = uri.getRawPath() + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
+                } catch (java.net.URISyntaxException e) {
+                    // keep original relative URL
+                }
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("user", UserResponse.from(user));
+                data.put("redirectUrl", redirectUrl);
+
+                logger.info("API login successful for: {} — redirectUrl={}", user.getEmail(), redirectUrl);
+                return ResponseEntity.ok(ApiResponse.ok("Login successful", data));
+
+            } catch (BadCredentialsException e) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid email or password"));
+            } catch (SessionAuthenticationException e) {
+                logger.warn("API login refusé (politique de session): {}", e.getMessage());
+                programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error(
+                                "Login blocked due to session policy. Close other sessions or try again."));
+            } catch (AuthenticationException e) {
+                logger.warn("API login refusé: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid email or password"));
+            } catch (Exception e) {
+                logger.error("API login erreur inattendue", e);
                 programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ApiResponse.error("Login failed"));
             }
-            User user = userOpt.get();
-
-            userService.updateLastLoginDate(user);
-
-            // Restore any saved request (e.g. /oauth2/authorize flow)
-            HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
-            SavedRequest savedRequest = requestCache.getRequest(request, response);
-            String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : "/dashboard";
-            // Convert absolute URLs to relative so the browser stays on the same origin
-            // (important when served through a reverse proxy / tunnel)
-            try {
-                java.net.URI uri = new java.net.URI(redirectUrl);
-                redirectUrl = uri.getRawPath() + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
-            } catch (java.net.URISyntaxException e) {
-                // keep original relative URL
-            }
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("user", UserResponse.from(user));
-            data.put("redirectUrl", redirectUrl);
-
-            logger.info("API login successful for: {} — redirectUrl={}", user.getEmail(), redirectUrl);
-            return ResponseEntity.ok(ApiResponse.ok("Login successful", data));
-
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid email or password"));
-        } catch (SessionAuthenticationException e) {
-            logger.warn("API login refusé (politique de session): {}", e.getMessage());
-            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(
-                            "Login blocked due to session policy. Close other sessions or try again."));
-        } catch (AuthenticationException e) {
-            logger.warn("API login refusé: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid email or password"));
-        } catch (Exception e) {
-            logger.error("API login erreur inattendue", e);
-            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Login failed"));
-        }
+        };
     }
 
     /**
