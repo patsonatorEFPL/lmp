@@ -36,7 +36,8 @@ MIN_REPLICAS=1
 MAX_REPLICAS=4
 SCALE_UP_THRESHOLD=80    # CPU%
 SCALE_DOWN_THRESHOLD=30  # CPU% (50 pts hysteresis vs 80)
-SCALE_UP_WINDOW="1m"   # cAdvisor scrape 30s+, besoin de >= 2 échantillons pour rate()
+SCALE_UP_WINDOW="2m"   # cAdvisor scrape ~60s observé : 1m window retourne empty
+                       # (1 sample), 2m garantit rate() avec 2 samples min.
 SCALE_DOWN_WINDOW="30m"
 COOLDOWN_FILE="/var/run/lmp-autoscaler.cooldown"
 SCALE_UP_COOLDOWN_S=60       # 1 min entre 2 scale-ups
