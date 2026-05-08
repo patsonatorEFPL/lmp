@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,8 @@ public class EmailVerificationScheduler {
      * qui n'ont pas vérifié leur email dans les 24h.
      */
     @Scheduled(fixedRate = 900_000) // 15 minutes
+    @SchedulerLock(name = "EmailVerificationScheduler.suspendUnverifiedAccounts",
+                   lockAtMostFor = "PT10M", lockAtLeastFor = "PT5M")
     @Transactional
     public void suspendUnverifiedAccounts() {
         LocalDateTime deadline = LocalDateTime.now().minusHours(24);

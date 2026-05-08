@@ -270,6 +270,20 @@
 			<artifactId>spring-session-jdbc</artifactId>
 		</dependency>
 
+		<!-- ShedLock — coordonne les @Scheduled critiques entre N répliques swarm.
+		     Une instance leader-only acquiert le lock dans la table `shedlock`
+		     pour la durée déclarée. Indispensable avant scaling horizontal. -->
+		<dependency>
+			<groupId>net.javacrumbs.shedlock</groupId>
+			<artifactId>shedlock-spring</artifactId>
+			<version>5.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.javacrumbs.shedlock</groupId>
+			<artifactId>shedlock-provider-jdbc-template</artifactId>
+			<version>5.16.0</version>
+		</dependency>
+
 		<!-- Spring Modulith — Architecture modulaire.
 		     spring-modulith-api (compile, 11 KB) : juste les annotations @ApplicationModule
 		     utilisées dans les package-info.java pour marquer les boundaries.

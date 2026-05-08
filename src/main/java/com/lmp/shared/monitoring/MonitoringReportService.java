@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,8 @@ public class MonitoringReportService {
      * Exécutée à 00:05 UTC chaque jour.
      */
     @Scheduled(cron = "0 5 0 * * *", zone = "UTC")
+    @SchedulerLock(name = "MonitoringReportService.generateDailyReportAndPurge",
+                   lockAtMostFor = "PT15M", lockAtLeastFor = "PT5M")
     @Transactional
     public void generateDailyReportAndPurge() {
         logger.info("[MONITORING-REPORT] Début de la génération du rapport quotidien");

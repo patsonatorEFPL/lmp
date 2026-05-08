@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.restclient.RestTemplateBuilder;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -88,6 +89,8 @@ public class FxRateCacheService {
 
     /** Rafraîchissement quotidien à 07h00 UTC. */
     @Scheduled(cron = "0 0 7 * * *")
+    @SchedulerLock(name = "FxRateCacheService.scheduledRefresh",
+                   lockAtMostFor = "PT10M", lockAtLeastFor = "PT5M")
     public void scheduledRefresh() {
         if (enabled) {
             refreshAll();
