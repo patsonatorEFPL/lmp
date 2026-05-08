@@ -2,11 +2,14 @@ package com.lmp.portal;
 
 import com.lmp.shared.config.site.SiteConfigManager;
 import com.lmp.shared.web.AuthHostResolver;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +35,7 @@ public class ConfigController {
 
     @GetMapping
     @PreAuthorize("permitAll()")
-    public Map<String, String> getConfig() {
+    public ResponseEntity<Map<String, String>> getConfig() {
         Map<String, String> config = new HashMap<>();
         config.put("baseUrl", siteConfigManager.getBaseUrl());
         config.put("frontendUrl", siteConfigManager.getFrontendUrl());
@@ -41,9 +44,6 @@ public class ConfigController {
         config.put("contactEmail", siteConfigManager.getContactEmail());
         config.put("noreplyEmail", siteConfigManager.getNoreplyEmail());
 
-        // URLs auth canoniques (dérivées de app.oauth2.issuer-uri).
-        // Le frontend utilise ces URLs pour toutes les redirections d'authentification —
-        // pas de hardcode côté Angular.
         String authBase = authHostResolver.getAuthBaseUrl();
         if (authBase != null) {
             config.put("authBaseUrl", authBase);
@@ -55,6 +55,8 @@ public class ConfigController {
             config.put("oauth2GoogleAuthUrl", authBase + "/oauth2/authorization/google");
             config.put("oauth2MicrosoftAuthUrl", authBase + "/oauth2/authorization/microsoft");
         }
-        return config;
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePublic())
+                .body(config);
     }
 }

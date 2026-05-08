@@ -10,10 +10,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,16 @@ public class ServiceRestController {
         this.regionalPricingService = regionalPricingService;
     }
 
+    /**
+     * Cache headers : prix dépendent du pays IP (geo). Cloudflare Cache Rule
+     * doit inclure cf.geo.country dans la cache key, sinon pollution cross-region.
+     * Vary: CF-IPCountry documente la dépendance pour caches respectant Vary.
+     */
+    private static final CacheControl REGIONAL_CACHE = CacheControl
+            .maxAge(Duration.ofMinutes(5))
+            .cachePublic();
+    private static final String VARY_GEO = "CF-IPCountry";
+
     @GetMapping
     @Operation(summary = "Lister les services", description = "Retourne tous les services actifs avec leurs offres")
     public ResponseEntity<ApiResponse<List<ServiceResponse>>> getAllServices(HttpServletRequest httpRequest) {
@@ -43,7 +55,10 @@ public class ServiceRestController {
         List<ServiceResponse> services = catalogService.getActiveServices().stream()
                 .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.ok(services));
+        return ResponseEntity.ok()
+                .cacheControl(REGIONAL_CACHE)
+                .header("Vary", VARY_GEO)
+                .body(ApiResponse.ok(services));
     }
 
     @GetMapping("/featured")
@@ -53,7 +68,10 @@ public class ServiceRestController {
         List<ServiceResponse> services = catalogService.getFeaturedServices().stream()
                 .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.ok(services));
+        return ResponseEntity.ok()
+                .cacheControl(REGIONAL_CACHE)
+                .header("Vary", VARY_GEO)
+                .body(ApiResponse.ok(services));
     }
 
     @GetMapping("/{slug}")
@@ -63,7 +81,10 @@ public class ServiceRestController {
             HttpServletRequest httpRequest) {
         var ctx = regionalPricingService.resolve(httpRequest);
         return catalogService.getServiceBySlug(slug)
-                .map(service -> ResponseEntity.ok(ApiResponse.ok(ServiceResponse.from(service, ctx, regionalPricingService))))
+                .map(service -> ResponseEntity.ok()
+                        .cacheControl(REGIONAL_CACHE)
+                        .header("Vary", VARY_GEO)
+                        .body(ApiResponse.ok(ServiceResponse.from(service, ctx, regionalPricingService))))
                 .orElse(ResponseEntity.notFound().build());
     }
 }

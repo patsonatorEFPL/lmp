@@ -10,10 +10,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.UUID;
 
 /**
@@ -32,19 +34,25 @@ public class BlogPostController {
         this.blogPostService = blogPostService;
     }
 
+    private static final CacheControl PUBLIC_CACHE = CacheControl
+            .maxAge(Duration.ofMinutes(5))
+            .cachePublic();
+
     @GetMapping
     @Operation(summary = "Lister les articles publiés", description = "Retourne les articles de blog publiés, paginés")
     public ResponseEntity<ApiResponse<Page<BlogPost>>> listPublished(
             @PageableDefault(size = 10) Pageable pageable) {
         Page<BlogPost> posts = blogPostService.findPublished(pageable);
-        return ResponseEntity.ok(ApiResponse.ok(posts));
+        return ResponseEntity.ok()
+                .cacheControl(PUBLIC_CACHE)
+                .body(ApiResponse.ok(posts));
     }
 
     @GetMapping("/{slug}")
     @Operation(summary = "Détail d'un article", description = "Retourne un article par son slug")
     public ResponseEntity<ApiResponse<BlogPost>> getBySlug(@PathVariable String slug) {
         return blogPostService.findBySlug(slug)
-                .map(post -> ResponseEntity.ok(ApiResponse.ok(post)))
+                .map(post -> ResponseEntity.ok().cacheControl(PUBLIC_CACHE).body(ApiResponse.ok(post)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
