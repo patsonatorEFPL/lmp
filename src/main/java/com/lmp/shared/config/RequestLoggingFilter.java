@@ -2,6 +2,7 @@ package com.lmp.shared.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.Filter;
@@ -15,11 +16,16 @@ import java.io.IOException;
 import java.util.Collections;
 
 /**
- * Filtre pour logger les headers X-Forwarded-* et diagnostiquer les problèmes de reverse proxy
- * 
- * ⚠️ TEMPORAIRE - À configurer en mode DEBUG uniquement pour éviter le spam des logs
+ * Filtre diagnostic pour les headers X-Forwarded-* et CORS — utile pour debug
+ * reverse proxy mais coûte 1 dispatch par requête.
+ * <p>
+ * Désactivé par défaut (le bean n'existe pas → le filter chain Tomcat n'a rien
+ * à dispatcher). Activer via {@code lmp.diagnostic.request-logging.enabled=true}
+ * (env var {@code LMP_DIAGNOSTIC_REQUEST_LOGGING_ENABLED=true}) en cas
+ * d'investigation X-Forwarded-* / CORS.
  */
 @Component
+@ConditionalOnProperty(name = "lmp.diagnostic.request-logging.enabled", havingValue = "true")
 public class RequestLoggingFilter implements Filter {
     
     private static final Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
