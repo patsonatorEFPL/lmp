@@ -24,7 +24,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -156,27 +155,28 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(buildCsrfRepository())
                         .csrfTokenRequestHandler(spaCsrfTokenRequestHandler())
+                        // CDN-cacheable public reads — CSRF bypassed for GET only so the
+                        // eager spaCsrfTokenRequestHandler doesn't emit Set-Cookie
+                        // (Cloudflare skips cache when Set-Cookie is present).
+                        // Admin POST/PUT/DELETE on /blog and /services keep CSRF.
+                        .ignoringRequestMatchers(HttpMethod.GET,
+                                "/api/v1/config",
+                                "/api/v1/blog",
+                                "/api/v1/blog/**",
+                                "/api/v1/services",
+                                "/api/v1/services/**")
                         .ignoringRequestMatchers(
-                                // CDN-cacheable public reads — CSRF bypassed for GET only so the
-                                // eager spaCsrfTokenRequestHandler doesn't emit Set-Cookie
-                                // (Cloudflare skips cache when Set-Cookie is present).
-                                // Admin POST/PUT/DELETE on /blog and /services keep CSRF.
-                                new AntPathRequestMatcher("/api/v1/config", "GET"),
-                                new AntPathRequestMatcher("/api/v1/blog", "GET"),
-                                new AntPathRequestMatcher("/api/v1/blog/**", "GET"),
-                                new AntPathRequestMatcher("/api/v1/services", "GET"),
-                                new AntPathRequestMatcher("/api/v1/services/**", "GET"),
-                                new AntPathRequestMatcher("/api/v1/dev/**"),
-                                new AntPathRequestMatcher("/api/webhooks/**"),
-                                new AntPathRequestMatcher("/api/v1/webhooks/**"),
-                                new AntPathRequestMatcher("/api/v1/auth/login"),
-                                new AntPathRequestMatcher("/api/v1/auth/register"),
-                                new AntPathRequestMatcher("/api/v1/auth/forgot-password"),
-                                new AntPathRequestMatcher("/api/v1/auth/reset-password"),
-                                new AntPathRequestMatcher("/api/v1/auth/staff-invitations/accept"),
-                                new AntPathRequestMatcher("/api/v1/contact"),
-                                new AntPathRequestMatcher("/api/v1/appointments"),
-                                new AntPathRequestMatcher("/api/v1/payments/guest-order/prepare")))
+                                "/api/v1/dev/**",
+                                "/api/webhooks/**",
+                                "/api/v1/webhooks/**",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
+                                "/api/v1/auth/staff-invitations/accept",
+                                "/api/v1/contact",
+                                "/api/v1/appointments",
+                                "/api/v1/payments/guest-order/prepare"))
 
                 // CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
