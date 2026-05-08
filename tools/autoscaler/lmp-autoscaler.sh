@@ -117,35 +117,41 @@ main() {
 
   log "replicas=$replicas cpu_${SCALE_UP_WINDOW}=${cpu_short}% cpu_${SCALE_DOWN_WINDOW}=${cpu_long}%"
 
-  case "$cpu_short" in NaN|ERR|"") log "skip: prometheus ${SCALE_UP_WINDOW} data unavailable"; exit 0 ;; esac
-  local cpu_short_int
-  cpu_short_int=$(printf '%.0f' "$cpu_short" 2>/dev/null) || cpu_short_int=0
+  # SCALE UP : CPU > 80% sustained $SCALE_UP_WINDOW (skip si data NaN)
+  case "$cpu_short" in
+    NaN|ERR|"") log "scale-up branch: ${SCALE_UP_WINDOW} data unavailable, skipping" ;;
+    *)
+      local cpu_short_int
+      cpu_short_int=$(printf '%.0f' "$cpu_short" 2>/dev/null) || cpu_short_int=0
+      if [ "$cpu_short_int" -gt $SCALE_UP_THRESHOLD ] && [ "$replicas" -lt $MAX_REPLICAS ]; then
+        if in_cooldown scale-up; then
+          log "scale-up needed (cpu=${cpu_short}%) but in cooldown"
+          exit 0
+        fi
+        scale $((replicas + 1))
+        set_cooldown scale-up
+        exit 0
+      fi
+      ;;
+  esac
 
-  # SCALE UP : CPU > 80% sustained $SCALE_UP_WINDOW
-  if [ "$cpu_short_int" -gt $SCALE_UP_THRESHOLD ] && [ "$replicas" -lt $MAX_REPLICAS ]; then
-    if in_cooldown scale-up; then
-      log "scale-up needed (cpu=${cpu_short}%) but in cooldown"
-      exit 0
-    fi
-    scale $((replicas + 1))
-    set_cooldown scale-up
-    exit 0
-  fi
-
-  # SCALE DOWN : CPU < 30% sustained $SCALE_DOWN_WINDOW
-  case "$cpu_long" in NaN|ERR|"") log "skip: prometheus ${SCALE_DOWN_WINDOW} data unavailable for scale-down"; exit 0 ;; esac
-  local cpu_long_int
-  cpu_long_int=$(printf '%.0f' "$cpu_long" 2>/dev/null) || cpu_long_int=999
-
-  if [ "$cpu_long_int" -lt $SCALE_DOWN_THRESHOLD ] && [ "$replicas" -gt $MIN_REPLICAS ]; then
-    if in_cooldown scale-down; then
-      log "scale-down possible (cpu=${cpu_long}%) but in cooldown"
-      exit 0
-    fi
-    scale $((replicas - 1))
-    set_cooldown scale-down
-    exit 0
-  fi
+  # SCALE DOWN : CPU < 30% sustained $SCALE_DOWN_WINDOW (indépendant de cpu_short)
+  case "$cpu_long" in
+    NaN|ERR|"") log "scale-down branch: ${SCALE_DOWN_WINDOW} data unavailable, skipping" ;;
+    *)
+      local cpu_long_int
+      cpu_long_int=$(printf '%.0f' "$cpu_long" 2>/dev/null) || cpu_long_int=999
+      if [ "$cpu_long_int" -lt $SCALE_DOWN_THRESHOLD ] && [ "$replicas" -gt $MIN_REPLICAS ]; then
+        if in_cooldown scale-down; then
+          log "scale-down possible (cpu=${cpu_long}%) but in cooldown"
+          exit 0
+        fi
+        scale $((replicas - 1))
+        set_cooldown scale-down
+        exit 0
+      fi
+      ;;
+  esac
 
   log "no action (within bounds)"
 }
