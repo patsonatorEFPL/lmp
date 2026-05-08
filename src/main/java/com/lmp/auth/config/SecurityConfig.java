@@ -156,6 +156,14 @@ public class SecurityConfig {
                         .csrfTokenRepository(buildCsrfRepository())
                         .csrfTokenRequestHandler(spaCsrfTokenRequestHandler())
                         .ignoringRequestMatchers(
+                                // CDN-cacheable public read endpoints — bypass CSRF entirely so
+                                // the eager spaCsrfTokenRequestHandler doesn't emit Set-Cookie
+                                // (Cloudflare skips cache when Set-Cookie is present).
+                                "/api/v1/config",
+                                "/api/v1/blog",
+                                "/api/v1/blog/**",
+                                "/api/v1/services",
+                                "/api/v1/services/**",
                                 "/api/v1/dev/**",
                                 "/api/webhooks/**",
                                 "/api/v1/webhooks/**",
