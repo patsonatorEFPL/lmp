@@ -37,11 +37,15 @@ public class WebAsyncConfig implements WebMvcConfigurer {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(8);
-        executor.setQueueCapacity(256);
+        // Queue 32 = 4× max pool. Avec bcrypt ~150 ms : wait worst-case ≈ 32 × 150 / 4 cores
+        // = ~1.2s. Évite le pile-up qui forcerait des timeouts 30s côté client.
+        // Au-delà : AbortPolicy → 503 immédiat → client retry/back-off plus utile
+        // qu'une requête bloquée 30s qui timeout.
+        executor.setQueueCapacity(32);
         executor.setKeepAliveSeconds(60);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadNamePrefix("mvc-async-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
         executor.initialize();
         return executor;
     }
