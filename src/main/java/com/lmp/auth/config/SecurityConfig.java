@@ -24,6 +24,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -152,19 +153,21 @@ public class SecurityConfig {
                 // CSRF avec CookieCsrfTokenRepository pour SPA Angular
                 // Use plain CsrfTokenRequestAttributeHandler (no XOR/BREACH protection)
                 // so Angular can read the raw cookie value and send it back as header
-                .csrf(csrf -> csrf
+                .csrf(csrf -> {
+                    var pathMatcher = PathPatternRequestMatcher.withDefaults();
+                    csrf
                         .csrfTokenRepository(buildCsrfRepository())
                         .csrfTokenRequestHandler(spaCsrfTokenRequestHandler())
                         // CDN-cacheable public reads — CSRF bypassed for GET only so the
                         // eager spaCsrfTokenRequestHandler doesn't emit Set-Cookie
                         // (Cloudflare skips cache when Set-Cookie is present).
                         // Admin POST/PUT/DELETE on /blog and /services keep CSRF.
-                        .ignoringRequestMatchers(HttpMethod.GET,
-                                "/api/v1/config",
-                                "/api/v1/blog",
-                                "/api/v1/blog/**",
-                                "/api/v1/services",
-                                "/api/v1/services/**")
+                        .ignoringRequestMatchers(
+                                pathMatcher.matcher(HttpMethod.GET, "/api/v1/config"),
+                                pathMatcher.matcher(HttpMethod.GET, "/api/v1/blog"),
+                                pathMatcher.matcher(HttpMethod.GET, "/api/v1/blog/**"),
+                                pathMatcher.matcher(HttpMethod.GET, "/api/v1/services"),
+                                pathMatcher.matcher(HttpMethod.GET, "/api/v1/services/**"))
                         .ignoringRequestMatchers(
                                 "/api/v1/dev/**",
                                 "/api/webhooks/**",
@@ -176,7 +179,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/staff-invitations/accept",
                                 "/api/v1/contact",
                                 "/api/v1/appointments",
-                                "/api/v1/payments/guest-order/prepare"))
+                                "/api/v1/payments/guest-order/prepare");
+                })
 
                 // CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
