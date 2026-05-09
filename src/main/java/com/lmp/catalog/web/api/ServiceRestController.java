@@ -57,7 +57,6 @@ public class ServiceRestController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok()
                 .cacheControl(REGIONAL_CACHE)
-                .header("Vary", VARY_GEO)
                 .body(ApiResponse.ok(services));
     }
 
@@ -70,7 +69,6 @@ public class ServiceRestController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok()
                 .cacheControl(REGIONAL_CACHE)
-                .header("Vary", VARY_GEO)
                 .body(ApiResponse.ok(services));
     }
 
