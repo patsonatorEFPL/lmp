@@ -15,13 +15,17 @@ import java.util.concurrent.ThreadPoolExecutor;
  * <p>
  * Sans cette config, Spring MVC default = {@code SimpleAsyncTaskExecutor} non borné.
  * Sous burst register, des centaines de threads spawnent (vu {@code MvcAsync205}
- * dans logs). Bornage strict pour bcrypt CPU-bound :
+ * dans logs). Bornage pour bcrypt CPU-bound sur 4 OCPU ARM A1 :
  * <ul>
- *   <li>core 4 / max 8 — bcrypt 10 (~150 ms ARM × 8 threads / 2 vCPU = ~25 reg/s plafond CPU.
- *       Plus de threads = thrashing, pas de gain throughput sur CPU pur.</li>
- *   <li>queue 256 — backlog absorbe burst de register</li>
- *   <li>CallerRunsPolicy — quand pool + queue saturés, exécute sync sur thread caller
- *       (Tomcat handler) plutôt que rejeter. Back-pressure naturelle.</li>
+ *   <li>core 8 / max 16 — bcrypt 10 ≈ 100 ms ARM. Avec 4 vCPU et 16 threads max,
+ *       ~4 bcrypts en parallèle pleins (le reste attend), throughput ~40 reg/s/replica.
+ *       Bump 2× depuis 4/8 (5/9): bench register-only depuis VM montrait 5 reg/s saturé,
+ *       diagnose mvcExecutor pool size — bump permet plus de concurrence pendant que
+ *       virtual threads carrier (bcrypt) tournent.</li>
+ *   <li>queue 64 — backlog absorbe burst, wait worst-case ≈ 64 × 100 ms / 4 cores
+ *       = ~1.6s. Évite pile-up forçant timeout 30s côté client.</li>
+ *   <li>AbortPolicy — quand pool + queue saturés, 503 immédiat → client retry/back-off
+ *       plus utile qu'une requête bloquée 30s qui timeout.</li>
  * </ul>
  * <p>
  * Bean nommé {@code mvcTaskExecutor} (NE shadow PAS {@code applicationTaskExecutor}
@@ -35,13 +39,9 @@ public class WebAsyncConfig implements WebMvcConfigurer {
     @Bean(name = "mvcTaskExecutor")
     public ThreadPoolTaskExecutor mvcTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(4);
-        executor.setMaxPoolSize(8);
-        // Queue 32 = 4× max pool. Avec bcrypt ~150 ms : wait worst-case ≈ 32 × 150 / 4 cores
-        // = ~1.2s. Évite le pile-up qui forcerait des timeouts 30s côté client.
-        // Au-delà : AbortPolicy → 503 immédiat → client retry/back-off plus utile
-        // qu'une requête bloquée 30s qui timeout.
-        executor.setQueueCapacity(32);
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(16);
+        executor.setQueueCapacity(64);
         executor.setKeepAliveSeconds(60);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadNamePrefix("mvc-async-");
@@ -54,8 +54,8 @@ public class WebAsyncConfig implements WebMvcConfigurer {
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setTaskExecutor(mvcTaskExecutor());
         // 30s timeout sur Callable / DeferredResult — au-delà = 503 au client.
-        // Couvre largement bcrypt 10 (~150 ms) + INSERT user + email send (~500 ms total).
+        // Couvre largement bcrypt 10 (~100 ms) + INSERT user + email send (~500 ms total).
         configurer.setDefaultTimeout(30_000L);
-        logger.info("[MVC ASYNC] Bound to mvcTaskExecutor (core=4 max=8 queue=256), timeout=30s");
+        logger.info("[MVC ASYNC] Bound to mvcTaskExecutor (core=8 max=16 queue=64), timeout=30s");
     }
 }
