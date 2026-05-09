@@ -180,6 +180,13 @@
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
+		<!-- Pool de connexions Lettuce — requis par spring.data.redis.lettuce.pool.enabled=true.
+		     Sans cette dep, NoClassDefFoundError sur GenericObjectPoolConfig au boot. -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+		</dependency>
+
 		<!-- Spring Session Redis : sessions HTTP partagées (replace JDBC pour latence ↓) -->
 		<dependency>
 			<groupId>org.springframework.session</groupId>
