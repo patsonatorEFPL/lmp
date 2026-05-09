@@ -23,6 +23,7 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -465,13 +466,48 @@ public class SecurityConfig {
      * Construit le CookieCsrfTokenRepository avec un Domain attribute partagé
      * cross-subdomain (auth.* ↔ apex/dev.*). Sans Domain, le cookie XSRF reste
      * scopé à l'host exact et le SPA cross-host ne peut pas l'envoyer.
+     *
+     * <p>Wrappé pour ne PAS écrire Set-Cookie sur les paths CDN-cacheables :
+     * sinon Cloudflare bypasse la cache même avec ignoringRequestMatchers
+     * (qui skip seulement la validation, pas le cookie save). Angular bootstrap
+     * le cookie via /api/v1/auth/me (provideAppInitializer).</p>
      */
-    private CookieCsrfTokenRepository buildCsrfRepository() {
+    private CsrfTokenRepository buildCsrfRepository() {
         CookieCsrfTokenRepository repo = CookieCsrfTokenRepository.withHttpOnlyFalse();
         if (cookieDomain != null && !cookieDomain.isBlank()) {
             repo.setCookieCustomizer(c -> c.domain(cookieDomain));
         }
-        return repo;
+        return new CacheablePathCsrfRepoWrapper(repo);
+    }
+
+    /**
+     * Delegating CsrfTokenRepository qui skip saveToken sur les GETs publics
+     * cacheables — keeps Set-Cookie off responses that Cloudflare must cache.
+     */
+    private static final class CacheablePathCsrfRepoWrapper implements CsrfTokenRepository {
+        private final CsrfTokenRepository delegate;
+
+        CacheablePathCsrfRepoWrapper(CsrfTokenRepository delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public CsrfToken generateToken(HttpServletRequest request) {
+            return delegate.generateToken(request);
+        }
+
+        @Override
+        public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
+            if ("GET".equalsIgnoreCase(request.getMethod()) && isCacheablePath(request)) {
+                return;
+            }
+            delegate.saveToken(token, request, response);
+        }
+
+        @Override
+        public CsrfToken loadToken(HttpServletRequest request) {
+            return delegate.loadToken(request);
+        }
     }
 
     /**
