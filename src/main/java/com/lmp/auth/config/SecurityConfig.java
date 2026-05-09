@@ -533,12 +533,17 @@ public class SecurityConfig {
      */
     private OncePerRequestFilter xsrfStripFilter() {
         return new OncePerRequestFilter() {
+            private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger("XsrfStripFilter");
+
             @Override
             protected void doFilterInternal(HttpServletRequest request,
                                             HttpServletResponse response,
                                             FilterChain filterChain)
                     throws ServletException, IOException {
-                if ("GET".equalsIgnoreCase(request.getMethod()) && isCacheablePath(request)) {
+                boolean cacheable = "GET".equalsIgnoreCase(request.getMethod()) && isCacheablePath(request);
+                log.warn("[XSRF-STRIP] uri={} method={} cacheable={}",
+                        request.getRequestURI(), request.getMethod(), cacheable);
+                if (cacheable) {
                     filterChain.doFilter(request, new XsrfStrippingResponseWrapper(response));
                 } else {
                     filterChain.doFilter(request, response);
@@ -560,8 +565,11 @@ public class SecurityConfig {
             super(response);
         }
 
+        private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger("XsrfRespWrapper");
+
         @Override
         public void addCookie(jakarta.servlet.http.Cookie cookie) {
+            LOG.warn("[XSRF-WRAP] addCookie called name={}", cookie != null ? cookie.getName() : "null");
             if (cookie != null && XSRF_COOKIE.equals(cookie.getName())) {
                 return;
             }
@@ -570,6 +578,9 @@ public class SecurityConfig {
 
         @Override
         public void addHeader(String name, String value) {
+            if ("Set-Cookie".equalsIgnoreCase(name)) {
+                LOG.warn("[XSRF-WRAP] addHeader Set-Cookie value={}", value);
+            }
             if ("Set-Cookie".equalsIgnoreCase(name) && value != null
                     && value.regionMatches(true, 0, XSRF_COOKIE + "=", 0, XSRF_COOKIE.length() + 1)) {
                 return;
@@ -579,6 +590,9 @@ public class SecurityConfig {
 
         @Override
         public void setHeader(String name, String value) {
+            if ("Set-Cookie".equalsIgnoreCase(name)) {
+                LOG.warn("[XSRF-WRAP] setHeader Set-Cookie value={}", value);
+            }
             if ("Set-Cookie".equalsIgnoreCase(name) && value != null
                     && value.regionMatches(true, 0, XSRF_COOKIE + "=", 0, XSRF_COOKIE.length() + 1)) {
                 return;
