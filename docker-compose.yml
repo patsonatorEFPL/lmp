@@ -72,12 +72,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Dokploy injecte les env vars (DB_URL, STRIPE_*, OAUTH2_*, mail, etc.) dans
+    # ./.env à la racine du compose. env_file le charge dans le container.
+    env_file:
+      - .env
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-staging}
       # Redis : utilise les service names compose (résolus via dokploy-network)
+      # Override l'éventuelle valeur dans .env pour pointer redis-cache.
       REDIS_HOST: redis-cache
       REDIS_PORT: "6379"
-      # Variables business injectées via Dokploy env (DATABASE_URL, STRIPE_*, etc.)
     depends_on:
       redis-cache:
         condition: service_healthy
