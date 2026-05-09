@@ -205,6 +205,11 @@ public class SecurityConfig {
                 .addFilterBefore(adminRateLimitFilter,
                         org.springframework.security.web.csrf.CsrfFilter.class)
 
+                // Strip XSRF-TOKEN Set-Cookie on cacheable GET responses BEFORE any
+                // downstream filter can write it (CsrfFilter, eager handler, etc.).
+                .addFilterBefore(xsrfStripFilter(),
+                        org.springframework.security.web.csrf.CsrfFilter.class)
+
                 // Filter to eagerly load CSRF token (sets cookie on every response)
                 .addFilterAfter(csrfCookieFilter(),
                         org.springframework.security.web.csrf.CsrfFilter.class)
@@ -520,6 +525,67 @@ public class SecurityConfig {
             "/api/v1/config",
             "/api/v1/blog",
             "/api/v1/services");
+
+    /**
+     * Strips Set-Cookie: XSRF-TOKEN from cacheable GET responses no matter who
+     * tries to set it (Spring Security CsrfFilter, eager handler, Lazy wrapper,
+     * etc.). Last-resort net so Cloudflare can cache these responses.
+     */
+    private OncePerRequestFilter xsrfStripFilter() {
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            FilterChain filterChain)
+                    throws ServletException, IOException {
+                if ("GET".equalsIgnoreCase(request.getMethod()) && isCacheablePath(request)) {
+                    filterChain.doFilter(request, new XsrfStrippingResponseWrapper(response));
+                } else {
+                    filterChain.doFilter(request, response);
+                }
+            }
+        };
+    }
+
+    /**
+     * Response wrapper that drops any addCookie/addHeader that would emit an
+     * XSRF-TOKEN Set-Cookie. All other headers/cookies pass through unchanged.
+     */
+    private static final class XsrfStrippingResponseWrapper
+            extends jakarta.servlet.http.HttpServletResponseWrapper {
+
+        private static final String XSRF_COOKIE = "XSRF-TOKEN";
+
+        XsrfStrippingResponseWrapper(HttpServletResponse response) {
+            super(response);
+        }
+
+        @Override
+        public void addCookie(jakarta.servlet.http.Cookie cookie) {
+            if (cookie != null && XSRF_COOKIE.equals(cookie.getName())) {
+                return;
+            }
+            super.addCookie(cookie);
+        }
+
+        @Override
+        public void addHeader(String name, String value) {
+            if ("Set-Cookie".equalsIgnoreCase(name) && value != null
+                    && value.regionMatches(true, 0, XSRF_COOKIE + "=", 0, XSRF_COOKIE.length() + 1)) {
+                return;
+            }
+            super.addHeader(name, value);
+        }
+
+        @Override
+        public void setHeader(String name, String value) {
+            if ("Set-Cookie".equalsIgnoreCase(name) && value != null
+                    && value.regionMatches(true, 0, XSRF_COOKIE + "=", 0, XSRF_COOKIE.length() + 1)) {
+                return;
+            }
+            super.setHeader(name, value);
+        }
+    }
 
     private OncePerRequestFilter csrfCookieFilter() {
         return new OncePerRequestFilter() {
