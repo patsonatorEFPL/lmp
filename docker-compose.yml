@@ -89,7 +89,7 @@ services:
     networks:
       - dokploy-network
     deploy:
-      replicas: 2
+      replicas: 4
       resources:
         limits:
           memory: 1024M
