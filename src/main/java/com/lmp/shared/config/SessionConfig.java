@@ -1,20 +1,22 @@
 package com.lmp.shared.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.session.jdbc.config.annotation.web.http.EnableJdbcHttpSession;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 
 /**
- * Active Spring Session JDBC pour partager les HttpSession entre replicas via
- * la base PostgreSQL. Sans ça, chaque container Tomcat garde ses sessions en
- * mémoire et un user qui passe d'un replica à l'autre via le LB Traefik perd
- * sa session — observé en staging multi-replica (auth/me 401 après login OK).
+ * Active Spring Session Redis pour partager les HttpSession entre replicas via
+ * le service Redis dédié {@code lmp-redis}. Latence cible : sub-milliseconde
+ * (vs ~5-10 ms via Spring Session JDBC sur Postgres staging).
  *
- * <p>Schéma {@code SPRING_SESSION} + {@code SPRING_SESSION_ATTRIBUTES} créé
- * par Flyway (V40__spring_session_schema.sql), pas par Spring Session
- * (initialize-schema=never), pour rester cohérent avec les autres migrations
- * gérées par Flyway.</p>
+ * <p>Migration de spring-session-jdbc → spring-session-data-redis : Redis sert
+ * aussi de cache + pub/sub + queue (style stack Frappe), donc l'avoir comme
+ * session store élimine 1 round-trip Postgres par requête authentifiée.</p>
+ *
+ * <p>La table {@code SPRING_SESSION} créée par la migration V40 reste en DB
+ * mais inutilisée — laissée en place pour faciliter rollback si Redis devait
+ * tomber durablement. À supprimer par migration future si confiance Redis OK.</p>
  */
 @Configuration
-@EnableJdbcHttpSession
+@EnableRedisHttpSession
 public class SessionConfig {
 }
