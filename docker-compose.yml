@@ -1,0 +1,114 @@
+# ============================================================================
+# LMP backend stack (Frappe-style : tout-en-un compose)
+# ============================================================================
+# Services dans 1 seul Dokploy Compose project :
+#   - backend     : Spring Boot app (build local Dockerfile)
+#   - redis-cache : Redis volatile (sessions, rate-limit, SSE pub/sub, caches)
+#   - redis-queue : Redis persistant AOF (queues si futur Spring Batch / RQ-style)
+#
+# Postgres reste géré comme Dokploy app séparée (`lmp-staging-db`) car la donnée
+# est durable et partagée potentiellement entre environnements. Frappe-CRM met
+# son MariaDB dans le compose ; pour LMP la DB est plus pérenne et on évite de
+# coupler son lifecycle au backend.
+#
+# Network : dokploy-network (overlay externe créé par Dokploy). Tous les services
+# se résolvent par leur service name (redis-cache, redis-queue, backend) sur cette
+# network. Backend lit ainsi REDIS_HOST=redis-cache directement.
+# ============================================================================
+version: "3.8"
+
+services:
+  redis-cache:
+    image: redis:7-alpine
+    command: >
+      redis-server
+        --maxmemory 200mb
+        --maxmemory-policy allkeys-lru
+        --save ""
+        --appendonly no
+        --tcp-keepalive 60
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    networks:
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  redis-queue:
+    image: redis:7-alpine
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy noeviction
+        --save 60 1000
+        --appendonly yes
+        --appendfsync everysec
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+        reservations:
+          memory: 64M
+    volumes:
+      - redis-queue-data:/data
+    networks:
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-staging}
+      # Redis : utilise les service names compose (résolus via dokploy-network)
+      REDIS_HOST: redis-cache
+      REDIS_PORT: "6379"
+      # Variables business injectées via Dokploy env (DATABASE_URL, STRIPE_*, etc.)
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 384M
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: continue
+        max_failure_ratio: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -m 25 http://localhost:8080/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 90s
+
+networks:
+  dokploy-network:
+    external: true
+
+volumes:
+  redis-queue-data:
