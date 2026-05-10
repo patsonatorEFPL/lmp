@@ -15,23 +15,22 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID> {
+public interface SyncEventRepository extends JpaRepository<SyncEvent, UUID>, SyncEventRepositoryCustom {
 
-    // ==================== Queue FIFO ====================
+    // ==================== Queue FIFO (claim/recovery dans Custom impl) ====================
 
     /**
-     * Récupère le prochain batch d'événements à traiter (FIFO).
-     * Utilise FOR UPDATE SKIP LOCKED pour le traitement concurrent.
+     * Recovery des événements PROCESSING orphelins (réplica crashed mid-process).
+     * Sans ça, claim atomique = trou noir : events stuck PROCESSING jamais retraités.
      */
+    @Modifying
     @Query(value = """
-            SELECT * FROM sync_event_log
-            WHERE status = 'QUEUED'
-              AND scheduled_at <= NOW()
-            ORDER BY created_at ASC
-            LIMIT :batchSize
-            FOR UPDATE SKIP LOCKED
+            UPDATE sync_event_log
+               SET status = 'QUEUED', processed_at = NULL
+             WHERE status = 'PROCESSING'
+               AND processed_at < :staleBefore
             """, nativeQuery = true)
-    List<SyncEvent> findNextBatch(@Param("batchSize") int batchSize);
+    int recoverStaleProcessing(@Param("staleBefore") LocalDateTime staleBefore);
 
     /**
      * Événements FAILED retryables (retry_count < max_retries, scheduled_at passé).
