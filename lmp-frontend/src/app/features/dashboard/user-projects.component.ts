@@ -6,8 +6,8 @@ import {
   LucideAngularModule, FolderKanban, RefreshCw, Filter, X, Loader2,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Project, ProjectStatus, ProjectPriority } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Project, ProjectStatus, ProjectPriority } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-projects',
@@ -147,7 +147,7 @@ import { Project, ProjectStatus, ProjectPriority } from '../../core/stubs/portal
   `,
 })
 export class UserProjectsComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
   private readonly router = inject(Router);
 
   readonly STATUS_OPTIONS: ProjectStatus[] = ['Open', 'Completed', 'Cancelled'];
@@ -180,7 +180,7 @@ export class UserProjectsComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listProjects().subscribe({
+    this.portal.listProjects().subscribe({
       next: (list) => { this.items.set(list); this.loading.set(false); this.currentPage.set(0); },
       error: () => this.loading.set(false),
     });

@@ -6,8 +6,8 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Invoice, InvoiceStatus } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-invoices',
@@ -244,7 +244,7 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
   `,
 })
 export class UserInvoicesComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
 
   readonly STATUS_OPTIONS: InvoiceStatus[] = ['Draft', 'Submitted', 'Paid', 'Partly Paid', 'Unpaid', 'Overdue', 'Return', 'Credit Note Issued', 'Cancelled'];
 
@@ -289,7 +289,7 @@ export class UserInvoicesComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listInvoices().subscribe({
+    this.portal.listInvoices().subscribe({
       next: (list) => { this.items.set(list); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
