@@ -6,8 +6,8 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Quotation, QuotationStatus } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-quotations',
@@ -219,7 +219,7 @@ import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
   `,
 })
 export class UserQuotationsComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
 
   readonly STATUS_OPTIONS: QuotationStatus[] = ['Draft', 'Open', 'Replied', 'Partially Ordered', 'Ordered', 'Lost', 'Cancelled', 'Expired'];
 
@@ -253,7 +253,7 @@ export class UserQuotationsComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listQuotations().subscribe({
+    this.portal.listQuotations().subscribe({
       next: (list) => { this.items.set(list); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -266,7 +266,7 @@ export class UserQuotationsComponent implements OnInit {
   }
 
   accept(q: Quotation) {
-    this.stub.acceptQuotation(q.id).subscribe((updated) => {
+    this.portal.acceptQuotation(q.id).subscribe((updated) => {
       if (updated) {
         this.items.update((list) => list.map((x) => (x.id === updated.id ? updated : x)));
         if (this.selected()?.id === updated.id) this.selected.set(updated);

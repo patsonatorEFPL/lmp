@@ -215,7 +215,7 @@ const SPARK = {};
           </div>
         }
 
-        <!-- 4 KPIs avec sparklines (séries de démo : pas de courbes côté back) -->
+        <!-- 4 KPIs -->
         <div class="lmpd-stat-grid">
           <lmp-stat-card
             label="Commandes"
@@ -617,7 +617,7 @@ export class DashboardOverviewComponent implements OnInit {
     },
     {
       label: 'Régler une facture',
-      description: '2 factures en attente',
+      description: 'Voir les factures en attente',
       route: '/dashboard/invoices',
       icon: CreditCard,
     },
