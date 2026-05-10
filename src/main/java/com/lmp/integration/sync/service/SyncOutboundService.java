@@ -111,16 +111,14 @@ public class SyncOutboundService {
      */
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void processEvent(SyncEvent syncEvent) {
-        // Re-charger l'entité dans cette transaction (l'objet reçu est détaché
-        // depuis que processNextBatch n'est plus @Transactional)
+        // L'événement arrive déjà en statut PROCESSING (claimé atomiquement par
+        // claimNextBatch). Re-load pour rattacher à la tx courante.
         SyncEvent event = syncEventRepository.findById(syncEvent.getId()).orElse(null);
-        if (event == null || event.getStatus() != SyncStatus.QUEUED) {
-            log.debug("⏭️ [SYNC] Event {} already processed or missing — skipping", syncEvent.getId());
+        if (event == null || event.getStatus() != SyncStatus.PROCESSING) {
+            log.debug("⏭️ [SYNC] Event {} not in PROCESSING (status={}) — skipping",
+                    syncEvent.getId(), event == null ? "null" : event.getStatus());
             return;
         }
-
-        event.setStatus(SyncStatus.PROCESSING);
-        syncEventRepository.save(event);
 
         // Observabilité : propager le correlationId dans les logs et headers REST
         MDC.put("correlationId", event.getId().toString());
