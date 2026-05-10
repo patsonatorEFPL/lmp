@@ -39,13 +39,19 @@ public class WebAsyncConfig implements WebMvcConfigurer {
     @Bean(name = "mvcTaskExecutor")
     public ThreadPoolTaskExecutor mvcTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(8);
-        executor.setMaxPoolSize(16);
-        executor.setQueueCapacity(64);
+        // Pool 16/32 + queue 128 absorbe ~160 concurrent register sur 4 OCPU
+        // (4 bcrypts en parallèle pleins, reste en attente queue).
+        executor.setCorePoolSize(16);
+        executor.setMaxPoolSize(32);
+        executor.setQueueCapacity(128);
         executor.setKeepAliveSeconds(60);
         executor.setAllowCoreThreadTimeOut(true);
         executor.setThreadNamePrefix("mvc-async-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        // CallerRunsPolicy : sous saturation, Tomcat caller thread exécute la
+        // tâche directement → back-pressure naturelle (slow client) au lieu de
+        // RejectedExecutionException → 503 → healthcheck KO. Évite faux unhealthy
+        // sous burst load (observé 5 replicas où liveness via Callable saturé).
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
     }
