@@ -65,7 +65,10 @@ services:
     networks:
       - dokploy-network
     deploy:
-      replicas: 5
+      # Baseline = 2 (HA minimum). Autoscaler (Oracle host /opt/lmp-autoscaler/)
+      # scale 2..5 selon CPU via `docker compose --scale`. À chaque redeploy
+      # Dokploy, baseline revient ici — autoscaler reprend ensuite si charge.
+      replicas: 2
       resources:
         limits:
           memory: 1024M
