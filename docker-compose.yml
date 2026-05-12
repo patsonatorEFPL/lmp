@@ -4,16 +4,20 @@
 # Services dans 1 seul Dokploy Compose project :
 #   - backend     : Spring Boot app (build local Dockerfile)
 #   - redis-cache : Redis volatile (sessions, rate-limit, SSE pub/sub, caches)
-#   - redis-queue : Redis persistant AOF (queues si futur Spring Batch / RQ-style)
 #
 # Postgres reste géré comme Dokploy app séparée (`lmp-staging-db`) car la donnée
 # est durable et partagée potentiellement entre environnements. Frappe-CRM met
 # son MariaDB dans le compose ; pour LMP la DB est plus pérenne et on évite de
 # coupler son lifecycle au backend.
 #
+# Note: `redis-queue` container retiré 2026-05-10 — async work durable
+# (email_queue, sync_event_log) tourne via Postgres claim atomique
+# (UPDATE...RETURNING + FOR UPDATE SKIP LOCKED). Plus de Redis queue nécessaire.
+# 320 MB RAM libérés pour backend replicas.
+#
 # Network : dokploy-network (overlay externe créé par Dokploy). Tous les services
-# se résolvent par leur service name (redis-cache, redis-queue, backend) sur cette
-# network. Backend lit ainsi REDIS_HOST=redis-cache directement.
+# se résolvent par leur service name (redis-cache, backend) sur cette network.
+# Backend lit ainsi REDIS_HOST=redis-cache directement.
 # ============================================================================
 version: "3.8"
 
@@ -42,32 +46,6 @@ services:
       retries: 3
       start_period: 5s
 
-  redis-queue:
-    image: redis:7-alpine
-    command: >
-      redis-server
-        --maxmemory 256mb
-        --maxmemory-policy noeviction
-        --save 60 1000
-        --appendonly yes
-        --appendfsync everysec
-    deploy:
-      resources:
-        limits:
-          memory: 320M
-        reservations:
-          memory: 64M
-    volumes:
-      - redis-queue-data:/data
-    networks:
-      - dokploy-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-
   backend:
     build:
       context: .
@@ -83,8 +61,6 @@ services:
       REDIS_PORT: "6379"
     depends_on:
       redis-cache:
-        condition: service_healthy
-      redis-queue:
         condition: service_healthy
     networks:
       - dokploy-network
@@ -112,6 +88,3 @@ services:
 networks:
   dokploy-network:
     external: true
-
-volumes:
-  redis-queue-data:
