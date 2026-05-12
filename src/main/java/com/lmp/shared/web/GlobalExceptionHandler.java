@@ -1,5 +1,7 @@
 package com.lmp.shared.web;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Gestionnaire global des exceptions pour l'application LMP.
@@ -23,6 +26,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @ControllerAdvice
 @org.springframework.core.annotation.Order(10)
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
@@ -178,8 +183,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Static resource 404 (e.g. {@code /chunk-PKHOQFAK.js} demandé par un browser
+     * sur un build précédent). Retourne 404 silencieux — pas de stack trace.
+     * Volume élevé sous deploy rolling : chaque user avec onglet ouvert avant
+     * deploy tape l'ancien chunk path.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleStaticResourceNotFound(NoResourceFoundException ex) {
+        logger.debug("Static resource missing: {}", ex.getResourcePath());
+    }
+
+    /**
      * Gère toutes les autres exceptions non spécifiques.
-     * 
+     *
      * @param ex L'exception générale
      * @param model Le modèle pour la vue
      * @return La vue d'erreur 500
@@ -192,11 +209,9 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorCode", "500");
         model.addAttribute("returnUrl", frontendUrl);
         model.addAttribute("technicalDetails", ex.getMessage());
-        
-        // Log l'erreur pour le debugging
-        System.err.println("Erreur non gérée: " + ex.getMessage());
-        ex.printStackTrace();
-        
+
+        logger.error("Erreur non gérée: {}", ex.getMessage(), ex);
+
         return "error/500";
     }
 
