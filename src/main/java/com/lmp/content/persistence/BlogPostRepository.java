@@ -40,4 +40,20 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
              LIMIT :max
             """, nativeQuery = true)
     List<BlogPost> searchPublished(@Param("query") String query, @Param("max") int max);
+
+    /**
+     * Trigram-similarity title suggestions, used as a "did you mean" fallback
+     * when {@link #searchPublished} returns nothing. Uses the V42 GIN
+     * trigram index ({@code lower(title) gin_trgm_ops}). The 0.2 similarity
+     * floor is loose enough to forgive a 1–2 character typo on a short
+     * title; tighten to 0.3 if results feel noisy on real traffic.
+     */
+    @Query(value = """
+            SELECT title FROM blog_posts
+             WHERE published_at IS NOT NULL
+               AND similarity(lower(title), lower(:query)) > 0.2
+             ORDER BY similarity(lower(title), lower(:query)) DESC
+             LIMIT :max
+            """, nativeQuery = true)
+    List<String> suggestSimilarTitles(@Param("query") String query, @Param("max") int max);
 }

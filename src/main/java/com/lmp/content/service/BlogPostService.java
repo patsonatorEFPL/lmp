@@ -1,6 +1,7 @@
 package com.lmp.content.service;
 
 import com.lmp.content.domain.BlogPost;
+import com.lmp.content.dto.BlogSearchResult;
 import com.lmp.content.persistence.BlogPostRepository;
 
 import org.springframework.data.domain.Page;
@@ -36,6 +37,21 @@ public class BlogPostService {
      */
     public List<BlogPost> searchPublished(String query, int max) {
         return repository.searchPublished(query, max);
+    }
+
+    /**
+     * Full-text search with a trigram "did you mean" fallback. When the
+     * tsvector query returns nothing we run a similarity() probe on titles
+     * and surface the top {@code suggestionsMax} closest matches so the
+     * client can offer them as one-click corrections.
+     */
+    public BlogSearchResult searchPublishedWithFallback(String query, int max, int suggestionsMax) {
+        List<BlogPost> hits = repository.searchPublished(query, max);
+        if (!hits.isEmpty()) {
+            return BlogSearchResult.of(hits);
+        }
+        List<String> suggestions = repository.suggestSimilarTitles(query, suggestionsMax);
+        return BlogSearchResult.empty(suggestions);
     }
 
     @Transactional

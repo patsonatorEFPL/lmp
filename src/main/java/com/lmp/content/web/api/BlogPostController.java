@@ -58,19 +58,20 @@ public class BlogPostController {
 
     @GetMapping("/search")
     @Operation(summary = "Recherche full-text",
-               description = "Recherche dans titre, résumé, contenu via tsvector. Supporte phrases entre quotes, négation -mot, OR.")
-    public ResponseEntity<ApiResponse<java.util.List<BlogPost>>> search(
+               description = "tsvector dans titre/résumé/contenu. Supporte phrases, négation, OR. Fallback trigram 'did you mean' sur zéro résultat.")
+    public ResponseEntity<ApiResponse<com.lmp.content.dto.BlogSearchResult>> search(
             @RequestParam(value = "q", required = false) String query,
             @RequestParam(value = "limit", defaultValue = "20") int limit) {
         if (query == null || query.isBlank()) {
             return ResponseEntity.ok()
                     .cacheControl(PUBLIC_CACHE)
-                    .body(ApiResponse.ok(java.util.List.of()));
+                    .body(ApiResponse.ok(com.lmp.content.dto.BlogSearchResult.of(java.util.List.of())));
         }
         int safeLimit = Math.min(Math.max(limit, 1), 50);
+        var result = blogPostService.searchPublishedWithFallback(query.trim(), safeLimit, 5);
         return ResponseEntity.ok()
                 .cacheControl(PUBLIC_CACHE)
-                .body(ApiResponse.ok(blogPostService.searchPublished(query.trim(), safeLimit)));
+                .body(ApiResponse.ok(result));
     }
 
     @PostMapping
