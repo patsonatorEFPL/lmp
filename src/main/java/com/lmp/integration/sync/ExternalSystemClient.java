@@ -91,7 +91,7 @@ public interface ExternalSystemClient {
     /**
      * Appelle une méthode serveur (Whitelisted API method) sur le système externe.
      * <p>
-     * Ex: {@code callMethod("externalErp.selling.doctype.quotation.quotation.make_sales_order", args)}
+     * Ex: {@code callMethod("erpnext.selling.doctype.quotation.quotation.make_sales_order", args)}
      * pour convertir un Quotation en Sales Order côté externalErp.
      *
      * @param method chemin complet de la méthode (dotted path)

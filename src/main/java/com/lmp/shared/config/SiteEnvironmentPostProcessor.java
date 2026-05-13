@@ -81,7 +81,7 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
             crmUrl = crmUrl.replaceAll("/+$", "");
         }
         putIfAbsent(environment, derived, "app.oauth2.erp.redirect-uri",
-                crmUrl + "/api/method/externalCrm.integrations.oauth2_logins.custom/lmp_sso");
+                crmUrl + "/api/method/frappe.integrations.oauth2_logins.custom/lmp_sso");
 
         // Email domain — Q2B : utilise le ROOT domain pour les From headers (SPF/DKIM/
         // DMARC sont configurés sur la zone parente, pas sur les subdomains comme

@@ -1071,7 +1071,7 @@ public class ErpEventListener {
             Order order = orderOpt.get();
 
             // 3. Créer le SO directement à partir de l'Order (évite les problèmes de template
-            //    make_sales_order qui contient des champs calculés incompatible avec externalCrm.client.insert)
+            //    make_sales_order qui contient des champs calculés incompatible avec frappe.client.insert)
             //    Le lien Quotation est injecté automatiquement par OrderSyncMapper.toSalesOrderPayload()
             //    via order.getQuotation().getExternalQuotationId().
             Map<String, Object> soData = orderSyncMapper.toSalesOrderPayload(order);
@@ -1111,10 +1111,10 @@ public class ErpEventListener {
                 Object docstatus = data.get("docstatus");
                 int status = (docstatus instanceof Number) ? ((Number) docstatus).intValue() : 0;
                 if (status == 0) {
-                    // externalCrm.client.submit nécessite le document complet avec 'modified' pour éviter
+                    // frappe.client.submit nécessite le document complet avec 'modified' pour éviter
                     // TimestampMismatchError ("modified after you have opened it")
                     data.put("docstatus", 1);
-                    ExternalResponse submitResponse = externalClient.callMethod("externalCrm.client.submit",
+                    ExternalResponse submitResponse = externalClient.callMethod("frappe.client.submit",
                             Map.of("doc", data));
                     if (submitResponse.success()) {
                         logger.info("📋 [SYNC] Submitted Quotation '{}' before make_sales_order", externalQuotationId);
@@ -1148,7 +1148,7 @@ public class ErpEventListener {
 
             // Appeler declare_order_lost sur externalErp
             externalClient.callMethod(
-                    "externalErp.selling.doctype.quotation.quotation.declare_order_lost",
+                    "erpnext.selling.doctype.quotation.quotation.declare_order_lost",
                     Map.of(
                             "docname", quotation.getExternalQuotationId(),
                             "lost_reasons_list", List.of(Map.of("lost_reason", "Client refusal")),

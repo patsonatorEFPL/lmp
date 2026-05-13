@@ -82,7 +82,7 @@ public class RestExternalClient implements ExternalSystemClient {
     public boolean isAvailable() {
         try {
             restClient.get()
-                    .uri("/api/method/externalCrm.auth.get_logged_user")
+                    .uri("/api/method/frappe.auth.get_logged_user")
                     .retrieve()
                     .toBodilessEntity();
             return true;
@@ -106,7 +106,7 @@ public class RestExternalClient implements ExternalSystemClient {
                 }
             }
 
-            // Injecter le doctype dans le payload (requis par externalCrm.client.insert)
+            // Injecter le doctype dans le payload (requis par frappe.client.insert)
             Map<String, Object> doc = new LinkedHashMap<>(data);
             doc.put("doctype", docType);
 
@@ -173,7 +173,7 @@ public class RestExternalClient implements ExternalSystemClient {
     public ExternalResponse updateEntity(SyncEntityType type, String externalId, Map<String, Object> data) {
         String docType = entityTypeMapping.toExternalDocType(type);
         try {
-            // externalCrm.client.save : injecter doctype + name pour identifier le document
+            // frappe.client.save : injecter doctype + name pour identifier le document
             Map<String, Object> doc = new LinkedHashMap<>(data);
             doc.put("doctype", docType);
             doc.put("name", externalId);
@@ -297,7 +297,7 @@ public class RestExternalClient implements ExternalSystemClient {
 
     /**
      * Soumet un document Draft (docstatus = 0 → 1) après création.
-     * Utilise externalCrm.client.submit pour garantir le calcul correct des totaux.
+     * Utilise frappe.client.submit pour garantir le calcul correct des totaux.
      */
     private void submitDocument(String docType, String externalId) {
         try {
@@ -315,7 +315,7 @@ public class RestExternalClient implements ExternalSystemClient {
                 return;
             }
             doc.put("docstatus", 1);
-            postexternalCrmClientMethod("externalCrm.client.submit", "doc", doc);
+            postexternalCrmClientMethod("frappe.client.submit", "doc", doc);
             log.info("📋 [SYNC] Submitted {} '{}'", docType, externalId);
         } catch (Exception e) {
             log.warn("⚠️ [SYNC] Failed to submit {} '{}': {} — document remains as Draft",
@@ -325,7 +325,7 @@ public class RestExternalClient implements ExternalSystemClient {
 
     /**
      * Annule un document soumis (docstatus = 1 → 2) avant suppression.
-     * Utilise externalCrm.client.cancel pour respecter les hooks externalErp.
+     * Utilise frappe.client.cancel pour respecter les hooks externalErp.
      */
     @SuppressWarnings("unchecked")
     private void cancelIfSubmitted(String docType, String externalId) {
@@ -345,7 +345,7 @@ public class RestExternalClient implements ExternalSystemClient {
                     formData.add("doctype", docType);
                     formData.add("name", externalId);
                     restClient.post()
-                            .uri("/api/method/externalCrm.client.cancel")
+                            .uri("/api/method/frappe.client.cancel")
                             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                             .body(formData)
                             .retrieve()
@@ -430,21 +430,21 @@ public class RestExternalClient implements ExternalSystemClient {
     // ==================== externalCrm Client API helpers ====================
 
     /**
-     * Crée un document via {@code externalCrm.client.insert} (form-data).
+     * Crée un document via {@code frappe.client.insert} (form-data).
      * Cette méthode exécute les hooks de validation et calcule les totaux
      * automatiquement — contourne le bug base_grand_total de externalErp v17-dev.
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> postexternalCrmClientInsert(Map<String, Object> doc) {
-        return postexternalCrmClientMethod("externalCrm.client.insert", "doc", doc);
+        return postexternalCrmClientMethod("frappe.client.insert", "doc", doc);
     }
 
     /**
-     * Met à jour un document via {@code externalCrm.client.save} (form-data).
+     * Met à jour un document via {@code frappe.client.save} (form-data).
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> postexternalCrmClientSave(Map<String, Object> doc) {
-        return postexternalCrmClientMethod("externalCrm.client.save", "doc", doc);
+        return postexternalCrmClientMethod("frappe.client.save", "doc", doc);
     }
 
     /**

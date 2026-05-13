@@ -15,7 +15,7 @@ import java.util.Map;
  * À utiliser quand le User LMP a le rôle STAFF (ou ADMIN) — sinon passer par
  * {@link CustomerSyncMapper}. La clé primaire externalErp d'un User est l'email.
  * <p>
- * Référence pattern : {@code python/crm/crm/demo/users.py} (externalCrm.get_doc User).
+ * Référence pattern : {@code python/crm/crm/demo/users.py} (frappe.get_doc User).
  */
 @Component
 public class ErpUserSyncMapper {
