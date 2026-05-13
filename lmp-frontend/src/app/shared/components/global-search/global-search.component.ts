@@ -151,7 +151,7 @@ type Row =
                 </div>
                 @for (s of svc; track s.slug; let i = $index) {
                   <a
-                    [attr.href]="'/services/' + s.slug"
+                    [attr.href]="'/services#' + s.slug"
                     (click)="onRowClick($event, 'service', s.slug ?? '')"
                     class="flex items-start gap-3 px-4 py-2.5 transition-colors"
                     [class.bg-\\[--accent\\]]="activeIndex() === i"
@@ -328,8 +328,13 @@ export class GlobalSearchComponent implements OnInit, OnDestroy {
 
   private navigateTo(kind: 'service' | 'blog', slug: string): void {
     if (!slug) return;
-    const url = kind === 'service' ? `/services/${slug}` : `/blog/${slug}`;
-    this.router.navigateByUrl(url);
+    if (kind === 'service') {
+      // /services/:slug isn't a route yet — use the fragment so the existing
+      // list-page scroll-to-anchor in ServicesComponent picks the card up.
+      this.router.navigate(['/services'], { fragment: slug });
+    } else {
+      this.router.navigateByUrl(`/blog/${slug}`);
+    }
     this.close();
   }
 
