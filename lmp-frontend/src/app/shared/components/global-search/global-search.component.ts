@@ -71,6 +71,13 @@ type Row =
         animation: none;
       }
     }
+
+    /* Active row highlight (keyboard navigation). Plain class binding avoids
+       Angular's strict CSS identifier check, which rejects Tailwind arbitrary
+       values like bg-[--accent] when used inside [class.<x>] property binding. */
+    .lmp-search-row-active {
+      background-color: var(--accent);
+    }
   `,
   template: `
     <!-- Trigger button: always rendered in the navbar slot. -->
@@ -154,7 +161,7 @@ type Row =
                     [attr.href]="'/services#' + s.slug"
                     (click)="onRowClick($event, 'service', s.slug ?? '')"
                     class="flex items-start gap-3 px-4 py-2.5 transition-colors"
-                    [class.bg-\\[--accent\\]]="activeIndex() === i"
+                    [class.lmp-search-row-active]="activeIndex() === i"
                   >
                     @if (s.icon) {
                       <span class="text-lg leading-none">{{ s.icon }}</span>
@@ -181,7 +188,7 @@ type Row =
                     [attr.href]="'/blog/' + p.slug"
                     (click)="onRowClick($event, 'blog', p.slug)"
                     class="flex flex-col gap-1 px-4 py-2.5 transition-colors"
-                    [class.bg-\\[--accent\\]]="activeIndex() === svc.length + i"
+                    [class.lmp-search-row-active]="activeIndex() === svc.length + i"
                   >
                     <span class="truncate text-sm font-medium text-(--foreground)">{{ p.title }}</span>
                     <span class="line-clamp-1 text-xs text-(--muted-foreground)">{{ p.excerpt }}</span>
