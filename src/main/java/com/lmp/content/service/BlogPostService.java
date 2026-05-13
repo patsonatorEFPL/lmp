@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +28,14 @@ public class BlogPostService {
 
     public Optional<BlogPost> findBySlug(String slug) {
         return repository.findBySlugAndPublishedTrue(slug);
+    }
+
+    /**
+     * Full-text search across published posts. Caller is responsible for
+     * trimming/validating the query string and clamping {@code max}.
+     */
+    public List<BlogPost> searchPublished(String query, int max) {
+        return repository.searchPublished(query, max);
     }
 
     @Transactional

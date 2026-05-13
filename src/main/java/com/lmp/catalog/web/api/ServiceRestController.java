@@ -72,6 +72,28 @@ public class ServiceRestController {
                 .body(ApiResponse.ok(services));
     }
 
+    @GetMapping("/search")
+    @Operation(summary = "Recherche full-text catalogue",
+               description = "tsvector sur titre + description (services actifs). Phrases entre quotes, négation -mot, OR supportés.")
+    public ResponseEntity<ApiResponse<List<ServiceResponse>>> search(
+            @RequestParam("q") String query,
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
+            HttpServletRequest httpRequest) {
+        if (query == null || query.isBlank()) {
+            return ResponseEntity.ok()
+                    .cacheControl(REGIONAL_CACHE)
+                    .body(ApiResponse.ok(List.of()));
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        var ctx = regionalPricingService.resolve(httpRequest);
+        List<ServiceResponse> results = catalogService.searchActive(query.trim(), safeLimit).stream()
+                .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok()
+                .cacheControl(REGIONAL_CACHE)
+                .body(ApiResponse.ok(results));
+    }
+
     @GetMapping("/{slug}")
     @Operation(summary = "Détail d'un service", description = "Retourne un service par son slug")
     public ResponseEntity<ApiResponse<ServiceResponse>> getServiceBySlug(

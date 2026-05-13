@@ -56,6 +56,23 @@ public class BlogPostController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/search")
+    @Operation(summary = "Recherche full-text",
+               description = "Recherche dans titre, résumé, contenu via tsvector. Supporte phrases entre quotes, négation -mot, OR.")
+    public ResponseEntity<ApiResponse<java.util.List<BlogPost>>> search(
+            @RequestParam("q") String query,
+            @RequestParam(value = "limit", defaultValue = "20") int limit) {
+        if (query == null || query.isBlank()) {
+            return ResponseEntity.ok()
+                    .cacheControl(PUBLIC_CACHE)
+                    .body(ApiResponse.ok(java.util.List.of()));
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        return ResponseEntity.ok()
+                .cacheControl(PUBLIC_CACHE)
+                .body(ApiResponse.ok(blogPostService.searchPublished(query.trim(), safeLimit)));
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Créer un article", description = "Créer un nouvel article de blog (admin only)")

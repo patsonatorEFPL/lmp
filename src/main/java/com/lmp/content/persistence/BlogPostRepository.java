@@ -5,8 +5,11 @@ import com.lmp.content.domain.BlogPost;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -18,4 +21,23 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
     Page<BlogPost> findAllByPublishedTrueOrderByPublishedAtDesc(Pageable pageable);
 
     boolean existsBySlug(String slug);
+
+    /**
+     * Full-text search across published blog posts using the V42 GIN-indexed
+     * {@code search_vector}. Ranks by {@code ts_rank_cd} so weight-A title
+     * matches surface above content matches.
+     *
+     * <p>Uses {@code websearch_to_tsquery} which accepts user-friendly syntax
+     * ({@code "exact phrase"}, {@code -negation}, {@code OR}) without throwing
+     * on malformed input — the right primitive for a public search box.</p>
+     */
+    @Query(value = """
+            SELECT * FROM blog_posts
+             WHERE published_at IS NOT NULL
+               AND search_vector @@ websearch_to_tsquery('french', :query)
+             ORDER BY ts_rank_cd(search_vector, websearch_to_tsquery('french', :query)) DESC,
+                      published_at DESC
+             LIMIT :max
+            """, nativeQuery = true)
+    List<BlogPost> searchPublished(@Param("query") String query, @Param("max") int max);
 }

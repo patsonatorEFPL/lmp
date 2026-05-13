@@ -55,4 +55,19 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
            "LEFT JOIN FETCH s.offers " +
            "ORDER BY s.displayOrder")
     List<Service> findAllWithDetails();
+
+    /**
+     * Full-text search on active services via the V42 GIN-indexed
+     * {@code search_vector}. {@code websearch_to_tsquery} accepts user-typed
+     * queries safely.
+     */
+    @Query(value = """
+            SELECT * FROM services
+             WHERE active = true
+               AND search_vector @@ websearch_to_tsquery('french', :query)
+             ORDER BY ts_rank_cd(search_vector, websearch_to_tsquery('french', :query)) DESC,
+                      display_order ASC
+             LIMIT :max
+            """, nativeQuery = true)
+    List<Service> searchActive(@Param("query") String query, @Param("max") int max);
 }

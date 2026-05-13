@@ -61,6 +61,14 @@ public class ServiceCatalogService {
     }
 
     /**
+     * Full-text search on active services via V42 tsvector index. Caller
+     * trims/validates the query and clamps {@code max}.
+     */
+    public List<com.lmp.catalog.domain.Service> searchActive(String query, int max) {
+        return serviceRepository.searchActive(query, max);
+    }
+
+    /**
      * Retourne toutes les catégories avec leurs services.
      */
     @Cacheable("catalog-categories")
