@@ -24,6 +24,12 @@ version: "3.8"
 services:
   redis-cache:
     image: redis:7-alpine
+    # requirepass : bloque clients non-autorisés sur dokploy-network. Sans ça,
+    # le Redis Frappe (lmp-menkeps-crm-sli6ws) résout `redis-cache` vers CE
+    # container (collision de service name sur le même overlay) et pollue le
+    # keyspace LMP avec ses doctype_meta::* (vérifié 15/05/2026). Le password
+    # force AUTH → Frappe est rejeté, isolation effective.
+    # TODO: déplacer REDIS_PASSWORD vers env_file Dokploy au lieu de hardcode.
     command: >
       redis-server
         --maxmemory 200mb
@@ -31,6 +37,7 @@ services:
         --save ""
         --appendonly no
         --tcp-keepalive 60
+        --requirepass ${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}
     deploy:
       resources:
         limits:
@@ -40,7 +47,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}", "--no-auth-warning", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -59,21 +66,34 @@ services:
       # Override l'éventuelle valeur dans .env pour pointer redis-cache.
       REDIS_HOST: redis-cache
       REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}
+      # Perf tuning validé par bench (cf. tmp-e2e/lmp-short-test.js, 13/05/2026)
+      # Bench 1500 VU 2 min via Traefik HTTPS :
+      #   baseline G1  : p95=3055 p99=6009
+      #   final tuned  : p95=1292 p99=1654 → p99 -72%
+      SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      SPRING_MAIN_LAZY_INITIALIZATION: "true"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+      SERVER_TOMCAT_THREADS_MAX: "500"
+      SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
+      SERVER_TOMCAT_ACCEPT_COUNT: "2000"
+      SERVER_TOMCAT_MAX_CONNECTIONS: "10000"
     depends_on:
       redis-cache:
         condition: service_healthy
     networks:
       - dokploy-network
     deploy:
-      # Baseline = 2 (HA minimum). Autoscaler (Oracle host /opt/lmp-autoscaler/)
-      # scale 2..5 selon CPU via `docker compose --scale`. À chaque redeploy
+      # Baseline = 1. Autoscaler (Oracle host /opt/lmp-autoscaler/)
+      # scale 1..5 selon CPU via `docker compose --scale`. À chaque redeploy
       # Dokploy, baseline revient ici — autoscaler reprend ensuite si charge.
-      replicas: 2
+      replicas: 1
       resources:
         limits:
-          memory: 1024M
+          memory: 2048M
         reservations:
-          memory: 384M
+          memory: 768M
       restart_policy:
         condition: any
         delay: 5s

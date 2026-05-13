@@ -98,21 +98,22 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
 
 # Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE (défaut: prod)
 #
-# JVM tuning (mesuré sur staging idle, 843 MB RSS avant) :
-#   -Xms256m -Xmx512m  : heap committed 545 → 280 MB (idle utilise 456 MB max,
-#                        on a marge confortable; bench déclenchera GC plus tôt)
-#   -XX:MaxMetaspaceSize=192m            : cap (idle = 139 MB, avec marge)
-#   -XX:CompressedClassSpaceSize=64m     : reserved 1 GB virtuel → 64 MB
-#   -XX:ReservedCodeCacheSize=128m       : default 240 MB → 128 MB (idle = 31 MB)
-#   -XX:+UseStringDeduplication          : G1 dedup char[] (gain memoire petit)
-#   -XX:MaxRAMPercentage=50              : sécurité si Xmx supprimé/override
+# JVM tuning (bench 1500 VU / 2 min via Traefik, 13/05/2026) :
+#   -Xms512m -Xmx1536m  : peak réel observé 2.4 GiB total (heap + non-heap +
+#                         direct buffers). 1536m heap + ~600m non-heap = ~2g.
+#                         Container limit 2048M dans compose laisse marge.
+#   -XX:+UseZGC -XX:+ZGenerational : ZGC pauses sub-ms, p99 -71% vs G1.
+#                                    String dedup retiré (G1-only).
+#   -XX:MaxMetaspaceSize=192m / -XX:CompressedClassSpaceSize=64m /
+#   -XX:ReservedCodeCacheSize=128m : caps mesurés idle + marge.
 ENTRYPOINT ["java", \
-    "-Xms384m", "-Xmx768m", \
+    "-Xms512m", "-Xmx1536m", \
     "-Xss512k", \
+    "-XX:+UseZGC", \
+    "-XX:+ZGenerational", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=64m", \
     "-XX:ReservedCodeCacheSize=128m", \
-    "-XX:+UseStringDeduplication", \
     "-XX:+ExitOnOutOfMemoryError", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
     "-XX:HeapDumpPath=/tmp/heapdump.hprof", \
