@@ -34,6 +34,7 @@ import {
 import { ThemeService, type ThemePreference } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
 import { SiteConfigService } from '../../core/services/site-config.service';
+import { GlobalSearchComponent } from '../components/global-search/global-search.component';
 
 @Component({
   selector: 'lmp-navbar',
@@ -43,6 +44,7 @@ import { SiteConfigService } from '../../core/services/site-config.service';
     RouterLinkActive,
     LucideAngularModule,
     NgClass,
+    GlobalSearchComponent,
   ],
   styles: `
     :host {
@@ -109,6 +111,7 @@ import { SiteConfigService } from '../../core/services/site-config.service';
 
         <!-- Actions : invité ou connecté = menu compte seul (tableau de bord, admin, thème, langue, aide, déconnexion dans le panneau) -->
         <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <lmp-global-search />
           @if (authService.loading()) {
             <div
               class="lmp-nav-auth-placeholder h-9 w-9 shrink-0 rounded-full animate-pulse bg-(--muted)"
