@@ -76,7 +76,7 @@ public class ServiceRestController {
     @Operation(summary = "Recherche full-text catalogue",
                description = "tsvector sur titre + description (services actifs). Phrases entre quotes, négation -mot, OR supportés.")
     public ResponseEntity<ApiResponse<List<ServiceResponse>>> search(
-            @RequestParam("q") String query,
+            @RequestParam(value = "q", required = false) String query,
             @RequestParam(value = "limit", defaultValue = "20") int limit,
             HttpServletRequest httpRequest) {
         if (query == null || query.isBlank()) {

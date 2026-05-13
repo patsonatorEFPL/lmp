@@ -60,7 +60,7 @@ public class BlogPostController {
     @Operation(summary = "Recherche full-text",
                description = "Recherche dans titre, résumé, contenu via tsvector. Supporte phrases entre quotes, négation -mot, OR.")
     public ResponseEntity<ApiResponse<java.util.List<BlogPost>>> search(
-            @RequestParam("q") String query,
+            @RequestParam(value = "q", required = false) String query,
             @RequestParam(value = "limit", defaultValue = "20") int limit) {
         if (query == null || query.isBlank()) {
             return ResponseEntity.ok()
