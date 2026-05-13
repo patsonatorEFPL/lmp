@@ -14,7 +14,7 @@ import com.lmp.auth.repository.UserRepository;
 
 /**
  * Customise les JWT access tokens et ID tokens émis par le Spring Authorization Server
- * pour y injecter les claims spécifiques à l’intégration external CRM/external ERP.
+ * pour y injecter les claims spécifiques à l’intégration externalCrm/externalErp.
  */
 public class LmpOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEncodingContext> {
 
@@ -53,7 +53,7 @@ public class LmpOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEncodi
         claims.claim("name", user.getDisplayName());
         claims.claim("given_name", user.getFirstName());
         claims.claim("family_name", user.getLastName());
-        // picture claim omitted — external CRM does not require it
+        // picture claim omitted — externalCrm does not require it
         claims.claim("roles", new ArrayList<>(user.getRoles().stream()
                 .map(role -> role.getName())
                 .collect(Collectors.toList())));

@@ -17,7 +17,7 @@ import jakarta.annotation.PostConstruct;
  *
  * <p>Sans ce composant, un user connecté à la replica A ne reçoit jamais les
  * événements publiés depuis la replica B (les emitters SSE sont per-replica
- * en mémoire). Pattern external CRM : Redis pub/sub channel = realtime broker.</p>
+ * en mémoire). Pattern externalCrm : Redis pub/sub channel = realtime broker.</p>
  *
  * <h3>Flow</h3>
  * <ol>

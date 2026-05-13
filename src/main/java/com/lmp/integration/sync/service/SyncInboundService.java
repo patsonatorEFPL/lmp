@@ -137,7 +137,7 @@ public class SyncInboundService {
      * Les événements "on_trash" (suppression côté externe) sont routés vers les handlers de suppression.
      */
     private void routeToHandler(SyncEntityType entityType, InboundSyncPayload payload) {
-        // external CRM émet "on_trash" quand un document est supprimé
+        // externalCrm émet "on_trash" quand un document est supprimé
         if ("on_trash".equalsIgnoreCase(payload.event())) {
             handleInboundDelete(entityType, payload);
             return;
@@ -223,10 +223,10 @@ public class SyncInboundService {
                     user -> {
                         user.setExternalErpUserId(null);
                         userRepository.save(user);
-                        log.info("🗑️ [SYNC IN] Unlinked User '{}' (external external ERP User '{}' deleted)",
+                        log.info("🗑️ [SYNC IN] Unlinked User '{}' (external externalErp User '{}' deleted)",
                                 user.getEmail(), externalId);
                     },
-                    () -> log.debug("📋 [SYNC IN] No User found for external external ERP User '{}' — ignoring", externalId)
+                    () -> log.debug("📋 [SYNC IN] No User found for external externalErp User '{}' — ignoring", externalId)
             );
             default -> log.info("📥 [SYNC IN] Delete for {} not implemented — ignoring", entityType);
         }

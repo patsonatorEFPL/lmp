@@ -24,7 +24,7 @@ import java.util.List;
  * effectue le SMTP send via {@link JavaMailSender}, et marque {@code SENT} ou
  * {@code ERROR}/{@code NOT_SENT} (selon retry budget).
  *
- * <p>Tick par défaut : 5s. external CRM = 4 min, soit 48× plus rapide.</p>
+ * <p>Tick par défaut : 5s. externalCrm = 4 min, soit 48× plus rapide.</p>
  *
  * <p>Multi-replica safe : claim atomique via UPDATE...RETURNING (cf {@link EmailQueueRepositoryImpl}).
  * 5 replicas se partagent la queue sans race ni double-send.</p>

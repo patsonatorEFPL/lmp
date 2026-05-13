@@ -51,10 +51,10 @@ const CATEGORIES: CategoryDef[] = [
   },
   {
     id: 'crm-sso',
-    label: 'CRM & SSO external CRM',
+    label: 'CRM & SSO externalCrm',
     icon: Link2,
     prefixes: ['lmp.crm.', 'app.oauth2.erp.', 'app.oauth2.external.', 'lmp.sync.'],
-    description: 'external CRM/external ERP SSO, sync bidirectionnelle',
+    description: 'externalCrm/externalErp SSO, sync bidirectionnelle',
   },
   {
     id: 'pricing',

@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Mapper pour synchroniser les prix du catalogue (ServiceOffer) vers external ERP Item Price.
+ * Mapper pour synchroniser les prix du catalogue (ServiceOffer) vers externalErp Item Price.
  * <p>
  * Stratégie upsert sur la clé composite (item_code, price_list) :
  * 1. GET ?filters=[["item_code","=","..."],["price_list","=","..."]]
@@ -51,7 +51,7 @@ public class ItemPriceSyncMapper {
     }
 
     /**
-     * Upsert un Item Price côté external ERP.
+     * Upsert un Item Price côté externalErp.
      *
      * @return ExternalResponse du create ou update
      */

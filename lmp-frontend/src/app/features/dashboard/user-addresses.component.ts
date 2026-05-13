@@ -328,7 +328,7 @@ export class UserAddressesComponent implements OnInit {
       city: '', state: '', pincode: '', country: 'Canada',
       phone: null, emailId: null,
       isPrimaryAddress: false, isShippingAddress: false,
-      external CRMId: null, syncStatus: 'PENDING', lastSyncedAt: null,
+      externalCrmId: null, syncStatus: 'PENDING', lastSyncedAt: null,
     };
   }
 }

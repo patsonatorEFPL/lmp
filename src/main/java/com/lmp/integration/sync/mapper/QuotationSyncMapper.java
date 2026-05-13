@@ -14,13 +14,13 @@ import java.util.*;
  * Réutilise {@link SyncMapperUtils} pour la logique TVA, dates et customer
  * (même stratégie que {@link OrderSyncMapper}).
  * <p>
- * Mapping external ERP :
+ * Mapping externalErp :
  * <ul>
- *   <li>LMP DRAFT → external ERP Draft (docstatus=0)</li>
- *   <li>LMP SENT → external ERP Open (docstatus=1, submitted)</li>
- *   <li>LMP ACCEPTED → external ERP Ordered (via make_sales_order API)</li>
- *   <li>LMP REJECTED → external ERP Lost</li>
- *   <li>LMP EXPIRED → external ERP Expired</li>
+ *   <li>LMP DRAFT → externalErp Draft (docstatus=0)</li>
+ *   <li>LMP SENT → externalErp Open (docstatus=1, submitted)</li>
+ *   <li>LMP ACCEPTED → externalErp Ordered (via make_sales_order API)</li>
+ *   <li>LMP REJECTED → externalErp Lost</li>
+ *   <li>LMP EXPIRED → externalErp Expired</li>
  * </ul>
  */
 @Component

@@ -150,7 +150,7 @@ public class ErpEventListener {
     // que la session du commit business est encore ouverte (avant qu'AFTER_COMMIT
     // ne déclenche ce listener async). User.roles est joinFetch dans findByIdWithRoles.
     //
-    // RestExternalClient timeout 8s read garantit qu'un external CRM lent ne bloque pas
+    // RestExternalClient timeout 8s read garantit qu'un externalCrm lent ne bloque pas
     // le thread async indéfiniment (cf. AsyncConfig pour le pool borné).
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
@@ -319,8 +319,8 @@ public class ErpEventListener {
     /**
      * Provisioning d'un nouveau User inscrit.
      * <ul>
-     *   <li>STAFF/ADMIN → DocType "User" external ERP (login)</li>
-     *   <li>USER classique → DocType "Customer" external ERP (compte client)</li>
+     *   <li>STAFF/ADMIN → DocType "User" externalErp (login)</li>
+     *   <li>USER classique → DocType "Customer" externalErp (compte client)</li>
      * </ul>
      */
     private void handleUserProvisioning(LmpBusinessEvent event) {
@@ -370,7 +370,7 @@ public class ErpEventListener {
     }
 
     /**
-     * Mise à jour d'un User : Customer (clients) ou external ERP User (collaborateurs).
+     * Mise à jour d'un User : Customer (clients) ou externalErp User (collaborateurs).
      */
     private void handleUserUpdate(LmpBusinessEvent event) {
         Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
@@ -429,7 +429,7 @@ public class ErpEventListener {
     }
 
     /**
-     * Synchronise l'adresse du User vers external ERP (création ou mise à jour).
+     * Synchronise l'adresse du User vers externalErp (création ou mise à jour).
      * Appel synchrone — ne passe pas par la queue car l'Address dépend du Customer
      * qui doit déjà exister.
      */
@@ -610,7 +610,7 @@ public class ErpEventListener {
         try {
             ExternalResponse response = externalClient.getEntity(SyncEntityType.SALES_INVOICE, salesInvoiceId);
             if (response.success() && response.data() != null) {
-                // external ERP API returns {"data": {"grand_total": ...}} — navigate the nested structure
+                // externalErp API returns {"data": {"grand_total": ...}} — navigate the nested structure
                 Map<String, Object> dataMap = response.data();
                 if (dataMap.containsKey("data") && dataMap.get("data") instanceof Map) {
                     dataMap = (Map<String, Object>) dataMap.get("data");
@@ -871,10 +871,10 @@ public class ErpEventListener {
         String externalErpUserId = payload != null ? (String) payload.get("externalErpUserId") : null;
         String externalCustomerId = payload != null ? (String) payload.get("externalCustomerId") : null;
 
-        // Cas collaborateur : supprimer le User external ERP s'il existe
+        // Cas collaborateur : supprimer le User externalErp s'il existe
         if (externalErpUserId != null && !externalErpUserId.isBlank()
                 && syncProperties.getFeatures().isStaffProvisioning()) {
-            logger.info("🗑️ [SYNC] Deleting external ERP User '{}' for User {}",
+            logger.info("🗑️ [SYNC] Deleting externalErp User '{}' for User {}",
                     externalErpUserId, event.entityId());
             syncOutboundService.enqueue(
                     SyncEntityType.ERP_USER, "DELETED",
@@ -1028,7 +1028,7 @@ public class ErpEventListener {
     }
 
     /**
-     * Devis accepté → appelle make_sales_order côté external ERP pour convertir
+     * Devis accepté → appelle make_sales_order côté externalErp pour convertir
      * le Quotation en Sales Order. L'external SO ID est ensuite stocké sur
      * l'Order LMP issue de la conversion (via QuotationService.convertToOrder).
      */
@@ -1054,7 +1054,7 @@ public class ErpEventListener {
             // 0. S'assurer que le Quotation est soumis (docstatus=1)
             submitQuotationIfNeeded(externalQuotationId);
 
-            // 1. Attendre que le submit soit persisté côté external ERP
+            // 1. Attendre que le submit soit persisté côté externalErp
             Thread.sleep(1500);
 
             // 2. Récupérer l'Order depuis l'event (évite LazyInitializationException sur convertedOrder)
@@ -1071,7 +1071,7 @@ public class ErpEventListener {
             Order order = orderOpt.get();
 
             // 3. Créer le SO directement à partir de l'Order (évite les problèmes de template
-            //    make_sales_order qui contient des champs calculés incompatible avec external CRM.client.insert)
+            //    make_sales_order qui contient des champs calculés incompatible avec externalCrm.client.insert)
             //    Le lien Quotation est injecté automatiquement par OrderSyncMapper.toSalesOrderPayload()
             //    via order.getQuotation().getExternalQuotationId().
             Map<String, Object> soData = orderSyncMapper.toSalesOrderPayload(order);
@@ -1096,7 +1096,7 @@ public class ErpEventListener {
     }
 
     /**
-     * Soumet un Quotation external ERP s'il est encore en Draft (docstatus=0).
+     * Soumet un Quotation externalErp s'il est encore en Draft (docstatus=0).
      * Nécessaire car make_sales_order exige docstatus=1.
      */
     private void submitQuotationIfNeeded(String externalQuotationId) {
@@ -1111,10 +1111,10 @@ public class ErpEventListener {
                 Object docstatus = data.get("docstatus");
                 int status = (docstatus instanceof Number) ? ((Number) docstatus).intValue() : 0;
                 if (status == 0) {
-                    // external CRM.client.submit nécessite le document complet avec 'modified' pour éviter
+                    // externalCrm.client.submit nécessite le document complet avec 'modified' pour éviter
                     // TimestampMismatchError ("modified after you have opened it")
                     data.put("docstatus", 1);
-                    ExternalResponse submitResponse = externalClient.callMethod("external CRM.client.submit",
+                    ExternalResponse submitResponse = externalClient.callMethod("externalCrm.client.submit",
                             Map.of("doc", data));
                     if (submitResponse.success()) {
                         logger.info("📋 [SYNC] Submitted Quotation '{}' before make_sales_order", externalQuotationId);
@@ -1146,9 +1146,9 @@ public class ErpEventListener {
                 return;
             }
 
-            // Appeler declare_order_lost sur external ERP
+            // Appeler declare_order_lost sur externalErp
             externalClient.callMethod(
-                    "external ERP.selling.doctype.quotation.quotation.declare_order_lost",
+                    "externalErp.selling.doctype.quotation.quotation.declare_order_lost",
                     Map.of(
                             "docname", quotation.getExternalQuotationId(),
                             "lost_reasons_list", List.of(Map.of("lost_reason", "Client refusal")),

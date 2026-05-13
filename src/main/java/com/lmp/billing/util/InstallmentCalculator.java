@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Calcule les montants d'échéances en reproduisant exactement la logique external ERP.
+ * Calcule les montants d'échéances en reproduisant exactement la logique externalErp.
  * <p>
- * Formule external ERP (accounts_controller.py l.2597) :
+ * Formule externalErp (accounts_controller.py l.2597) :
  * <pre>
  *   payment_amount = flt(grand_total * flt(invoice_portion) / 100, precision("payment_amount"))
  * </pre>
@@ -19,7 +19,7 @@ import java.util.List;
  * pour que la somme des pourcentages = 100% exactement.
  * Cela garantit que la somme des montants = grand_total sans ajustement explicite.
  * <p>
- * Précision définie par {@link MoneyUtils} (alignée sur external ERP).
+ * Précision définie par {@link MoneyUtils} (alignée sur externalErp).
  */
 public final class InstallmentCalculator {
 
@@ -35,7 +35,7 @@ public final class InstallmentCalculator {
     ) {}
 
     /**
-     * Calcule les montants d'échéances selon la méthode external ERP.
+     * Calcule les montants d'échéances selon la méthode externalErp.
      * <p>
      * Les N-1 premières échéances ont la même portion ({@code floor(100/N, 2)}).
      * La dernière échéance reçoit le reliquat ({@code 100 - (N-1) × portion}).
@@ -57,7 +57,7 @@ public final class InstallmentCalculator {
         List<Installment> result = new ArrayList<>(count);
 
         // Portion uniforme pour les N-1 premières échéances
-        // external ERP: floor(100/N, 2) — ex: 100/3 = 33.33
+        // externalErp: floor(100/N, 2) — ex: 100/3 = 33.33
         BigDecimal uniformPortion = MoneyUtils.HUNDRED
                 .divide(new BigDecimal(count), MoneyUtils.PERCENT_SCALE, MoneyUtils.PERCENT_ROUNDING);
 
@@ -66,17 +66,17 @@ public final class InstallmentCalculator {
         BigDecimal lastPortion = MoneyUtils.HUNDRED.subtract(
                 uniformPortion.multiply(new BigDecimal(count - 1)));
 
-        // Calcul des N-1 premières échéances (formule external ERP exacte)
+        // Calcul des N-1 premières échéances (formule externalErp exacte)
         BigDecimal sumPrevious = BigDecimal.ZERO;
         for (int i = 1; i < count; i++) {
-            // external ERP formula: flt(grand_total * flt(invoice_portion) / 100, precision)
+            // externalErp formula: flt(grand_total * flt(invoice_portion) / 100, precision)
             BigDecimal paymentAmount = MoneyUtils.percentOf(grandTotal, uniformPortion);
             sumPrevious = sumPrevious.add(paymentAmount);
             result.add(new Installment(i, uniformPortion, paymentAmount));
         }
 
         // Dernière échéance = reliquat exact pour garantir sum = grandTotal
-        // C'est ce que fait external ERP via validate_payment_schedule_amount
+        // C'est ce que fait externalErp via validate_payment_schedule_amount
         BigDecimal lastAmount = grandTotal.subtract(sumPrevious);
         result.add(new Installment(count, lastPortion, lastAmount));
 

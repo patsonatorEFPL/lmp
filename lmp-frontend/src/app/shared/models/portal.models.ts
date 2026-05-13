@@ -1,7 +1,7 @@
 export type SyncStatus = 'PENDING' | 'SYNCED' | 'FAILED';
 
 interface SyncMetadata {
-  external CRMId: string | null;
+  externalCrmId: string | null;
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
 }

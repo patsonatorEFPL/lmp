@@ -99,7 +99,7 @@ public class SyncRetryScheduler {
      * <p>
      * Tourne toutes les 60s. Reset PROCESSING → QUEUED si processed_at &gt; 5min,
      * pour que claimNextBatch les reprenne. processEvent typique &lt; 1s, donc 5min
-     * est largement au-dessus du worst case (lent external ERP + retries HTTP).
+     * est largement au-dessus du worst case (lent externalErp + retries HTTP).
      */
     @Scheduled(fixedDelayString = "${lmp.sync.recovery.delay-ms:60000}")
     @Transactional

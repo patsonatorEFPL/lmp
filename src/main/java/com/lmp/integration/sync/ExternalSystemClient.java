@@ -91,8 +91,8 @@ public interface ExternalSystemClient {
     /**
      * Appelle une méthode serveur (Whitelisted API method) sur le système externe.
      * <p>
-     * Ex: {@code callMethod("external ERP.selling.doctype.quotation.quotation.make_sales_order", args)}
-     * pour convertir un Quotation en Sales Order côté external ERP.
+     * Ex: {@code callMethod("externalErp.selling.doctype.quotation.quotation.make_sales_order", args)}
+     * pour convertir un Quotation en Sales Order côté externalErp.
      *
      * @param method chemin complet de la méthode (dotted path)
      * @param args   arguments de la méthode (ex: source_name, etc.)
@@ -101,10 +101,10 @@ public interface ExternalSystemClient {
     ExternalResponse callMethod(String method, Map<String, Object> args);
 
     /**
-     * Recherche la première entité correspondant aux filtres external ERP.
+     * Recherche la première entité correspondant aux filtres externalErp.
      *
      * @param type   type d'entité
-     * @param filterJson filtres au format external ERP (ex: [["item_code","=","ABC"],["price_list","=","Standard Selling"]])
+     * @param filterJson filtres au format externalErp (ex: [["item_code","=","ABC"],["price_list","=","Standard Selling"]])
      * @return Optional contenant la map du document trouvé, ou empty
      */
     java.util.Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson);

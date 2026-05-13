@@ -16,7 +16,7 @@ import com.lmp.auth.repository.UserRepository;
 /**
  * Mapper personnalisé pour l'endpoint OIDC UserInfo (/userinfo).
  * Enrichit la réponse avec les claims utilisateur nécessaires à l'intégration
- * external CRM/external ERP (Social Login Key).
+ * externalCrm/externalErp (Social Login Key).
  */
 public class LmpOidcUserInfoMapper implements Function<OidcUserInfoAuthenticationContext, OidcUserInfo> {
 

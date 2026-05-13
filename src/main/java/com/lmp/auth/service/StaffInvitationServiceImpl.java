@@ -175,7 +175,7 @@ public class StaffInvitationServiceImpl implements StaffInvitationService {
 
         logger.info("✅ [STAFF-INVITE] Invitation acceptée par {} (userId={})", saved.getEmail(), saved.getId());
 
-        // Provisioning external ERP User → routé via ErpEventListener (User.isStaff() == true)
+        // Provisioning externalErp User → routé via ErpEventListener (User.isStaff() == true)
         Map<String, Object> payload = new HashMap<>();
         payload.put(BusinessEventPayloadKeys.EMAIL, saved.getEmail());
         payload.put("displayName", saved.getDisplayName() != null ? saved.getDisplayName() : saved.getEmail());

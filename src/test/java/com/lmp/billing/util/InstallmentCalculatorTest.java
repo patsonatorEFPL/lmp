@@ -10,28 +10,28 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Vérifie que InstallmentCalculator produit exactement les mêmes montants qu'external ERP.
- * Valeurs de référence extraites de l'API external ERP sur SINV-2026-00029 (1200 € en 3x).
+ * Vérifie que InstallmentCalculator produit exactement les mêmes montants qu'externalErp.
+ * Valeurs de référence extraites de l'API externalErp sur SINV-2026-00029 (1200 € en 3x).
  */
 class InstallmentCalculatorTest {
 
     @Test
-    void threeInstallments_1200_matchesexternal ERP() {
-        // Valeurs réelles external ERP pour "Paiement en 3x" sur 1200 €
+    void threeInstallments_1200_matchesexternalErp() {
+        // Valeurs réelles externalErp pour "Paiement en 3x" sur 1200 €
         List<InstallmentCalculator.Installment> result = InstallmentCalculator.calculate(
                 new BigDecimal("1200.00"), 3);
 
         assertEquals(3, result.size());
 
-        // 1ère échéance: 33.33% → 399.96 (external ERP: 399.96)
+        // 1ère échéance: 33.33% → 399.96 (externalErp: 399.96)
         assertEquals(new BigDecimal("33.33"), result.get(0).invoicePortion());
         assertEquals(new BigDecimal("399.96"), result.get(0).paymentAmount());
 
-        // 2ème échéance: 33.33% → 399.96 (external ERP: 399.96)
+        // 2ème échéance: 33.33% → 399.96 (externalErp: 399.96)
         assertEquals(new BigDecimal("33.33"), result.get(1).invoicePortion());
         assertEquals(new BigDecimal("399.96"), result.get(1).paymentAmount());
 
-        // 3ème échéance: 33.34% → 400.08 (external ERP: 400.08)
+        // 3ème échéance: 33.34% → 400.08 (externalErp: 400.08)
         assertEquals(new BigDecimal("33.34"), result.get(2).invoicePortion());
         assertEquals(new BigDecimal("400.08"), result.get(2).paymentAmount());
 
@@ -68,7 +68,7 @@ class InstallmentCalculatorTest {
 
     @Test
     void threeInstallments_100_erpRounding() {
-        // 100 € / 3 → external ERP: 33.33% × 100 = 33.33, 33.33, 33.34
+        // 100 € / 3 → externalErp: 33.33% × 100 = 33.33, 33.33, 33.34
         List<InstallmentCalculator.Installment> result = InstallmentCalculator.calculate(
                 new BigDecimal("100.00"), 3);
 

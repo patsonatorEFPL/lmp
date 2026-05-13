@@ -2,7 +2,7 @@ package com.lmp.billing.domain;
 
 /**
  * Statuts du cycle de vie d'un devis LMP.
- * Mappés vers les statuts external ERP Quotation (Draft/Open/Ordered/Lost/Expired).
+ * Mappés vers les statuts externalErp Quotation (Draft/Open/Ordered/Lost/Expired).
  */
 public enum QuotationStatus {
     /** Brouillon — pas encore envoyé au client. */

@@ -56,7 +56,7 @@ public class OrderSyncMapper {
         payload.put("po_no", order.getId().toString());
         payload.put("order_type", "Shopping Cart");
 
-        // Lien vers le Quotation external ERP d'origine (si la commande vient d'un devis)
+        // Lien vers le Quotation externalErp d'origine (si la commande vient d'un devis)
         if (order.getQuotation() != null && order.getQuotation().getExternalQuotationId() != null) {
             payload.put("quotation", order.getQuotation().getExternalQuotationId());
         }
@@ -64,7 +64,7 @@ public class OrderSyncMapper {
         // Traçabilité bidirectionnelle — UUID LMP stocké côté système externe
         payload.put("lmp_order_id", order.getId().toString());
 
-        // Services — pas de livraison physique requise (champ au niveau SO parent dans external ERP v17)
+        // Services — pas de livraison physique requise (champ au niveau SO parent dans externalErp v17)
         payload.put("skip_delivery_note", 1);
 
         // Lignes d'articles

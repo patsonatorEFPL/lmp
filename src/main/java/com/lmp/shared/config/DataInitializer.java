@@ -160,7 +160,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Génère un mot de passe aléatoire sécurisé (même approche que external CRM.utils.password).
+     * Génère un mot de passe aléatoire sécurisé (même approche que externalCrm.utils.password).
      */
     private String generateRandomPassword(int length) {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";

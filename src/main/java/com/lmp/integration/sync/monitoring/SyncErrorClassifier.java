@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * Classifie les erreurs de synchronisation en patterns connus vs inconnus.
  * <p>
- * Détecte le "drift" côté external ERP : une erreur jamais vue signale probablement
+ * Détecte le "drift" côté externalErp : une erreur jamais vue signale probablement
  * un changement de schema, une nouvelle validation, ou une régression.
  */
 @Service
@@ -51,7 +51,7 @@ public class SyncErrorClassifier {
             new KnownPattern("Cannot map because following condition fails", SyncErrorPattern.Category.KNOWN_PERMANENT),
             new KnownPattern("docstatus=1", SyncErrorPattern.Category.KNOWN_PERMANENT),
             new KnownPattern("TypeError", SyncErrorPattern.Category.KNOWN_PERMANENT),
-            new KnownPattern("external CRMTypeError", SyncErrorPattern.Category.KNOWN_PERMANENT)
+            new KnownPattern("externalCrmTypeError", SyncErrorPattern.Category.KNOWN_PERMANENT)
     );
 
     public SyncErrorClassifier(SyncErrorPatternRepository patternRepository) {

@@ -116,10 +116,10 @@ public class SyncProperties {
     }
 
     /**
-     * Configuration des collaborateurs poussés vers external ERP en tant que DocType "User".
+     * Configuration des collaborateurs poussés vers externalErp en tant que DocType "User".
      * <p>
      * {@code userType} : "System User" (login backend) ou "Website User" (login portail).
-     * {@code roles} : rôles external ERP attribués par défaut (ex: "Sales User", "Employee").
+     * {@code roles} : rôles externalErp attribués par défaut (ex: "Sales User", "Employee").
      */
     public static class ErpUser {
         private String userType = "System User";

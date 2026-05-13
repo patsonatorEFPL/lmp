@@ -163,7 +163,7 @@ public interface UserService {
 
     /**
      * Accorde ou retire le rôle STAFF (collaborateur — sera provisionné comme
-     * DocType "User" côté external ERP, et non comme Customer).
+     * DocType "User" côté externalErp, et non comme Customer).
      */
     void setUserStaffRole(UUID targetUserId, boolean grantStaff, UUID actingAdminId);
     

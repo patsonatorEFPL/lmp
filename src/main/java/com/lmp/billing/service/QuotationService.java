@@ -26,7 +26,7 @@ import java.util.UUID;
  * Cycle : DRAFT → SENT → ACCEPTED/REJECTED/EXPIRED.
  * <p>
  * Un devis ACCEPTED est converti en {@link Order} via {@link #convertToOrder(UUID)}.
- * La conversion publie un QUOTATION_ACCEPTED qui déclenche côté external ERP
+ * La conversion publie un QUOTATION_ACCEPTED qui déclenche côté externalErp
  * l'appel à {@code make_sales_order} pour créer un SO lié au Quotation externe.
  */
 @org.springframework.stereotype.Service
@@ -128,7 +128,7 @@ public class QuotationService {
      * Étapes :
      * 1. Statut → ACCEPTED, acceptedAt = now
      * 2. Crée un Order à partir des items du devis
-     * 3. Publie QUOTATION_ACCEPTED → ErpEventListener appelle make_sales_order sur external ERP
+     * 3. Publie QUOTATION_ACCEPTED → ErpEventListener appelle make_sales_order sur externalErp
      *
      * @return l'Order créée
      */
@@ -153,7 +153,7 @@ public class QuotationService {
         quotation.setConvertedOrder(order);
         quotationRepository.save(quotation);
 
-        // 3. Publier l'événement — déclenche make_sales_order côté external ERP
+        // 3. Publier l'événement — déclenche make_sales_order côté externalErp
         eventPublisher.publishEvent(LmpBusinessEvent.of(
                 EventType.QUOTATION_ACCEPTED, "billing", quotation.getId(),
                 Map.of("orderId", order.getId().toString())

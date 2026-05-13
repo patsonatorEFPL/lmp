@@ -14,7 +14,7 @@ import java.util.Map;
  * Post-processor qui dérive automatiquement les propriétés du site
  * depuis une seule source de vérité : {@code lmp.site.url}.
  *
- * <p>Inspiré du modèle "Site" de external CRM/external ERP : une seule URL de site
+ * <p>Inspiré du modèle "Site" de externalCrm/externalErp : une seule URL de site
  * suffit à déduire le frontend, les emails, le CORS, etc.</p>
  *
  * <p>Les propriétés explicitement définies par l'utilisateur (variable d'env
@@ -70,8 +70,8 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
         // Le cookie reste scopé à l'host courant (pas de partage cross-subdomain
         // car auth.* a été retiré). Permet SameSite=Lax sans contrainte.
 
-        // external CRM / external ERP : URL dérivée comme "crm.<host>" en non-local, sinon localhost:8000.
-        // Override possible via LMP_CRM_URL env var (Q1A : pointer vers external CRM partagée
+        // externalCrm / externalErp : URL dérivée comme "crm.<host>" en non-local, sinon localhost:8000.
+        // Override possible via LMP_CRM_URL env var (Q1A : pointer vers externalCrm partagée
         // depuis staging quand crm.dev.* n'existe pas).
         String crmUrl = environment.getProperty("lmp.crm.url");
         if (crmUrl == null || crmUrl.isBlank()) {
@@ -81,7 +81,7 @@ public class SiteEnvironmentPostProcessor implements EnvironmentPostProcessor {
             crmUrl = crmUrl.replaceAll("/+$", "");
         }
         putIfAbsent(environment, derived, "app.oauth2.erp.redirect-uri",
-                crmUrl + "/api/method/external CRM.integrations.oauth2_logins.custom/lmp_sso");
+                crmUrl + "/api/method/externalCrm.integrations.oauth2_logins.custom/lmp_sso");
 
         // Email domain — Q2B : utilise le ROOT domain pour les From headers (SPF/DKIM/
         // DMARC sont configurés sur la zone parente, pas sur les subdomains comme

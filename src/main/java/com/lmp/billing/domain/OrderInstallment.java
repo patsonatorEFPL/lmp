@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * Représente une échéance de paiement pour une commande en plusieurs fois.
  * <p>
- * Aligné sur le modèle external ERP Payment Schedule :
+ * Aligné sur le modèle externalErp Payment Schedule :
  * chaque échéance correspond à un Payment Term avec un pourcentage du total,
  * une date d'échéance et un suivi du paiement (Stripe + ERP).
  */
@@ -30,7 +30,7 @@ public class OrderInstallment {
     @Column(name = "installment_number", nullable = false)
     private Integer installmentNumber;
 
-    /** Nom du Payment Term external ERP (ex: "1ère échéance"). */
+    /** Nom du Payment Term externalErp (ex: "1ère échéance"). */
     @Column(name = "payment_term", nullable = false, length = 140)
     private String paymentTerm;
 

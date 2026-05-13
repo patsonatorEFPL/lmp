@@ -19,7 +19,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests unitaires du mapping Order → payload external ERP.
+ * Tests unitaires du mapping Order → payload externalErp.
  */
 class OrderSyncMapperTest {
 

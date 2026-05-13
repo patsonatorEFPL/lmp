@@ -6,7 +6,7 @@ import java.math.RoundingMode;
 /**
  * Constantes et utilitaires de précision monétaire centralisés.
  * <p>
- * Aligné sur la précision external ERP (Currency precision = 2, HALF_UP).
+ * Aligné sur la précision externalErp (Currency precision = 2, HALF_UP).
  * Toutes les opérations monétaires de LMP doivent utiliser ces constantes
  * pour garantir des résultats identiques entre LMP et l'ERP.
  *
@@ -22,10 +22,10 @@ public final class MoneyUtils {
 
     // ── Précisions ──────────────────────────────────────────────────────────
 
-    /** Précision des montants monétaires (EUR, USD, etc.) — external ERP Currency field. */
+    /** Précision des montants monétaires (EUR, USD, etc.) — externalErp Currency field. */
     public static final int CURRENCY_SCALE = 2;
 
-    /** Précision des pourcentages (invoice_portion, etc.) — external ERP Percent field. */
+    /** Précision des pourcentages (invoice_portion, etc.) — externalErp Percent field. */
     public static final int PERCENT_SCALE = 2;
 
     /** Précision des taux de TVA stockés (ex: 0.2100). */
@@ -36,7 +36,7 @@ public final class MoneyUtils {
 
     // ── Mode d'arrondi par défaut ───────────────────────────────────────────
 
-    /** Arrondi standard pour les montants monétaires — identique à flt() dans external ERP. */
+    /** Arrondi standard pour les montants monétaires — identique à flt() dans externalErp. */
     public static final RoundingMode CURRENCY_ROUNDING = RoundingMode.HALF_UP;
 
     /** Arrondi pour les répartitions de pourcentages (N-1 premières parts). */
@@ -53,7 +53,7 @@ public final class MoneyUtils {
 
     /**
      * Arrondit un montant à la précision monétaire standard (2 décimales, HALF_UP).
-     * Équivalent de {@code flt(value, precision("payment_amount"))} dans external ERP.
+     * Équivalent de {@code flt(value, precision("payment_amount"))} dans externalErp.
      */
     public static BigDecimal round(BigDecimal amount) {
         if (amount == null) return ZERO;
@@ -81,7 +81,7 @@ public final class MoneyUtils {
     }
 
     /**
-     * Calcule un pourcentage d'un montant — formule external ERP exacte.
+     * Calcule un pourcentage d'un montant — formule externalErp exacte.
      * {@code flt(grandTotal * flt(portion) / 100, precision("payment_amount"))}
      *
      * @param amount  montant de base (ex: grand_total)

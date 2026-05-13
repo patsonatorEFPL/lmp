@@ -52,9 +52,9 @@ public class RestExternalClient implements ExternalSystemClient {
 
         // Timeouts agressifs : sans ces caps, RestClient.builder() défaut = JDK HttpClient
         // sans read-timeout = bloque la requête appelante (et son thread carrier sous
-        // virtual threads) tant que ERP/external CRM n'a pas répondu. Sous load on accumule
+        // virtual threads) tant que ERP/externalCrm n'a pas répondu. Sous load on accumule
         // les threads en wait indéfini → backend health timeout → SIGKILL swarm.
-        // 2s connect / 8s read couvre les pires cas external CRM normaux ; au-delà l'erreur
+        // 2s connect / 8s read couvre les pires cas externalCrm normaux ; au-delà l'erreur
         // est meilleure que la latence pour un sync async (le caller log + retry plus tard).
         HttpClient jdkClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(2))
@@ -82,7 +82,7 @@ public class RestExternalClient implements ExternalSystemClient {
     public boolean isAvailable() {
         try {
             restClient.get()
-                    .uri("/api/method/external CRM.auth.get_logged_user")
+                    .uri("/api/method/externalCrm.auth.get_logged_user")
                     .retrieve()
                     .toBodilessEntity();
             return true;
@@ -106,11 +106,11 @@ public class RestExternalClient implements ExternalSystemClient {
                 }
             }
 
-            // Injecter le doctype dans le payload (requis par external CRM.client.insert)
+            // Injecter le doctype dans le payload (requis par externalCrm.client.insert)
             Map<String, Object> doc = new LinkedHashMap<>(data);
             doc.put("doctype", docType);
 
-            Map<String, Object> response = postexternal CRMClientInsert(doc);
+            Map<String, Object> response = postexternalCrmClientInsert(doc);
 
             String externalId = extractIdFromMethodResponse(response);
             log.info("✅ [SYNC] Created {} → externalId={}", type, externalId);
@@ -173,12 +173,12 @@ public class RestExternalClient implements ExternalSystemClient {
     public ExternalResponse updateEntity(SyncEntityType type, String externalId, Map<String, Object> data) {
         String docType = entityTypeMapping.toExternalDocType(type);
         try {
-            // external CRM.client.save : injecter doctype + name pour identifier le document
+            // externalCrm.client.save : injecter doctype + name pour identifier le document
             Map<String, Object> doc = new LinkedHashMap<>(data);
             doc.put("doctype", docType);
             doc.put("name", externalId);
 
-            Map<String, Object> response = postexternal CRMClientSave(doc);
+            Map<String, Object> response = postexternalCrmClientSave(doc);
 
             log.info("✅ [SYNC] Updated {} {}", type, externalId);
             return ExternalResponse.success(externalId, response);
@@ -297,7 +297,7 @@ public class RestExternalClient implements ExternalSystemClient {
 
     /**
      * Soumet un document Draft (docstatus = 0 → 1) après création.
-     * Utilise external CRM.client.submit pour garantir le calcul correct des totaux.
+     * Utilise externalCrm.client.submit pour garantir le calcul correct des totaux.
      */
     private void submitDocument(String docType, String externalId) {
         try {
@@ -315,7 +315,7 @@ public class RestExternalClient implements ExternalSystemClient {
                 return;
             }
             doc.put("docstatus", 1);
-            postexternal CRMClientMethod("external CRM.client.submit", "doc", doc);
+            postexternalCrmClientMethod("externalCrm.client.submit", "doc", doc);
             log.info("📋 [SYNC] Submitted {} '{}'", docType, externalId);
         } catch (Exception e) {
             log.warn("⚠️ [SYNC] Failed to submit {} '{}': {} — document remains as Draft",
@@ -325,7 +325,7 @@ public class RestExternalClient implements ExternalSystemClient {
 
     /**
      * Annule un document soumis (docstatus = 1 → 2) avant suppression.
-     * Utilise external CRM.client.cancel pour respecter les hooks external ERP.
+     * Utilise externalCrm.client.cancel pour respecter les hooks externalErp.
      */
     @SuppressWarnings("unchecked")
     private void cancelIfSubmitted(String docType, String externalId) {
@@ -345,7 +345,7 @@ public class RestExternalClient implements ExternalSystemClient {
                     formData.add("doctype", docType);
                     formData.add("name", externalId);
                     restClient.post()
-                            .uri("/api/method/external CRM.client.cancel")
+                            .uri("/api/method/externalCrm.client.cancel")
                             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                             .body(formData)
                             .retrieve()
@@ -427,31 +427,31 @@ public class RestExternalClient implements ExternalSystemClient {
         }
     }
 
-    // ==================== external CRM Client API helpers ====================
+    // ==================== externalCrm Client API helpers ====================
 
     /**
-     * Crée un document via {@code external CRM.client.insert} (form-data).
+     * Crée un document via {@code externalCrm.client.insert} (form-data).
      * Cette méthode exécute les hooks de validation et calcule les totaux
-     * automatiquement — contourne le bug base_grand_total de external ERP v17-dev.
+     * automatiquement — contourne le bug base_grand_total de externalErp v17-dev.
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> postexternal CRMClientInsert(Map<String, Object> doc) {
-        return postexternal CRMClientMethod("external CRM.client.insert", "doc", doc);
+    private Map<String, Object> postexternalCrmClientInsert(Map<String, Object> doc) {
+        return postexternalCrmClientMethod("externalCrm.client.insert", "doc", doc);
     }
 
     /**
-     * Met à jour un document via {@code external CRM.client.save} (form-data).
+     * Met à jour un document via {@code externalCrm.client.save} (form-data).
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> postexternal CRMClientSave(Map<String, Object> doc) {
-        return postexternal CRMClientMethod("external CRM.client.save", "doc", doc);
+    private Map<String, Object> postexternalCrmClientSave(Map<String, Object> doc) {
+        return postexternalCrmClientMethod("externalCrm.client.save", "doc", doc);
     }
 
     /**
-     * Appelle une méthode external CRM avec un paramètre JSON en form-data.
+     * Appelle une méthode externalCrm avec un paramètre JSON en form-data.
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> postexternal CRMClientMethod(String method, String paramName, Object paramValue) {
+    private Map<String, Object> postexternalCrmClientMethod(String method, String paramName, Object paramValue) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add(paramName, toJson(paramValue));
 
@@ -491,7 +491,7 @@ public class RestExternalClient implements ExternalSystemClient {
     /**
      * Extrait un message d'erreur lisible depuis une exception REST.
      * Pour les {@link RestClientResponseException}, parse le corps JSON de la réponse
-     * pour extraire le message external ERP (champ {@code _server_messages}).
+     * pour extraire le message externalErp (champ {@code _server_messages}).
      */
     private String extractErrorMessage(Exception e) {
         if (e instanceof RestClientResponseException restEx) {
@@ -500,15 +500,15 @@ public class RestExternalClient implements ExternalSystemClient {
                 try {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> errMap = objectMapper.readValue(body, Map.class);
-                    // external ERP renvoie _server_messages comme JSON-encoded string array
+                    // externalErp renvoie _server_messages comme JSON-encoded string array
                     Object serverMessages = errMap.get("_server_messages");
                     if (serverMessages instanceof String sMsg) {
-                        return "external ERP: " + sMsg.substring(0, Math.min(sMsg.length(), 500));
+                        return "externalErp: " + sMsg.substring(0, Math.min(sMsg.length(), 500));
                     }
                     Object excType = errMap.get("exc_type");
                     Object exception = errMap.get("exception");
                     if (exception != null) {
-                        return "external ERP " + excType + ": " + exception.toString()
+                        return "externalErp " + excType + ": " + exception.toString()
                                 .substring(0, Math.min(exception.toString().length(), 300));
                     }
                 } catch (Exception ignored) {

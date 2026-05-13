@@ -21,7 +21,7 @@ public class AddressSyncMapper {
      * Construit le payload de création d'une Address liée à un Customer.
      *
      * @param user             le User LMP source
-     * @param customerExternalId l'ID externe du Customer external ERP auquel lier l'Address
+     * @param customerExternalId l'ID externe du Customer externalErp auquel lier l'Address
      */
     public Map<String, Object> toCreatePayload(User user, String customerExternalId) {
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -57,7 +57,7 @@ public class AddressSyncMapper {
 
     /**
      * Construit le payload de mise à jour d'une Address existante.
-     * Les Dynamic Links ne sont pas modifiées (external ERP les gère).
+     * Les Dynamic Links ne sont pas modifiées (externalErp les gère).
      */
     public Map<String, Object> toUpdatePayload(User user) {
         Map<String, Object> payload = new LinkedHashMap<>();

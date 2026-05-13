@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Construit le payload external ERP "User" (DocType login) à partir d'un collaborateur LMP.
+ * Construit le payload externalErp "User" (DocType login) à partir d'un collaborateur LMP.
  * <p>
  * À utiliser quand le User LMP a le rôle STAFF (ou ADMIN) — sinon passer par
- * {@link CustomerSyncMapper}. La clé primaire external ERP d'un User est l'email.
+ * {@link CustomerSyncMapper}. La clé primaire externalErp d'un User est l'email.
  * <p>
- * Référence pattern : {@code python/crm/crm/demo/users.py} (external CRM.get_doc User).
+ * Référence pattern : {@code python/crm/crm/demo/users.py} (externalCrm.get_doc User).
  */
 @Component
 public class ErpUserSyncMapper {

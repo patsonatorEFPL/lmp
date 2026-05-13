@@ -317,7 +317,7 @@ public class SyncOutboundService {
      * payload, le système externe peut détecter le doublon via ce champ.
      * <p>
      * Le champ {@code lmp_idempotency_key} doit exister comme custom field sur
-     * les DocTypes external ERP synchronisés (Sales Order, Sales Invoice, Payment Entry, etc.).
+     * les DocTypes externalErp synchronisés (Sales Order, Sales Invoice, Payment Entry, etc.).
      */
     private void injectIdempotencyKey(Map<String, Object> data, SyncEvent event) {
         if ("CREATED".equals(event.getEventType()) && event.getId() != null) {

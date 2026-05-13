@@ -10,7 +10,7 @@ import java.util.UUID;
  * <p>
  * Catalogue les erreurs rencontrées pour classifier les nouvelles (UNKNOWN)
  * vs les connues (KNOWN_RECOVERABLE / KNOWN_PERMANENT).
- * Permet la détection de drift côté external ERP.
+ * Permet la détection de drift côté externalErp.
  */
 @Entity
 @Table(name = "sync_error_patterns")

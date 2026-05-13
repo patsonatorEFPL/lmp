@@ -326,7 +326,7 @@ public class AdminRestController {
                 userService.setUserStaffRole(newUser.getId(), true, actor.getId());
             }
 
-            // Publier l'événement de provisioning. Le routage Customer vs external ERP User
+            // Publier l'événement de provisioning. Le routage Customer vs externalErp User
             // est géré dans ErpEventListener selon les rôles du user (STAFF/ADMIN → User).
             Map<String, Object> regPl = new HashMap<>();
             regPl.put(BusinessEventPayloadKeys.EMAIL, newUser.getEmail());
@@ -1383,7 +1383,7 @@ public class AdminRestController {
     }
 
     @GetMapping("/health/services")
-    @Operation(summary = "Santé des services", description = "Retourne un snapshot de santé des services (DB, Stripe, external ERP)")
+    @Operation(summary = "Santé des services", description = "Retourne un snapshot de santé des services (DB, Stripe, externalErp)")
     public ResponseEntity<ApiResponse<List<HealthServiceDto>>> getServicesHealth() {
         try {
             List<HealthServiceDto> healthList = new ArrayList<>();
@@ -1416,12 +1416,12 @@ public class AdminRestController {
             String stripeTone = stripeClient != null ? "is-ok" : "is-danger";
             healthList.add(new HealthServiceDto("Stripe", stripeStatus, "-", "100 %", stripeTone));
 
-            // external ERP
+            // externalErp
             String erpUrl = syncProperties.getExternal() != null ? syncProperties.getExternal().getBaseUrl() : null;
             boolean erpConfigured = erpUrl != null && !erpUrl.isBlank();
             String erpStatus = erpConfigured ? "UP" : "DOWN";
             String erpTone = erpConfigured ? "is-ok" : "is-danger";
-            healthList.add(new HealthServiceDto("external ERP", erpStatus, "-", "100 %", erpTone));
+            healthList.add(new HealthServiceDto("externalErp", erpStatus, "-", "100 %", erpTone));
 
             return ResponseEntity.ok(ApiResponse.ok(healthList));
         } catch (Exception e) {

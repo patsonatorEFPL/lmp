@@ -15,7 +15,7 @@ import java.util.UUID;
  * Cycle de vie : DRAFT → SENT → ACCEPTED/REJECTED/EXPIRED.
  * Un devis ACCEPTED peut être converti en {@link Order} via {@code QuotationService.convertToOrder()}.
  * <p>
- * Synchronisé vers le système externe (external ERP Quotation) quand le statut passe à SENT.
+ * Synchronisé vers le système externe (externalErp Quotation) quand le statut passe à SENT.
  */
 @Entity
 @Table(name = "quotations")
@@ -76,7 +76,7 @@ public class Quotation {
 
     // --- Sync fields ---
 
-    /** Identifiant externe du Quotation côté système externe (external ERP). */
+    /** Identifiant externe du Quotation côté système externe (externalErp). */
     @Column(name = "external_quotation_id", length = 140)
     private String externalQuotationId;
 

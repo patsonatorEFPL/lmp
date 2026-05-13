@@ -348,7 +348,7 @@ public class Order {
     @Column(name = "installment_count")
     private Integer installmentCount;
 
-    /** Nom du Payment Terms Template external ERP associé (ex: "Paiement en 3x"). */
+    /** Nom du Payment Terms Template externalErp associé (ex: "Paiement en 3x"). */
     @Column(name = "payment_terms_template", length = 140)
     private String paymentTermsTemplate;
 

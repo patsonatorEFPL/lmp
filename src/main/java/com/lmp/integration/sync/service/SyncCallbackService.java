@@ -185,7 +185,7 @@ public class SyncCallbackService {
     }
 
     /**
-     * Pour le DocType external ERP "User", la clé primaire est l'email lui-même.
+     * Pour le DocType externalErp "User", la clé primaire est l'email lui-même.
      * On stocke donc cet email comme externalErpUserId pour pouvoir cibler le bon document
      * lors d'un update / delete ultérieur.
      */
@@ -194,9 +194,9 @@ public class SyncCallbackService {
                 user -> {
                     user.setExternalErpUserId(externalId);
                     userRepository.save(user);
-                    log.info("🔗 [CALLBACK] User {} linked to external external ERP User {}", userId, externalId);
+                    log.info("🔗 [CALLBACK] User {} linked to external externalErp User {}", userId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] User {} not found for external ERP User link", userId)
+                () -> log.warn("⚠️ [CALLBACK] User {} not found for externalErp User link", userId)
         );
     }
 
@@ -231,7 +231,7 @@ public class SyncCallbackService {
             Map<String, Object> siPayload = orderSyncMapper.toSalesInvoicePayload(order);
 
             // Fetch SO item row names from ERP pour renseigner so_detail sur chaque ligne SINV.
-            // Sans so_detail, external ERP ne met pas à jour per_billed sur le Sales Order.
+            // Sans so_detail, externalErp ne met pas à jour per_billed sur le Sales Order.
             enrichWithSoDetail(siPayload, order.getExternalOrderId());
 
             syncOutboundService.enqueue(
@@ -247,7 +247,7 @@ public class SyncCallbackService {
 
     /**
      * Enrichit le payload SINV avec les so_detail (noms des lignes SO)
-     * pour que external ERP puisse calculer per_billed sur le Sales Order.
+     * pour que externalErp puisse calculer per_billed sur le Sales Order.
      */
     @SuppressWarnings("unchecked")
     private void enrichWithSoDetail(Map<String, Object> siPayload, String salesOrderId) {
@@ -317,7 +317,7 @@ public class SyncCallbackService {
     @SuppressWarnings("unchecked")
     private java.math.BigDecimal extractErpGrandTotal(Map<String, Object> responseData) {
         if (responseData == null) return null;
-        // external ERP API returns {"data": {"grand_total": ...}} — navigate the nested structure
+        // externalErp API returns {"data": {"grand_total": ...}} — navigate the nested structure
         Map<String, Object> dataMap = responseData;
         if (dataMap.containsKey("data") && dataMap.get("data") instanceof Map) {
             dataMap = (Map<String, Object>) dataMap.get("data");
@@ -341,7 +341,7 @@ public class SyncCallbackService {
      * <ul>
      *   <li>Paiement unique : 1 PE pour le montant total (comportement existant)</li>
      *   <li>Paiement en plusieurs fois : 1 PE par échéance payée (status=PAID),
-     *       avec {@code payment_term} sur la référence SINV pour que external ERP mette à jour
+     *       avec {@code payment_term} sur la référence SINV pour que externalErp mette à jour
      *       le bon slot du {@code payment_schedule}</li>
      * </ul>
      *
@@ -382,7 +382,7 @@ public class SyncCallbackService {
      * Enqueue un Payment Entry pour chaque échéance payée d'une commande en plusieurs fois.
      * <p>
      * Récupère le {@code payment_schedule} de la SINV pour utiliser les montants exacts
-     * calculés par external ERP (évite les écarts d'arrondi entre LMP et l'ERP).
+     * calculés par externalErp (évite les écarts d'arrondi entre LMP et l'ERP).
      */
     @SuppressWarnings("unchecked")
     private void enqueueInstallmentPaymentEntries(Order order, String salesInvoiceId) {
@@ -430,7 +430,7 @@ public class SyncCallbackService {
 
     /**
      * Récupère les montants du payment_schedule depuis la SINV ERP.
-     * Retourne un map payment_term → payment_amount (montant exact calculé par external ERP).
+     * Retourne un map payment_term → payment_amount (montant exact calculé par externalErp).
      */
     @SuppressWarnings("unchecked")
     private Map<String, java.math.BigDecimal> fetchErpPaymentScheduleAmounts(String salesInvoiceId) {
@@ -598,7 +598,7 @@ public class SyncCallbackService {
         userRepository.findById(userId).ifPresent(user -> {
             user.setExternalErpUserId(null);
             userRepository.save(user);
-            log.info("🧹 [CALLBACK] Cleared external external ERP User ID on User {}", userId);
+            log.info("🧹 [CALLBACK] Cleared external externalErp User ID on User {}", userId);
         });
     }
 

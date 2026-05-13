@@ -123,7 +123,7 @@ public class SyncAlertingService {
                 "🚨 DRIFT ERP détecté — Erreur inconnue",
                 String.format("""
                         Une nouvelle erreur de synchronisation a été classifiée comme INCONNUE.
-                        Cela indique probablement un changement côté external ERP (nouveau champ, nouvelle validation, mise à jour).
+                        Cela indique probablement un changement côté externalErp (nouveau champ, nouvelle validation, mise à jour).
                         
                         Pattern : %s
                         Première occurrence : %s
