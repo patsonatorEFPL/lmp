@@ -157,8 +157,8 @@ lmp-oauth2-jwk*.json
 /check_*.sh
 /get_*.sh
 /trace_*.sh
-/update_external CRM*.sh
-/find_external CRM*.sh
+/update_*.sh
+/find_*.sh
 /describe_*.sh
 # Python test/check scripts at root
 /test_*.py
@@ -227,3 +227,5 @@ infra/observability/prometheus/secrets/*
 
 ### Load test transient outputs ###
 tmp-loadtest/
+# k6 dev-only bench scripts (local utilities, not part of repo)
+tools/loadtest/k6-*.js
