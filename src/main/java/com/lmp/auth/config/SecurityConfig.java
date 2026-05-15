@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -453,6 +454,28 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * async-profiler v4.4 bench 4k VU 2026-05-15 : AdminRateLimitFilter
+     * exécuté DEUX FOIS par request (8035 samples passthrough wasted).
+     *
+     * <p>Cause : la classe est annotée {@code @Component} (DI requis) ce qui
+     * déclenche l'auto-registration servlet de Spring Boot pour tout bean
+     * implementing {@code Filter}/{@code OncePerRequestFilter}. PUIS la chaîne
+     * {@code backendFilterChain} (@Order(2)) l'ajoute via
+     * {@code .addFilterBefore(adminRateLimitFilter, ...)}.</p>
+     *
+     * <p>Fix : ce bean désactive la registration servlet auto. Le filter reste
+     * actif via la chaîne Spring Security uniquement (chemin sémantiquement
+     * correct car la chaîne définit l'ordre de dispatch).</p>
+     */
+    @Bean
+    public FilterRegistrationBean<AdminRateLimitFilter> adminRateLimitFilterRegistration(
+            AdminRateLimitFilter filter) {
+        FilterRegistrationBean<AdminRateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     // Pas de @Bean DaoAuthenticationProvider : Spring Security 7 le construit
