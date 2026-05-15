@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -43,6 +44,20 @@ public class AsyncConfig implements AsyncConfigurer {
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * Executor virtual-threads pour pipelines auth offload (forgot-password) :
+     * setConcurrencyLimit cape l'admission, virtualThreads=true évite tout coût
+     * d'OS thread. Sous spike 750 req concurrentes, l'API répond 200 instantané
+     * pendant que DB query+save+enqueue runs en arrière-plan.
+     */
+    @Bean(name = "authBackgroundExecutor")
+    public SimpleAsyncTaskExecutor authBackgroundExecutor() {
+        SimpleAsyncTaskExecutor exec = new SimpleAsyncTaskExecutor("lmp-auth-bg-");
+        exec.setVirtualThreads(true);
+        exec.setConcurrencyLimit(500);
+        return exec;
     }
 
     @Override

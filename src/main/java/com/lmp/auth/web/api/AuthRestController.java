@@ -256,8 +256,7 @@ public class AuthRestController {
     @PostMapping("/forgot-password")
     @Operation(summary = "Mot de passe oublié", description = "Envoie un lien de réinitialisation par e-mail si le compte existe")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        authService.initiatePasswordReset(request.getEmail())
-                .ifPresent(authService::sendPasswordResetEmail);
+        authService.processForgotPasswordAsync(request.getEmail());
         return ResponseEntity.ok(ApiResponse.ok(
                 "Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.",
                 null));

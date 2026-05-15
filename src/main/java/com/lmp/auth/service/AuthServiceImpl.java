@@ -338,6 +338,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Async("authBackgroundExecutor")
+    public void processForgotPasswordAsync(String email) {
+        try {
+            initiatePasswordReset(email).ifPresent(this::sendPasswordResetEmail);
+        } catch (RuntimeException e) {
+            logger.warn("Forgot-password async pipeline failed: {}", e.getMessage());
+        }
+    }
+
+    @Override
     @Transactional
     public Optional<PasswordResetEmailPayload> initiatePasswordReset(String email) {
         if (email == null || email.isBlank()) {
