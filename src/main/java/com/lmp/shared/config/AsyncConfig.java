@@ -56,7 +56,9 @@ public class AsyncConfig implements AsyncConfigurer {
     public SimpleAsyncTaskExecutor authBackgroundExecutor() {
         SimpleAsyncTaskExecutor exec = new SimpleAsyncTaskExecutor("lmp-auth-bg-");
         exec.setVirtualThreads(true);
-        exec.setConcurrencyLimit(500);
+        // Pas de concurrencyLimit : VT sont quasi-gratuits. Sous 3k VU bench,
+        // cap 500 bloquait le caller Tomcat (~5s tail access-log). Hikari pool
+        // (50) reste le vrai gardien de la capacité DB en amont.
         return exec;
     }
 
