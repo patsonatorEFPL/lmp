@@ -103,10 +103,14 @@ services:
       # Dokploy, baseline revient ici — autoscaler reprend ensuite si charge.
       replicas: 1
       resources:
+        # 4 GiB cap nécessaire pour ZGC : -Xmx 1.5G + shmem multi-mapping ZGC
+        # (pointer color bits) peut atteindre ~2× Xmx. Cap 2 GiB déclenchait
+        # OOM killer kernel cgroup sous load (vérifié 5k VU bench 2026-05-15).
+        # Switch G1 → ZGC = perf p99 -71% mais memory overhead doublé.
         limits:
-          memory: 2048M
+          memory: 4096M
         reservations:
-          memory: 768M
+          memory: 1024M
       restart_policy:
         condition: any
         delay: 5s
