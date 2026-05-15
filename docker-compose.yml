@@ -85,12 +85,8 @@ services:
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
       SERVER_TOMCAT_THREADS_MAX: "500"
       SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
-      # Bench 4k VU 3min 2026-05-15 : 3.64% timeouts k6 alors que serveur
-      # PAS saturé (CPU 236%/400%, mem 50%, 0 exception). Bottleneck = NIO
-      # accept queue déborde sous 4k VU simultanés. Bump accept-count
-      # 2000→5000 + max-connections 10000→20000 pour absorber le burst TCP.
-      SERVER_TOMCAT_ACCEPT_COUNT: "5000"
-      SERVER_TOMCAT_MAX_CONNECTIONS: "20000"
+      SERVER_TOMCAT_ACCEPT_COUNT: "2000"
+      SERVER_TOMCAT_MAX_CONNECTIONS: "10000"
       # Tomcat access log → stdout (Docker captures → Dokploy UI Logs onglet).
       # /dev/stdout symlink + buffered=false pour visibilité immédiate.
       # Pattern combined Apache + duration (%D ms) + user-agent.
