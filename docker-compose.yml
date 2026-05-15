@@ -29,7 +29,9 @@ services:
     # container (collision de service name sur le même overlay) et pollue le
     # keyspace LMP avec ses doctype_meta::* (vérifié 15/05/2026). Le password
     # force AUTH → Frappe est rejeté, isolation effective.
-    # TODO: déplacer REDIS_PASSWORD vers env_file Dokploy au lieu de hardcode.
+    # REDIS_PASSWORD doit être défini dans Dokploy env (compose env vars) —
+    # syntax `${VAR:?...}` fait échouer compose si non défini, pas de fallback
+    # en git pour éviter fuite du secret.
     command: >
       redis-server
         --maxmemory 200mb
@@ -37,7 +39,7 @@ services:
         --save ""
         --appendonly no
         --tcp-keepalive 60
-        --requirepass ${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}
+        --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
     deploy:
       resources:
         limits:
@@ -47,7 +49,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}", "--no-auth-warning", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}", "--no-auth-warning", "ping"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -66,8 +68,8 @@ services:
       # Override l'éventuelle valeur dans .env pour pointer redis-cache.
       REDIS_HOST: redis-cache
       REDIS_PORT: "6379"
-      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-***REDACTED-BURNED-CREDS***}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
       # Perf tuning validé par bench (cf. tmp-e2e/lmp-short-test.js, 13/05/2026)
       # Bench 1500 VU 2 min via Traefik HTTPS :
       #   baseline G1  : p95=3055 p99=6009
