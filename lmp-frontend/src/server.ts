@@ -35,6 +35,29 @@ export function app(): ReturnType<typeof express> {
   const server = express();
   // Pour que req.ip reflète X-Forwarded-For / X-Real-IP derrière Traefik, Caddy, etc.
   server.set('trust proxy', true);
+
+  // Request logger (JSON structuré, parseable par Loki/Datadog).
+  // LOG_REQUESTS=false dans env si trop verbeux (default on).
+  if (process.env['LOG_REQUESTS'] !== 'false') {
+    server.use((req, res, next) => {
+      const start = Date.now();
+      res.on('finish', () => {
+        console.log(JSON.stringify({
+          ts: new Date().toISOString(),
+          level: res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
+          method: req.method,
+          url: req.originalUrl,
+          status: res.statusCode,
+          duration_ms: Date.now() - start,
+          ip: req.ip,
+          ua: req.get('user-agent')?.slice(0, 100),
+          ref: req.get('referer'),
+        }));
+      });
+      next();
+    });
+  }
+
   const allowedHosts = process.env['ALLOWED_HOSTS']
     ? process.env['ALLOWED_HOSTS'].split(',').map(h => h.trim())
     : ['localhost'];
@@ -99,6 +122,21 @@ export function app(): ReturnType<typeof express> {
       })
       .then((html) => res.send(html))
       .catch((err) => next(err));
+  });
+
+  // Error handler — capture stack trace SSR fail (sinon Express silent).
+  server.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error(JSON.stringify({
+      ts: new Date().toISOString(),
+      level: 'error',
+      msg: 'ssr_render_error',
+      url: req.originalUrl,
+      err: err.message,
+      stack: err.stack?.split('\n').slice(0, 5).join(' | '),
+    }));
+    if (!res.headersSent) {
+      res.status(500).sendFile(join(browserDistFolder, 'index.csr.html'));
+    }
   });
 
   return server;
