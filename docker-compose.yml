@@ -1,23 +1,24 @@
 # ============================================================================
-# LMP backend stack (external CRM-style : tout-en-un compose)
+# LMP app stack (monolithique embed Angular + Spring : tout-en-un compose)
 # ============================================================================
 # Services dans 1 seul Dokploy Compose project :
-#   - backend     : Spring Boot app (build local Dockerfile)
+#   - app         : Spring Boot avec Angular pré-rendu embed (build local Dockerfile)
 #   - redis-cache : Redis volatile (sessions, rate-limit, SSE pub/sub, caches)
 #
 # Postgres reste géré comme Dokploy app séparée (`lmp-staging-db`) car la donnée
-# est durable et partagée potentiellement entre environnements. external CRM met
-# son MariaDB dans le compose ; pour LMP la DB est plus pérenne et on évite de
-# coupler son lifecycle au backend.
+# est durable et partagée potentiellement entre environnements.
 #
 # Note: `redis-queue` container retiré 2026-05-10 — async work durable
 # (email_queue, sync_event_log) tourne via Postgres claim atomique
 # (UPDATE...RETURNING + FOR UPDATE SKIP LOCKED). Plus de Redis queue nécessaire.
-# 320 MB RAM libérés pour backend replicas.
+# 320 MB RAM libérés pour app replicas.
+#
+# Note: service renommé `backend → app` 2026-05-15 — reflète l'archi unifiée
+# (Spring sert API + Angular embed). Container = lmp-app-jftitz-app-N.
 #
 # Network : dokploy-network (overlay externe créé par Dokploy). Tous les services
-# se résolvent par leur service name (redis-cache, backend) sur cette network.
-# Backend lit ainsi REDIS_HOST=redis-cache directement.
+# se résolvent par leur service name (redis-cache, app) sur cette network.
+# App lit ainsi REDIS_HOST=redis-cache directement.
 # ============================================================================
 version: "3.8"
 
@@ -55,7 +56,7 @@ services:
       retries: 3
       start_period: 5s
 
-  backend:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
