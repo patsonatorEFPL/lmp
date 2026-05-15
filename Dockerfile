@@ -99,18 +99,21 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
 # Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE (défaut: prod)
 #
 # JVM tuning (bench 1500 VU / 2 min via Traefik, 13/05/2026) :
-#   -Xms512m -Xmx1536m  : peak réel observé 2.4 GiB total (heap + non-heap +
-#                         direct buffers). 1536m heap + ~600m non-heap = ~2g.
-#                         Container limit 2048M dans compose laisse marge.
-#   -XX:+UseZGC -XX:+ZGenerational : ZGC pauses sub-ms, p99 -71% vs G1.
-#                                    String dedup retiré (G1-only).
+#   -Xms512m -Xmx1536m  : container cap 4096M compose laisse large marge
+#                         (peak observé ~2 GiB total heap + shmem ZGC + non-heap).
+#   -XX:+UseZGC          : ZGC generational par défaut depuis JDK 24, plus
+#                         besoin de +ZGenerational (warning si présent).
+#                         p99 -71% vs G1.
+#   -XX:+EnableDynamicAgentLoading : autorise attach agent natif (async-profiler,
+#                         JFR remote control). JDK 24+ bloque par défaut.
+#                         Pour profiling prod sans rebuild.
 #   -XX:MaxMetaspaceSize=192m / -XX:CompressedClassSpaceSize=64m /
 #   -XX:ReservedCodeCacheSize=128m : caps mesurés idle + marge.
 ENTRYPOINT ["java", \
     "-Xms512m", "-Xmx1536m", \
     "-Xss512k", \
     "-XX:+UseZGC", \
-    "-XX:+ZGenerational", \
+    "-XX:+EnableDynamicAgentLoading", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=64m", \
     "-XX:ReservedCodeCacheSize=128m", \
