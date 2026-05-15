@@ -81,6 +81,16 @@ services:
       SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
       SERVER_TOMCAT_ACCEPT_COUNT: "2000"
       SERVER_TOMCAT_MAX_CONNECTIONS: "10000"
+      # Tomcat access log → stdout (Docker captures → Dokploy UI Logs onglet).
+      # /dev/stdout symlink + buffered=false pour visibilité immédiate.
+      # Pattern combined Apache + duration (%D ms) + user-agent.
+      SERVER_TOMCAT_ACCESSLOG_ENABLED: "true"
+      SERVER_TOMCAT_ACCESSLOG_DIRECTORY: "/dev"
+      SERVER_TOMCAT_ACCESSLOG_PREFIX: "stdout"
+      SERVER_TOMCAT_ACCESSLOG_SUFFIX: ""
+      SERVER_TOMCAT_ACCESSLOG_FILE_DATE_FORMAT: ""
+      SERVER_TOMCAT_ACCESSLOG_BUFFERED: "false"
+      SERVER_TOMCAT_ACCESSLOG_PATTERN: '%h %t "%r" %s %b %D "%{User-Agent}i"'
     depends_on:
       redis-cache:
         condition: service_healthy
