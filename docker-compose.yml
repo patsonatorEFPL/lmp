@@ -82,6 +82,14 @@ services:
       # Counter.builder / Observation.event depuis ce wrapper. Metrics globales
       # restent OK via management.observations.* (web.client, etc.).
       SPRING_SECURITY_OBSERVATIONS_ENABLED: "false"
+      # Nuclear: disable ALL Micrometer observations (http.server.requests,
+      # hibernate, jdbc, web.client, etc). async-profiler v4.4 2026-05-15
+      # avait 61.5% CPU sur MeterRegistry/SimpleObservation. Run 5 testait
+      # juste `http.server.requests` (gain modeste -9.6%). Cette fois cap
+      # global. Trade-off: perte metrics /actuator/prometheus mais bench
+      # ceiling > observability ici.
+      MANAGEMENT_OBSERVATIONS_ENABLE_ALL: "false"
+      MANAGEMENT_OBSERVATIONS_ANNOTATIONS_ENABLED: "false"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
       SERVER_TOMCAT_THREADS_MAX: "500"
       SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
