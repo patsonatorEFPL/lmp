@@ -27,11 +27,9 @@ import {
   CreditCard,
   Plus,
   LifeBuoy,
-  Sparkles,
   CheckCircle2,
   CalendarCheck,
   Download,
-  X,
 } from 'lucide-angular';
 import type { LucideIconData } from 'lucide-angular';
 import { firstValueFrom } from 'rxjs';
@@ -192,28 +190,6 @@ const SPARK = {};
             </a>
           </div>
         </lmp-page-head>
-
-        <!-- Bandeau « Recommandation IA » -->
-        @if (showInsight()) {
-          <div class="lmpd-insight">
-            <span class="lmpd-insight-ic">
-              <lucide-icon [img]="SparklesIcon" [size]="14"></lucide-icon>
-            </span>
-            <div class="lmpd-insight-tx">
-              <b>{{ insightTitle() }} · </b>{{ insightBody() }}
-            </div>
-            <a routerLink="/services" class="lmpd-btn">Explorer</a>
-            <button
-              type="button"
-              class="lmpd-btn"
-              style="padding:6px 8px"
-              (click)="dismissInsight()"
-              aria-label="Fermer"
-            >
-              <lucide-icon [img]="CloseIcon" [size]="13"></lucide-icon>
-            </button>
-          </div>
-        }
 
         <!-- 4 KPIs -->
         <div class="lmpd-stat-grid">
@@ -474,17 +450,6 @@ export class DashboardOverviewComponent implements OnInit {
       : 'Voici un résumé de votre activité.';
   });
 
-  /** Bandeau d'astuce — s'inspire de la « Recommandation IA » de la maquette. */
-  readonly insightVisible = signal(true);
-  readonly showInsight = computed(() => this.insightVisible() && this.insightBody().trim().length > 0);
-  dismissInsight() {
-    this.insightVisible.set(false);
-  }
-
-  readonly insightTitle = computed(() => 'Recommandation IA');
-
-  readonly insightBody = computed(() => '');
-
   /** Période sélectionnée pour la courbe d'activité (générée depuis les commandes réelles). */
   readonly period = signal<Period>('30j');
   setPeriod(p: Period) {
@@ -585,11 +550,9 @@ export class DashboardOverviewComponent implements OnInit {
   readonly FileTextIcon = FileText;
   readonly BoxIcon = Box;
   readonly PlusIcon = Plus;
-  readonly SparklesIcon = Sparkles;
   readonly CheckCircleIcon = CheckCircle2;
   readonly CalendarCheckIcon = CalendarCheck;
   readonly DownloadIcon = Download;
-  readonly CloseIcon = X;
 
   readonly sparkOrders = undefined;
   readonly sparkInProgress = undefined;

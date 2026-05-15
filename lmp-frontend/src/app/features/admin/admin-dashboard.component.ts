@@ -22,15 +22,12 @@ import {
   Calendar,
   TrendingUp,
   Loader2,
-  Download,
   Plus,
   Activity,
   Shield,
   FileText,
   CreditCard,
   RefreshCw,
-  Filter,
-  Server,
   ArrowUp,
   ArrowDown,
 } from 'lucide-angular';
@@ -57,8 +54,6 @@ interface RecentUser {
   role: string;
   statusLabel: string;
   statusTone: string;
-  ordersCount: number;
-  spent: string;
   lastSeen: string;
 }
 
@@ -67,16 +62,6 @@ interface TopService {
   orders: number;
   revenue: string;
   growth: number;
-}
-
-interface MonitoringRow {
-  name: string;
-  uptime: string;
-  latency: string;
-  status: string;
-  tone: 'is-ok' | 'is-warn' | 'is-danger';
-  /** Indices (0..29) où la barre d'uptime est dégradée. */
-  warnIndices: number[];
 }
 
 interface AdminUserPageItem {
@@ -100,12 +85,6 @@ interface AdminDashboardPayload {
 }
 
 type RevenuePeriod = 'week' | 'month' | 'quarter';
-
-const REVENUE_SERIES = {} as Record<RevenuePeriod, { current: number[]; previous: number[]; labels: string[] }>;
-
-const SPARK = {};
-
-const MONITORING_DEMO: MonitoringRow[] = [];
 
 interface AdminUsersResponse {
   success: boolean;
@@ -150,10 +129,6 @@ interface AdminUsersResponse {
               <lucide-icon [img]="RefreshIcon" [size]="13"></lucide-icon>
               Rafraîchir
             </button>
-            <a routerLink="/admin/services" class="lmpd-btn">
-              <lucide-icon [img]="DownloadIcon" [size]="13"></lucide-icon>
-              Rapport
-            </a>
             <a routerLink="/admin/services" class="lmpd-btn is-accent">
               <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
               Créer un service
@@ -269,15 +244,9 @@ interface AdminUsersResponse {
           <section class="lmpd-panel">
             <header class="lmpd-panel-head">
               <h3>Utilisateurs récents</h3>
-              <div style="display:flex; gap:8px">
-                <button type="button" class="lmpd-btn" style="padding:4px 9px;font-size:11.5px">
-                  <lucide-icon [img]="FilterIcon" [size]="12"></lucide-icon>
-                  Filtrer
-                </button>
-                <a routerLink="/admin/users" class="lmpd-btn" style="padding:4px 9px;font-size:11.5px">
-                  Voir tous →
-                </a>
-              </div>
+              <a routerLink="/admin/users" class="lmpd-btn" style="padding:4px 9px;font-size:11.5px">
+                Voir tous →
+              </a>
             </header>
             @if (recentUsers().length === 0) {
               <div class="flex flex-col items-center justify-center py-10 text-center px-6">
@@ -302,8 +271,6 @@ interface AdminUsersResponse {
                     <th>Utilisateur</th>
                     <th>Rôle</th>
                     <th>Statut</th>
-                    <th class="lmpd-num text-right">Commandes</th>
-                    <th class="lmpd-num text-right">Dépensé</th>
                     <th class="lmpd-num text-right">Dernier</th>
                   </tr>
                 </thead>
@@ -327,8 +294,6 @@ interface AdminUsersResponse {
                       </td>
                       <td><span class="lmpd-badge is-muted">{{ u.role }}</span></td>
                       <td><span [class]="'lmpd-badge ' + u.statusTone">{{ u.statusLabel }}</span></td>
-                      <td class="lmpd-num text-right">{{ u.ordersCount }}</td>
-                      <td class="lmpd-num text-right font-medium">{{ u.spent }}</td>
                       <td class="lmpd-num text-right" style="color:var(--lmpd-fg-mute)">{{ u.lastSeen }}</td>
                     </tr>
                   }
@@ -370,43 +335,6 @@ interface AdminUsersResponse {
             </section>
           </div>
         </div>
-
-        @if (monitoring.length > 0) {
-        <section class="lmpd-panel">
-          <header class="lmpd-panel-head">
-            <h3>
-              Santé des services ·
-              <span class="lmpd-mono" style="color:var(--lmpd-fg-mute);font-size:11px">uptime 30 jours</span>
-            </h3>
-            <span class="lmpd-badge is-ok">{{ monitoringOkCount() }} OK</span>
-          </header>
-          <div>
-            @for (m of monitoring; track m.name) {
-              <div class="lmpd-svc-row">
-                <div class="lmpd-svc-name">
-                  <span
-                    [style.width.px]="7"
-                    [style.height.px]="7"
-                    [style.borderRadius]="'50%'"
-                    [style.background]="dotColor(m.tone)"
-                    [style.boxShadow]="dotHalo(m.tone)"
-                  ></span>
-                  {{ m.name }}
-                </div>
-                <div class="lmpd-svc-uptime-bar">
-                  @for (i of uptimeRange; track $index) {
-                    <span [class.is-w]="m.warnIndices.includes(i)"></span>
-                  }
-                </div>
-                <div class="lmpd-mono" style="color:var(--lmpd-fg-mute);min-width:60px;text-align:right">
-                  {{ m.latency }}
-                </div>
-                <div><span [class]="'lmpd-badge ' + m.tone">{{ m.status }}</span></div>
-              </div>
-            }
-          </div>
-        </section>
-        }
 
         <!-- Bandeau temps réel -->
         <div class="lmpd-insight">
@@ -542,8 +470,6 @@ export class AdminDashboardComponent implements OnInit {
       role: role === 'ADMIN' ? 'Admin' : role === 'PRO' ? 'Pro' : 'Client',
       statusLabel,
       statusTone,
-      ordersCount: 0,
-      spent: '—',
       lastSeen: this.formatRelative(u.lastLoginDate ?? u.registrationDate),
     };
   }
@@ -640,27 +566,18 @@ export class AdminDashboardComponent implements OnInit {
     }
   });
 
-  readonly monitoring = MONITORING_DEMO;
-  readonly uptimeRange = Array.from({ length: 30 }, (_, i) => i);
-  readonly monitoringOkCount = computed(
-    () => this.monitoring.filter((m) => m.tone === 'is-ok').length,
-  );
-
   readonly UsersIcon = Users;
   readonly OrdersIcon = ShoppingCart;
   readonly PackageIcon = Package;
   readonly CalendarIcon = Calendar;
   readonly TrendingUpIcon = TrendingUp;
   readonly Loader2Icon = Loader2;
-  readonly DownloadIcon = Download;
   readonly PlusIcon = Plus;
   readonly ActivityIcon = Activity;
   readonly ShieldIcon = Shield;
   readonly FileTextIcon = FileText;
   readonly CreditCardIcon = CreditCard;
   readonly RefreshIcon = RefreshCw;
-  readonly FilterIcon = Filter;
-  readonly ServerIcon = Server;
   readonly ArrowUpIcon = ArrowUp;
   readonly ArrowDownIcon = ArrowDown;
 
@@ -719,18 +636,6 @@ export class AdminDashboardComponent implements OnInit {
     const hues = [10, 30, 60, 150, 200, 230, 260, 290, 320, 350];
     const hue = hues[h % hues.length];
     return `linear-gradient(135deg, oklch(0.72 0.15 ${hue}), oklch(0.6 0.2 ${(hue + 40) % 360}))`;
-  }
-
-  dotColor(tone: 'is-ok' | 'is-warn' | 'is-danger'): string {
-    if (tone === 'is-warn') return 'var(--lmpd-warning)';
-    if (tone === 'is-danger') return 'var(--lmpd-danger)';
-    return 'var(--lmpd-success)';
-  }
-
-  dotHalo(tone: 'is-ok' | 'is-warn' | 'is-danger'): string {
-    if (tone === 'is-warn') return '0 0 0 3px oklch(0.78 0.16 80 / 0.2)';
-    if (tone === 'is-danger') return '0 0 0 3px oklch(0.64 0.22 25 / 0.2)';
-    return '0 0 0 3px oklch(0.68 0.17 150 / 0.2)';
   }
 
   formatRelative(iso: string | null): string {
