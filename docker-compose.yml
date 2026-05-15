@@ -77,6 +77,11 @@ services:
       #   final tuned  : p95=1292 p99=1654 → p99 -72%
       SPRING_THREADS_VIRTUAL_ENABLED: "true"
       SPRING_MAIN_LAZY_INITIALIZATION: "true"
+      # Disable ObservationFilterChainDecorator wrap autour de chaque Spring
+      # Security filter. JFR 1k VU 2026-05-15 a montré ~5% CPU dans Micrometer
+      # Counter.builder / Observation.event depuis ce wrapper. Metrics globales
+      # restent OK via management.observations.* (web.client, etc.).
+      SPRING_SECURITY_OBSERVATIONS_ENABLED: "false"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
       SERVER_TOMCAT_THREADS_MAX: "500"
       SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
