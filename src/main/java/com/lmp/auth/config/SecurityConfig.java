@@ -94,6 +94,38 @@ public class SecurityConfig {
     }
 
     // =========================================================================
+    // Chaîne 0 : actuator/health bypass — filter chain minimal
+    // =========================================================================
+    // async-profiler v4.4 bench 3k VU 2026-05-15 a montré 57.8% CPU dans
+    // FilterChainProxy. La chaîne par défaut wrap chaque request avec 15+
+    // filters (SecurityContextHolder, Csrf, OAuth2Login, BearerTokenAuth,
+    // Anonymous, RequestCache, ExceptionTranslation, FilterSecurityInterceptor)
+    // même pour /actuator/health/liveness qui est publique.
+    //
+    // Cette chaîne @Order(0) matche /actuator/health/** + /actuator/health en
+    // premier et utilise ~3-4 filters seulement (HeaderWriter + AuthorizationFilter).
+    // Dokploy + Traefik + Kubernetes-style probes hitent ce endpoint fréquemment.
+
+    @Bean
+    @Order(0)
+    public SecurityFilterChain healthBypassFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/actuator/health/**", "/actuator/health")
+                .csrf(c -> c.disable())
+                .cors(c -> c.disable())
+                .sessionManagement(s -> s.disable())
+                .formLogin(f -> f.disable())
+                .httpBasic(b -> b.disable())
+                .logout(l -> l.disable())
+                .anonymous(a -> a.disable())
+                .requestCache(r -> r.disable())
+                .securityContext(s -> s.disable())
+                .exceptionHandling(e -> e.disable())
+                .authorizeHttpRequests(a -> a.anyRequest().permitAll())
+                .build();
+    }
+
+    // =========================================================================
     // Chaîne 1 : API REST — JSON 401/403, CSRF cookie
     // =========================================================================
 
