@@ -82,6 +82,14 @@ services:
       # Counter.builder / Observation.event depuis ce wrapper. Metrics globales
       # restent OK via management.observations.* (web.client, etc.).
       SPRING_SECURITY_OBSERVATIONS_ENABLED: "false"
+      # async-profiler v4.4 (bench 3k VU 2026-05-15) a montré 61.5% CPU dans
+      # Micrometer/Observation + 57.8% dans Spring Security FilterChainProxy.
+      # SPRING_SECURITY_OBSERVATIONS_ENABLED=false ne kill que les obs
+      # `spring.security.*`. L'obs `http.server.requests` (Tomcat web layer)
+      # reste active et wrap chaque filter via ObservationFilterChainDecorator.
+      # Disable explicite ici → cible p99 9.43s → <2s.
+      MANAGEMENT_OBSERVATIONS_ENABLE_HTTP_SERVER_REQUESTS: "false"
+      MANAGEMENT_OBSERVATIONS_ANNOTATIONS_ENABLED: "false"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
       SERVER_TOMCAT_THREADS_MAX: "500"
       SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
