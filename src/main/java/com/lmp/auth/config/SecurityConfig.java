@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -110,9 +111,13 @@ public class SecurityConfig {
     @Order(0)
     public SecurityFilterChain healthBypassFilterChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/actuator/health/**", "/actuator/health")
+                .securityMatcher("/actuator/health/**", "/actuator/health", "/api/v1/config")
+                // CORS PRÉSERVÉ pour /api/v1/config : SPA Angular cross-subdomain
+                // (auth.* vs dev.* vs apex) doit lire la response avec headers
+                // Access-Control-Allow-Origin. withDefaults() utilise le bean
+                // corsConfigurationSource() défini ligne 429.
+                .cors(Customizer.withDefaults())
                 .csrf(c -> c.disable())
-                .cors(c -> c.disable())
                 .sessionManagement(s -> s.disable())
                 .formLogin(f -> f.disable())
                 .httpBasic(b -> b.disable())
