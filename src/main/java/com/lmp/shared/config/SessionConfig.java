@@ -6,7 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
-import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
+import org.springframework.session.data.redis.config.ConfigureRedisAction;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisIndexedHttpSession;
 
 /**
  * Active Spring Session Redis pour partager les HttpSession entre replicas via
@@ -28,7 +29,7 @@ import org.springframework.session.data.redis.config.annotation.web.http.EnableR
  * {@code SPRING_SESSION} créée par V40 reste en DB mais inutilisée.</p>
  */
 @Configuration
-@EnableRedisHttpSession
+@EnableRedisIndexedHttpSession
 public class SessionConfig {
 
     @Bean
@@ -36,5 +37,21 @@ public class SessionConfig {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
         return new GenericJackson2JsonRedisSerializer(mapper);
+    }
+
+    /**
+     * Spring Session essaie de configurer Redis {@code notify-keyspace-events Egex}
+     * pour la session expiration (RedisIndexedSessionRepository). Avec
+     * {@code requirepass} actif sur lmp-redis-cache, le client Spring Session
+     * connecté sans permission CONFIG voit la commande échouer →
+     * {@code NOAUTH Authentication required} ou {@code unknown command}.
+     *
+     * <p>Désactive l'auto-config via {@link ConfigureRedisAction#NO_OP}. La
+     * notification keyspace est configurée côté redis-cache directement
+     * (compose command : {@code --notify-keyspace-events Egex}).</p>
+     */
+    @Bean
+    public ConfigureRedisAction configureRedisAction() {
+        return ConfigureRedisAction.NO_OP;
     }
 }

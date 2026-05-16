@@ -40,6 +40,7 @@ services:
         --save ""
         --appendonly no
         --tcp-keepalive 60
+        --notify-keyspace-events Egex
         --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
     deploy:
       resources:

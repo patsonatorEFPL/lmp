@@ -18,7 +18,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
+import org.springframework.session.security.SpringSessionBackedSessionRegistry;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -137,7 +139,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiFilterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
@@ -256,7 +258,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
-                        .sessionRegistry(sessionRegistry()));
+                        .sessionRegistry(sessionRegistry));
 
         return http.build();
     }
@@ -267,7 +269,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain backendFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain backendFilterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         // Routes publiques (redirections vers Angular + endpoints backend)
@@ -401,7 +403,7 @@ public class SecurityConfig {
                         .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
-                        .sessionRegistry(sessionRegistry()))
+                        .sessionRegistry(sessionRegistry))
 
                 // CSRF aligné avec chain 1 : cookie-based + plain token (Angular lit
                 // XSRF-TOKEN cookie et envoie X-XSRF-TOKEN header).
@@ -483,9 +485,16 @@ public class SecurityConfig {
     // Définir le bean masque cette discovery (WARN
     // InitializeUserDetailsBeanManagerConfigurer au boot).
 
+    /**
+     * SessionRegistry backed by Spring Session Redis — stateless multi-replica.
+     * Requires {@link com.lmp.shared.config.SessionConfig} avec
+     * {@code @EnableRedisIndexedHttpSession} pour exposer
+     * {@link FindByIndexNameSessionRepository}.
+     */
     @Bean
-    public SessionRegistry sessionRegistry() {
-        return new SessionRegistryImpl();
+    public SessionRegistry sessionRegistry(
+            FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
+        return new SpringSessionBackedSessionRegistry<>(sessionRepository);
     }
 
     /**
