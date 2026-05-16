@@ -18,9 +18,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
-import org.springframework.session.security.SpringSessionBackedSessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
@@ -68,10 +66,6 @@ public class SecurityConfig {
 
     @Autowired(required = false)
     private CustomOidcUserService customOidcUserService;
-
-    /** Injected reference au bean SessionRegistry (Spring Session backed pour stateless multi-replica). */
-    @Autowired
-    private SessionRegistry sessionRegistryRef;
 
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000,http://localhost:8080}")
     private String corsAllowedOrigins;
@@ -262,7 +256,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
-                        .sessionRegistry(sessionRegistryRef));
+                        .sessionRegistry(sessionRegistry()));
 
         return http.build();
     }
@@ -407,7 +401,7 @@ public class SecurityConfig {
                         .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
-                        .sessionRegistry(sessionRegistryRef))
+                        .sessionRegistry(sessionRegistry()))
 
                 // CSRF aligné avec chain 1 : cookie-based + plain token (Angular lit
                 // XSRF-TOKEN cookie et envoie X-XSRF-TOKEN header).
@@ -489,24 +483,9 @@ public class SecurityConfig {
     // Définir le bean masque cette discovery (WARN
     // InitializeUserDetailsBeanManagerConfigurer au boot).
 
-    /**
-     * SessionRegistry backed by Spring Session Redis — stateless multi-replica.
-     *
-     * <p>Avant : {@code SessionRegistryImpl()} in-memory JVM. Le cap
-     * {@code MaximumSessions=2 per user} était par-instance ; un utilisateur
-     * pouvait avoir {@code 2×N replicas} sessions actives totales en LB
-     * round-robin. ConcurrentSessionFilter ne voyait pas les sessions
-     * des autres instances.</p>
-     *
-     * <p>Avec {@link SpringSessionBackedSessionRegistry}, la liste des sessions
-     * actives est lue depuis le repository Spring Session Redis ({@code @EnableRedisHttpSession}
-     * via {@link com.lmp.shared.config.SessionConfig}) → vue cohérente cross-replica
-     * + cap MaximumSessions respecté globalement.</p>
-     */
     @Bean
-    public SessionRegistry sessionRegistry(
-            FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
-        return new SpringSessionBackedSessionRegistry<>(sessionRepository);
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
     }
 
     /**
