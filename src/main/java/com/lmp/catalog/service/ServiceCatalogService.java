@@ -63,7 +63,10 @@ public class ServiceCatalogService {
     /**
      * Full-text search on active services via V42 tsvector index. Caller
      * trims/validates the query and clamps {@code max}.
+     * Cached by query+max (Caffeine TTL 5min) — bench 5k VU sustained 2026-05-16
+     * a montré Hikari pool 50 saturé par 2250+ concurrent FTS sous load.
      */
+    @Cacheable(value = "catalog-search-active", key = "#query + '-' + #max")
     public List<com.lmp.catalog.domain.Service> searchActive(String query, int max) {
         return serviceRepository.searchActive(query, max);
     }
@@ -80,7 +83,8 @@ public class ServiceCatalogService {
      * Invalide les caches du catalogue. À appeler depuis les endpoints admin
      * qui modifient les services / offres / catégories.
      */
-    @CacheEvict(value = {"catalog-active-services", "catalog-featured-services", "catalog-categories"}, allEntries = true)
+    @CacheEvict(value = {"catalog-active-services", "catalog-featured-services", "catalog-categories",
+            "catalog-search-active", "catalog-service-by-slug"}, allEntries = true)
     public void evictCatalogCaches() {
         logger.info("Catalog caches evicted");
     }
@@ -93,8 +97,9 @@ public class ServiceCatalogService {
     }
 
     /**
-     * Retourne un service par son slug.
+     * Retourne un service par son slug. Cached by slug.
      */
+    @Cacheable(value = "catalog-service-by-slug", key = "#slug")
     public Optional<com.lmp.catalog.domain.Service> getServiceBySlug(String slug) {
         return serviceRepository.findBySlug(slug);
     }

@@ -4,6 +4,8 @@ import com.lmp.content.domain.BlogPost;
 import com.lmp.content.dto.BlogSearchResult;
 import com.lmp.content.persistence.BlogPostRepository;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class BlogPostService {
         return repository.findAllByPublishedTrueOrderByPublishedAtDesc(pageable);
     }
 
+    @Cacheable(value = "blog-by-slug", key = "#slug")
     public Optional<BlogPost> findBySlug(String slug) {
         return repository.findBySlugAndPublishedTrue(slug);
     }
@@ -35,6 +38,7 @@ public class BlogPostService {
      * Full-text search across published posts. Caller is responsible for
      * trimming/validating the query string and clamping {@code max}.
      */
+    @Cacheable(value = "blog-search", key = "#query + '-' + #max")
     public List<BlogPost> searchPublished(String query, int max) {
         return repository.searchPublished(query, max);
     }
@@ -44,7 +48,10 @@ public class BlogPostService {
      * tsvector query returns nothing we run a similarity() probe on titles
      * and surface the top {@code suggestionsMax} closest matches so the
      * client can offer them as one-click corrections.
+     * Cached pour court-circuiter Hibernate sous load (bench 5k VU mix réaliste
+     * 2026-05-16 a montré 58% fails par Hikari pool saturation sur FTS queries).
      */
+    @Cacheable(value = "blog-search-with-fallback", key = "#query + '-' + #max + '-' + #suggestionsMax")
     public BlogSearchResult searchPublishedWithFallback(String query, int max, int suggestionsMax) {
         List<BlogPost> hits = repository.searchPublished(query, max);
         if (!hits.isEmpty()) {
@@ -52,6 +59,11 @@ public class BlogPostService {
         }
         List<String> suggestions = repository.suggestSimilarTitles(query, suggestionsMax);
         return BlogSearchResult.empty(suggestions);
+    }
+
+    @CacheEvict(value = {"blog-by-slug", "blog-search", "blog-search-with-fallback"}, allEntries = true)
+    public void evictBlogCaches() {
+        // Called after create/update/delete to invalidate caches.
     }
 
     @Transactional
