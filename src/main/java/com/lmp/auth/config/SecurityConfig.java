@@ -112,16 +112,11 @@ public class SecurityConfig {
     @Order(0)
     public SecurityFilterChain healthBypassFilterChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/actuator/health/**", "/actuator/health", "/api/v1/config",
-                        "/api/v1/auth/forgot-password")
-                // CORS PRÉSERVÉ : SPA Angular cross-subdomain (auth.* vs dev.* vs apex)
-                // doit lire les responses. withDefaults() utilise corsConfigurationSource().
-                //
-                // ATTENTION /api/v1/auth/forgot-password : CSRF désactivé sur ce path
-                // (bypass chain skip CSRF). Risque : attaquant POST cross-origin sans
-                // token → email reset envoyé à un utilisateur sans son consentement
-                // (spam reset email, pas d'auth bypass). Mitigé par rate-limit IP
-                // côté forgot-password handler (à valider).
+                .securityMatcher("/actuator/health/**", "/actuator/health", "/api/v1/config")
+                // CORS PRÉSERVÉ pour /api/v1/config : SPA Angular cross-subdomain
+                // (auth.* vs dev.* vs apex) doit lire la response avec headers
+                // Access-Control-Allow-Origin. withDefaults() utilise le bean
+                // corsConfigurationSource() défini ligne 429.
                 .cors(Customizer.withDefaults())
                 .csrf(c -> c.disable())
                 .sessionManagement(s -> s.disable())
