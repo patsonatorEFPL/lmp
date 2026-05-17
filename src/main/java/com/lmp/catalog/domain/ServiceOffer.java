@@ -1,6 +1,9 @@
 package com.lmp.catalog.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -9,6 +12,8 @@ import com.lmp.catalog.domain.DurationType;
 
 @Entity
 @Table(name = "service_offers")
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class ServiceOffer {
 
     @Id

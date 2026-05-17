@@ -1,6 +1,9 @@
 package com.lmp.content.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -9,6 +12,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "blog_posts")
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class BlogPost {
 
     @Id

@@ -168,6 +168,18 @@
 		<artifactId>caffeine</artifactId>
 	</dependency>
 
+	<!-- Caffeine JCache provider — backend pour Hibernate 2L cache. -->
+	<dependency>
+		<groupId>com.github.ben-manes.caffeine</groupId>
+		<artifactId>jcache</artifactId>
+	</dependency>
+
+	<!-- Hibernate JCache module — bridge entity 2L cache vers JCache provider (Caffeine). -->
+	<dependency>
+		<groupId>org.hibernate.orm</groupId>
+		<artifactId>hibernate-jcache</artifactId>
+	</dependency>
+
 		<!-- Spring Boot Cache Starter (SB 4 requires explicit dep for cache auto-config) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
