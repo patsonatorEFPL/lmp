@@ -43,17 +43,19 @@ public class ServiceRestController {
     private final ServiceCatalogService catalogService;
     private final RegionalPricingService regionalPricingService;
     private final ObjectMapper objectMapper;
+    private final FeaturedHotCache featuredHotCache;
 
-    private final Map<String, PrecompressedResponse> featuredCache = new ConcurrentHashMap<>();
     private final Map<String, PrecompressedResponse> searchCache = new ConcurrentHashMap<>();
     private final Map<String, PrecompressedResponse> slugCache = new ConcurrentHashMap<>();
 
     public ServiceRestController(ServiceCatalogService catalogService,
             RegionalPricingService regionalPricingService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            FeaturedHotCache featuredHotCache) {
         this.catalogService = catalogService;
         this.regionalPricingService = regionalPricingService;
         this.objectMapper = objectMapper;
+        this.featuredHotCache = featuredHotCache;
     }
 
     private static final CacheControl REGIONAL_CACHE = CacheControl
@@ -78,7 +80,7 @@ public class ServiceRestController {
     @Operation(summary = "Services en vedette", description = "Retourne les services mis en avant")
     public ResponseEntity<byte[]> getFeaturedServices(HttpServletRequest httpRequest) throws IOException {
         String country = fastCountry(httpRequest);
-        PrecompressedResponse r = cachedOrBuild(featuredCache, country, () -> {
+        PrecompressedResponse r = cachedOrBuild(featuredHotCache.asMap(), country, () -> {
             var ctx = regionalPricingService.contextForCountry(country);
             List<ServiceResponse> services = catalogService.getFeaturedServices().stream()
                     .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
