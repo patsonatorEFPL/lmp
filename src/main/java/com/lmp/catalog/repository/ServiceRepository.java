@@ -3,8 +3,10 @@ package com.lmp.catalog.repository;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -23,6 +25,10 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
            "LEFT JOIN FETCH s.offers " +
            "WHERE s.active = true " +
            "ORDER BY s.displayOrder")
+    @QueryHints({
+            @QueryHint(name = "org.hibernate.readOnly", value = "true"),
+            @QueryHint(name = "org.hibernate.fetchSize", value = "50")
+    })
     List<Service> findByActiveTrue();
 
     @Query("SELECT s FROM Service s LEFT JOIN FETCH s.offers WHERE s.id = :id")
@@ -34,6 +40,10 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
            "LEFT JOIN FETCH s.offers " +
            "WHERE s.featured = true AND s.active = true " +
            "ORDER BY s.displayOrder")
+    @QueryHints({
+            @QueryHint(name = "org.hibernate.readOnly", value = "true"),
+            @QueryHint(name = "org.hibernate.fetchSize", value = "50")
+    })
     List<Service> findByFeaturedTrueAndActiveTrue();
 
     Optional<Service> findByTitle(String title);
@@ -43,6 +53,7 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
            "LEFT JOIN FETCH s.benefits " +
            "LEFT JOIN FETCH s.offers " +
            "WHERE s.slug = :slug")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     Optional<Service> findBySlug(@Param("slug") String slug);
 
     List<Service> findByCategoryIdAndActiveTrue(UUID categoryId);
@@ -69,5 +80,9 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
                       display_order ASC
              LIMIT :max
             """, nativeQuery = true)
+    @QueryHints({
+            @QueryHint(name = "org.hibernate.readOnly", value = "true"),
+            @QueryHint(name = "org.hibernate.fetchSize", value = "50")
+    })
     List<Service> searchActive(@Param("query") String query, @Param("max") int max);
 }

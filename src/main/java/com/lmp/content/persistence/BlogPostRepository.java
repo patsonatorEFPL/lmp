@@ -2,10 +2,12 @@ package com.lmp.content.persistence;
 
 import com.lmp.content.domain.BlogPost;
 
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +18,7 @@ import java.util.UUID;
 @Repository
 public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
 
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
     Optional<BlogPost> findBySlugAndPublishedTrue(String slug);
 
     Page<BlogPost> findAllByPublishedTrueOrderByPublishedAtDesc(Pageable pageable);
@@ -39,6 +42,10 @@ public interface BlogPostRepository extends JpaRepository<BlogPost, UUID> {
                       published_at DESC
              LIMIT :max
             """, nativeQuery = true)
+    @QueryHints({
+            @QueryHint(name = "org.hibernate.readOnly", value = "true"),
+            @QueryHint(name = "org.hibernate.fetchSize", value = "50")
+    })
     List<BlogPost> searchPublished(@Param("query") String query, @Param("max") int max);
 
     /**

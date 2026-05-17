@@ -114,7 +114,14 @@ public class SecurityConfig {
     @Order(0)
     public SecurityFilterChain healthBypassFilterChain(HttpSecurity http) throws Exception {
         return http
-                .securityMatcher("/actuator/health/**", "/actuator/health", "/api/v1/config")
+                .securityMatcher(
+                        "/actuator/health/**", "/actuator/health",
+                        "/api/v1/config",
+                        // Static public endpoints (no auth concern, GET only)
+                        "/robots.txt",
+                        "/sitemap.xml",
+                        "/favicon.ico",
+                        "/googleb72d4c095922c4a8.html")
                 // CORS PRÉSERVÉ pour /api/v1/config : SPA Angular cross-subdomain
                 // (auth.* vs dev.* vs apex) doit lire la response avec headers
                 // Access-Control-Allow-Origin. withDefaults() utilise le bean
