@@ -4,9 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmp.content.domain.BlogPost;
 import com.lmp.content.service.BlogPostService;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.web.PrecompressedResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,12 +28,11 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * API REST publique pour le blog.
- * GET endpoints sont publics (pas d'authentification).
- * POST/PUT/DELETE sont réservés aux admins.
+ * API REST publique pour le blog. GET endpoints publics, POST/PUT/DELETE admin.
  *
- * <p><b>Optim 2026-05-16:</b> response /search pre-sérialisée byte[] cached
- * par (query+limit). TTL 5 min. Évite Jackson serialize per request sous load.</p>
+ * <p><b>Optim 2026-05-17:</b> response cached en {@link PrecompressedResponse}
+ * (raw + gzip pre-compressed). Skip Jackson serialize + gzip compress per
+ * request sur cache hit.</p>
  */
 @RestController
 @RequestMapping("/api/v1/blog")
@@ -42,8 +44,8 @@ public class BlogPostController {
     private final BlogPostService blogPostService;
     private final ObjectMapper objectMapper;
 
-    private final Map<String, CachedResponse> searchCache = new ConcurrentHashMap<>();
-    private final Map<String, CachedResponse> slugCache = new ConcurrentHashMap<>();
+    private final Map<String, PrecompressedResponse> searchCache = new ConcurrentHashMap<>();
+    private final Map<String, PrecompressedResponse> slugCache = new ConcurrentHashMap<>();
 
     public BlogPostController(BlogPostService blogPostService, ObjectMapper objectMapper) {
         this.blogPostService = blogPostService;
@@ -66,32 +68,28 @@ public class BlogPostController {
 
     @GetMapping("/{slug}")
     @Operation(summary = "Détail d'un article", description = "Retourne un article par son slug")
-    public ResponseEntity<byte[]> getBySlug(@PathVariable String slug) throws IOException {
-        CachedResponse c = slugCache.get(slug);
+    public ResponseEntity<byte[]> getBySlug(@PathVariable String slug, HttpServletRequest httpRequest) throws IOException {
+        PrecompressedResponse c = slugCache.get(slug);
         Instant now = Instant.now();
         if (c != null && now.isBefore(c.expiresAt())) {
-            return ResponseEntity.ok()
-                    .cacheControl(PUBLIC_CACHE)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(c.bytes());
+            return serve(httpRequest, c);
         }
         var postOpt = blogPostService.findBySlug(slug);
         if (postOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         byte[] body = objectMapper.writeValueAsBytes(ApiResponse.ok(postOpt.get()));
-        slugCache.put(slug, new CachedResponse(body, now.plus(CACHE_TTL)));
-        return ResponseEntity.ok()
-                .cacheControl(PUBLIC_CACHE)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body);
+        PrecompressedResponse r = PrecompressedResponse.build(body, now.plus(CACHE_TTL));
+        slugCache.put(slug, r);
+        return serve(httpRequest, r);
     }
 
     @GetMapping("/search")
     @Operation(summary = "Recherche full-text")
     public ResponseEntity<byte[]> search(
             @RequestParam(value = "q", required = false) String query,
-            @RequestParam(value = "limit", defaultValue = "20") int limit) throws IOException {
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
+            HttpServletRequest httpRequest) throws IOException {
         if (query == null || query.isBlank()) {
             byte[] empty = objectMapper.writeValueAsBytes(
                     ApiResponse.ok(com.lmp.content.dto.BlogSearchResult.of(java.util.List.of())));
@@ -102,21 +100,33 @@ public class BlogPostController {
         }
         int safeLimit = Math.min(Math.max(limit, 1), 50);
         String key = query.trim() + "|" + safeLimit;
-        CachedResponse c = searchCache.get(key);
+        PrecompressedResponse c = searchCache.get(key);
         Instant now = Instant.now();
         if (c != null && now.isBefore(c.expiresAt())) {
-            return ResponseEntity.ok()
-                    .cacheControl(PUBLIC_CACHE)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(c.bytes());
+            return serve(httpRequest, c);
         }
         var result = blogPostService.searchPublishedWithFallback(query.trim(), safeLimit, 5);
         byte[] body = objectMapper.writeValueAsBytes(ApiResponse.ok(result));
-        searchCache.put(key, new CachedResponse(body, now.plus(CACHE_TTL)));
-        return ResponseEntity.ok()
+        PrecompressedResponse r = PrecompressedResponse.build(body, now.plus(CACHE_TTL));
+        searchCache.put(key, r);
+        return serve(httpRequest, r);
+    }
+
+    private ResponseEntity<byte[]> serve(HttpServletRequest req, PrecompressedResponse r) {
+        boolean gz = false;
+        String ae = req.getHeader("Accept-Encoding");
+        if (ae != null && ae.contains("gzip")) {
+            gz = true;
+        }
+        ResponseEntity.BodyBuilder b = ResponseEntity.ok()
                 .cacheControl(PUBLIC_CACHE)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body);
+                .header("Vary", "Accept-Encoding")
+                .contentType(MediaType.APPLICATION_JSON);
+        if (gz) {
+            b.header("Content-Encoding", "gzip");
+            return b.body(r.gzip());
+        }
+        return b.body(r.raw());
     }
 
     @PostMapping
@@ -148,6 +158,4 @@ public class BlogPostController {
         slugCache.clear();
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
-
-    private record CachedResponse(byte[] bytes, Instant expiresAt) {}
 }

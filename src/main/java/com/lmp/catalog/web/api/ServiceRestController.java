@@ -5,6 +5,7 @@ import com.lmp.catalog.service.ServiceCatalogService;
 import com.lmp.shared.dto.ApiResponse;
 import com.lmp.catalog.dto.ServiceResponse;
 import com.lmp.shared.pricing.RegionalPricingService;
+import com.lmp.shared.web.PrecompressedResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,12 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * API REST du catalogue de services.
- * Endpoints publics — pas d'authentification requise.
+ * API REST du catalogue de services. Endpoints publics — pas d'authentification.
  *
- * <p><b>Optim 2026-05-16:</b> response pre-sérialisée en byte[] cached par
- * (path, country code) — bench 5k VU mix réaliste a montré endpoints
- * featured/search comme hot path. TTL 5 min aligné Cache-Control.</p>
+ * <p><b>Optim 2026-05-17:</b> response cached en {@link PrecompressedResponse}
+ * (raw + gzip pre-compressed at build time). Sub-50µs serve sur cache hit.
+ * Skip Jackson serialize ET gzip compress per-request.</p>
  */
 @RestController
 @RequestMapping("/api/v1/services")
@@ -44,12 +44,9 @@ public class ServiceRestController {
     private final RegionalPricingService regionalPricingService;
     private final ObjectMapper objectMapper;
 
-    /** Cache par-region des byte[] response pour /featured. Key = countryCode. */
-    private final Map<String, CachedResponse> featuredCache = new ConcurrentHashMap<>();
-    /** Cache par (query+limit+countryCode) des byte[] response pour /search. */
-    private final Map<String, CachedResponse> searchCache = new ConcurrentHashMap<>();
-    /** Cache par (slug+countryCode) des byte[] response pour /{slug}. */
-    private final Map<String, CachedResponse> slugCache = new ConcurrentHashMap<>();
+    private final Map<String, PrecompressedResponse> featuredCache = new ConcurrentHashMap<>();
+    private final Map<String, PrecompressedResponse> searchCache = new ConcurrentHashMap<>();
+    private final Map<String, PrecompressedResponse> slugCache = new ConcurrentHashMap<>();
 
     public ServiceRestController(ServiceCatalogService catalogService,
             RegionalPricingService regionalPricingService,
@@ -82,16 +79,13 @@ public class ServiceRestController {
     public ResponseEntity<byte[]> getFeaturedServices(HttpServletRequest httpRequest) throws IOException {
         var ctx = regionalPricingService.resolve(httpRequest);
         String country = ctx.countryCode();
-        byte[] body = cachedOrBuild(featuredCache, country, () -> {
+        PrecompressedResponse r = cachedOrBuild(featuredCache, country, () -> {
             List<ServiceResponse> services = catalogService.getFeaturedServices().stream()
                     .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
                     .collect(Collectors.toList());
             return objectMapper.writeValueAsBytes(ApiResponse.ok(services));
         });
-        return ResponseEntity.ok()
-                .cacheControl(REGIONAL_CACHE)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body);
+        return serve(httpRequest, r);
     }
 
     @GetMapping("/search")
@@ -110,16 +104,13 @@ public class ServiceRestController {
         int safeLimit = Math.min(Math.max(limit, 1), 50);
         var ctx = regionalPricingService.resolve(httpRequest);
         String key = query.trim() + "|" + safeLimit + "|" + ctx.countryCode();
-        byte[] body = cachedOrBuild(searchCache, key, () -> {
+        PrecompressedResponse r = cachedOrBuild(searchCache, key, () -> {
             List<ServiceResponse> results = catalogService.searchActive(query.trim(), safeLimit).stream()
                     .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
                     .collect(Collectors.toList());
             return objectMapper.writeValueAsBytes(ApiResponse.ok(results));
         });
-        return ResponseEntity.ok()
-                .cacheControl(REGIONAL_CACHE)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body);
+        return serve(httpRequest, r);
     }
 
     @GetMapping("/{slug}")
@@ -129,15 +120,10 @@ public class ServiceRestController {
             HttpServletRequest httpRequest) throws IOException {
         var ctx = regionalPricingService.resolve(httpRequest);
         String key = slug + "|" + ctx.countryCode();
-        // Si présent en cache → 200 direct ; sinon build (404 possible)
-        CachedResponse c = slugCache.get(key);
+        PrecompressedResponse c = slugCache.get(key);
         Instant now = Instant.now();
         if (c != null && now.isBefore(c.expiresAt())) {
-            return ResponseEntity.ok()
-                    .cacheControl(REGIONAL_CACHE)
-                    .header("Vary", VARY_GEO)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(c.bytes());
+            return serveWithVary(httpRequest, c);
         }
         var serviceOpt = catalogService.getServiceBySlug(slug);
         if (serviceOpt.isEmpty()) {
@@ -145,34 +131,56 @@ public class ServiceRestController {
         }
         byte[] body = objectMapper.writeValueAsBytes(
                 ApiResponse.ok(ServiceResponse.from(serviceOpt.get(), ctx, regionalPricingService)));
-        slugCache.put(key, new CachedResponse(body, now.plus(CACHE_TTL)));
-        return ResponseEntity.ok()
-                .cacheControl(REGIONAL_CACHE)
-                .header("Vary", VARY_GEO)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body);
+        PrecompressedResponse r = PrecompressedResponse.build(body, now.plus(CACHE_TTL));
+        slugCache.put(key, r);
+        return serveWithVary(httpRequest, r);
     }
 
-    /**
-     * Cache lookup or rebuild. Race bénigne sur miss simultané = 2× compute,
-     * 1× retained (last write wins). Pas de lock pour rester lock-free.
-     */
-    private byte[] cachedOrBuild(Map<String, CachedResponse> cache, String key,
-                                  ByteSupplier supplier) throws IOException {
-        CachedResponse c = cache.get(key);
+    private ResponseEntity<byte[]> serve(HttpServletRequest req, PrecompressedResponse r) {
+        boolean gz = acceptsGzip(req);
+        ResponseEntity.BodyBuilder b = ResponseEntity.ok()
+                .cacheControl(REGIONAL_CACHE)
+                .contentType(MediaType.APPLICATION_JSON);
+        if (gz) {
+            b.header("Content-Encoding", "gzip");
+            return b.body(r.gzip());
+        }
+        return b.body(r.raw());
+    }
+
+    private ResponseEntity<byte[]> serveWithVary(HttpServletRequest req, PrecompressedResponse r) {
+        boolean gz = acceptsGzip(req);
+        ResponseEntity.BodyBuilder b = ResponseEntity.ok()
+                .cacheControl(REGIONAL_CACHE)
+                .header("Vary", VARY_GEO + ", Accept-Encoding")
+                .contentType(MediaType.APPLICATION_JSON);
+        if (gz) {
+            b.header("Content-Encoding", "gzip");
+            return b.body(r.gzip());
+        }
+        return b.body(r.raw());
+    }
+
+    private static boolean acceptsGzip(HttpServletRequest req) {
+        String ae = req.getHeader("Accept-Encoding");
+        return ae != null && ae.contains("gzip");
+    }
+
+    private PrecompressedResponse cachedOrBuild(Map<String, PrecompressedResponse> cache, String key,
+                                                  ByteSupplier supplier) throws IOException {
+        PrecompressedResponse c = cache.get(key);
         Instant now = Instant.now();
         if (c != null && now.isBefore(c.expiresAt())) {
-            return c.bytes();
+            return c;
         }
         byte[] bytes = supplier.get();
-        cache.put(key, new CachedResponse(bytes, now.plus(CACHE_TTL)));
-        return bytes;
+        PrecompressedResponse r = PrecompressedResponse.build(bytes, now.plus(CACHE_TTL));
+        cache.put(key, r);
+        return r;
     }
 
     @FunctionalInterface
     private interface ByteSupplier {
         byte[] get() throws IOException;
     }
-
-    private record CachedResponse(byte[] bytes, Instant expiresAt) {}
 }
