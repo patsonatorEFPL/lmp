@@ -117,6 +117,13 @@ public class SecurityConfig {
                 .securityMatcher(
                         "/actuator/health/**", "/actuator/health",
                         "/api/v1/config",
+                        // Public read API — controllers ServiceRestController + BlogPostController
+                        // ne définissent QUE des GET sur ces patterns publics. Tout admin POST/PUT/DELETE
+                        // est sur des paths distincts (POST/PUT/DELETE sur /api/v1/blog matchent par
+                        // contre — voir note ci-dessous). Iter32 bench 10k VU isolé montre 14-16% fails
+                        // dans full apiFilterChain (15 filters), vs 3% dans cette chain bypass (3 filters).
+                        "/api/v1/services/**",
+                        "/api/v1/blog/search",
                         // Static public endpoints (no auth concern, GET only)
                         "/robots.txt",
                         "/sitemap.xml",
