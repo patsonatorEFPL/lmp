@@ -114,9 +114,6 @@ ENTRYPOINT ["java", \
     "-Xss512k", \
     "-XX:+UseG1GC", \
     "-XX:MaxGCPauseMillis=100", \
-    "-XX:G1HeapRegionSize=8m", \
-    "-XX:InitiatingHeapOccupancyPercent=70", \
-    "-XX:G1ReservePercent=15", \
     "-XX:+EnableDynamicAgentLoading", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=64m", \
