@@ -113,6 +113,14 @@ public class BlogPostController {
     }
 
     private ResponseEntity<byte[]> serve(HttpServletRequest req, PrecompressedResponse r) {
+        String ifNoneMatch = req.getHeader("If-None-Match");
+        if (ifNoneMatch != null && ifNoneMatch.contains(r.etag())) {
+            return ResponseEntity.status(304)
+                    .cacheControl(PUBLIC_CACHE)
+                    .header("ETag", r.etag())
+                    .header("Vary", "Accept-Encoding")
+                    .build();
+        }
         boolean gz = false;
         String ae = req.getHeader("Accept-Encoding");
         if (ae != null && ae.contains("gzip")) {
@@ -120,6 +128,7 @@ public class BlogPostController {
         }
         ResponseEntity.BodyBuilder b = ResponseEntity.ok()
                 .cacheControl(PUBLIC_CACHE)
+                .header("ETag", r.etag())
                 .header("Vary", "Accept-Encoding")
                 .contentType(MediaType.APPLICATION_JSON);
         if (gz) {
