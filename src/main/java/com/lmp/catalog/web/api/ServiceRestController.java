@@ -137,34 +137,17 @@ public class ServiceRestController {
     }
 
     private ResponseEntity<byte[]> serve(HttpServletRequest req, PrecompressedResponse r) {
-        return serveCommon(req, r, "Accept-Encoding");
+        // ETag revalidation : 304 sans body si If-None-Match match
+        String ifNoneMatch = req.getHeader("If-None-Match");
+        if (ifNoneMatch != null && ifNoneMatch.contains(r.etag())) {
+            return r.notModifiedEntity();
+        }
+        return acceptsGzip(req) ? r.gzipEntity() : r.rawEntity();
     }
 
     private ResponseEntity<byte[]> serveWithVary(HttpServletRequest req, PrecompressedResponse r) {
-        return serveCommon(req, r, VARY_GEO + ", Accept-Encoding");
-    }
-
-    private ResponseEntity<byte[]> serveCommon(HttpServletRequest req, PrecompressedResponse r, String varyHeader) {
-        // ETag revalidation : si client envoie If-None-Match qui match → 304 sans body
-        String ifNoneMatch = req.getHeader("If-None-Match");
-        if (ifNoneMatch != null && ifNoneMatch.contains(r.etag())) {
-            return ResponseEntity.status(304)
-                    .cacheControl(REGIONAL_CACHE)
-                    .header("ETag", r.etag())
-                    .header("Vary", varyHeader)
-                    .build();
-        }
-        boolean gz = acceptsGzip(req);
-        ResponseEntity.BodyBuilder b = ResponseEntity.ok()
-                .cacheControl(REGIONAL_CACHE)
-                .header("ETag", r.etag())
-                .header("Vary", varyHeader)
-                .contentType(MediaType.APPLICATION_JSON);
-        if (gz) {
-            b.header("Content-Encoding", "gzip");
-            return b.body(r.gzip());
-        }
-        return b.body(r.raw());
+        // Same as serve() — pré-built entities already have Vary header per builder
+        return serve(req, r);
     }
 
     private static boolean acceptsGzip(HttpServletRequest req) {

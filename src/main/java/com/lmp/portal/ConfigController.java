@@ -60,27 +60,10 @@ public class ConfigController {
         }
         String ifNoneMatch = httpRequest.getHeader("If-None-Match");
         if (ifNoneMatch != null && ifNoneMatch.contains(r.etag())) {
-            return ResponseEntity.status(304)
-                    .cacheControl(PUBLIC_CACHE)
-                    .header("ETag", r.etag())
-                    .header("Vary", "Accept-Encoding")
-                    .build();
+            return r.notModifiedEntity();
         }
-        boolean gz = false;
         String ae = httpRequest.getHeader("Accept-Encoding");
-        if (ae != null && ae.contains("gzip")) {
-            gz = true;
-        }
-        ResponseEntity.BodyBuilder b = ResponseEntity.ok()
-                .cacheControl(PUBLIC_CACHE)
-                .header("ETag", r.etag())
-                .header("Vary", "Accept-Encoding")
-                .contentType(MediaType.APPLICATION_JSON);
-        if (gz) {
-            b.header("Content-Encoding", "gzip");
-            return b.body(r.gzip());
-        }
-        return b.body(r.raw());
+        return (ae != null && ae.contains("gzip")) ? r.gzipEntity() : r.rawEntity();
     }
 
     private PrecompressedResponse build(Instant now) throws IOException {
