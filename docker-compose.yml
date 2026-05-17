@@ -94,8 +94,13 @@ services:
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
       SERVER_TOMCAT_THREADS_MAX: "500"
       SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
-      SERVER_TOMCAT_ACCEPT_COUNT: "2000"
-      SERVER_TOMCAT_MAX_CONNECTIONS: "10000"
+      # iter22 2026-05-17 : bench 10k VU mix réaliste plafonne 32% fails.
+      # CPU 250%/400% = 62% util (PAS saturé). Hypothèse :
+      # - max-connections=10000 = exactement nombre VU → connexions refusées border
+      # - accept-count=2000 = backlog queue trop court sous burst 10k concurrent
+      # Bump SANS toucher keep-alive (le piège iter5 reverted).
+      SERVER_TOMCAT_ACCEPT_COUNT: "10000"
+      SERVER_TOMCAT_MAX_CONNECTIONS: "30000"
       # Tomcat access log → stdout (Docker captures → Dokploy UI Logs onglet).
       # /dev/stdout symlink + buffered=false pour visibilité immédiate.
       # Pattern combined Apache + duration (%D ms) + user-agent.
