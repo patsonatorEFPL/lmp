@@ -77,9 +77,9 @@ public class ServiceRestController {
     @GetMapping("/featured")
     @Operation(summary = "Services en vedette", description = "Retourne les services mis en avant")
     public ResponseEntity<byte[]> getFeaturedServices(HttpServletRequest httpRequest) throws IOException {
-        var ctx = regionalPricingService.resolve(httpRequest);
-        String country = ctx.countryCode();
+        String country = fastCountry(httpRequest);
         PrecompressedResponse r = cachedOrBuild(featuredCache, country, () -> {
+            var ctx = regionalPricingService.contextForCountry(country);
             List<ServiceResponse> services = catalogService.getFeaturedServices().stream()
                     .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
                     .collect(Collectors.toList());
@@ -102,9 +102,10 @@ public class ServiceRestController {
                     .body(empty);
         }
         int safeLimit = Math.min(Math.max(limit, 1), 50);
-        var ctx = regionalPricingService.resolve(httpRequest);
-        String key = query.trim() + "|" + safeLimit + "|" + ctx.countryCode();
+        String country = fastCountry(httpRequest);
+        String key = query.trim() + "|" + safeLimit + "|" + country;
         PrecompressedResponse r = cachedOrBuild(searchCache, key, () -> {
+            var ctx = regionalPricingService.contextForCountry(country);
             List<ServiceResponse> results = catalogService.searchActive(query.trim(), safeLimit).stream()
                     .map(s -> ServiceResponse.from(s, ctx, regionalPricingService))
                     .collect(Collectors.toList());
@@ -118,8 +119,8 @@ public class ServiceRestController {
     public ResponseEntity<byte[]> getServiceBySlug(
             @PathVariable String slug,
             HttpServletRequest httpRequest) throws IOException {
-        var ctx = regionalPricingService.resolve(httpRequest);
-        String key = slug + "|" + ctx.countryCode();
+        String country = fastCountry(httpRequest);
+        String key = slug + "|" + country;
         PrecompressedResponse c = slugCache.get(key);
         Instant now = Instant.now();
         if (c != null && now.isBefore(c.expiresAt())) {
@@ -129,11 +130,27 @@ public class ServiceRestController {
         if (serviceOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        var ctx = regionalPricingService.contextForCountry(country);
         byte[] body = objectMapper.writeValueAsBytes(
                 ApiResponse.ok(ServiceResponse.from(serviceOpt.get(), ctx, regionalPricingService)));
         PrecompressedResponse r = PrecompressedResponse.build(body, now.plus(CACHE_TTL));
         slugCache.put(key, r);
         return serveWithVary(httpRequest, r);
+    }
+
+    /**
+     * Cache key dérivée en O(1) du header {@code CF-IPCountry} (Cloudflare).
+     * Skip {@link RegionalPricingService#resolve(HttpServletRequest)} qui invoque
+     * {@link com.lmp.shared.geo.GeoCountryLookupService} (Caffeine + fallback HTTPS).
+     * Iter33 bench isolated 10k VU 2026-05-17 : services/featured 17% fails @ med 120ms
+     * vs blog/search 3% fails @ med 49ms — différence = call à resolve() per request.
+     */
+    private static String fastCountry(HttpServletRequest req) {
+        String cf = req.getHeader("CF-IPCountry");
+        if (cf == null || cf.isBlank()) {
+            return "XX";
+        }
+        return cf.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
     private ResponseEntity<byte[]> serve(HttpServletRequest req, PrecompressedResponse r) {
