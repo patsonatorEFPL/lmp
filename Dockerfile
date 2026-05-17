@@ -112,7 +112,8 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
 ENTRYPOINT ["java", \
     "-Xms512m", "-Xmx1536m", \
     "-Xss512k", \
-    "-XX:+UseZGC", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxGCPauseMillis=100", \
     "-XX:+EnableDynamicAgentLoading", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=64m", \
