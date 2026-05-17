@@ -362,6 +362,18 @@
 					     + auto-config Spring chargée au boot, inutile en prod/staging). -->
 					<excludeDevtools>true</excludeDevtools>
 				</configuration>
+				<executions>
+					<!-- Spring Boot 4 AOT processing : génère les bean definitions et
+					     reflection metadata au build → boot plus rapide + moins de reflection
+					     runtime. Pattern Pinterest / VMware Tanzu reference. JVM mode
+					     compatible (pas besoin GraalVM native). -->
+					<execution>
+						<id>process-aot</id>
+						<goals>
+							<goal>process-aot</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
