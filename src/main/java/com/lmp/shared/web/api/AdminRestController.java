@@ -183,17 +183,29 @@ public class AdminRestController {
 
     private Map<String, Object> buildDashboardStats() {
         Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalUsers", userService.count());
-        stats.put("activeUsers", userService.countActiveUsers());
-        stats.put("totalOrders", orderRepository.count());
-        stats.put("totalAppointments", appointmentRepository.count());
 
-        // Nouveaux utilisateurs ce mois
+        // Iter38b : 6 COUNT en 1 SQL UNION ALL — 1 Hikari acquire, 1 plan parse,
+        // 1 round-trip réseau. Avant : 6 .count() séquentiels + 6 tx (même avec
+        // @Transactional readOnly classe-level, Spring Data wrap chaque méthode).
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        stats.put("newUsersThisMonth", userRepository.countByRegistrationDateBetween(startOfMonth, LocalDateTime.now()));
-
-        // Rendez-vous aujourd'hui
-        stats.put("appointmentsToday", appointmentRepository.countByAppointmentDate(LocalDateTime.now()));
+        String countSql = """
+            SELECT 'totalUsers' AS k, COUNT(*) AS v FROM users
+            UNION ALL SELECT 'activeUsers', COUNT(*) FROM users WHERE status = 'ACTIVE'
+            UNION ALL SELECT 'totalOrders', COUNT(*) FROM orders
+            UNION ALL SELECT 'totalAppointments', COUNT(*) FROM appointments
+            UNION ALL SELECT 'newUsersThisMonth', COUNT(*) FROM users WHERE registration_date >= ?
+            UNION ALL SELECT 'appointmentsToday', COUNT(*) FROM appointments WHERE appointment_date::date = CURRENT_DATE
+            """;
+        Map<String, Long> counts = new HashMap<>();
+        for (Map<String, Object> row : jdbcTemplate.queryForList(countSql, startOfMonth)) {
+            counts.put((String) row.get("k"), ((Number) row.get("v")).longValue());
+        }
+        stats.put("totalUsers", counts.getOrDefault("totalUsers", 0L));
+        stats.put("activeUsers", counts.getOrDefault("activeUsers", 0L));
+        stats.put("totalOrders", counts.getOrDefault("totalOrders", 0L));
+        stats.put("totalAppointments", counts.getOrDefault("totalAppointments", 0L));
+        stats.put("newUsersThisMonth", counts.getOrDefault("newUsersThisMonth", 0L));
+        stats.put("appointmentsToday", counts.getOrDefault("appointmentsToday", 0L));
 
         // MRR et répartition récurrent / ponctuel (30 derniers jours)
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);

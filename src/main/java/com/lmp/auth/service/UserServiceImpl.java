@@ -496,9 +496,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public long countActiveUsers() {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
-                .count();
+        return userRepository.countByStatus(UserStatus.ACTIVE);
     }
 
     // Nouvelles méthodes pour l'administration avec pagination
