@@ -62,6 +62,8 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -105,6 +107,17 @@ public class AdminRestController {
     private final JdbcTemplate jdbcTemplate;
     private final SyncProperties syncProperties;
 
+    /**
+     * Cache TTL 30s pour /api/v1/admin/stats. Stats agrégées sur 80k+ rows users + orders,
+     * pas temps-réel critique. Bench iter idle = 1.2s ; sous 10k VU load = 6.3s (8 SQL +
+     * filter chain Spring Security full). Cache volatile + last-write-wins concurrent
+     * (multiple admins refresh = même résultat, race acceptable).
+     */
+    private record StatsCache(Map<String, Object> data, Instant expiresAt) {}
+
+    private static final Duration STATS_CACHE_TTL = Duration.ofSeconds(30);
+    private volatile StatsCache statsCache;
+
     public AdminRestController(UserService userService,
                                UserRepository userRepository,
                                AuthService authService,
@@ -140,6 +153,16 @@ public class AdminRestController {
     @GetMapping("/stats")
     @Operation(summary = "Statistiques dashboard", description = "Retourne les KPIs principaux")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardStats() {
+        StatsCache c = statsCache;
+        Instant now = Instant.now();
+        if (c == null || now.isAfter(c.expiresAt())) {
+            c = new StatsCache(buildDashboardStats(), now.plus(STATS_CACHE_TTL));
+            statsCache = c;
+        }
+        return ResponseEntity.ok(ApiResponse.ok(c.data()));
+    }
+
+    private Map<String, Object> buildDashboardStats() {
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("totalUsers", userService.count());
         stats.put("activeUsers", userService.countActiveUsers());
@@ -211,7 +234,7 @@ public class AdminRestController {
         }
         stats.put("ordersByStatus", orderStats);
 
-        return ResponseEntity.ok(ApiResponse.ok(stats));
+        return stats;
     }
 
     @GetMapping("/users")
