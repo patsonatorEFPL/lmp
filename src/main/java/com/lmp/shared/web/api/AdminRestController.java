@@ -54,6 +54,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -160,6 +161,24 @@ public class AdminRestController {
             statsCache = c;
         }
         return ResponseEntity.ok(ApiResponse.ok(c.data()));
+    }
+
+    /**
+     * Invalide le cache stats sur événements métier qui modifient les KPIs.
+     * TTL 30s sert de safety net pour writes hors event bus (DB sync direct, scripts).
+     * volatile write thread-safe.
+     */
+    @EventListener
+    public void invalidateStatsCacheOnBusinessEvent(LmpBusinessEvent event) {
+        switch (event.type()) {
+            case USER_REGISTERED, USER_VERIFIED, USER_UPDATED, USER_DELETED,
+                 ORDER_CREATED, ORDER_CONFIRMED, ORDER_UPDATED, ORDER_CANCELLED, ORDER_DELETED,
+                 PAYMENT_RECEIVED, PAYMENT_FAILED, REFUND_PROCESSED,
+                 APPOINTMENT_CREATED, APPOINTMENT_CONFIRMED, APPOINTMENT_UPDATED,
+                 APPOINTMENT_CANCELLED, APPOINTMENT_DELETED ->
+                statsCache = null;
+            default -> {}
+        }
     }
 
     private Map<String, Object> buildDashboardStats() {
