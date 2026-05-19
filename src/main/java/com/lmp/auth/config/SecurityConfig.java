@@ -354,16 +354,15 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/**", "/actuator/health").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
 
-                        // Pages d'administration
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-
-                        // Pages utilisateur (redirections vers Angular)
-                        .requestMatchers(
-                                "/dashboard/**",
-                                "/profile/**",
-                                "/orders/**",
-                                "/reviews/**")
-                        .hasAnyRole("USER", "ADMIN")
+                        // Iter41d Bug #5 fix — pages SPA admin + user permitAll() au niveau
+                        // Spring Security : Angular sert le SPA shell + guards client-side
+                        // (adminGuard / authGuard) check rôle via /api/v1/auth/me. Spring
+                        // blocking ces paths cassait nav directe URL post-restart (ERR_TOO_MANY_REDIRECTS).
+                        // Les ENDPOINTS API admin (/api/v1/admin/**) eux restent protégés
+                        // par hasRole('ADMIN') (cf chain apiFilterChain Order(1)).
+                        .requestMatchers("/admin/**", "/dashboard/**", "/profile/**",
+                                "/orders/**", "/reviews/**")
+                        .permitAll()
 
                         // Toutes les autres requêtes nécessitent une authentification
                         .anyRequest().authenticated())
