@@ -68,13 +68,6 @@ public class AdminServiceController {
         this.offerBenefitRepository = offerBenefitRepository;
     }
 
-    // ========== Page principale ==========
-
-    @GetMapping
-    public String servicesPage() {
-        return "redirect:" + frontendUrl + "/admin/services";
-    }
-
     // ========== API Catégories ==========
 
     @PostMapping("/api/categories")

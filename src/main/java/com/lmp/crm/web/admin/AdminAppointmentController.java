@@ -75,43 +75,11 @@ public class AdminAppointmentController {
     }
 
     /**
-     * Redirige vers le frontend Angular pour la gestion des rendez-vous.
-     */
-    @GetMapping
-    public String listAppointments() {
-        return "redirect:" + frontendUrl + "/admin/appointments";
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour les détails d'un rendez-vous.
-     */
-    @GetMapping("/{id}")
-    public String viewAppointment(@PathVariable java.util.UUID id) {
-        return "redirect:" + frontendUrl + "/admin/appointments/" + id;
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour la création d'un rendez-vous.
-     */
-    @GetMapping("/new")
-    public String newAppointmentForm() {
-        return "redirect:" + frontendUrl + "/admin/appointments/new";
-    }
-
-    /**
      * Legacy form submission — redirects to Angular.
      */
     @PostMapping("/save")
     public String saveAppointment() {
         return "redirect:" + frontendUrl + "/admin/appointments";
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour la modification d'un rendez-vous.
-     */
-    @GetMapping("/{id}/edit")
-    public String editAppointmentForm(@PathVariable java.util.UUID id) {
-        return "redirect:" + frontendUrl + "/admin/appointments/" + id + "/edit";
     }
 
     /**

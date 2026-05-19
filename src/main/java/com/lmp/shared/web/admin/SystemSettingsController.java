@@ -40,14 +40,6 @@ public class SystemSettingsController {
     }
 
     /**
-     * Redirige vers le frontend Angular pour les paramètres système.
-     */
-    @GetMapping
-    public String showSettingsPage() {
-        return "redirect:" + frontendUrl + "/admin/settings";
-    }
-
-    /**
      * Legacy form save — redirects to Angular.
      */
     @PostMapping("/save")

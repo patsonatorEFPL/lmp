@@ -83,41 +83,6 @@ public class OrderAdminController {
         this.orderRepository = orderRepository;
     }
 
-    // ========== Pages principales ==========
-
-    /**
-     * Redirige vers le frontend Angular pour la gestion des commandes.
-     */
-    @GetMapping
-    public String ordersPage() {
-        if (isMonolithicMode()) {
-            return "forward:/index.html";
-        }
-        return "redirect:" + frontendUrl + "/admin/orders";
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour les détails d'une commande.
-     */
-    @GetMapping("/{orderId}")
-    public String orderDetailsRedirect(@PathVariable java.util.UUID orderId) {
-        if (isMonolithicMode()) {
-            return "forward:/index.html";
-        }
-        return "redirect:" + frontendUrl + "/admin/orders/" + orderId;
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour les rapports.
-     */
-    @GetMapping("/reports")
-    public String reportsPage() {
-        if (isMonolithicMode()) {
-            return "forward:/index.html";
-        }
-        return "redirect:" + frontendUrl + "/admin/orders/reports";
-    }
-
     // ========== API REST pour recherche et pagination ==========
 
     /**

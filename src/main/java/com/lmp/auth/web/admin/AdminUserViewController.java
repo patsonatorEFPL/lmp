@@ -53,14 +53,6 @@ public class AdminUserViewController {
     }
 
     /**
-     * Redirige vers le frontend Angular pour la gestion des utilisateurs.
-     */
-    @GetMapping
-    public String showUsersPage() {
-        return "redirect:" + frontendUrl + "/admin/users";
-    }
-
-    /**
      * Active un utilisateur
      */
     @PostMapping("/{id}/activate")
