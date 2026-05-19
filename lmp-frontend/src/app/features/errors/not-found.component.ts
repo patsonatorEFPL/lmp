@@ -39,7 +39,7 @@ import { HlmButton } from '@spartan-ng/helm/button';
             Cette page s'est égarée.
           </h2>
           <p class="mx-auto mt-3 max-w-xl text-sm sm:text-base leading-relaxed text-(--muted-foreground)">
-            Le lien est peut-être obsolète, ou l'adresse contient une faute de externalCrm.
+            Le lien est peut-être obsolète, ou l'adresse contient une faute de frappe.
             Voici quelques pistes pour repartir du bon pied.
           </p>
 
