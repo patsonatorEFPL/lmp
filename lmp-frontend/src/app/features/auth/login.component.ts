@@ -301,11 +301,11 @@ export class LoginComponent {
             return;
           }
 
-          // Cross-host navigation après login : on quitte l'host auth pour
-          // retourner vers le site principal (baseUrl). L'host auth ne sert
-          // que les pages d'authentification.
+          // Priorité : return_to query > legacy returnUrl > backend redirectUrl
+          // (rôle-based default /admin pour admin, /dashboard sinon) > /dashboard.
           const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('return_to'))
-                    ?? this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'));
+                    ?? this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'))
+                    ?? this.safeInternalReturnPath(redirectUrl ?? null);
           const target = (back ?? '/dashboard');
           if (typeof window !== 'undefined') {
             window.location.href = this.siteConfig.baseUrl + target;

@@ -118,14 +118,39 @@ export class SiteConfigService {
     return `${this.authBaseUrl}/logout`;
   }
 
-  /** URL de la page login pour utilisation comme {@code href} de bouton. */
+  /**
+   * URL de la page login avec {@code return_to} pré-rempli depuis l'URL courante
+   * du navigateur. Préserve la navigation contextuelle : si l'utilisateur clique
+   * "Se connecter" depuis /blog/article-x, il y retourne après login au lieu
+   * d'atterrir sur le défaut /dashboard.
+   */
   get loginHref(): string {
-    return this.config()?.loginUrl ?? `${this.authBaseUrl}/login`;
+    const base = this.config()?.loginUrl ?? `${this.authBaseUrl}/login`;
+    const current = this.currentReturnPath();
+    return current ? this.appendReturnUrl(base, current) : base;
   }
 
-  /** URL de la page register pour utilisation comme {@code href}. */
+  /** Idem {@link loginHref} mais pour la page register. */
   get registerHref(): string {
-    return this.config()?.registerUrl ?? `${this.authBaseUrl}/register`;
+    const base = this.config()?.registerUrl ?? `${this.authBaseUrl}/register`;
+    const current = this.currentReturnPath();
+    return current ? this.appendReturnUrl(base, current) : base;
+  }
+
+  /**
+   * Retourne le path + query courant si on est dans le browser ET pas déjà
+   * sur une page d'auth (sinon on créerait des return_to en cascade après
+   * un /login → /register par exemple).
+   */
+  private currentReturnPath(): string | null {
+    if (typeof window === 'undefined') return null;
+    const p = window.location.pathname;
+    if (p === '/' || p.startsWith('/login') || p.startsWith('/register')
+        || p.startsWith('/forgot-password') || p.startsWith('/reset-password')
+        || p.startsWith('/accept-invitation') || p.startsWith('/verify-email')) {
+      return null;
+    }
+    return p + window.location.search;
   }
 
   /** URL forgot-password pour utilisation comme {@code href}. */

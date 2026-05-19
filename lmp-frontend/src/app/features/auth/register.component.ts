@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { HlmInput } from '@spartan-ng/helm/input';
@@ -293,8 +293,15 @@ import { switchMap } from 'rxjs';
 export class RegisterComponent {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
   protected readonly siteConfig = inject(SiteConfigService);
+
+  private safeInternalReturnPath(raw: string | null): string | null {
+    if (!raw || !raw.startsWith('/')) return null;
+    if (raw.startsWith('//') || raw.includes('://')) return null;
+    return raw;
+  }
 
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
@@ -396,9 +403,12 @@ export class RegisterComponent {
             country: user.country,
           });
           this.submitting.set(false);
-          // Cross-host : on quitte auth host pour le site principal
+          // Cross-host : on quitte auth host pour le site principal.
+          // Honore return_to query si présent (deep link préservé après register).
+          const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('return_to'))
+                    ?? this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'));
           if (typeof window !== 'undefined') {
-            window.location.href = this.siteConfig.baseUrl + '/dashboard';
+            window.location.href = this.siteConfig.baseUrl + (back ?? '/dashboard');
           }
         },
         error: (err) => {
