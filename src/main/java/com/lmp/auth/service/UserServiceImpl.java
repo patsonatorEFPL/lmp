@@ -113,9 +113,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public List<User> findByStatus(UserStatus status) {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getStatus() == status)
-                .toList();
+        return userRepository.findByStatus(status);
     }
 
     /**

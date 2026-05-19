@@ -48,6 +48,10 @@ public interface ServiceRepository extends JpaRepository<Service, UUID> {
 
     Optional<Service> findByTitle(String title);
 
+    long countByActiveTrue();
+
+    long countByFeaturedTrue();
+
     @Query("SELECT s FROM Service s " +
            "LEFT JOIN FETCH s.category " +
            "LEFT JOIN FETCH s.benefits " +

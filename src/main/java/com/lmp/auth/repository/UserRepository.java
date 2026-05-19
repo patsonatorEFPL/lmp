@@ -23,6 +23,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByResetToken(String resetToken);
     
     Page<User> findByStatus(UserStatus status, Pageable pageable);
+    List<User> findByStatus(UserStatus status);
     Page<User> findByEmailContainingIgnoreCase(String email, Pageable pageable);
     long countByStatus(UserStatus status);
     long countByAccountLocked(Boolean locked);

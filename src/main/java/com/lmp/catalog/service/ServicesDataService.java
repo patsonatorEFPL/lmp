@@ -103,8 +103,7 @@ public class ServicesDataService {
      * Retourne la liste complète des services
      */
     public List<ServiceInfo> getAllServices() {
-        return serviceRepository.findAll().stream()
-                .filter(s -> Boolean.TRUE.equals(s.getActive()))
+        return serviceRepository.findByActiveTrue().stream()
                 .map(this::mapToServiceInfo)
                 .collect(Collectors.toList());
     }
