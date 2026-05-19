@@ -135,7 +135,11 @@ public class AuthRestController {
                 // Restore any saved request (e.g. /oauth2/authorize flow)
                 HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
                 SavedRequest savedRequest = requestCache.getRequest(request, response);
-                String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : "/dashboard";
+                // Default landing page : admin → /admin, autres → /dashboard.
+                // Si une saved request existe (deep link, oauth2 flow), on respecte sa cible.
+                String defaultLanding = user.getRoles().stream()
+                        .anyMatch(r -> "ADMIN".equals(r.getName())) ? "/admin" : "/dashboard";
+                String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : defaultLanding;
                 // Convert absolute URLs to relative so the browser stays on the same origin
                 // (important when served through a reverse proxy / tunnel)
                 try {
