@@ -506,7 +506,9 @@ export class DashboardLayoutComponent implements OnInit {
 
   readonly compteItems = [
     { label: 'Paramètres', route: '/dashboard/settings', icon: Settings, exact: false, badge: null as string | null },
-    { label: 'Parrainer & gagner', route: '/dashboard/referral', icon: Gift, exact: false, badge: null },
+    // Bug #2 fix iter41c : 'Parrainer & gagner' /dashboard/referral retiré
+    // car route Angular pas implémentée → cliquait sur 404. Ré-ajouter quand
+    // feature referral implementée (ReferralComponent + route + backend endpoint).
   ];
 
   ngOnInit(): void {
