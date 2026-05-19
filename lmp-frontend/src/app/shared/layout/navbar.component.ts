@@ -335,24 +335,24 @@ import { GlobalSearchComponent } from '../components/global-search/global-search
                   </div>
 
                   <div class="w-full py-1">
-                    <a
-                      [href]="siteConfig.loginHref"
+                    <button
+                      type="button"
                       role="menuitem"
-                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
-                      (click)="closeAccountMenu()"
+                      class="flex w-full items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="goToLoginPreservingPath()"
                     >
                       <lucide-icon [img]="LogInIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
                       <span>Se connecter</span>
-                    </a>
-                    <a
-                      [href]="siteConfig.registerHref"
+                    </button>
+                    <button
+                      type="button"
                       role="menuitem"
-                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
-                      (click)="closeAccountMenu()"
+                      class="flex w-full items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="goToRegisterPreservingPath()"
                     >
                       <lucide-icon [img]="UserPlusIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
                       <span>Créer un compte</span>
-                    </a>
+                    </button>
                   </div>
 
                   <div class="mx-3 h-px shrink-0 bg-(--border)"></div>
@@ -718,6 +718,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
   logoutFromMenu(): void {
     this.closeAccountMenu();
     this.authService.logout();
+  }
+
+  /**
+   * Capture l'URL courante AU MOMENT DU CLIC (pas au render initial du menu)
+   * pour pré-remplir return_to. Évite le bug où loginHref/registerHref bindés
+   * en [href] étaient évalués trop tôt avec une URL obsolète.
+   */
+  goToLoginPreservingPath(): void {
+    this.closeAccountMenu();
+    if (typeof window === 'undefined') return;
+    this.siteConfig.goToLogin(window.location.pathname + window.location.search);
+  }
+
+  goToRegisterPreservingPath(): void {
+    this.closeAccountMenu();
+    if (typeof window === 'undefined') return;
+    this.siteConfig.goToRegister(window.location.pathname + window.location.search);
   }
 
   @HostListener('document:click', ['$event'])
