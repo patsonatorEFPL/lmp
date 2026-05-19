@@ -41,11 +41,6 @@ import {
 } from '../../core/services/admin.service';
 import { AdminSseService } from '../../core/services/admin-sse.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
-import { injectQueryClient } from '@tanstack/angular-query-experimental';
-import {
-  injectAdminStatsQuery,
-  ADMIN_STATS_QUERY_KEY,
-} from '../../core/queries/admin-stats.query';
 import { environment } from '../../../environments/environment';
 import { StatCardComponent } from '../../shared/ui/stat-card.component';
 import { QuickActionComponent } from '../../shared/ui/quick-action.component';
@@ -364,12 +359,6 @@ export class AdminDashboardComponent implements OnInit {
   private readonly visiblePoll = inject(VisiblePollService);
   private readonly http = inject(HttpClient);
 
-  // Iter40b — /admin/stats migré vers TanStack Query (cache global cross-component,
-  // dedup, stale-while-revalidate). Le reste (catalog/users/topServices) reste
-  // dans dashboardResource pour migration incrémentale + mesure ROI isolée.
-  readonly statsQuery = injectAdminStatsQuery();
-  private readonly queryClient = injectQueryClient();
-
   constructor() {
     effect(() => {
       const orders = this.adminSse.badgeOrders();
@@ -377,10 +366,7 @@ export class AdminDashboardComponent implements OnInit {
       const appts = this.adminSse.badgeAppointments();
       if (orders > 0 || users > 0 || appts > 0) {
         if (isPlatformBrowser(this.platformId)) {
-          untracked(() => {
-            this.dashboardResource.reload();
-            this.queryClient.invalidateQueries({ queryKey: ADMIN_STATS_QUERY_KEY });
-          });
+          untracked(() => this.dashboardResource.reload());
         }
       }
     });
@@ -392,13 +378,13 @@ export class AdminDashboardComponent implements OnInit {
       if (!params.browser) {
         return { stats: null, catalog: null, users: [], topServices: [] };
       }
-      // stats fetché séparément via injectAdminStatsQuery (TQ cache global)
-      const [catalog, users, topServices] = await Promise.all([
+      const [stats, catalog, users, topServices] = await Promise.all([
+        this.fetchStats(),
         this.fetchCatalog(),
         this.fetchRecentUsers(),
         this.fetchTopServices(),
       ]);
-      return { stats: null, catalog, users, topServices };
+      return { stats, catalog, users, topServices };
     },
   });
 
@@ -415,6 +401,14 @@ export class AdminDashboardComponent implements OnInit {
       }
     },
   });
+
+  private async fetchStats(): Promise<AdminDashboardStats | null> {
+    try {
+      return await firstValueFrom(this.adminService.getDashboardStats());
+    } catch {
+      return null;
+    }
+  }
 
   private async fetchCatalog(): Promise<CatalogStats | null> {
     try {
@@ -480,7 +474,7 @@ export class AdminDashboardComponent implements OnInit {
     };
   }
 
-  readonly stats = computed(() => this.statsQuery.data() ?? null);
+  readonly stats = computed(() => this.dashboardResource.value()?.stats ?? null);
   readonly catalogStats = computed(() => this.dashboardResource.value()?.catalog ?? null);
   readonly recentUsers = computed(() => this.dashboardResource.value()?.users ?? []);
   readonly topServices = computed(() => this.dashboardResource.value()?.topServices ?? []);
