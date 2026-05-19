@@ -5,26 +5,27 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Iter41 fix Bug #7 (extracted depuis AdminRestController iter37) — listener
- * d'invalidation cache stats placé hors classe @PreAuthorize.
+ * Iter42 (fix complémentaire Bug #7) — listener d'invalidation cache stats
+ * découplé de AdminRestController.
  *
- * <p>Avant : @EventListener {@code invalidateStatsCacheOnBusinessEvent} défini
- * dans {@link AdminRestController} qui a {@code @PreAuthorize("hasRole('ADMIN')")}
- * class-level. Quand event fired par anonymous context (ex: registration user),
- * Spring AOP intercepte ET applique le PreAuthorize → AuthorizationDeniedException.
- * Cascade : {@code AuthRestController.register} catch (Exception e) → log error
- * + retour 500.</p>
+ * <p>Iter41 avait extrait ce listener de AdminRestController mais conservait
+ * une dépendance directe sur lui (appel {@code adminRestController.invalidateStatsCache()}).
+ * Comme AdminRestController est annoté {@code @PreAuthorize("hasRole('ADMIN')")}
+ * class-level, le proxy AOP intercepte tout appel public — y compris depuis
+ * un autre @Component — et déclenche le check de rôle. Quand l'event source
+ * est un context anonymous (USER_REGISTERED depuis /api/v1/auth/register),
+ * l'appel rebondit en AuthorizationDeniedException → register 500.</p>
  *
- * <p>Fix : @Component séparé sans @PreAuthorize. Délègue au controller via
- * setter direct sur le champ {@code statsCache}.</p>
+ * <p>Fix iter42 : injection de {@link StatsCacheHolder} (composant
+ * non-@PreAuthorize) directement. Plus aucune traversée du proxy AOP.</p>
  */
 @Component
 public class AdminStatsCacheInvalidator {
 
-    private final AdminRestController adminRestController;
+    private final StatsCacheHolder statsCacheHolder;
 
-    public AdminStatsCacheInvalidator(AdminRestController adminRestController) {
-        this.adminRestController = adminRestController;
+    public AdminStatsCacheInvalidator(StatsCacheHolder statsCacheHolder) {
+        this.statsCacheHolder = statsCacheHolder;
     }
 
     @EventListener
@@ -35,7 +36,7 @@ public class AdminStatsCacheInvalidator {
                  PAYMENT_RECEIVED, PAYMENT_FAILED, REFUND_PROCESSED,
                  APPOINTMENT_CREATED, APPOINTMENT_CONFIRMED, APPOINTMENT_UPDATED,
                  APPOINTMENT_CANCELLED, APPOINTMENT_DELETED ->
-                adminRestController.invalidateStatsCache();
+                statsCacheHolder.invalidate();
             default -> {
             }
         }

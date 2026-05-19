@@ -62,8 +62,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -110,13 +108,11 @@ public class AdminRestController {
     /**
      * Cache TTL 30s pour /api/v1/admin/stats. Stats agrégées sur 80k+ rows users + orders,
      * pas temps-réel critique. Bench iter idle = 1.2s ; sous 10k VU load = 6.3s (8 SQL +
-     * filter chain Spring Security full). Cache volatile + last-write-wins concurrent
-     * (multiple admins refresh = même résultat, race acceptable).
+     * filter chain Spring Security full). Stockage déporté dans {@link StatsCacheHolder}
+     * (séparé de cette classe @PreAuthorize) pour permettre invalidation event-driven
+     * depuis context anonymous sans déclencher AuthorizationDeniedException via AOP.
      */
-    private record StatsCache(Map<String, Object> data, Instant expiresAt) {}
-
-    private static final Duration STATS_CACHE_TTL = Duration.ofSeconds(30);
-    private volatile StatsCache statsCache;
+    private final StatsCacheHolder statsCacheHolder;
 
     public AdminRestController(UserService userService,
                                UserRepository userRepository,
@@ -132,7 +128,8 @@ public class AdminRestController {
                                StripeClient stripeClient,
                                VatCalculationService vatCalculationService,
                                JdbcTemplate jdbcTemplate,
-                               SyncProperties syncProperties) {
+                               SyncProperties syncProperties,
+                               StatsCacheHolder statsCacheHolder) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.authService = authService;
@@ -148,29 +145,19 @@ public class AdminRestController {
         this.vatCalculationService = vatCalculationService;
         this.jdbcTemplate = jdbcTemplate;
         this.syncProperties = syncProperties;
+        this.statsCacheHolder = statsCacheHolder;
     }
 
     @GetMapping("/stats")
     @Operation(summary = "Statistiques dashboard", description = "Retourne les KPIs principaux")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardStats() {
-        StatsCache c = statsCache;
-        Instant now = Instant.now();
-        if (c == null || now.isAfter(c.expiresAt())) {
-            c = new StatsCache(buildDashboardStats(), now.plus(STATS_CACHE_TTL));
-            statsCache = c;
+        Map<String, Object> cached = statsCacheHolder.get();
+        if (cached != null) {
+            return ResponseEntity.ok(ApiResponse.ok(cached));
         }
-        return ResponseEntity.ok(ApiResponse.ok(c.data()));
-    }
-
-    /**
-     * Setter d'invalidation cache stats appelé par {@link AdminStatsCacheInvalidator}.
-     * Logique d'event listener extraite hors de cette classe pour éviter le check
-     * {@code @PreAuthorize("hasRole('ADMIN')")} class-level qui plante quand un
-     * USER_REGISTERED event est fired depuis un context anonymous (registration).
-     * Cf. Bug #7 fix iter41.
-     */
-    public void invalidateStatsCache() {
-        statsCache = null;
+        Map<String, Object> fresh = buildDashboardStats();
+        statsCacheHolder.put(fresh);
+        return ResponseEntity.ok(ApiResponse.ok(fresh));
     }
 
     private Map<String, Object> buildDashboardStats() {
