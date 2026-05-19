@@ -86,10 +86,11 @@ CLAUDE.md
 python/
 
 ### Documentation locale, brouillons et scripts (non versionnés) ###
-docs/
-plans/
-notes/
-scratch/
+docs/*
+!docs/superpowers/
+/plans/
+/notes/
+/scratch/
 /scripts/
 /LMP/
 seo-audits/
