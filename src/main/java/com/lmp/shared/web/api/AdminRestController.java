@@ -187,6 +187,10 @@ public class AdminRestController {
         stats.put("appointmentsToday", counts.getOrDefault("appointmentsToday", 0L));
 
         // MRR et répartition récurrent / ponctuel (30 derniers jours)
+        // Net revenue = SUM(total_amount) - SUM(refunds.amount où refund completed)
+        // Statuts comptés : seulement ceux où paiement effectivement reçu/confirmé.
+        // Exclus : PAYMENT_PENDING (pas encore payé), PENDING (pas confirmé),
+        //          CANCELLED (annulée), REFUNDED (entièrement remboursée).
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         String mrrSql = """
             SELECT
@@ -195,12 +199,19 @@ public class AdminRestController {
                     WHEN so.duration_type = 'YEARLY' THEN 'YEARLY'
                     ELSE 'ONE_TIME'
                 END AS rev_type,
-                SUM(o.total_amount) AS total
+                SUM(o.total_amount - COALESCE(r.refunded, 0)) AS total
             FROM orders o
             LEFT JOIN services s ON LOWER(o.service_name) = LOWER(s.title)
             LEFT JOIN service_offers so ON so.service_id = s.id AND so.is_default = true
+            LEFT JOIN (
+                SELECT order_id, SUM(amount) AS refunded
+                FROM refunds
+                WHERE status = 'COMPLETED'
+                GROUP BY order_id
+            ) r ON r.order_id = o.id
             WHERE o.created_at >= ?
-              AND o.status NOT IN ('CANCELLED', 'REFUNDED', 'PAYMENT_PENDING')
+              AND o.status IN ('CONFIRMED', 'PROCESSING', 'IN_PROGRESS',
+                               'SHIPPED', 'DELIVERED', 'COMPLETED', 'UNDER_REVIEW')
             GROUP BY CASE
                     WHEN so.duration_type = 'MONTHLY' THEN 'MONTHLY'
                     WHEN so.duration_type = 'YEARLY' THEN 'YEARLY'

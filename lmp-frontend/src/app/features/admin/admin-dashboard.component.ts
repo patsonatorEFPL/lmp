@@ -500,14 +500,18 @@ export class AdminDashboardComponent implements OnInit {
     return Math.round((completed / s.totalOrders) * 100);
   });
 
-  /** Affichage des revenus 30j — agrégés depuis ordersByStatus si disponible. */
+  /**
+   * Affichage des revenus 30j — somme des champs déjà filtrés par le backend :
+   * recurringRevenue30d + oneTimeRevenue30d (commandes des 30 derniers jours,
+   * statuts CANCELLED/REFUNDED/PAYMENT_PENDING/PENDING exclus, refunds
+   * complétés soustraits). Pas d'utilisation de ordersByStatus qui inclut TOUS
+   * les statuts (commandes annulées/remboursées gonflaient le chiffre).
+   */
   readonly revenueDisplay = computed(() => {
     const s = this.stats();
-    if (!s?.ordersByStatus) return '0 ' + this.currencySymbol();
-    const total = Object.values(s.ordersByStatus).reduce(
-      (sum, v) => sum + (v?.revenue ?? 0),
-      0,
-    );
+    const rec = s?.recurringRevenue30d ?? 0;
+    const one = s?.oneTimeRevenue30d ?? 0;
+    const total = rec + one;
     return `${this.formatNumber(Math.round(total))} ${this.currencySymbol()}`;
   });
 
