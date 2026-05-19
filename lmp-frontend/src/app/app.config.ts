@@ -16,10 +16,6 @@ import {
 } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { filter } from 'rxjs';
-import {
-  QueryClient,
-  provideTanStackQuery,
-} from '@tanstack/angular-query-experimental';
 
 import { routes } from './app.routes';
 import { credentialsInterceptor, csrfInterceptor, errorInterceptor } from './core/interceptors';
@@ -74,22 +70,6 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAppInitializer(() => inject(AuthService).checkSession()),
     provideAppInitializer(() => setupChunkReloadRecovery(inject(Router))),
-    // Iter40 — TanStack Angular Query : cache global cross-components + dedup
-    // + stale-while-revalidate. Test slice /admin/stats avant migration plus
-    // large. Defaults : staleTime 30s (align serveur AdminRestController iter37
-    // cache TTL), gcTime 5 min, refetchOnWindowFocus actif.
-    provideTanStackQuery(
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 30_000,
-            gcTime: 5 * 60_000,
-            refetchOnWindowFocus: true,
-            retry: 1,
-          },
-        },
-      }),
-    ),
     { provide: LOCALE_ID, useValue: 'fr' },
   ],
 };

@@ -29,8 +29,6 @@
     "@spartan-ng/brain": "^0.0.1-alpha.648",
     "@stripe/stripe-js": "^9.1.0",
     "@tailwindcss/postcss": "^4.2.1",
-    "@tanstack/angular-query-experimental": "^5.100.11",
-    "@tanstack/query-core": "^5.100.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express": "^5.2.1",
