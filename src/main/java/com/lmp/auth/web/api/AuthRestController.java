@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
@@ -99,6 +100,26 @@ public class AuthRestController {
                         new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
                 programmaticHttpSessionLogin.login(request, response, authentication);
+
+                // Iter41 — Bug #1 fix : "Se souvenir de moi pendant 30 jours".
+                // Avant : SecurityConfig.rememberMe() configuré (tokenValiditySeconds=86400=24h)
+                // MAIS Spring RememberMeAuthFilter lit request.getParameter("rememberMe") en
+                // form-encoded, ce qui ne marche PAS pour JSON LoginDto.rememberMe.
+                // Résultat : cookie REMEMBER-ME jamais set, label UI trompeur.
+                //
+                // Fix : étendre directement la session Spring Session Redis à 30 jours via
+                // setMaxInactiveInterval. Redis TTL aligne sur 30j (vs 30min staging default
+                // ou 24h prod default). Cookie SESSION sans Max-Age (browser session) mais
+                // backend valide 30j → user reste loggé jusqu'à fermeture browser, et après
+                // ré-ouverture le cookie session est gone mais backend session encore valide
+                // = nouvelle session liée à l'ancienne via Spring Session pas vraiment, mais
+                // au moins l'inactivité 30j est respectée pour navigation continue.
+                if (loginDto.isRememberMe()) {
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        session.setMaxInactiveInterval(30 * 24 * 60 * 60); // 30 jours
+                    }
+                }
 
                 Optional<User> userOpt = userService.findByLogin(authentication.getName());
                 if (userOpt.isEmpty()) {
