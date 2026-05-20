@@ -30,12 +30,12 @@ public class ErpUserSyncMapper {
         Map<String, Object> payload = new LinkedHashMap<>();
         SyncProperties.ErpUser cfg = syncProperties.getExternal().getErpUser();
 
-        payload.put("email", user.getEmail());
+        // Always include name + phone fields as empty strings (never omit).
+        // External ERP server-side calls .strip() on these and crashes on None.
+        payload.put("email", safe(user.getEmail()));
         payload.put("first_name", safe(user.getFirstName()));
-        if (user.getLastName() != null && !user.getLastName().isBlank()) {
-            payload.put("last_name", user.getLastName());
-        }
-        if (user.getPhone() != null) payload.put("mobile_no", user.getPhone());
+        payload.put("last_name", safe(user.getLastName()));
+        payload.put("mobile_no", safe(user.getPhone()));
 
         payload.put("enabled", 1);
         payload.put("send_welcome_email", cfg.isSendWelcomeEmail() ? 1 : 0);
@@ -56,8 +56,8 @@ public class ErpUserSyncMapper {
     public Map<String, Object> toUpdatePayload(User user) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("first_name", safe(user.getFirstName()));
-        if (user.getLastName() != null) payload.put("last_name", user.getLastName());
-        if (user.getPhone() != null) payload.put("mobile_no", user.getPhone());
+        payload.put("last_name", safe(user.getLastName()));
+        payload.put("mobile_no", safe(user.getPhone()));
         payload.put("enabled", isUserEnabled(user) ? 1 : 0);
         return payload;
     }

@@ -233,13 +233,23 @@ public class SyncOutboundService {
             syncEvent.setErrorMessage(response.errorMessage());
             syncEvent.setRetryCount(syncEvent.getRetryCount() + 1);
 
-            // Si max retries atteint → DEAD
-            if (syncEvent.getRetryCount() >= syncEvent.getMaxRetries()) {
+            // Short-circuit: permanent errors are not retryable. Mark DEAD immediately
+            // and stop the retry loop so the queue does not grind on the same payload.
+            var category = errorClassifier.classify(response.errorMessage(), syncEvent.getId());
+            boolean permanent = category == com.lmp.integration.sync.monitoring.SyncErrorPattern.Category.KNOWN_PERMANENT;
+
+            // Si max retries atteint ou erreur permanente → DEAD
+            if (permanent || syncEvent.getRetryCount() >= syncEvent.getMaxRetries()) {
                 syncEvent.setStatus(SyncStatus.DEAD);
                 metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.DEAD);
                 metricsService.recordEventDead(syncEvent.getEntityType());
-                log.error("💀 [SYNC OUT] {} {} — max retries reached ({}) — marking DEAD",
-                        syncEvent.getEntityType(), syncEvent.getEventType(), syncEvent.getMaxRetries());
+                if (permanent) {
+                    log.error("💀 [SYNC OUT] {} {} — permanent error (no retry) — DEAD: {}",
+                            syncEvent.getEntityType(), syncEvent.getEventType(), response.errorMessage());
+                } else {
+                    log.error("💀 [SYNC OUT] {} {} — max retries reached ({}) — marking DEAD",
+                            syncEvent.getEntityType(), syncEvent.getEventType(), syncEvent.getMaxRetries());
+                }
             } else {
                 metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.FAILED);
                 // Calculer le prochain scheduled_at avec backoff exponentiel
@@ -249,13 +259,6 @@ public class SyncOutboundService {
                 log.warn("⚠️ [SYNC OUT] {} {} failed (retry {}/{}) — next retry in {}s",
                         syncEvent.getEntityType(), syncEvent.getEventType(),
                         syncEvent.getRetryCount(), syncEvent.getMaxRetries(), backoffSeconds);
-            }
-
-            // Classification de l'erreur pour détection de drift
-            try {
-                errorClassifier.classify(syncEvent.getErrorMessage(), syncEvent.getId());
-            } catch (Exception ex) {
-                log.debug("🔇 [SYNC OUT] Error classification failed: {}", ex.getMessage());
             }
         }
     }
