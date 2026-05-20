@@ -1,5 +1,7 @@
 package com.lmp.support.signaling;
 
+import com.lmp.auth.domain.User;
+import com.lmp.auth.service.UserService;
 import com.lmp.support.domain.SessionStatus;
 import com.lmp.support.domain.SupportSession;
 import com.lmp.support.repository.SupportSessionRepository;
@@ -13,12 +15,16 @@ import java.security.Principal;
 import java.util.UUID;
 
 /**
- * STOMP relay for WebRTC signaling. Validates session is in a signaling-capable
- * state ({@code CONSENT_WAIT} or {@code ACTIVE}) before forwarding.
+ * STOMP relay for WebRTC signaling. Two gates:
+ * <ol>
+ *   <li>Session must be in a signaling-capable state ({@code CONSENT_WAIT} or {@code ACTIVE}).</li>
+ *   <li>Principal must be the tech or the client for the session — without this any
+ *   authenticated user could publish offers/ICE into someone else's session.</li>
+ * </ol>
  *
  * <pre>
- *   client publishes /app/signaling/{id}/tech-to-client  → broker fans out to /topic/signaling/{id}/client
- *   client publishes /app/signaling/{id}/client-to-tech  → broker fans out to /topic/signaling/{id}/tech
+ *   tech client publishes /app/signaling/{id}/tech-to-client  → /topic/signaling/{id}/client
+ *   client side publishes /app/signaling/{id}/client-to-tech  → /topic/signaling/{id}/tech
  * </pre>
  */
 @Controller
@@ -26,18 +32,25 @@ public class SignalingController {
 
     private final SimpMessagingTemplate broker;
     private final SupportSessionRepository sessionRepo;
+    private final UserService userService;
 
     public SignalingController(SimpMessagingTemplate broker,
-                               SupportSessionRepository sessionRepo) {
+                               SupportSessionRepository sessionRepo,
+                               UserService userService) {
         this.broker = broker;
         this.sessionRepo = sessionRepo;
+        this.userService = userService;
     }
 
     @MessageMapping("/signaling/{sessionId}/tech-to-client")
     public void techToClient(@DestinationVariable UUID sessionId,
                              @Payload SignalingMessage msg,
                              Principal principal) {
-        validateSignalingState(sessionId);
+        SupportSession s = validateSignalingState(sessionId);
+        UUID caller = resolveCallerId(principal);
+        if (!caller.equals(s.getTechUserId())) {
+            throw new SecurityException("Caller is not the tech for session " + sessionId);
+        }
         broker.convertAndSend("/topic/signaling/" + sessionId + "/client", msg);
     }
 
@@ -45,7 +58,11 @@ public class SignalingController {
     public void clientToTech(@DestinationVariable UUID sessionId,
                              @Payload SignalingMessage msg,
                              Principal principal) {
-        validateSignalingState(sessionId);
+        SupportSession s = validateSignalingState(sessionId);
+        UUID caller = resolveCallerId(principal);
+        if (!caller.equals(s.getClientUserId())) {
+            throw new SecurityException("Caller is not the client for session " + sessionId);
+        }
         broker.convertAndSend("/topic/signaling/" + sessionId + "/tech", msg);
     }
 
@@ -57,5 +74,14 @@ public class SignalingController {
             throw new IllegalStateException("Session not in signaling state: " + st);
         }
         return s;
+    }
+
+    private UUID resolveCallerId(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            throw new SecurityException("Not authenticated");
+        }
+        User u = userService.findByLogin(principal.getName())
+            .orElseThrow(() -> new SecurityException("Unknown principal: " + principal.getName()));
+        return u.getId();
     }
 }
