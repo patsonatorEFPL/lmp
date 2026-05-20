@@ -48,6 +48,7 @@ public class HelpDeskController {
     private final TurnCredentialService turnService;
     private final Duration inviteTtl;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public HelpDeskController(SupportSessionService sessionService,
                               MeshCentralService meshService,
                               TicketRepository ticketRepository,
