@@ -50,6 +50,7 @@ public class SessionScheduler {
     private final SupportProperties props;
     private final Clock clock;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SessionScheduler(SupportSessionRepository repo,
                             SupportSessionService sessionService,
                             SupportProperties props) {
