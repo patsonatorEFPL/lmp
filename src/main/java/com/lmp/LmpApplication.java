@@ -11,9 +11,10 @@ import com.lmp.notification.config.MailAddressConfig;
 import com.lmp.shared.pricing.RegionalPricingProperties;
 import com.lmp.support.config.SupportProperties;
 import com.lmp.support.meshcentral.MeshCentralProperties;
+import com.lmp.support.recording.RecordingProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({MailAddressConfig.class, RegionalPricingProperties.class, SupportProperties.class, MeshCentralProperties.class})
+@EnableConfigurationProperties({MailAddressConfig.class, RegionalPricingProperties.class, SupportProperties.class, MeshCentralProperties.class, RecordingProperties.class})
 @EnableScheduling // Pour l'auto-répondeur noreply + purge scheduler
 @EnableAsync // Pour le bus d'événements vers l’ERP (traitement asynchrone)
 @EnableCaching // Caffeine pour agrégats ERP + GeoIP
