@@ -48,6 +48,7 @@ interface CheckoutPreview {
   currency: string;
   durationType: string;
   offerId: string;
+  publishableKey?: string;
 }
 
 interface PaymentElementResult {
@@ -72,6 +73,7 @@ interface OrderDetail {
   customerVatNumber: string | null;
   amountBaseEur: number | null;
   appliedVatRate: number | null;
+  createdAt: string | null;
 }
 
 interface GeoCheckResult {
@@ -112,6 +114,28 @@ interface ViesResponse {
           <lucide-icon [img]="ArrowLeftIcon" [size]="18"></lucide-icon>
           <span>Retour</span>
         </button>
+
+        <!-- Resume banner (existing order — user picks up where they left off) -->
+        @if (existingOrderMode() && !loading() && !loadError()) {
+          <div
+            class="mb-5 flex items-start gap-3 rounded-md border border-blue-500/30 bg-blue-500/[0.08] px-4 py-3"
+            role="status"
+          >
+            <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-blue-100">
+                Vous reprenez une commande en attente
+              </p>
+              @if (resumeCreatedAtFormatted()) {
+                <p class="mt-0.5 text-xs text-blue-300/80">
+                  Initiée le {{ resumeCreatedAtFormatted() }} — aucune nouvelle commande ne sera créée.
+                </p>
+              }
+            </div>
+          </div>
+        }
 
         <!-- Loading skeleton -->
         @if (loading()) {
@@ -471,7 +495,16 @@ export class CheckoutComponent implements OnDestroy {
   private orderId: string | null = null;
 
   /** true when paying an existing order (route /checkout/order/:orderId) */
-  private existingOrderMode = false;
+  readonly existingOrderMode = signal(false);
+  readonly resumeCreatedAt = signal<string | null>(null);
+  readonly resumeCreatedAtFormatted = computed(() => {
+    const raw = this.resumeCreatedAt();
+    if (!raw) return null;
+    try {
+      const d = new Date(raw);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    } catch { return null; }
+  });
 
   // ── Computed ─────────────────────────────────────────
   readonly displayVatAmount = computed(() => {
@@ -534,7 +567,7 @@ export class CheckoutComponent implements OnDestroy {
 
       if (existingOrderId) {
         // ── Existing order mode ──
-        this.existingOrderMode = true;
+        this.existingOrderMode.set(true);
         this.orderId = existingOrderId;
         this.loadExistingOrder(existingOrderId);
       } else if (offerId) {
@@ -570,7 +603,17 @@ export class CheckoutComponent implements OnDestroy {
           if (res.success && res.data) {
             this.preview.set(res.data);
             this.loading.set(false);
-            this.initNewOrderPayment(offerId);
+            // Deferred Stripe mount : no order created until submit.
+            // Stripe Elements built with mode+amount+currency, clientSecret fetched at pay().
+            if (res.data.publishableKey) {
+              void this.mountStripeDeferred(
+                res.data.publishableKey,
+                res.data.totalAmount,
+                res.data.currency,
+              );
+            } else {
+              this.stripeError.set('Configuration Stripe manquante.');
+            }
           } else {
             this.loadError.set(res.message ?? 'Offre introuvable.');
             this.loading.set(false);
@@ -605,6 +648,9 @@ export class CheckoutComponent implements OnDestroy {
               this.loading.set(false);
               return;
             }
+
+            // Capture order creation date for resume banner UX
+            this.resumeCreatedAt.set(order.createdAt ?? null);
 
             // Restore form fields from order snapshot
             this.restoreFormFromOrder(order);
@@ -727,6 +773,88 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   // ── Stripe ───────────────────────────────────────────
+
+  /**
+   * Mount Stripe Elements in DEFERRED mode for the new-order flow.
+   * No PaymentIntent yet — clientSecret fetched at submit, then confirmPayment runs.
+   * Avoids creating an Order DB row + Stripe PaymentIntent on every page reload.
+   */
+  private async mountStripeDeferred(
+    publishableKey: string,
+    totalAmount: number,
+    currency: string,
+  ): Promise<void> {
+    this.stripeLoading.set(true);
+    try {
+      this.stripe = await loadStripe(publishableKey);
+      if (!this.stripe) {
+        this.stripeError.set('Impossible de charger Stripe.');
+        this.stripeLoading.set(false);
+        return;
+      }
+
+      const amountMinor = Math.round(totalAmount * 100);
+      this.elements = this.stripe.elements({
+        mode: 'payment',
+        amount: amountMinor,
+        currency: (currency || 'EUR').toLowerCase(),
+        appearance: {
+          theme: 'night',
+          variables: {
+            colorPrimary: '#3b82f6',
+            colorBackground: '#111113',
+            colorText: '#e5e5e5',
+            colorDanger: '#ef4444',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            borderRadius: '8px',
+            spacingUnit: '4px',
+          },
+          rules: {
+            '.Input': { backgroundColor: '#111113', border: '1px solid #333' },
+            '.Input:focus': {
+              border: '1px solid rgba(59, 130, 246, 0.6)',
+              boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.3)',
+            },
+            '.Label': { color: '#999', fontSize: '13px' },
+          },
+        },
+      } as any);
+
+      const addressDefaults = this.getRestoredAddressDefaults();
+      this.addressElement = this.elements.create('address', {
+        mode: 'billing',
+        ...(addressDefaults ? { defaultValues: addressDefaults } : {}),
+      } as any);
+      this.addressElement.mount(this.addressHost.nativeElement);
+
+      this.paymentElement = this.elements.create('payment', {
+        layout: 'tabs',
+        fields: { billingDetails: { address: 'never' } },
+      });
+      this.paymentElement.on('ready', () => {
+        this.stripeLoading.set(false);
+        this.stripeReady.set(true);
+      });
+      this.paymentElement.mount(this.stripeHost.nativeElement);
+    } catch {
+      this.stripeError.set('Erreur d\'initialisation du paiement.');
+      this.stripeLoading.set(false);
+    }
+  }
+
+  /** Update Stripe Elements amount when total changes (e.g. VAT reverse charge toggle). */
+  private updateStripeAmount(totalAmount: number, currency: string): void {
+    if (!this.elements) return;
+    try {
+      this.elements.update({
+        amount: Math.round(totalAmount * 100),
+        currency: (currency || 'EUR').toLowerCase(),
+      } as any);
+    } catch (e) {
+      console.warn('[CHECKOUT] elements.update failed', e);
+    }
+  }
+
   private async mountStripe(clientSecret: string, publishableKey: string): Promise<void> {
     try {
       this.stripe = await loadStripe(publishableKey);
@@ -923,7 +1051,10 @@ export class CheckoutComponent implements OnDestroy {
   // ── LocalStorage Auto-save ──────────────────────────
 
   private get draftKey(): string {
-    return this.orderId ? `checkout-draft:${this.orderId}` : '';
+    if (this.orderId) return `checkout-draft:${this.orderId}`;
+    // Deferred flow: no orderId until submit. Key on offerId so draft survives reload.
+    const offerId = this.route.snapshot.paramMap.get('offerId');
+    return offerId ? `checkout-draft:offer:${offerId}` : '';
   }
 
   private setupAutoSave(): void {
@@ -1062,6 +1193,33 @@ export class CheckoutComponent implements OnDestroy {
     const checked = (event.target as HTMLInputElement).checked;
     this.vatReverseCharge.set(checked);
     this.vatError.set(null);
+    // Deferred flow : refresh preview total + Stripe Elements amount so the user sees
+    // the live VAT-adjusted total. Existing-order mode goes through finalize-checkout.
+    if (!this.existingOrderMode()) {
+      this.refreshPreviewForVat();
+    }
+  }
+
+  /** Re-fetch preview to get fresh total then update Stripe Elements amount. */
+  private refreshPreviewForVat(): void {
+    const offerId = this.preview()?.offerId ?? this.route.snapshot.paramMap.get('offerId');
+    if (!offerId) return;
+    this.http
+      .get<ApiResponse<CheckoutPreview>>(
+        paymentApiUrls.checkoutPreview(),
+        { params: { offerId }, withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.success && res.data) {
+            this.preview.set(res.data);
+            this.updateStripeAmount(res.data.totalAmount, res.data.currency);
+          }
+        },
+        error: () => {
+          // Non-blocking - finalize-checkout will recalc server-side at submit
+        },
+      });
   }
 
   /** Triggered on blur of the VAT number input — validates via VIES only when leaving the field. */
@@ -1168,6 +1326,54 @@ export class CheckoutComponent implements OnDestroy {
       // Non-blocking — VAT save failure shouldn't block payment
     }
 
+    // Deferred-mode flow : validate the Elements before any backend call.
+    // elements.submit() collects card data + runs Stripe-side validations,
+    // returning early if user input is bad. No PaymentIntent created if this fails.
+    const isDeferredFlow = !this.existingOrderMode();
+    let clientSecretForConfirm: string | null = null;
+    if (isDeferredFlow) {
+      const { error: submitError } = await this.elements.submit();
+      if (submitError) {
+        this.stripeError.set(submitError.message ?? 'Veuillez vérifier vos informations.');
+        this.submitting.set(false);
+        return;
+      }
+
+      // Create Order + PaymentIntent at submit time.
+      // Backend dedup ensures reload-and-resubmit reuses the same Order.
+      const offerId = this.preview()?.offerId
+        ?? this.route.snapshot.paramMap.get('offerId');
+      if (!offerId) {
+        this.stripeError.set('Offre introuvable.');
+        this.submitting.set(false);
+        return;
+      }
+
+      try {
+        const result = await new Promise<PaymentElementResult>((resolve, reject) => {
+          this.http
+            .post<ApiResponse<PaymentElementResult>>(
+              paymentApiUrls.checkoutPaymentElement(),
+              { offerId, currency: this.preview()?.currency ?? 'EUR' },
+              { withCredentials: true },
+            )
+            .subscribe({
+              next: (res) => {
+                if (res.success && res.data) resolve(res.data);
+                else reject(new Error(res.message ?? 'Echec creation paiement.'));
+              },
+              error: reject,
+            });
+        });
+        this.orderId = result.orderId;
+        clientSecretForConfirm = result.clientSecret;
+      } catch (e: any) {
+        this.stripeError.set(e?.message ?? 'Echec de la preparation du paiement.');
+        this.submitting.set(false);
+        return;
+      }
+    }
+
     // Save custom billing name on the order before confirming payment
     if (this.orderId && this.useDifferentBillingName() && this.customBillingName().trim()) {
       try {
@@ -1209,12 +1415,18 @@ export class CheckoutComponent implements OnDestroy {
     }
 
     const origin = window.location.origin;
-    const { error } = await this.stripe.confirmPayment({
+    const confirmArgs: any = {
       elements: this.elements,
       confirmParams: {
         return_url: `${origin}/payment/success?orderId=${encodeURIComponent(this.orderId ?? '')}`,
       },
-    });
+    };
+    // Deferred flow needs clientSecret passed explicitly. Existing-order flow already
+    // initialised elements with clientSecret at mount.
+    if (clientSecretForConfirm) {
+      confirmArgs.clientSecret = clientSecretForConfirm;
+    }
+    const { error } = await this.stripe.confirmPayment(confirmArgs);
 
     this.submitting.set(false);
     if (error) {
@@ -1225,7 +1437,7 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   goBack(): void {
-    if (this.existingOrderMode) {
+    if (this.existingOrderMode()) {
       void this.router.navigate(['/dashboard/orders']);
     } else {
       void this.router.navigate(['/services']);

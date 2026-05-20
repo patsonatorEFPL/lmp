@@ -17,6 +17,9 @@ export const paymentApiUrls = {
 
   checkoutPreview: (): string => `${root()}/checkout-preview`,
 
+  /** Detect existing pending/active orders for this user+offer before navigating to checkout. */
+  checkoutAvailability: (): string => `${root()}/checkout-availability`,
+
   checkoutPaymentElement: (): string => `${root()}/checkout/payment-element`,
 
   checkoutOrderPaymentElement: (orderId: string): string =>

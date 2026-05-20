@@ -54,7 +54,11 @@ public class Order {
     
     @Column(name = "service_name", nullable = false)
     private String serviceName;
-    
+
+    /** FK vers ServiceOffer (lien pour dedup, resume, et detection des doublons d'achat). */
+    @Column(name = "service_offer_id")
+    private java.util.UUID serviceOfferId;
+
     @Column(name = "currency", length = 3)
     private String currency = "EUR";
     
@@ -242,6 +246,9 @@ public class Order {
     public void setStatusHistories(Set<OrderStatusHistory> statusHistories) { this.statusHistories = statusHistories; }
     public String getServiceName() { return serviceName; }
     public void setServiceName(String serviceName) { this.serviceName = serviceName; }
+
+    public java.util.UUID getServiceOfferId() { return serviceOfferId; }
+    public void setServiceOfferId(java.util.UUID serviceOfferId) { this.serviceOfferId = serviceOfferId; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public String getStripePaymentIntentId() { return stripePaymentIntentId; }

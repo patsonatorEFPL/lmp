@@ -29,6 +29,20 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByUserOrderByCreatedAtDesc(User user);
     List<Order> findByStatus(OrderStatus status);
     List<Order> findByUserAndStatus(User user, OrderStatus status);
+
+    /**
+     * Dedup checkout : retrouve la derniere commande PAYMENT_PENDING du user pour une offre donnee,
+     * permettant la reprise transparente d'un panier abandonne.
+     */
+    @Query("SELECT o FROM Order o WHERE o.user = :user AND o.serviceOfferId = :offerId AND o.status = com.lmp.billing.domain.OrderStatus.PAYMENT_PENDING ORDER BY o.createdAt DESC")
+    List<Order> findPendingByUserAndOffer(@Param("user") User user, @Param("offerId") UUID offerId);
+
+    /**
+     * Detection de doublon : commandes actives (non-finales) du user pour la meme offre.
+     * Statuts exclus : PAYMENT_PENDING (cas A), CANCELLED, REFUNDED, FAILED.
+     */
+    @Query("SELECT o FROM Order o WHERE o.user = :user AND o.serviceOfferId = :offerId AND o.status IN (com.lmp.billing.domain.OrderStatus.CONFIRMED, com.lmp.billing.domain.OrderStatus.PROCESSING, com.lmp.billing.domain.OrderStatus.IN_PROGRESS, com.lmp.billing.domain.OrderStatus.SHIPPED, com.lmp.billing.domain.OrderStatus.DELIVERED, com.lmp.billing.domain.OrderStatus.COMPLETED, com.lmp.billing.domain.OrderStatus.UNDER_REVIEW) ORDER BY o.createdAt DESC")
+    List<Order> findActiveByUserAndOffer(@Param("user") User user, @Param("offerId") UUID offerId);
     
     // Nouvelles méthodes pour la gestion des sessions Stripe
     Optional<Order> findByStripeSessionId(String stripeSessionId);
