@@ -45,6 +45,7 @@ public class MeshCentralWebSocketClient implements AutoCloseable {
 
     private volatile MeshCentralTransport transport;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public MeshCentralWebSocketClient(MeshCentralProperties props,
                                       ObjectMapper mapper,
                                       ApplicationEventPublisher eventPublisher) {
