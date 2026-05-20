@@ -18,5 +18,7 @@ public interface SupportSessionRepository extends JpaRepository<SupportSession, 
 
     List<SupportSession> findByStatus(SessionStatus status);
 
+    List<SupportSession> findByStatusIn(java.util.Collection<SessionStatus> statuses);
+
     List<SupportSession> findByTechUserIdOrderByCreatedAtDesc(UUID techUserId);
 }
