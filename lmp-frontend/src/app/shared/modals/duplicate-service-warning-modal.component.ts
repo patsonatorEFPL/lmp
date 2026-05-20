@@ -55,34 +55,29 @@ const STATUS_LABEL: Record<string, string> = {
             <dd class="text-right font-mono text-[12px] text-(--foreground)">{{ shortRef() }}</dd>
           </dl>
 
-          <div class="flex items-center justify-end gap-1 px-3 py-3 border-t border-(--border)/60">
+          <div class="flex flex-col gap-2 px-5 py-4 border-t border-(--border)/60">
             <button
               type="button"
               hlmBtn
-              variant="ghost"
-              size="sm"
-              class="text-(--muted-foreground)"
-              (click)="onCancel()"
+              variant="default"
+              (click)="onViewOrder()"
             >
-              Annuler
+              Voir ma commande
             </button>
             <button
               type="button"
               hlmBtn
-              variant="ghost"
-              size="sm"
+              variant="outline"
               (click)="onProceedAnyway()"
             >
               Commander quand même
             </button>
             <button
               type="button"
-              hlmBtn
-              variant="default"
-              size="sm"
-              (click)="onViewOrder()"
+              class="text-[13px] text-(--muted-foreground) hover:text-(--foreground) transition-colors py-1 cursor-pointer"
+              (click)="onCancel()"
             >
-              Voir ma commande
+              Annuler
             </button>
           </div>
         </div>
