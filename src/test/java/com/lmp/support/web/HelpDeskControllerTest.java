@@ -8,6 +8,8 @@ import com.lmp.support.domain.Ticket;
 import com.lmp.support.meshcentral.MeshCentralService;
 import com.lmp.support.repository.TicketRepository;
 import com.lmp.support.service.SupportSessionService;
+import com.lmp.support.signaling.TurnCredentialResponse;
+import com.lmp.support.signaling.TurnCredentialService;
 import com.lmp.support.web.dto.CreateSessionRequest;
 import com.lmp.support.web.dto.SessionResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,7 @@ class HelpDeskControllerTest {
     private MeshCentralService meshService;
     private TicketRepository ticketRepo;
     private UserService userService;
+    private TurnCredentialService turnService;
     private HelpDeskController controller;
 
     @BeforeEach
@@ -44,8 +47,9 @@ class HelpDeskControllerTest {
         meshService = mock(MeshCentralService.class);
         ticketRepo = mock(TicketRepository.class);
         userService = mock(UserService.class);
+        turnService = mock(TurnCredentialService.class);
         controller = new HelpDeskController(sessionService, meshService, ticketRepo, userService,
-            Duration.ofMinutes(15));
+            turnService, Duration.ofMinutes(15));
     }
 
     @Test
@@ -188,6 +192,52 @@ class HelpDeskControllerTest {
         assertThat(resp.id()).isEqualTo(id);
         assertThat(resp.status()).isEqualTo("ACTIVE");
         assertThat(resp.runnerInviteUrl()).isNull();
+    }
+
+    @Test
+    void turnCredentialsReturnedForSessionTech() {
+        UUID sid = UUID.randomUUID();
+        UUID techId = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(techId);
+        s.setClientUserId(UUID.randomUUID());
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        User tech = new User(); tech.setId(techId);
+        when(userService.findByLogin("tech@lmp.ca")).thenReturn(Optional.of(tech));
+
+        TurnCredentialResponse fake = new TurnCredentialResponse(
+            "1234:tech", "abc==", 1234L, java.util.List.of("turn:host:3478"));
+        when(turnService.issue("tech@lmp.ca")).thenReturn(fake);
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("tech@lmp.ca");
+
+        TurnCredentialResponse resp = controller.turnCredentials(sid, auth);
+
+        assertThat(resp).isSameAs(fake);
+        verify(turnService).issue("tech@lmp.ca");
+    }
+
+    @Test
+    void turnCredentialsForbiddenForNonParticipant() {
+        UUID sid = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(UUID.randomUUID());
+        s.setClientUserId(UUID.randomUUID());
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        User stranger = new User(); stranger.setId(UUID.randomUUID());
+        when(userService.findByLogin("stranger@lmp.ca")).thenReturn(Optional.of(stranger));
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("stranger@lmp.ca");
+
+        assertThatThrownBy(() -> controller.turnCredentials(sid, auth))
+            .isInstanceOfSatisfying(ResponseStatusException.class, e ->
+                assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     private User stubUser() {

@@ -8,6 +8,8 @@ import com.lmp.support.domain.Ticket;
 import com.lmp.support.meshcentral.MeshCentralService;
 import com.lmp.support.repository.TicketRepository;
 import com.lmp.support.service.SupportSessionService;
+import com.lmp.support.signaling.TurnCredentialResponse;
+import com.lmp.support.signaling.TurnCredentialService;
 import com.lmp.support.web.dto.CreateSessionRequest;
 import com.lmp.support.web.dto.SessionResponse;
 import jakarta.validation.Valid;
@@ -43,24 +45,29 @@ public class HelpDeskController {
     private final MeshCentralService meshService;
     private final TicketRepository ticketRepository;
     private final UserService userService;
+    private final TurnCredentialService turnService;
     private final Duration inviteTtl;
 
     public HelpDeskController(SupportSessionService sessionService,
                               MeshCentralService meshService,
                               TicketRepository ticketRepository,
-                              UserService userService) {
-        this(sessionService, meshService, ticketRepository, userService, Duration.ofMinutes(15));
+                              UserService userService,
+                              TurnCredentialService turnService) {
+        this(sessionService, meshService, ticketRepository, userService, turnService,
+            Duration.ofMinutes(15));
     }
 
     HelpDeskController(SupportSessionService sessionService,
                        MeshCentralService meshService,
                        TicketRepository ticketRepository,
                        UserService userService,
+                       TurnCredentialService turnService,
                        Duration inviteTtl) {
         this.sessionService = sessionService;
         this.meshService = meshService;
         this.ticketRepository = ticketRepository;
         this.userService = userService;
+        this.turnService = turnService;
         this.inviteTtl = inviteTtl;
     }
 
@@ -97,6 +104,24 @@ public class HelpDeskController {
     public SessionResponse get(@PathVariable UUID id) {
         SupportSession s = sessionService.findById(id);
         return SessionResponse.of(s, null);
+    }
+
+    /**
+     * Issues short-lived TURN credentials scoped to the caller. Used by both the
+     * tech browser and the runner WebView2 to populate their {@code RTCPeerConnection}
+     * ICE servers list.
+     */
+    @GetMapping("/{id}/turn-credentials")
+    @PreAuthorize("isAuthenticated()")
+    public TurnCredentialResponse turnCredentials(@PathVariable UUID id,
+                                                  Authentication authentication) {
+        SupportSession s = sessionService.findById(id);
+        UUID callerId = resolveTechUserId(authentication);
+        if (!callerId.equals(s.getTechUserId()) && !callerId.equals(s.getClientUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Not a participant of session " + id);
+        }
+        return turnService.issue(authentication.getName());
     }
 
     private UUID resolveTechUserId(Authentication authentication) {

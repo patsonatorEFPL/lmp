@@ -58,6 +58,12 @@
 			<artifactId>spring-boot-jackson2</artifactId>
 		</dependency>
 
+		<!-- WebSocket/STOMP — HelpDesk P5 voice signaling -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<!-- Thymeleaf — utilisé pour les emails HTML et le back-office admin -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
