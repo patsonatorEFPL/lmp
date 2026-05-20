@@ -511,7 +511,10 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCheckout(service: ServiceItem): void {
     if (!this.authService.isLoggedIn()) {
-      this.siteConfig.goToLogin('/services');
+      const target = service.currentOffer?.id
+        ? `/checkout/${service.currentOffer.id}`
+        : '/services';
+      this.siteConfig.goToLogin(target);
       return;
     }
 

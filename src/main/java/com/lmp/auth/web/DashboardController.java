@@ -214,32 +214,4 @@ public class DashboardController {
         return orderRepository.save(order);
     }
 
-    /**
-     * Affiche la liste des factures de l'utilisateur.
-     * Seules les commandes éligibles (CONFIRMED, COMPLETED, DELIVERED, PROCESSING, IN_PROGRESS)
-     * sont affichées dans cette vue.
-     *
-     * @param model Le modèle pour la vue
-     * @param authentication L'authentification actuelle
-     * @return Le nom de la vue
-     */
-    @GetMapping("/invoices")
-    public String showInvoices() {
-        return "redirect:" + frontendUrl + "/dashboard";
-    }
-
-    @GetMapping("/orders")
-    public String showOrders() {
-        return "redirect:" + frontendUrl + "/dashboard";
-    }
-
-    @GetMapping("/reviews")
-    public String showReviews() {
-        return "redirect:" + frontendUrl + "/dashboard";
-    }
-
-    @GetMapping("/settings")
-    public String showSettings() {
-        return "redirect:" + frontendUrl + "/settings";
-    }
 }
