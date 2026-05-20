@@ -108,6 +108,36 @@ public class HelpDeskController {
     }
 
     /**
+     * Tech-initiated session end. From ACTIVE moves to ENDING (graceful; mux job
+     * picks up next). From pre-ACTIVE states (DRAFT/INVITED/CONSENT_WAIT) skips
+     * straight to ABORTED with a {@code TECH_CANCELLED} reason since there's
+     * nothing to record. Terminal states return 409.
+     */
+    @PostMapping("/{id}/end")
+    @PreAuthorize("hasAnyRole('TECH','SUPPORT','ADMIN')")
+    public SessionResponse end(@PathVariable UUID id, Authentication authentication) {
+        SupportSession s = sessionService.findById(id);
+        UUID caller = resolveTechUserId(authentication);
+        if (!caller.equals(s.getTechUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Only the assigned tech can end session " + id);
+        }
+        SessionStatus current = s.getStatus();
+        SupportSession updated = switch (current) {
+            case ACTIVE -> sessionService.transition(id, SessionStatus.ENDING, "TECH_ENDED");
+            case DRAFT, INVITED, CONSENT_WAIT ->
+                sessionService.transition(id, SessionStatus.ABORTED, "TECH_CANCELLED");
+            case ENDING, MUXING ->
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Session already ending: " + current);
+            case ARCHIVED, ABORTED ->
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Session already terminal: " + current);
+        };
+        return SessionResponse.of(updated, null);
+    }
+
+    /**
      * Issues short-lived TURN credentials scoped to the caller. Used by both the
      * tech browser and the runner WebView2 to populate their {@code RTCPeerConnection}
      * ICE servers list.

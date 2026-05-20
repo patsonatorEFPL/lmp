@@ -240,6 +240,125 @@ class HelpDeskControllerTest {
                 assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
+    @Test
+    void endFromActiveTransitionsToEndingWithTechEndedReason() {
+        UUID sid = UUID.randomUUID();
+        UUID techId = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(techId);
+        s.setClientUserId(UUID.randomUUID());
+        s.setStatus(SessionStatus.ACTIVE);
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        User tech = new User(); tech.setId(techId);
+        when(userService.findByLogin("tech@lmp.ca")).thenReturn(Optional.of(tech));
+
+        SupportSession ending = new SupportSession();
+        ending.setId(sid);
+        ending.setStatus(SessionStatus.ENDING);
+        ending.setTechUserId(techId);
+        when(sessionService.transition(sid, SessionStatus.ENDING, "TECH_ENDED")).thenReturn(ending);
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("tech@lmp.ca");
+
+        SessionResponse resp = controller.end(sid, auth);
+
+        assertThat(resp.status()).isEqualTo("ENDING");
+        verify(sessionService).transition(sid, SessionStatus.ENDING, "TECH_ENDED");
+    }
+
+    @Test
+    void endFromPreActiveTransitionsToAbortedWithCancelledReason() {
+        UUID sid = UUID.randomUUID();
+        UUID techId = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(techId);
+        s.setStatus(SessionStatus.INVITED);
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        User tech = new User(); tech.setId(techId);
+        when(userService.findByLogin("tech@lmp.ca")).thenReturn(Optional.of(tech));
+
+        SupportSession aborted = new SupportSession();
+        aborted.setId(sid);
+        aborted.setStatus(SessionStatus.ABORTED);
+        aborted.setTechUserId(techId);
+        when(sessionService.transition(sid, SessionStatus.ABORTED, "TECH_CANCELLED")).thenReturn(aborted);
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("tech@lmp.ca");
+
+        SessionResponse resp = controller.end(sid, auth);
+        assertThat(resp.status()).isEqualTo("ABORTED");
+        verify(sessionService).transition(sid, SessionStatus.ABORTED, "TECH_CANCELLED");
+    }
+
+    @Test
+    void endForbiddenForNonAssignedTech() {
+        UUID sid = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(UUID.randomUUID());  // a different tech
+        s.setStatus(SessionStatus.ACTIVE);
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        UUID otherId = UUID.randomUUID();
+        User other = new User(); other.setId(otherId);
+        when(userService.findByLogin("other@lmp.ca")).thenReturn(Optional.of(other));
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("other@lmp.ca");
+
+        assertThatThrownBy(() -> controller.end(sid, auth))
+            .isInstanceOfSatisfying(ResponseStatusException.class, e ->
+                assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void endRejects409WhenAlreadyTerminal() {
+        UUID sid = UUID.randomUUID();
+        UUID techId = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(techId);
+        s.setStatus(SessionStatus.ARCHIVED);
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        User tech = new User(); tech.setId(techId);
+        when(userService.findByLogin("tech@lmp.ca")).thenReturn(Optional.of(tech));
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("tech@lmp.ca");
+
+        assertThatThrownBy(() -> controller.end(sid, auth))
+            .isInstanceOfSatisfying(ResponseStatusException.class, e ->
+                assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void endRejects409WhenAlreadyEnding() {
+        UUID sid = UUID.randomUUID();
+        UUID techId = UUID.randomUUID();
+        SupportSession s = new SupportSession();
+        s.setId(sid);
+        s.setTechUserId(techId);
+        s.setStatus(SessionStatus.ENDING);
+        when(sessionService.findById(sid)).thenReturn(s);
+
+        User tech = new User(); tech.setId(techId);
+        when(userService.findByLogin("tech@lmp.ca")).thenReturn(Optional.of(tech));
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("tech@lmp.ca");
+
+        assertThatThrownBy(() -> controller.end(sid, auth))
+            .isInstanceOfSatisfying(ResponseStatusException.class, e ->
+                assertThat(e.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
     private User stubUser() {
         User u = new User();
         u.setId(UUID.randomUUID());
