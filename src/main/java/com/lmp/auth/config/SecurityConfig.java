@@ -320,6 +320,10 @@ public class SecurityConfig {
                                 "/reset-password",
                                 "/verify-email",
                                 "/resend-verification",
+                                "/payment/guest",
+                                "/payment/success",
+                                "/payment/cancelled",
+                                "/payment/processing",
                                 "/images/**",
                                 "/favicon.ico",
                                 "/error")
