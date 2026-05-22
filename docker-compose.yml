@@ -26,10 +26,10 @@ services:
   redis-cache:
     image: redis:7-alpine
     # requirepass : bloque clients non-autorisés sur dokploy-network. Sans ça,
-    # le Redis Frappe (lmp-menkeps-crm-sli6ws) résout `redis-cache` vers CE
+    # le Redis external framework (lmp-menkeps-crm-sli6ws) résout `redis-cache` vers CE
     # container (collision de service name sur le même overlay) et pollue le
     # keyspace LMP avec ses doctype_meta::* (vérifié 15/05/2026). Le password
-    # force AUTH → Frappe est rejeté, isolation effective.
+    # force AUTH → external framework rejeté, isolation effective.
     # REDIS_PASSWORD doit être défini dans Dokploy env (compose env vars) —
     # syntax `${VAR:?...}` fait échouer compose si non défini, pas de fallback
     # en git pour éviter fuite du secret.
