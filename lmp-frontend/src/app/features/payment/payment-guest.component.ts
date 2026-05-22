@@ -39,9 +39,32 @@ interface ApiOk<T> {
         } @else if (preview()) {
           <div class="mt-6 rounded-sm border border-(--border) bg-(--card) p-4">
             <p class="text-sm font-medium text-(--foreground)">{{ preview()!.serviceName }}</p>
-            <p class="mt-1 text-lg font-semibold text-(--primary)">
-              {{ preview()!.totalAmount | number: '1.2-2' }} {{ preview()!.currency }}
-            </p>
+            <dl class="mt-3 space-y-1 text-sm">
+              <div class="flex items-baseline justify-between gap-4">
+                <dt class="text-(--muted-foreground)">Sous-total HT</dt>
+                <dd class="text-(--foreground)">{{ preview()!.amountHt | number: '1.2-2' }} {{ preview()!.currency }}</dd>
+              </div>
+              @if (preview()!.reverseCharge) {
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-(--muted-foreground)">TVA (autoliquidation)</dt>
+                  <dd class="text-(--foreground)">0,00 {{ preview()!.currency }}</dd>
+                </div>
+              } @else {
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-(--muted-foreground)">TVA ({{ preview()!.vatRate }} %)</dt>
+                  <dd class="text-(--foreground)">{{ preview()!.vatAmount | number: '1.2-2' }} {{ preview()!.currency }}</dd>
+                </div>
+              }
+              <div class="mt-2 flex items-baseline justify-between gap-4 border-t border-(--border) pt-2">
+                <dt class="font-semibold text-(--foreground)">Total à payer</dt>
+                <dd class="text-lg font-semibold text-(--primary)">{{ preview()!.totalAmount | number: '1.2-2' }} {{ preview()!.currency }}</dd>
+              </div>
+            </dl>
+            @if (preview()!.estimated) {
+              <p class="mt-2 text-xs text-(--muted-foreground)">
+                Le taux de TVA définitif est calculé après votre inscription en fonction de votre pays de facturation.
+              </p>
+            }
           </div>
         }
 
@@ -184,6 +207,11 @@ export class PaymentGuestComponent implements OnDestroy {
     serviceName: string;
     totalAmount: number;
     currency: string;
+    amountHt: number;
+    vatAmount: number;
+    vatRate: number;
+    reverseCharge: boolean;
+    estimated: boolean;
   } | null>(null);
   readonly loadError = signal<string | null>(null);
   readonly formError = signal<string | null>(null);
@@ -258,7 +286,17 @@ export class PaymentGuestComponent implements OnDestroy {
 
   private fetchPreview(token: string): void {
     this.http
-      .get<ApiOk<{ orderId: string; serviceName: string; totalAmount: number; currency: string }>>(
+      .get<ApiOk<{
+        orderId: string;
+        serviceName: string;
+        totalAmount: number;
+        currency: string;
+        amountHt: number;
+        vatAmount: number;
+        vatRate: number;
+        reverseCharge: boolean;
+        estimated: boolean;
+      }>>(
         paymentApiUrls.guestOrderPreview(token),
         { withCredentials: true },
       )
