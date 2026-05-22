@@ -238,3 +238,7 @@ bench-results/
 
 ### E2E capture screenshots (local Playwright runs) ###
 e2e-captures-*/
+
+### Local temp directories (logs, scratch files, tool artifacts) ###
+tmp-logs/
+tmp-local/
