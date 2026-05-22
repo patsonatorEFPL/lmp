@@ -155,8 +155,10 @@ interface CreateOrderCatalogOption {
 /** Ligne utilisateur admin (liste / autocomplétion création de commande). */
 interface CreateOrderAdminUser {
   id: string;
-  email: string;
+  /** Peut être null pour les comptes système (ex. Administrator). */
+  email: string | null;
   displayName?: string | null;
+  username?: string | null;
 }
 
 // Order progress steps with thresholds
@@ -1260,9 +1262,11 @@ export class AdminOrdersComponent implements OnInit {
   readonly createOrderUserDatalistOptions = computed(() => {
     const byEmail = new Map<string, { email: string; label: string }>();
     const add = (u: CreateOrderAdminUser) => {
-      const key = u.email.toLowerCase();
+      const email = u.email?.trim();
+      if (!email) return;
+      const key = email.toLowerCase();
       if (!byEmail.has(key)) {
-        byEmail.set(key, { email: u.email, label: this.formatCreateOrderUserLabel(u) });
+        byEmail.set(key, { email, label: this.formatCreateOrderUserLabel(u) });
       }
     };
     this.createOrderUsersList().forEach(add);
@@ -1666,11 +1670,12 @@ export class AdminOrdersComponent implements OnInit {
   }
 
   formatCreateOrderUserLabel(u: CreateOrderAdminUser): string {
+    const email = (u.email ?? '').trim();
     const d = (u.displayName ?? '').trim();
     if (d.length > 0) {
-      return `${d} (${u.email})`;
+      return email ? `${d} (${email})` : d;
     }
-    return u.email;
+    return email || (u.username ?? '').trim() || '(sans email)';
   }
 
   onUserEmailTyped(): void {
@@ -1815,7 +1820,7 @@ export class AdminOrdersComponent implements OnInit {
     }
 
     const cached = this.findCreateOrderUserByEmail(emailTrim);
-    if (cached) {
+    if (cached && cached.email) {
       this.postAdminCreateOrderForUser(cached.id, cached.email);
       return;
     }
@@ -1828,8 +1833,9 @@ export class AdminOrdersComponent implements OnInit {
       .subscribe({
         next: (res) => {
           const users = res.data?.content ?? [];
-          const found = users.find((u) => u.email.toLowerCase() === emailTrim.toLowerCase());
-          if (found) {
+          const wanted = emailTrim.toLowerCase();
+          const found = users.find((u) => (u.email ?? '').toLowerCase() === wanted);
+          if (found && found.email) {
             this.postAdminCreateOrderForUser(found.id, found.email);
           } else {
             this.postAdminGuestOrderForEmail(emailTrim);
@@ -1888,7 +1894,7 @@ export class AdminOrdersComponent implements OnInit {
       return undefined;
     }
     const pool = [...this.createOrderUsersList(), ...this.userEmailSuggestRows()];
-    return pool.find((u) => u.email.toLowerCase() === want);
+    return pool.find((u) => (u.email ?? '').toLowerCase() === want);
   }
 
   private postAdminCreateOrderForUser(userId: string, displayEmail: string): void {

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 public record UserResponse(
         UUID id,
         String email,
+        String username,
         String firstName,
         String lastName,
         String displayName,
@@ -37,6 +38,7 @@ public record UserResponse(
         return new UserResponse(
                 user.getId(),
                 user.getEmail(),
+                user.getUsername(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getDisplayName(),
