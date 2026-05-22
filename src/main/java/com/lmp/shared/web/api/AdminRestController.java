@@ -939,10 +939,22 @@ public class AdminRestController {
                 return ResponseEntity.badRequest().body(ApiResponse.error("serviceName requis"));
             }
 
+            // Admin saisit le montant HT. Pré-applique la TVA FR 20% par défaut au
+            // stockage pour que la liste admin affiche directement le TTC ; quand le
+            // client invite finalise prepare/attach, la TVA est recalculée selon son
+            // pays réel (réécrit totalAmount + appliedVatRate proprement).
+            BigDecimal amountHt = BigDecimal.valueOf(amount);
+            BigDecimal defaultVatRate = new BigDecimal("0.20");
+            BigDecimal totalTtc = amountHt
+                    .multiply(BigDecimal.ONE.add(defaultVatRate))
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+
             Order order = new Order();
             order.setUser(null);
             order.setServiceName(serviceName.trim());
-            order.setTotalAmount(BigDecimal.valueOf(amount));
+            order.setTotalAmount(totalTtc);
+            order.setAmountBaseEur(amountHt);
+            order.setAppliedVatRate(defaultVatRate);
             order.setCurrency(currency);
             order.setStatus(OrderStatus.PAYMENT_PENDING);
             StringBuilder noteBuilder = new StringBuilder();
