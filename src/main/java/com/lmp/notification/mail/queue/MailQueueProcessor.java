@@ -1,21 +1,16 @@
 package com.lmp.notification.mail.queue;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import com.lmp.notification.mail.dispatch.MailDispatcher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,7 +31,7 @@ public class MailQueueProcessor {
     private static final Logger log = LoggerFactory.getLogger(MailQueueProcessor.class);
 
     private final EmailQueueRepository repository;
-    private final JavaMailSender mailSender;
+    private final MailDispatcher dispatcher;
 
     @Value("${lmp.mail.queue.batch-size:20}")
     private int batchSize;
@@ -44,9 +39,9 @@ public class MailQueueProcessor {
     @Value("${lmp.mail.queue.retry.base-delay-seconds:60}")
     private long retryBaseDelaySeconds;
 
-    public MailQueueProcessor(EmailQueueRepository repository, JavaMailSender mailSender) {
+    public MailQueueProcessor(EmailQueueRepository repository, MailDispatcher dispatcher) {
         this.repository = repository;
-        this.mailSender = mailSender;
+        this.dispatcher = dispatcher;
     }
 
     @Scheduled(fixedDelayString = "${lmp.mail.queue.poll-interval-ms:5000}")
@@ -74,42 +69,14 @@ public class MailQueueProcessor {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void sendOne(EmailQueueEvent event) throws MessagingException, UnsupportedEncodingException {
+    public void sendOne(EmailQueueEvent event) throws Exception {
         EmailQueueEvent fresh = repository.findById(event.getId()).orElse(null);
         if (fresh == null || fresh.getStatus() != EmailQueueStatus.SENDING) {
             log.debug("⏭️ [MAIL QUEUE] {} not in SENDING — skipping", event.getId());
             return;
         }
 
-        MimeMessage msg = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
-
-        if (fresh.getSenderName() != null && !fresh.getSenderName().isBlank()) {
-            helper.setFrom(new InternetAddress(fresh.getSender(), fresh.getSenderName(), "UTF-8"));
-        } else {
-            helper.setFrom(fresh.getSender());
-        }
-        if (fresh.getReplyTo() != null && !fresh.getReplyTo().isBlank()) {
-            helper.setReplyTo(fresh.getReplyTo());
-        }
-        helper.setTo(fresh.getRecipient());
-        if (fresh.getCc() != null && !fresh.getCc().isBlank()) {
-            helper.setCc(fresh.getCc().split("\\s*,\\s*"));
-        }
-        if (fresh.getBcc() != null && !fresh.getBcc().isBlank()) {
-            helper.setBcc(fresh.getBcc().split("\\s*,\\s*"));
-        }
-        helper.setSubject(fresh.getSubject());
-
-        if (fresh.getBodyHtml() != null && !fresh.getBodyHtml().isBlank()) {
-            // text fallback for clients that don't render HTML
-            String text = fresh.getBodyText() != null ? fresh.getBodyText() : "";
-            helper.setText(text, fresh.getBodyHtml());
-        } else {
-            helper.setText(fresh.getBodyText() != null ? fresh.getBodyText() : "");
-        }
-
-        mailSender.send(msg);
+        dispatcher.send(fresh);
 
         fresh.setStatus(EmailQueueStatus.SENT);
         fresh.setSentAt(LocalDateTime.now());
