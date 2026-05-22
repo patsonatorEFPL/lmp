@@ -329,6 +329,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'email-queue',
+        loadComponent: () =>
+          import('./features/admin/admin-email-queue.component').then(
+            (m) => m.AdminEmailQueueComponent,
+          ),
+      },
+      {
         path: 'security',
         loadComponent: () =>
           import('./features/admin/admin-security.component').then(

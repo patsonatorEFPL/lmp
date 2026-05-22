@@ -4,17 +4,15 @@ import com.lmp.notification.mail.queue.EmailQueueEvent;
 
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import java.util.List;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 /**
  * Envoi direct via {@link JavaMailSender} (SMTP). Comportement legacy LMP.
- * Activé par défaut quand {@code lmp.mail.dispatcher} vaut {@code smtp} ou est absent.
  */
 @Component
-@ConditionalOnProperty(name = "lmp.mail.dispatcher", havingValue = "smtp", matchIfMissing = true)
 public class SmtpMailDispatcher implements MailDispatcher {
 
     private final JavaMailSender mailSender;
@@ -37,11 +35,14 @@ public class SmtpMailDispatcher implements MailDispatcher {
             helper.setReplyTo(event.getReplyTo());
         }
         helper.setTo(event.getRecipient());
-        if (event.getCc() != null && !event.getCc().isBlank()) {
-            helper.setCc(event.getCc().split("\\s*,\\s*"));
+
+        List<String> ccList = event.getCcList();
+        if (!ccList.isEmpty()) {
+            helper.setCc(ccList.toArray(new String[0]));
         }
-        if (event.getBcc() != null && !event.getBcc().isBlank()) {
-            helper.setBcc(event.getBcc().split("\\s*,\\s*"));
+        List<String> bccList = event.getBccList();
+        if (!bccList.isEmpty()) {
+            helper.setBcc(bccList.toArray(new String[0]));
         }
         helper.setSubject(event.getSubject());
 

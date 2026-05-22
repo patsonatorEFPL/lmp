@@ -462,6 +462,23 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             }
           </a>
           <a
+            routerLink="/admin/email-queue"
+            [routerLinkActive]="sidebarLinkActive"
+            class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-2]="!sidebarCollapsed()"
+            [class.px-2]="!sidebarCollapsed()"
+            [class.mx-0.5]="!sidebarCollapsed()"
+            [class.w-full]="sidebarCollapsed()"
+            [attr.aria-label]="sidebarCollapsed() ? 'File email' : undefined"
+            title="File email"
+          >
+            <lucide-icon [img]="MailIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
+            @if (!sidebarCollapsed()) {
+              <span class="truncate">File email</span>
+            }
+          </a>
+          <a
             routerLink="/admin/settings"
             [routerLinkActive]="sidebarLinkActive"
             class="my-[1.5px] flex min-h-[30px] cursor-pointer items-center rounded py-[7px] text-sm text-zinc-700 transition-colors duration-200 ease-in-out hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
@@ -644,6 +661,12 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               (click)="mobileMenuOpen.set(false)">
               <lucide-icon [img]="FileSearchIcon" [size]="16"></lucide-icon>
               <span class="truncate">Logs &amp; audit</span>
+            </a>
+            <a routerLink="/admin/email-queue" [routerLinkActive]="sidebarLinkActive"
+              class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
+              (click)="mobileMenuOpen.set(false)">
+              <lucide-icon [img]="MailIcon" [size]="16"></lucide-icon>
+              <span class="truncate">File email</span>
             </a>
             <a routerLink="/admin/settings" [routerLinkActive]="sidebarLinkActive"
               class="mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
