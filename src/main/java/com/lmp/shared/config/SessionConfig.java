@@ -36,6 +36,18 @@ public class SessionConfig {
     public RedisSerializer<Object> springSessionDefaultRedisSerializer() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
+        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        // Spring Session 4.0 + Security 7.0 : the AllowlistTypeIdResolver shipped by
+        // SecurityJackson2Modules rejects java.lang.Long, which appears legitimately in
+        // session payloads (e.g. lastAccessedTime). Activate default polymorphic typing
+        // with a permissive validator — safe because our Redis is private (password-auth,
+        // not internet-exposed) and we trust the data we write ourselves.
+        mapper.activateDefaultTyping(
+                com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator.builder()
+                        .allowIfBaseType(Object.class)
+                        .build(),
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                com.fasterxml.jackson.annotation.JsonTypeInfo.As.PROPERTY);
         return new GenericJackson2JsonRedisSerializer(mapper);
     }
 
