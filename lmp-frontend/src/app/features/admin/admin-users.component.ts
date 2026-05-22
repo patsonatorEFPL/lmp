@@ -53,10 +53,12 @@ import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
 
 interface UserItem {
   id: string;
-  email: string;
+  /** Peut être null pour les comptes système (ex. Administrator). */
+  email: string | null;
   firstName: string;
   lastName: string;
   displayName: string;
+  username?: string | null;
   roles: string[];
   emailVerified: boolean;
   accountLocked: boolean;
@@ -244,7 +246,7 @@ interface ApiResponse<T> {
                 />
               </div>
               <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">
-                {{ user.email }}
+                {{ user.email || user.username || '—' }}
               </div>
               <div class="w-48 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
                 {{ user.phone || '' }}
@@ -922,7 +924,8 @@ export class AdminUsersComponent implements OnInit {
     if (q) {
       filtered = filtered.filter(
         (u) =>
-          u.email.toLowerCase().includes(q) ||
+          (u.email ?? '').toLowerCase().includes(q) ||
+          (u.username ?? '').toLowerCase().includes(q) ||
           (u.firstName + ' ' + u.lastName).toLowerCase().includes(q) ||
           (u.displayName || '').toLowerCase().includes(q),
       );
@@ -1007,9 +1010,10 @@ export class AdminUsersComponent implements OnInit {
   }
 
   getInitials(user: UserItem): string {
-    return (
-      (user.firstName?.[0] || '') + (user.lastName?.[0] || '')
-    ).toUpperCase() || user.email[0].toUpperCase();
+    const fromName = ((user.firstName?.[0] || '') + (user.lastName?.[0] || '')).toUpperCase();
+    if (fromName) return fromName;
+    const fallback = user.email || user.username || user.displayName || '?';
+    return fallback.charAt(0).toUpperCase();
   }
 
   getStatusClass(status: string): string {
@@ -1037,7 +1041,7 @@ export class AdminUsersComponent implements OnInit {
     this.editForm = {
       status: user.status || 'ACTIVE',
       locked: user.accountLocked === true,
-      email: user.email,
+      email: user.email ?? '',
       admin: user.roles?.includes('ADMIN') ?? false,
     };
     this.resetPwdSection();
