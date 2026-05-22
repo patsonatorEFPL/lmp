@@ -70,7 +70,12 @@ public class GuestOrderPaymentRestController {
             java.util.UUID orderId,
             String serviceName,
             java.math.BigDecimal totalAmount,
-            String currency) {}
+            String currency,
+            java.math.BigDecimal amountHt,
+            java.math.BigDecimal vatAmount,
+            int vatRate,
+            boolean reverseCharge,
+            boolean estimated) {}
 
     public record GuestPrepareResponse(
             java.util.UUID orderId,
@@ -83,7 +88,8 @@ public class GuestOrderPaymentRestController {
     public ResponseEntity<ApiResponse<GuestPreviewResponse>> preview(@PathVariable String token) {
         return guestOrderCheckoutService.previewByToken(token)
                 .map(p -> ResponseEntity.ok(ApiResponse.ok(new GuestPreviewResponse(
-                        p.orderId(), p.serviceName(), p.totalAmount(), p.currency()))))
+                        p.orderId(), p.serviceName(), p.totalAmount(), p.currency(),
+                        p.amountHt(), p.vatAmount(), p.vatRate(), p.reverseCharge(), p.estimated()))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Lien invalide ou commande déjà associée")));
     }
