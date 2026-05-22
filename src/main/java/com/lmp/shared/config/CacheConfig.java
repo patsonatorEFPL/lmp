@@ -33,10 +33,31 @@ public class CacheConfig {
     @Primary
     public CacheManager cacheManager() {
         CaffeineCacheManager mgr = new CaffeineCacheManager();
+        // Default Caffeine for short-lived caches (VIES results, FX rates, etc.).
         mgr.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(1000)
                 .expireAfterWrite(5, TimeUnit.MINUTES)
                 .recordStats());
+
+        // Per-cache configuration. Catalog + blog have explicit @CacheEvict
+        // on save mutations, so a long TTL is safe and reduces DB load under
+        // sustained read traffic. Stale data window bounded by admin save → evict.
+        Caffeine<Object, Object> longLived = Caffeine.newBuilder()
+                .maximumSize(2000)
+                .expireAfterWrite(60, TimeUnit.MINUTES)
+                .recordStats();
+        for (String name : new String[] {
+                "catalog-active-services",
+                "catalog-featured-services",
+                "catalog-search-active",
+                "catalog-categories",
+                "catalog-service-by-slug",
+                "blog-by-slug",
+                "blog-search",
+                "blog-search-with-fallback",
+        }) {
+            mgr.registerCustomCache(name, longLived.build());
+        }
         return mgr;
     }
 }

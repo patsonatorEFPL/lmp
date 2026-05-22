@@ -50,8 +50,10 @@ public class StartupWarmupRunner {
     private static final String[] HOT_PATHS = {
             "/actuator/health/liveness",
             "/api/v1/config",
+            "/api/v1/services",
             "/api/v1/services/featured",
             "/api/v1/services/search?q=plomberie",
+            "/api/v1/blog",
             "/api/v1/blog/search?q=installation",
             "/robots.txt",
             "/"
