@@ -198,6 +198,25 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       url: '/about',
       keywords: 'à propos LMP, marketing local, expertise SEO, équipe marketing digital, référencement local Québec, Canada',
     });
+
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      name: 'À Propos — LMP Digital Services',
+      url: `${this.seo.baseUrl}/about`,
+      description: 'Découvrez LMP Digital Services : notre mission, notre vision et notre équipe d\'experts en marketing digital et référencement local.',
+      mainEntity: {
+        '@type': 'Organization',
+        name: 'LMP Digital Services',
+        url: this.seo.baseUrl,
+        logo: `${this.seo.baseUrl}/images/logo-lmp.webp`,
+        foundingDate: '2016',
+        sameAs: [
+          'https://www.facebook.com/lmpservices',
+          'https://www.linkedin.com/company/lmp-digital-services',
+        ],
+      },
+    });
   }
 
   ngAfterViewInit(): void {

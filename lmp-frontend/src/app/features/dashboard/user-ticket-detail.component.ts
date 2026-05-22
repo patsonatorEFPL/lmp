@@ -7,8 +7,8 @@ import {
   Clock, CheckCircle, XCircle, AlertTriangle, User, Headset,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Issue, IssueStatus, IssuePriority } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Issue, IssueStatus, IssuePriority } from '../../shared/models/portal.models';
 
 type Tone = 'neutral' | 'info' | 'warning' | 'success' | 'danger';
 
@@ -139,7 +139,7 @@ type Tone = 'neutral' | 'info' | 'warning' | 'success' | 'danger';
 })
 export class UserTicketDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
 
   readonly ArrowLeftIcon = ArrowLeft;
   readonly Loader2Icon = Loader2;
@@ -161,7 +161,7 @@ export class UserTicketDetailComponent implements OnInit {
 
   private load(id: string) {
     this.loading.set(true);
-    this.stub.getIssue(id).subscribe({
+    this.portal.getIssue(id).subscribe({
       next: (i) => { this.issue.set(i ?? null); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -172,7 +172,7 @@ export class UserTicketDetailComponent implements OnInit {
     const issue = this.issue();
     if (!issue || !this.replyMessage.trim()) return;
     this.sending.set(true);
-    this.stub.addIssueComment(issue.id, this.replyMessage.trim()).subscribe({
+    this.portal.addIssueComment(issue.id, this.replyMessage.trim()).subscribe({
       next: () => {
         this.replyMessage = '';
         this.sending.set(false);

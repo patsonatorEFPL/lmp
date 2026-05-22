@@ -5,8 +5,8 @@ import {
   LucideAngularModule, MapPin, Plus, Pencil, Trash2, X, Loader2, Star,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Address, AddressType } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Address, AddressType } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-addresses',
@@ -237,7 +237,7 @@ import { Address, AddressType } from '../../core/stubs/portal.models';
   `,
 })
 export class UserAddressesComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
 
   readonly TYPES: AddressType[] = ['Billing', 'Shipping', 'Office', 'Personal', 'Other'];
 
@@ -268,7 +268,7 @@ export class UserAddressesComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listAddresses().subscribe({
+    this.portal.listAddresses().subscribe({
       next: (l) => { this.items.set(l); this.loading.set(false); this.currentPage.set(0); },
       error: () => this.loading.set(false),
     });
@@ -296,7 +296,7 @@ export class UserAddressesComponent implements OnInit {
     this.saving.set(true);
     const d = this.draft();
     const toSave: Address = d.id ? d : { ...d, id: `ADDR-${Date.now()}` };
-    this.stub.saveAddress(toSave).subscribe({
+    this.portal.saveAddress(toSave).subscribe({
       next: () => {
         this.saving.set(false);
         this.closeModal();
@@ -308,7 +308,7 @@ export class UserAddressesComponent implements OnInit {
 
   remove(a: Address) {
     if (!confirm(`Supprimer l'adresse « ${a.addressTitle} » ?`)) return;
-    this.stub.deleteAddress(a.id).subscribe({ next: () => this.load() });
+    this.portal.deleteAddress(a.id).subscribe({ next: () => this.load() });
   }
 
   getTypeClass(type: AddressType): string {
@@ -328,7 +328,7 @@ export class UserAddressesComponent implements OnInit {
       city: '', state: '', pincode: '', country: 'Canada',
       phone: null, emailId: null,
       isPrimaryAddress: false, isShippingAddress: false,
-      external CRMId: null, syncStatus: 'PENDING', lastSyncedAt: null,
+      externalCrmId: null, syncStatus: 'PENDING', lastSyncedAt: null,
     };
   }
 }

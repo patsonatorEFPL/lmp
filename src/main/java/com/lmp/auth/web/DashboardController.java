@@ -43,6 +43,18 @@ public class DashboardController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
+
+    /** URL de base de l'host auth — utilisée pour les redirects vers /login. */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
+    /** Mode monolithique : split frontendUrl absent → cascade vers baseUrl → frontendUrl == baseUrl. */
+    private boolean isMonolithicMode() {
+        return frontendUrl == null || frontendUrl.isBlank() || frontendUrl.equals(baseUrl);
+    }
+
         private final UserService userService;
 
         private final StripeCheckoutPaymentProcessor stripeCheckoutProcessor;
@@ -79,7 +91,7 @@ public class DashboardController {
                               @RequestParam(name = "processPurchase", required = false) Boolean processPurchase,
                               HttpServletRequest request) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return "redirect:" + frontendUrl + "/login";
+            return "redirect:" + authBaseUrl + "/login";
         }
 
         // Vérifier s'il faut traiter une intention de paiement
@@ -95,7 +107,11 @@ public class DashboardController {
             }
         }
 
-        // Rediriger vers le frontend Angular
+        // Mode split : redirect vers frontend Angular externe.
+        // Mode monolithique : forward vers index.html → SPA.
+        if (isMonolithicMode()) {
+            return "forward:/index.html";
+        }
         return "redirect:" + frontendUrl + "/dashboard";
     }
 
@@ -198,32 +214,4 @@ public class DashboardController {
         return orderRepository.save(order);
     }
 
-    /**
-     * Affiche la liste des factures de l'utilisateur.
-     * Seules les commandes éligibles (CONFIRMED, COMPLETED, DELIVERED, PROCESSING, IN_PROGRESS)
-     * sont affichées dans cette vue.
-     *
-     * @param model Le modèle pour la vue
-     * @param authentication L'authentification actuelle
-     * @return Le nom de la vue
-     */
-    @GetMapping("/invoices")
-    public String showInvoices() {
-        return "redirect:" + frontendUrl + "/dashboard";
-    }
-
-    @GetMapping("/orders")
-    public String showOrders() {
-        return "redirect:" + frontendUrl + "/dashboard";
-    }
-
-    @GetMapping("/reviews")
-    public String showReviews() {
-        return "redirect:" + frontendUrl + "/dashboard";
-    }
-
-    @GetMapping("/settings")
-    public String showSettings() {
-        return "redirect:" + frontendUrl + "/settings";
-    }
 }

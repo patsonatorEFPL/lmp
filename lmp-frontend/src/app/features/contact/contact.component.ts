@@ -18,6 +18,7 @@ import { HlmLabel } from '@spartan-ng/helm/label';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { SeoService } from '../../core/services/seo.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 import { AppointmentModalComponent } from '../../shared/modals/appointment-modal.component';
 
 @Component({
@@ -55,8 +56,8 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
               </div>
               <div>
                 <p class="text-sm font-medium text-(--foreground)">Email</p>
-                <a href="mailto:lmp.assistance@gmail.com" class="text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
-                  lmp.assistance&#64;gmail.com
+                <a [href]="'mailto:' + siteConfig.contactEmail" class="text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
+                  {{ siteConfig.contactEmail }}
                 </a>
               </div>
             </div>
@@ -220,7 +221,7 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
               </h2>
               <p class="mt-3 text-sm text-(--muted-foreground)">
                 Vous ne trouvez pas votre réponse ?
-                <a href="mailto:lmp.assistance@gmail.com" class="text-(--primary) hover:underline">Écrivez-nous</a>
+                <a [href]="'mailto:' + siteConfig.contactEmail" class="text-(--primary) hover:underline">Écrivez-nous</a>
               </p>
             </div>
 
@@ -262,6 +263,7 @@ import { AppointmentModalComponent } from '../../shared/modals/appointment-modal
 export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly seo = inject(SeoService);
+  readonly siteConfig = inject(SiteConfigService);
   private isBrowser: boolean;
   private scrollObserver?: IntersectionObserver;
 
@@ -275,6 +277,27 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       description: 'Contactez LMP Digital Services pour une consultation SEO gratuite et sans engagement.',
       url: '/contact',
       keywords: 'contact LMP, consultation SEO gratuite, marketing digital contact, devis référencement, Québec Canada',
+    });
+
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'ContactPage',
+      name: 'Contact — LMP Digital Services',
+      url: `${this.seo.baseUrl}/contact`,
+      description: 'Contactez LMP Digital Services pour une consultation SEO gratuite et sans engagement.',
+      mainEntity: {
+        '@type': 'Organization',
+        name: 'LMP Digital Services',
+        url: this.seo.baseUrl,
+        logo: `${this.seo.baseUrl}/images/logo-lmp.webp`,
+        contactPoint: {
+          '@type': 'ContactPoint',
+          telephone: '+1-418-555-0199',
+          contactType: 'sales',
+          areaServed: ['CA', 'FR', 'BE', 'CH'],
+          availableLanguage: ['French', 'English'],
+        },
+      },
     });
   }
 

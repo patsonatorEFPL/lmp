@@ -54,6 +54,33 @@ export const routes: Routes = [
             (m) => m.TermsComponent,
           ),
       },
+      {
+        path: 'blog',
+        loadComponent: () =>
+          import('./features/blog/blog-list.component').then(
+            (m) => m.BlogListComponent,
+          ),
+      },
+      {
+        path: 'blog/:slug',
+        loadComponent: () =>
+          import('./features/blog/blog-detail.component').then(
+            (m) => m.BlogDetailComponent,
+          ),
+      },
+      // 404 sous PublicLayout : navbar/footer conservés pour permettre la navigation.
+      // Route nommée /not-found accessible via redirect explicite.
+      // PAS de wildcard "**" ici : il interférerait avec les routes top-level
+      // (login/register/forgot-password/dashboard/admin) car le PublicLayout
+      // 'path: ""' parent matche tout et descendrait dans le wildcard avant
+      // de laisser Angular essayer les routes sœurs.
+      {
+        path: 'not-found',
+        loadComponent: () =>
+          import('./features/errors/not-found.component').then(
+            (m) => m.NotFoundComponent,
+          ),
+      },
     ],
   },
 
@@ -82,6 +109,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/reset-password.component').then(
         (m) => m.ResetPasswordComponent,
+      ),
+  },
+  {
+    path: 'accept-invitation',
+    loadComponent: () =>
+      import('./features/auth/accept-invitation.component').then(
+        (m) => m.AcceptInvitationComponent,
       ),
   },
 
@@ -213,6 +247,14 @@ export const routes: Routes = [
             (m) => m.SettingsComponent,
           ),
       },
+      // Sous-route inconnue dans /dashboard/* → 404 dans le shell dashboard
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./features/errors/not-found.component').then(
+            (m) => m.NotFoundComponent,
+          ),
+      },
     ],
   },
   {
@@ -252,6 +294,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'staff-invitations',
+        loadComponent: () =>
+          import('./features/admin/admin-staff-invitations.component').then(
+            (m) => m.AdminStaffInvitationsComponent,
+          ),
+      },
+      {
         path: 'orders',
         loadComponent: () =>
           import('./features/admin/admin-orders.component').then(
@@ -279,12 +328,66 @@ export const routes: Routes = [
             (m) => m.AdminSettingsComponent,
           ),
       },
+      {
+        path: 'security',
+        loadComponent: () =>
+          import('./features/admin/admin-security.component').then(
+            (m) => m.AdminSecurityComponent,
+          ),
+      },
+      {
+        path: 'logs',
+        loadComponent: () =>
+          import('./features/admin/admin-logs.component').then(
+            (m) => m.AdminLogsComponent,
+          ),
+      },
+      {
+        path: 'quotations',
+        loadComponent: () =>
+          import('./features/admin/admin-quotations.component').then(
+            (m) => m.AdminQuotationsComponent,
+          ),
+      },
+      {
+        path: 'invoices',
+        loadComponent: () =>
+          import('./features/admin/admin-invoices.component').then(
+            (m) => m.AdminInvoicesComponent,
+          ),
+      },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./features/admin/admin-projects.component').then(
+            (m) => m.AdminProjectsComponent,
+          ),
+      },
+      {
+        path: 'tickets',
+        loadComponent: () =>
+          import('./features/admin/admin-tickets.component').then(
+            (m) => m.AdminTicketsComponent,
+          ),
+      },
+      // Sous-route inconnue dans /admin/* → 404 dans le shell admin
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./features/errors/not-found.component').then(
+            (m) => m.NotFoundComponent,
+          ),
+      },
     ],
   },
 
-  // Fallback
+  // Catch-all racine : doit être la TOUTE DERNIÈRE route. Toute URL non
+  // matchée par les routes ci-dessus tombe ici → page 404 stylisée.
   {
     path: '**',
-    redirectTo: '',
+    loadComponent: () =>
+      import('./features/errors/not-found.component').then(
+        (m) => m.NotFoundComponent,
+      ),
   },
 ];

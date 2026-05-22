@@ -43,19 +43,16 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        logger.debug("🔍 Tentative de connexion pour l'email: {}", email);
-        logger.error("🚨 [SESSION-SECURITY] loadUserByUsername appelé pour: {} - ATTENTION: cette méthode n'est appelée qu'une seule fois à la connexion", email);
-    
-        User user = userRepository.findByEmailWithRoles(email)
+    public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
+        logger.debug("Tentative de connexion: {}", login);
+
+        User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> {
-                    logger.warn("❌ Utilisateur non trouvé avec l'email: {}", email);
-                    return new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + email);
+                    logger.warn("Utilisateur non trouvé: {}", login);
+                    return new UsernameNotFoundException("Utilisateur non trouvé: " + login);
                 });
-    
-        logger.info("✅ Utilisateur trouvé: {} avec {} rôles", user.getEmail(), user.getRoles().size());
-        logger.error("🔍 [SESSION-SECURITY] Statut utilisateur lors connexion: {} (Email: {})", user.getStatus(), user.getEmail());
-        logger.error("⚠️ [SESSION-SECURITY] Spring Security ne re-vérifiera PAS ce statut tant que la session est active");
+
+        logger.info("Utilisateur trouvé: {} avec {} rôles", user.getUsername() != null ? user.getUsername() : user.getEmail(), user.getRoles().size());
         
         logger.info("🔑 Mot de passe hashé (10 premiers caractères): {}", user.getPassword() != null ? user.getPassword().substring(0, 10) + "..." : "null");
         if (user.getPassword() != null && user.getPassword().startsWith("$2a$")) {
@@ -102,8 +99,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         
         logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {})", user.getEmail(), user.getStatus());
 
+        String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
+                .username(principal)
                 .password(user.getPassword())
                 .authorities(authorities)
                 .accountExpired(false)

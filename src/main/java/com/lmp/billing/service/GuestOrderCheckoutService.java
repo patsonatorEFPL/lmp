@@ -59,11 +59,63 @@ public class GuestOrderCheckoutService {
         return orderRepository.findByCheckoutToken(token.trim())
                 .filter(o -> o.getStatus() == OrderStatus.PAYMENT_PENDING)
                 .filter(this::guestOrderPreviewAllowedForPrincipal)
-                .map(o -> new GuestOrderPreview(
-                        o.getId(),
-                        o.getServiceName(),
-                        o.getTotalAmount(),
-                        o.getCurrency() != null ? o.getCurrency() : "EUR"));
+                .map(o -> {
+                    String currency = o.getCurrency() != null ? o.getCurrency() : "EUR";
+
+                    // Si la commande a déjà été préparée (prepare/attach a appliqué la TVA),
+                    // appliedVatRate est non-null et totalAmount = TTC. Sinon on estime avec
+                    // le taux du pays utilisateur (sinon FR 20% par défaut, marqué estimated).
+                    User attachedUser = o.getUser();
+                    java.math.BigDecimal appliedRate = o.getAppliedVatRate();
+                    java.math.BigDecimal totalAmount;
+                    java.math.BigDecimal amountHt;
+                    java.math.BigDecimal vatAmount;
+                    int vatRate;
+                    boolean reverseCharge;
+                    boolean estimated;
+
+                    if (appliedRate != null) {
+                        // Snapshot TVA déjà figé sur la commande
+                        totalAmount = o.getTotalAmount();
+                        reverseCharge = Boolean.TRUE.equals(o.getVatReverseCharge());
+                        java.math.BigDecimal rate = appliedRate;
+                        if (rate.compareTo(java.math.BigDecimal.ZERO) == 0) {
+                            amountHt = totalAmount;
+                            vatAmount = java.math.BigDecimal.ZERO;
+                        } else {
+                            amountHt = totalAmount.divide(java.math.BigDecimal.ONE.add(rate), 2, java.math.RoundingMode.HALF_UP);
+                            vatAmount = totalAmount.subtract(amountHt);
+                        }
+                        vatRate = rate.multiply(new java.math.BigDecimal("100")).intValue();
+                        estimated = false;
+                    } else {
+                        // Commande pas encore préparée : montant stocké = HT, on estime la TVA.
+                        amountHt = o.getTotalAmount();
+                        String countryCode = attachedUser != null && attachedUser.getCountry() != null
+                                ? attachedUser.getCountry() : "FR";
+                        reverseCharge = attachedUser != null && Boolean.TRUE.equals(attachedUser.getVatReverseCharge());
+                        java.math.BigDecimal rate = reverseCharge
+                                ? java.math.BigDecimal.ZERO
+                                : vatCalculationService.getVatRate(countryCode);
+                        vatAmount = reverseCharge
+                                ? java.math.BigDecimal.ZERO
+                                : amountHt.multiply(rate).setScale(2, java.math.RoundingMode.HALF_UP);
+                        totalAmount = amountHt.add(vatAmount);
+                        vatRate = rate.multiply(new java.math.BigDecimal("100")).intValue();
+                        estimated = attachedUser == null;
+                    }
+
+                    return new GuestOrderPreview(
+                            o.getId(),
+                            o.getServiceName(),
+                            totalAmount,
+                            currency,
+                            amountHt,
+                            vatAmount,
+                            vatRate,
+                            reverseCharge,
+                            estimated);
+                });
     }
 
     /**
@@ -244,7 +296,12 @@ public class GuestOrderCheckoutService {
             java.util.UUID orderId,
             String serviceName,
             java.math.BigDecimal totalAmount,
-            String currency) {}
+            String currency,
+            java.math.BigDecimal amountHt,
+            java.math.BigDecimal vatAmount,
+            int vatRate,
+            boolean reverseCharge,
+            boolean estimated) {}
 
     public record GuestPrepareResult(
             java.util.UUID orderId,

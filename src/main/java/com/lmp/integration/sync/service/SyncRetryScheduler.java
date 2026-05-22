@@ -32,11 +32,14 @@ public class SyncRetryScheduler {
 
     private final SyncEventRepository syncEventRepository;
     private final SyncProperties syncProperties;
+    private final com.lmp.integration.sync.monitoring.SyncMetricsService metricsService;
 
     public SyncRetryScheduler(SyncEventRepository syncEventRepository,
-                              SyncProperties syncProperties) {
+                              SyncProperties syncProperties,
+                              com.lmp.integration.sync.monitoring.SyncMetricsService metricsService) {
         this.syncEventRepository = syncEventRepository;
         this.syncProperties = syncProperties;
+        this.metricsService = metricsService;
     }
 
     /**
@@ -64,6 +67,7 @@ public class SyncRetryScheduler {
                 event.setProcessedAt(LocalDateTime.now());
                 syncEventRepository.save(event);
                 dead++;
+                metricsService.recordEventDead(event.getEntityType());
                 log.error("💀 [SYNC RETRY] Event {} ({} {}) — max retries ({}) reached — DEAD",
                         event.getId(), event.getEntityType(), event.getEventType(), event.getMaxRetries());
             } else {
@@ -75,6 +79,7 @@ public class SyncRetryScheduler {
                 event.setErrorMessage(null);
                 syncEventRepository.save(event);
                 requeued++;
+                metricsService.recordEventRetried(event.getEntityType());
                 log.info("🔁 [SYNC RETRY] Requeued event {} ({} {}) — retry {}/{} — next in {}s",
                         event.getId(), event.getEntityType(), event.getEventType(),
                         event.getRetryCount() + 1, event.getMaxRetries(), backoffSeconds);
@@ -82,5 +87,27 @@ public class SyncRetryScheduler {
         }
 
         log.info("🔁 [SYNC RETRY] Batch complete — {} requeued, {} dead", requeued, dead);
+    }
+
+    /**
+     * Recovery des événements PROCESSING orphelins.
+     * <p>
+     * Si un réplica crash entre {@code claimNextBatch()} (status PROCESSING) et la
+     * fin de {@code processEvent()} (transition vers SUCCESS/FAILED/DEAD), le row
+     * reste PROCESSING ad vitam. Sans recovery, ces events disparaissent du retry
+     * loop (qui ne regarde que status='FAILED') et de la queue (status='QUEUED').
+     * <p>
+     * Tourne toutes les 60s. Reset PROCESSING → QUEUED si processed_at &gt; 5min,
+     * pour que claimNextBatch les reprenne. processEvent typique &lt; 1s, donc 5min
+     * est largement au-dessus du worst case (lent externalErp + retries HTTP).
+     */
+    @Scheduled(fixedDelayString = "${lmp.sync.recovery.delay-ms:60000}")
+    @Transactional
+    public void recoverOrphanProcessing() {
+        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(5);
+        int recovered = syncEventRepository.recoverStaleProcessing(staleBefore);
+        if (recovered > 0) {
+            log.warn("⚕️ [SYNC RECOVERY] Reset {} stale PROCESSING events back to QUEUED", recovered);
+        }
     }
 }

@@ -10,7 +10,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-
 import com.lmp.notification.config.MailAddressConfig;
+import com.lmp.notification.mail.queue.EmailQueueRequest;
+import com.lmp.notification.mail.queue.MailQueueService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +63,8 @@ public class AuthServiceImpl implements AuthService {
 
         private final SessionSecurityService sessionSecurityService;
 
+        private final MailQueueService mailQueueService;
+
         /**
          * Proxy lazy pour appeler les méthodes {@code @Async} depuis la même classe (évite l'auto-invocation).
          */
@@ -85,6 +85,14 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    /**
+     * URL de base de l'host auth (issuer OIDC). Utilisée pour construire les
+     * liens de verify-email et reset-password — ces flux ne sont accessibles
+     * QUE sur l'host auth (les autres hosts retournent 404 via OidcHostGuardFilter).
+     */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
 
     public AuthServiceImpl(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -96,6 +104,7 @@ public class AuthServiceImpl implements AuthService {
                            SessionRegistry sessionRegistry,
                            UserService userService,
                            SessionSecurityService sessionSecurityService,
+                           MailQueueService mailQueueService,
                            @Lazy AuthService authServiceAsync) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -107,6 +116,7 @@ public class AuthServiceImpl implements AuthService {
         this.sessionRegistry = sessionRegistry;
         this.userService = userService;
         this.sessionSecurityService = sessionSecurityService;
+        this.mailQueueService = mailQueueService;
         this.authServiceAsync = authServiceAsync;
     }
 
@@ -211,21 +221,18 @@ public class AuthServiceImpl implements AuthService {
 
             String htmlContent = templateEngine.process("emails/welcome-minimal-clean", context);
 
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setReplyTo(mailAddressConfig.getNoreply());
-            helper.setTo(user.getEmail());
-            helper.setSubject("\uD83C\uDF89 Bienvenue chez " + companyName + " !");
-            helper.setText(htmlContent, true);
-
-            javaMailSender.send(message);
+            mailQueueService.enqueue(EmailQueueRequest.builder()
+                    .sender(mailAddressConfig.getNoreply())
+                    .senderName(mailAddressConfig.getName())
+                    .replyTo(mailAddressConfig.getNoreply())
+                    .recipient(user.getEmail())
+                    .subject("\uD83C\uDF89 Bienvenue chez " + companyName + " !")
+                    .bodyHtml(htmlContent)
+                    .priority(MailQueueService.PRIORITY_NORMAL)
+                    .build());
+            // (legacy direct send removed \u2014 kept call site for compile until refactor below)
             logger.info("Email de bienvenue envoyé avec succès à : {}", user.getEmail());
 
-        } catch (MessagingException e) {
-            logger.error("Erreur MessagingException envoi bienvenue pour '{}': {}", user.getEmail(), e.getMessage(), e);
-            logger.warn("L'inscription a réussi mais l'email de bienvenue n'a pas pu être envoyé");
         } catch (Exception e) {
             logger.error("Erreur inattendue envoi bienvenue pour '{}': {}", user.getEmail(), e.getMessage(), e);
             logger.warn("L'inscription a réussi mais l'email de bienvenue n'a pas pu être envoyé");
@@ -279,7 +286,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void sendVerificationEmail(User user) {
         try {
-            String verificationUrl = baseUrl + "/verify-email?token=" + user.getVerificationToken();
+            // Lien sur l'host auth (canonique) — verify-email n'est accessible que sur auth.*
+            String verificationUrl = authBaseUrl + "/verify-email?token=" + user.getVerificationToken();
 
             Context context = new Context();
             context.setVariable("userName", user.getDisplayName());
@@ -289,16 +297,15 @@ public class AuthServiceImpl implements AuthService {
 
             String htmlContent = templateEngine.process("emails/email-verification", context);
 
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setReplyTo(mailAddressConfig.getNoreply());
-            helper.setTo(user.getEmail());
-            helper.setSubject("✉ Vérifiez votre email - " + companyName);
-            helper.setText(htmlContent, true);
-
-            javaMailSender.send(message);
+            mailQueueService.enqueue(EmailQueueRequest.builder()
+                    .sender(mailAddressConfig.getNoreply())
+                    .senderName(mailAddressConfig.getName())
+                    .replyTo(mailAddressConfig.getNoreply())
+                    .recipient(user.getEmail())
+                    .subject("✉ Vérifiez votre email - " + companyName)
+                    .bodyHtml(htmlContent)
+                    .priority(MailQueueService.PRIORITY_TRANSACTIONAL)
+                    .build());
             logger.info("Email de vérification envoyé à : {}", user.getEmail());
 
         } catch (Exception e) {
@@ -328,6 +335,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean isDisposableEmail(String email) {
         return disposableEmailBlocklist.isDisposable(email);
+    }
+
+    @Override
+    @Async("authBackgroundExecutor")
+    public void processForgotPasswordAsync(String email) {
+        try {
+            initiatePasswordReset(email).ifPresent(this::sendPasswordResetEmail);
+        } catch (RuntimeException e) {
+            logger.warn("Forgot-password async pipeline failed: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -364,7 +381,8 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
         try {
-            String resetUrl = frontendUrl + "/reset-password?token=" + payload.token();
+            // Lien sur l'host auth (canonique) — reset-password n'est accessible que sur auth.*
+            String resetUrl = authBaseUrl + "/reset-password?token=" + payload.token();
 
             Context context = new Context();
             context.setVariable("userName", payload.userDisplayName());
@@ -375,16 +393,15 @@ public class AuthServiceImpl implements AuthService {
 
             String htmlContent = templateEngine.process("emails/password-reset", context);
 
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setReplyTo(mailAddressConfig.getNoreply());
-            helper.setTo(payload.email());
-            helper.setSubject("Réinitialisation de votre mot de passe — " + companyName);
-            helper.setText(htmlContent, true);
-
-            javaMailSender.send(message);
+            mailQueueService.enqueue(EmailQueueRequest.builder()
+                    .sender(mailAddressConfig.getNoreply())
+                    .senderName(mailAddressConfig.getName())
+                    .replyTo(mailAddressConfig.getNoreply())
+                    .recipient(payload.email())
+                    .subject("Réinitialisation de votre mot de passe — " + companyName)
+                    .bodyHtml(htmlContent)
+                    .priority(MailQueueService.PRIORITY_TRANSACTIONAL)
+                    .build());
             logger.info("Password reset email sent to: {}", payload.email());
 
         } catch (Exception e) {
@@ -439,16 +456,15 @@ public class AuthServiceImpl implements AuthService {
 
             String htmlContent = templateEngine.process("emails/password-reset-confirmation", context);
 
-            MimeMessage message = javaMailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setReplyTo(mailAddressConfig.getNoreply());
-            helper.setTo(email);
-            helper.setSubject("Confirmation : votre mot de passe a été modifié — " + companyName);
-            helper.setText(htmlContent, true);
-
-            javaMailSender.send(message);
+            mailQueueService.enqueue(EmailQueueRequest.builder()
+                    .sender(mailAddressConfig.getNoreply())
+                    .senderName(mailAddressConfig.getName())
+                    .replyTo(mailAddressConfig.getNoreply())
+                    .recipient(email)
+                    .subject("Confirmation : votre mot de passe a été modifié — " + companyName)
+                    .bodyHtml(htmlContent)
+                    .priority(MailQueueService.PRIORITY_TRANSACTIONAL)
+                    .build());
             logger.info("Password reset confirmation email sent to: {}", email);
 
         } catch (Exception e) {

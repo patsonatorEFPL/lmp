@@ -1,5 +1,6 @@
 package com.lmp.crm.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -153,8 +154,14 @@ public class AppointmentForm {
     public void setPriority(Integer priority) { this.priority = priority; }
 
     /**
-     * Surcharge pour accepter LocalDateTime (compatibilité service-layer)
+     * Surcharge pour accepter LocalDateTime (compatibilité service-layer).
+     * <p>
+     * {@code @JsonIgnore} indispensable : sans ça Jackson POJOPropertyBuilder
+     * échoue avec "Conflicting setter definitions for property appointmentDate"
+     * sur introspection (springdoc OpenAPI scan, etc.) — deux setters Java
+     * partagent le même nom de property JSON.
      */
+    @JsonIgnore
     public void setAppointmentDate(LocalDateTime dateTime) {
         if (dateTime != null) {
             this.appointmentDate = dateTime.toLocalDate();

@@ -8,6 +8,7 @@ import { HlmLabel } from '@spartan-ng/helm/label';
 import { HlmSeparator } from '@spartan-ng/helm/separator';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -28,7 +29,7 @@ import { environment } from '../../../environments/environment';
       <div class="relative hidden w-1/2 lg:flex flex-col justify-between bg-(--card) border-r border-(--border)">
         <!-- Logo + Title -->
         <div class="p-8">
-          <a routerLink="/" class="flex items-center gap-3">
+          <a [href]="siteConfig.baseUrl" class="flex items-center gap-3">
             <img src="/images/logo-lmp.webp" alt="LMP Logo" class="h-8 w-auto rounded-xs" />
             <span class="text-base font-semibold text-(--foreground)">LMP Digital Services</span>
           </a>
@@ -55,8 +56,8 @@ import { environment } from '../../../environments/environment';
 
         <!-- Bottom links -->
         <div class="p-8 pt-0 flex items-center gap-6">
-          <a routerLink="/privacy" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors">Politique de confidentialité</a>
-          <a routerLink="/terms" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors">Conditions d'utilisation</a>
+          <a [href]="siteConfig.baseUrl + '/privacy'" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors">Politique de confidentialité</a>
+          <a [href]="siteConfig.baseUrl + '/terms'" class="text-xs text-(--muted-foreground) hover:text-(--foreground) transition-colors">Conditions d'utilisation</a>
         </div>
       </div>
 
@@ -64,7 +65,7 @@ import { environment } from '../../../environments/environment';
       <div class="flex w-full flex-col lg:w-1/2">
         <!-- Top bar -->
         <div class="flex items-center justify-between px-6 py-4 sm:px-8">
-          <a routerLink="/" class="flex items-center gap-2 text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
+          <a [href]="siteConfig.baseUrl" class="flex items-center gap-2 text-sm text-(--muted-foreground) hover:text-(--foreground) transition-colors">
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -183,7 +184,7 @@ import { environment } from '../../../environments/environment';
               <a
                 hlmBtn
                 variant="outline"
-                [href]="oauthGoogleUrl"
+                [href]="siteConfig.oauthGoogleHref"
                 class="cursor-pointer gap-2"
               >
                 <svg class="h-4 w-4" viewBox="0 0 24 24">
@@ -197,7 +198,7 @@ import { environment } from '../../../environments/environment';
               <a
                 hlmBtn
                 variant="outline"
-                [href]="oauthMicrosoftUrl"
+                [href]="siteConfig.oauthMicrosoftHref"
                 class="cursor-pointer gap-2"
               >
                 <svg class="h-4 w-4" viewBox="0 0 24 24">
@@ -236,9 +237,7 @@ export class LoginComponent {
   readonly EyeIcon = Eye;
   readonly EyeOffIcon = EyeOff;
 
-  // OAuth URLs need absolute backend URL (browser redirect, not AJAX)
-  readonly oauthGoogleUrl = '/oauth2/authorization/google';
-  readonly oauthMicrosoftUrl = '/oauth2/authorization/microsoft';
+  protected readonly siteConfig = inject(SiteConfigService);
 
   readonly showPassword = signal(false);
   readonly submitting = signal(false);
@@ -279,7 +278,8 @@ export class LoginComponent {
       })
       .subscribe({
         next: (response: any) => {
-          const user = response.data ?? response;
+          const payload = response.data ?? response;
+          const user = payload.user ?? payload;
           this.authService.setUser({
             id: user.id,
             email: user.email,
@@ -293,11 +293,22 @@ export class LoginComponent {
             city: user.city,
             country: user.country,
           });
-          const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'));
-          if (back) {
-            void this.router.navigateByUrl(back);
-          } else {
-            void this.router.navigate(['/dashboard']);
+
+          const redirectUrl = payload.redirectUrl as string | undefined;
+          if (redirectUrl?.includes('/oauth2/authorize')) {
+            // Full page reload so the session cookie is sent to the OAuth2 endpoint
+            window.location.href = redirectUrl;
+            return;
+          }
+
+          // Priorité : return_to query > legacy returnUrl > backend redirectUrl
+          // (rôle-based default /admin pour admin, /dashboard sinon) > /dashboard.
+          const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('return_to'))
+                    ?? this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'))
+                    ?? this.safeInternalReturnPath(redirectUrl ?? null);
+          const target = (back ?? '/dashboard');
+          if (typeof window !== 'undefined') {
+            window.location.href = this.siteConfig.baseUrl + target;
           }
           this.submitting.set(false);
         },

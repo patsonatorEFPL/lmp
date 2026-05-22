@@ -1,5 +1,6 @@
 package com.lmp.shared.web.api;
 
+import com.lmp.MockMvcSecurityTestConfiguration;
 import com.lmp.TestcontainersConfiguration;
 import com.lmp.auth.domain.Role;
 import com.lmp.auth.domain.User;
@@ -9,7 +10,7 @@ import com.lmp.auth.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, MockMvcSecurityTestConfiguration.class})
 @Transactional
 class AdminCreateUserTest {
 

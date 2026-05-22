@@ -24,10 +24,14 @@ public class MailAddressConfig {
     private String noreply = "noreply@localhost";
     
     /**
-     * Adresse support pour emails bidirectionnels
-     * (formulaires de contact, communications client-service)
+     * Adresse support pour emails bidirectionnels (support client)
      */
     private String support = "support@localhost";
+
+    /**
+     * Adresse contact pour les formulaires publics du site
+     */
+    private String contact = "info@localhost";
     
     /**
      * Configuration du Reply-To pour les emails noreply (même adresse que l'expéditeur)
@@ -62,6 +66,14 @@ public class MailAddressConfig {
     public void setSupport(String support) {
         this.support = support;
     }
+
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
     
     /**
      * Obtient l'adresse Reply-To pour les emails noreply
@@ -93,16 +105,26 @@ public class MailAddressConfig {
      * @return true si c'est une adresse noreply
      */
     public boolean isNoReplyAddress(String address) {
-        return address != null && address.equalsIgnoreCase(noreply);
+        return matchesLocalPart(address, noreply);
     }
-    
+
     /**
      * Vérifie si une adresse est de type support
      * @param address adresse à vérifier
      * @return true si c'est une adresse support
      */
     public boolean isSupportAddress(String address) {
-        return address != null && address.equalsIgnoreCase(support);
+        return matchesLocalPart(address, support);
+    }
+
+    private static boolean matchesLocalPart(String address, String reference) {
+        if (address == null || reference == null) return false;
+        return localPart(address).equalsIgnoreCase(localPart(reference));
+    }
+
+    private static String localPart(String email) {
+        int at = email.indexOf('@');
+        return at < 0 ? email : email.substring(0, at);
     }
     
     /**

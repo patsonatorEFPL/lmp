@@ -4,18 +4,35 @@ import com.lmp.auth.domain.User;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderItem;
+import com.lmp.billing.domain.Quotation;
+import com.lmp.billing.domain.QuotationItem;
 import com.lmp.billing.repository.OrderRepository;
+import com.lmp.billing.repository.QuotationRepository;
 import com.lmp.catalog.domain.Service;
+import com.lmp.catalog.domain.ServiceOffer;
 import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncProperties;
+import com.lmp.integration.sync.mapper.AddressSyncMapper;
 import com.lmp.integration.sync.mapper.CustomerSyncMapper;
+import com.lmp.integration.sync.mapper.ErpUserSyncMapper;
+import com.lmp.integration.sync.mapper.ItemPriceSyncMapper;
 import com.lmp.integration.sync.mapper.ItemSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
 import com.lmp.integration.sync.mapper.PaymentSyncMapper;
+import com.lmp.integration.sync.mapper.ProjectSyncMapper;
+import com.lmp.integration.sync.mapper.QuotationSyncMapper;
+import com.lmp.integration.sync.mapper.TaskSyncMapper;
+import com.lmp.integration.sync.mapper.TicketSyncMapper;
 import com.lmp.integration.sync.service.SyncOutboundService;
+import com.lmp.project.domain.Project;
+import com.lmp.project.domain.ProjectTask;
+import com.lmp.project.repository.ProjectRepository;
+import com.lmp.project.repository.ProjectTaskRepository;
+import com.lmp.support.domain.Ticket;
+import com.lmp.support.repository.TicketRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -41,6 +58,16 @@ import java.util.UUID;
  * émettrice (checkout, webhook Stripe) est commitée avant de démarrer le traitement asynchrone.
  * Cela élimine les race conditions où le handler ne voit pas l'entité ou ses champs mis à jour.
  * {@code fallbackExecution = true} assure le fonctionnement hors contexte transactionnel (dev, tests).
+ * <p>
+ * <b>Contrat Outbox :</b> Le write business (Order, User…) et le publish de l'événement sont
+ * dans la même transaction Spring. L'enqueue dans {@code sync_event_log} est effectué par
+ * {@code SyncOutboundService.enqueue()} dans le thread @Async du listener, APRÈS le commit.
+ * <p>
+ * <b>Risque connu :</b> Si le thread @Async crash entre le commit business et l'enqueue,
+ * l'événement est perdu. Ce cas est rattrapé par {@code SyncReconciliationService} qui détecte
+ * les entités CONFIRMED sans {@code externalOrderId} et ré-enqueue la synchronisation.
+ * Ce trade-off (at-least-once avec réconciliation) est accepté pour éviter la complexité
+ * d'un vrai Outbox pattern (polling table dédiée).
  */
 @Component
 public class ErpEventListener {
@@ -52,34 +79,79 @@ public class ErpEventListener {
     private final ExternalSystemClient externalClient;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final QuotationRepository quotationRepository;
     private final ServiceRepository serviceRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectTaskRepository projectTaskRepository;
+    private final TicketRepository ticketRepository;
     private final CustomerSyncMapper customerSyncMapper;
     private final OrderSyncMapper orderSyncMapper;
     private final ItemSyncMapper itemSyncMapper;
     private final PaymentSyncMapper paymentSyncMapper;
+    private final QuotationSyncMapper quotationSyncMapper;
+    private final AddressSyncMapper addressSyncMapper;
+    private final ProjectSyncMapper projectSyncMapper;
+    private final TaskSyncMapper taskSyncMapper;
+    private final TicketSyncMapper ticketSyncMapper;
+    private final ItemPriceSyncMapper itemPriceSyncMapper;
+    private final ErpUserSyncMapper erpUserSyncMapper;
 
     public ErpEventListener(SyncOutboundService syncOutboundService,
                             SyncProperties syncProperties,
                             ExternalSystemClient externalClient,
                             UserRepository userRepository,
                             OrderRepository orderRepository,
+                            QuotationRepository quotationRepository,
                             ServiceRepository serviceRepository,
+                            ProjectRepository projectRepository,
+                            ProjectTaskRepository projectTaskRepository,
+                            TicketRepository ticketRepository,
                             CustomerSyncMapper customerSyncMapper,
                             OrderSyncMapper orderSyncMapper,
                             ItemSyncMapper itemSyncMapper,
-                            PaymentSyncMapper paymentSyncMapper) {
+                            PaymentSyncMapper paymentSyncMapper,
+                            QuotationSyncMapper quotationSyncMapper,
+                            AddressSyncMapper addressSyncMapper,
+                            ProjectSyncMapper projectSyncMapper,
+                            TaskSyncMapper taskSyncMapper,
+                            TicketSyncMapper ticketSyncMapper,
+                            ItemPriceSyncMapper itemPriceSyncMapper,
+                            ErpUserSyncMapper erpUserSyncMapper) {
         this.syncOutboundService = syncOutboundService;
         this.syncProperties = syncProperties;
         this.externalClient = externalClient;
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
+        this.quotationRepository = quotationRepository;
         this.serviceRepository = serviceRepository;
+        this.projectRepository = projectRepository;
+        this.projectTaskRepository = projectTaskRepository;
+        this.ticketRepository = ticketRepository;
         this.customerSyncMapper = customerSyncMapper;
         this.orderSyncMapper = orderSyncMapper;
         this.itemSyncMapper = itemSyncMapper;
         this.paymentSyncMapper = paymentSyncMapper;
+        this.quotationSyncMapper = quotationSyncMapper;
+        this.addressSyncMapper = addressSyncMapper;
+        this.projectSyncMapper = projectSyncMapper;
+        this.taskSyncMapper = taskSyncMapper;
+        this.ticketSyncMapper = ticketSyncMapper;
+        this.itemPriceSyncMapper = itemPriceSyncMapper;
+        this.erpUserSyncMapper = erpUserSyncMapper;
     }
 
+    // Pas de @Transactional ici : combiné à @Async + @TransactionalEventListener,
+    // Spring AOP n'enchaîne pas les wrappers correctement (le proxy @Async appelle
+    // `this.method()` sur la cible et bypasse le proxy @Transactional). LazyInit
+    // continue à exploser malgré l'annotation.
+    //
+    // Architecture choisie : eager-fetch via repository methods (findByIdWithRoles,
+    // findByIdWithUserAndItems, etc.) pour pré-charger les associations LAZY pendant
+    // que la session du commit business est encore ouverte (avant qu'AFTER_COMMIT
+    // ne déclenche ce listener async). User.roles est joinFetch dans findByIdWithRoles.
+    //
+    // RestExternalClient timeout 8s read garantit qu'un externalCrm lent ne bloque pas
+    // le thread async indéfiniment (cf. AsyncConfig pour le pool borné).
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleBusinessEvent(LmpBusinessEvent event) {
@@ -156,66 +228,88 @@ public class ErpEventListener {
             case REVIEW_CREATED, REVIEW_UPDATED ->
                     logEvent("Avis — synchronisation externe", event);
 
+            // --- Devis → QUOTATION ---
+            case QUOTATION_CREATED, QUOTATION_SENT -> {
+                logEvent("Devis créé/envoyé — synchronisation externe", event);
+                handleQuotationCreated(event);
+            }
+            case QUOTATION_ACCEPTED -> {
+                logEvent("Devis accepté — conversion via make_sales_order", event);
+                handleQuotationAccepted(event);
+            }
+            case QUOTATION_REJECTED -> {
+                logEvent("Devis refusé — mise à jour externe", event);
+                handleQuotationRejected(event);
+            }
+            case QUOTATION_UPDATED -> {
+                logEvent("Devis mis à jour — synchronisation externe", event);
+                handleQuotationUpdate(event);
+            }
+            case QUOTATION_DELETED -> {
+                logEvent("Devis supprimé — suppression externe", event);
+                handleQuotationDelete(event);
+            }
+
             // --- Lead / Contact ---
             case CONTACT_FORM_SUBMITTED ->
                     logEvent("Lead — synchronisation externe (CRM)", event);
 
-            // --- Catalogue → ITEM ---
+            // --- Catalogue → ITEM + ItemPrice ---
             case SERVICE_CREATED -> {
                 logEvent("Service créé — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ITEM, "CREATED", event);
+                handleServiceCreated(event);
             }
             case SERVICE_UPDATED -> {
                 logEvent("Service mis à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ITEM, "UPDATED", event);
+                handleServiceUpdated(event);
             }
             case SERVICE_DELETED -> {
                 logEvent("Service supprimé — suppression externe", event);
-                dispatchSync(SyncEntityType.ITEM, "DELETED", event);
+                handleServiceDeleted(event);
             }
 
             // --- Projets → PROJECT / TASK ---
             case PROJECT_CREATED -> {
                 logEvent("Projet créé — synchronisation externe", event);
-                dispatchSync(SyncEntityType.PROJECT, "CREATED", event);
+                handleProjectCreated(event);
             }
             case PROJECT_UPDATED -> {
                 logEvent("Projet mis à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.PROJECT, "UPDATED", event);
+                handleProjectUpdated(event);
             }
             case PROJECT_DELETED -> {
                 logEvent("Projet supprimé — suppression externe", event);
-                dispatchSync(SyncEntityType.PROJECT, "DELETED", event);
+                handleProjectDeleted(event);
             }
             case TASK_CREATED -> {
                 logEvent("Tâche créée — synchronisation externe", event);
-                dispatchSync(SyncEntityType.TASK, "CREATED", event);
+                handleTaskCreated(event);
             }
             case TASK_UPDATED -> {
                 logEvent("Tâche mise à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.TASK, "UPDATED", event);
+                handleTaskUpdated(event);
             }
             case TASK_DELETED -> {
                 logEvent("Tâche supprimée — suppression externe", event);
-                dispatchSync(SyncEntityType.TASK, "DELETED", event);
+                handleTaskDeleted(event);
             }
 
             // --- Support → ISSUE ---
             case TICKET_CREATED -> {
                 logEvent("Ticket créé — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "CREATED", event);
+                handleTicketCreated(event);
             }
             case TICKET_UPDATED -> {
                 logEvent("Ticket mis à jour — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "UPDATED", event);
+                handleTicketUpdated(event);
             }
             case TICKET_RESOLVED -> {
                 logEvent("Ticket résolu — synchronisation externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "UPDATED", event);
+                handleTicketResolved(event);
             }
             case TICKET_DELETED -> {
                 logEvent("Ticket supprimé — suppression externe", event);
-                dispatchSync(SyncEntityType.ISSUE, "DELETED", event);
+                handleTicketDeleted(event);
             }
 
             default -> logger.debug("📡 [EVENT BUS] Événement non routé : {}", event.type());
@@ -223,23 +317,34 @@ public class ErpEventListener {
     }
 
     /**
-     * Provisioning d'un nouveau Customer + Contact pour un User inscrit.
+     * Provisioning d'un nouveau User inscrit.
+     * <ul>
+     *   <li>STAFF/ADMIN → DocType "User" externalErp (login)</li>
+     *   <li>USER classique → DocType "Customer" externalErp (compte client)</li>
+     * </ul>
      */
     private void handleUserProvisioning(LmpBusinessEvent event) {
-        if (!syncProperties.getFeatures().isUserProvisioning()) {
-            logger.debug("🔇 [SYNC] User provisioning disabled — skipping");
-            return;
-        }
-
-        Optional<User> userOpt = userRepository.findById(event.entityId());
+        Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
         if (userOpt.isEmpty()) {
             logger.warn("⚠️ [SYNC] User {} not found for provisioning", event.entityId());
             return;
         }
 
         User user = userOpt.get();
-        Map<String, Object> customerPayload = customerSyncMapper.toCreatePayload(user);
 
+        if (user.isStaff()) {
+            provisionErpUser(user);
+        } else {
+            provisionCustomer(user);
+        }
+    }
+
+    private void provisionCustomer(User user) {
+        if (!syncProperties.getFeatures().isUserProvisioning()) {
+            logger.debug("🔇 [SYNC] Customer provisioning disabled — skipping");
+            return;
+        }
+        Map<String, Object> customerPayload = customerSyncMapper.toCreatePayload(user);
         syncOutboundService.syncEntity(
                 SyncEntityType.CUSTOMER,
                 "CREATED",
@@ -249,13 +354,26 @@ public class ErpEventListener {
         );
     }
 
+    private void provisionErpUser(User user) {
+        if (!syncProperties.getFeatures().isStaffProvisioning()) {
+            logger.debug("🔇 [SYNC] Staff provisioning disabled — skipping");
+            return;
+        }
+        Map<String, Object> userPayload = erpUserSyncMapper.toCreatePayload(user);
+        syncOutboundService.syncEntity(
+                SyncEntityType.ERP_USER,
+                "CREATED",
+                user.getId(),
+                null,
+                userPayload
+        );
+    }
+
     /**
-     * Mise à jour d'un Customer existant pour un User modifié.
+     * Mise à jour d'un User : Customer (clients) ou externalErp User (collaborateurs).
      */
     private void handleUserUpdate(LmpBusinessEvent event) {
-        if (!syncProperties.getFeatures().isUserProvisioning()) return;
-
-        Optional<User> userOpt = userRepository.findById(event.entityId());
+        Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
         if (userOpt.isEmpty()) {
             logger.warn("⚠️ [SYNC] User {} not found for update", event.entityId());
             return;
@@ -263,7 +381,16 @@ public class ErpEventListener {
 
         User user = userOpt.get();
 
-        // Si pas encore provisionné, créer au lieu de mettre à jour
+        if (user.isStaff()) {
+            updateErpUser(user);
+        } else {
+            updateCustomer(user);
+        }
+    }
+
+    private void updateCustomer(User user) {
+        if (!syncProperties.getFeatures().isUserProvisioning()) return;
+
         if (user.getExternalCustomerId() == null) {
             Map<String, Object> createPayload = customerSyncMapper.toCreatePayload(user);
             syncOutboundService.syncEntity(SyncEntityType.CUSTOMER, "CREATED", user.getId(), null, createPayload);
@@ -278,6 +405,73 @@ public class ErpEventListener {
                 user.getExternalCustomerId(),
                 updatePayload
         );
+
+        syncUserAddress(user);
+    }
+
+    private void updateErpUser(User user) {
+        if (!syncProperties.getFeatures().isStaffProvisioning()) return;
+
+        if (user.getExternalErpUserId() == null) {
+            Map<String, Object> createPayload = erpUserSyncMapper.toCreatePayload(user);
+            syncOutboundService.syncEntity(SyncEntityType.ERP_USER, "CREATED", user.getId(), null, createPayload);
+            return;
+        }
+
+        Map<String, Object> updatePayload = erpUserSyncMapper.toUpdatePayload(user);
+        syncOutboundService.syncEntity(
+                SyncEntityType.ERP_USER,
+                "UPDATED",
+                user.getId(),
+                user.getExternalErpUserId(),
+                updatePayload
+        );
+    }
+
+    /**
+     * Synchronise l'adresse du User vers externalErp (création ou mise à jour).
+     * Appel synchrone — ne passe pas par la queue car l'Address dépend du Customer
+     * qui doit déjà exister.
+     */
+    private void syncUserAddress(User user) {
+        if (!addressSyncMapper.hasAddressData(user)) {
+            return;
+        }
+        if (user.getExternalCustomerId() == null) {
+            logger.debug("📋 [SYNC] User {} has no externalCustomerId — skipping address sync", user.getId());
+            return;
+        }
+
+        try {
+            if (user.getExternalAddressId() != null) {
+                // Mise à jour
+                Map<String, Object> payload = addressSyncMapper.toUpdatePayload(user);
+                ExternalResponse response = externalClient.updateEntity(
+                        SyncEntityType.ADDRESS, user.getExternalAddressId(), payload);
+                if (response.success()) {
+                    logger.info("✅ [SYNC] Updated Address {} for User {}",
+                            user.getExternalAddressId(), user.getId());
+                } else {
+                    logger.warn("⚠️ [SYNC] Failed to update Address for User {}: {}",
+                            user.getId(), response.errorMessage());
+                }
+            } else {
+                // Création (peut arriver si le Customer existait déjà sans Address)
+                Map<String, Object> payload = addressSyncMapper.toCreatePayload(user, user.getExternalCustomerId());
+                ExternalResponse response = externalClient.createEntity(SyncEntityType.ADDRESS, payload);
+                if (response.success() && response.externalId() != null) {
+                    user.setExternalAddressId(response.externalId());
+                    userRepository.save(user);
+                    logger.info("🔗 [SYNC] Created Address {} for User {}",
+                            response.externalId(), user.getId());
+                } else {
+                    logger.warn("⚠️ [SYNC] Failed to create Address for User {}: {}",
+                            user.getId(), response.errorMessage());
+                }
+            }
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] Error syncing Address for User {}: {}", user.getId(), e.getMessage());
+        }
     }
 
     /**
@@ -416,7 +610,7 @@ public class ErpEventListener {
         try {
             ExternalResponse response = externalClient.getEntity(SyncEntityType.SALES_INVOICE, salesInvoiceId);
             if (response.success() && response.data() != null) {
-                // external ERP API returns {"data": {"grand_total": ...}} — navigate the nested structure
+                // externalErp API returns {"data": {"grand_total": ...}} — navigate the nested structure
                 Map<String, Object> dataMap = response.data();
                 if (dataMap.containsKey("data") && dataMap.get("data") instanceof Map) {
                     dataMap = (Map<String, Object>) dataMap.get("data");
@@ -454,6 +648,9 @@ public class ErpEventListener {
             Service service = item.getService();
             if (service != null && service.getExternalItemCode() == null) {
                 ensureServiceItemProvisioned(service);
+            } else if (service == null) {
+                // Fallback : item sans service lié → provisionner par serviceName
+                ensureSingleItemProvisioned(order.getServiceName(), null);
             }
         }
     }
@@ -472,6 +669,17 @@ public class ErpEventListener {
                 serviceRepository.save(service);
                 logger.info("🔧 [SYNC] Auto-provisioned Item '{}' for Service '{}'",
                         response.externalId(), service.getTitle());
+            } else if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
+                // L'Item existe déjà — chercher son ID exact dans l'ERP et le lier
+                String existingId = findExistingItemId(service.getTitle());
+                if (existingId != null) {
+                    service.setExternalItemCode(existingId);
+                    serviceRepository.save(service);
+                    logger.info("🔗 [SYNC] Linked existing Item '{}' to Service '{}'",
+                            existingId, service.getTitle());
+                } else {
+                    logger.debug("📋 [SYNC] Item '{}' already exists — OK", service.getTitle());
+                }
             } else {
                 logger.warn("⚠️ [SYNC] Failed to auto-provision Item for Service '{}': {}",
                         service.getTitle(), response.errorMessage());
@@ -480,6 +688,28 @@ public class ErpEventListener {
             logger.error("❌ [SYNC] Error auto-provisioning Item for Service '{}': {}",
                     service.getTitle(), e.getMessage());
         }
+    }
+
+    /**
+     * Cherche un Item existant dans l'ERP par son item_code (name).
+     * @return le name de l'item, ou null si non trouvé
+     */
+    private String findExistingItemId(String itemCode) {
+        try {
+            ExternalResponse response = externalClient.getEntity(SyncEntityType.ITEM, itemCode);
+            if (response.success() && response.data() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) response.data();
+                if (data.containsKey("data")) {
+                    data = (Map<String, Object>) data.get("data");
+                }
+                Object name = data.get("name");
+                return name != null ? name.toString() : null;
+            }
+        } catch (Exception e) {
+            logger.debug("🔍 [SYNC] Could not find existing Item '{}': {}", itemCode, e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -501,13 +731,10 @@ public class ErpEventListener {
 
             if (response.success()) {
                 logger.info("🔧 [SYNC] Auto-provisioned generic Item '{}'", itemName);
+            } else if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
+                logger.debug("📋 [SYNC] Item '{}' already exists — OK", itemName);
             } else {
-                // Si l'Item existe déjà (DuplicateEntryError), c'est OK
-                if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
-                    logger.debug("📋 [SYNC] Item '{}' already exists — OK", itemName);
-                } else {
-                    logger.warn("⚠️ [SYNC] Failed to auto-provision Item '{}': {}", itemName, response.errorMessage());
-                }
+                logger.warn("⚠️ [SYNC] Failed to auto-provision Item '{}': {}", itemName, response.errorMessage());
             }
         } catch (Exception e) {
             logger.error("❌ [SYNC] Error auto-provisioning Item '{}': {}", itemName, e.getMessage());
@@ -640,11 +867,22 @@ public class ErpEventListener {
      * L'ordre FIFO de la queue garantit que les enfants sont traités avant le parent.
      */
     private void handleUserDelete(LmpBusinessEvent event) {
-        if (!syncProperties.getFeatures().isUserProvisioning()) return;
-
-        // Le payload doit contenir l'externalCustomerId (set avant la suppression)
         Map<String, Object> payload = event.payload();
+        String externalErpUserId = payload != null ? (String) payload.get("externalErpUserId") : null;
         String externalCustomerId = payload != null ? (String) payload.get("externalCustomerId") : null;
+
+        // Cas collaborateur : supprimer le User externalErp s'il existe
+        if (externalErpUserId != null && !externalErpUserId.isBlank()
+                && syncProperties.getFeatures().isStaffProvisioning()) {
+            logger.info("🗑️ [SYNC] Deleting externalErp User '{}' for User {}",
+                    externalErpUserId, event.entityId());
+            syncOutboundService.enqueue(
+                    SyncEntityType.ERP_USER, "DELETED",
+                    event.entityId(), externalErpUserId, Map.of()
+            );
+        }
+
+        if (!syncProperties.getFeatures().isUserProvisioning()) return;
 
         if (externalCustomerId == null || externalCustomerId.isBlank()) {
             logger.debug("📋 [SYNC] User {} has no externalCustomerId — nothing to delete externally",
@@ -745,6 +983,509 @@ public class ErpEventListener {
                 externalId,
                 payload != null ? payload : Map.of()
         );
+    }
+
+    // ==================== Quotation Handlers ====================
+
+    /**
+     * Devis créé ou envoyé → créer Quotation dans le système externe.
+     * Auto-provisionne les Items manquants comme pour les commandes.
+     */
+    private void handleQuotationCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) {
+            logger.debug("🔇 [SYNC] Quotation sync disabled — skipping");
+            return;
+        }
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
+            if (quotationOpt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Quotation {} not found for sync", event.entityId());
+                return;
+            }
+
+            Quotation quotation = quotationOpt.get();
+
+            if (quotation.getExternalQuotationId() != null) {
+                logger.debug("📋 [SYNC] Quotation {} already has externalId {} — skipping",
+                        quotation.getId(), quotation.getExternalQuotationId());
+                return;
+            }
+
+            // Auto-provisionner les Items manquants
+            ensureQuotationItemsProvisioned(quotation);
+
+            Map<String, Object> payload = quotationSyncMapper.toQuotationPayload(quotation);
+            syncOutboundService.syncEntity(
+                    SyncEntityType.QUOTATION, "CREATED",
+                    quotation.getId(), null, payload
+            );
+
+            logger.info("📤 [SYNC] Quotation {} enqueued for external creation", quotation.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Devis accepté → appelle make_sales_order côté externalErp pour convertir
+     * le Quotation en Sales Order. L'external SO ID est ensuite stocké sur
+     * l'Order LMP issue de la conversion (via QuotationService.convertToOrder).
+     */
+    private void handleQuotationAccepted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
+            if (quotationOpt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Quotation {} not found for acceptance", event.entityId());
+                return;
+            }
+
+            Quotation quotation = quotationOpt.get();
+            String externalQuotationId = quotation.getExternalQuotationId();
+
+            if (externalQuotationId == null) {
+                logger.warn("⚠️ [SYNC] Quotation {} has no externalId — cannot call make_sales_order",
+                        quotation.getId());
+                return;
+            }
+
+            // 0. S'assurer que le Quotation est soumis (docstatus=1)
+            submitQuotationIfNeeded(externalQuotationId);
+
+            // 1. Attendre que le submit soit persisté côté externalErp
+            Thread.sleep(1500);
+
+            // 2. Récupérer l'Order depuis l'event (évite LazyInitializationException sur convertedOrder)
+            String orderIdStr = event.payload() != null ? (String) event.payload().get("orderId") : null;
+            if (orderIdStr == null) {
+                logger.error("❌ [SYNC] QUOTATION_ACCEPTED event missing orderId metadata");
+                return;
+            }
+            Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(UUID.fromString(orderIdStr));
+            if (orderOpt.isEmpty()) {
+                logger.error("❌ [SYNC] Order {} not found for Quotation {}", orderIdStr, quotation.getId());
+                return;
+            }
+            Order order = orderOpt.get();
+
+            // 3. Créer le SO directement à partir de l'Order (évite les problèmes de template
+            //    make_sales_order qui contient des champs calculés incompatible avec frappe.client.insert)
+            //    Le lien Quotation est injecté automatiquement par OrderSyncMapper.toSalesOrderPayload()
+            //    via order.getQuotation().getExternalQuotationId().
+            Map<String, Object> soData = orderSyncMapper.toSalesOrderPayload(order);
+
+            ExternalResponse createResponse = externalClient.createEntity(SyncEntityType.SALES_ORDER, soData);
+
+            if (createResponse.success() && createResponse.externalId() != null) {
+                String soExternalId = createResponse.externalId();
+                logger.info("✅ [SYNC] Quotation {} → SO {} created", quotation.getId(), soExternalId);
+
+                order.setExternalOrderId(soExternalId);
+                orderRepository.save(order);
+                logger.info("🔗 [SYNC] Order {} linked to SO {} (from Quotation conversion)",
+                        order.getId(), soExternalId);
+            } else {
+                logger.error("❌ [SYNC] Failed to create SO from Quotation {}: {}",
+                        quotation.getId(), createResponse.errorMessage());
+            }
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationAccepted failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Soumet un Quotation externalErp s'il est encore en Draft (docstatus=0).
+     * Nécessaire car make_sales_order exige docstatus=1.
+     */
+    private void submitQuotationIfNeeded(String externalQuotationId) {
+        try {
+            ExternalResponse docResponse = externalClient.getEntity(SyncEntityType.QUOTATION, externalQuotationId);
+            if (docResponse.success() && docResponse.data() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) docResponse.data();
+                if (data.containsKey("data") && data.get("data") instanceof Map) {
+                    data = (Map<String, Object>) data.get("data");
+                }
+                Object docstatus = data.get("docstatus");
+                int status = (docstatus instanceof Number) ? ((Number) docstatus).intValue() : 0;
+                if (status == 0) {
+                    // frappe.client.submit nécessite le document complet avec 'modified' pour éviter
+                    // TimestampMismatchError ("modified after you have opened it")
+                    data.put("docstatus", 1);
+                    ExternalResponse submitResponse = externalClient.callMethod("frappe.client.submit",
+                            Map.of("doc", data));
+                    if (submitResponse.success()) {
+                        logger.info("📋 [SYNC] Submitted Quotation '{}' before make_sales_order", externalQuotationId);
+                    } else {
+                        logger.warn("⚠️ [SYNC] Failed to submit Quotation '{}': {} — proceeding anyway",
+                                externalQuotationId, submitResponse.errorMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("⚠️ [SYNC] Could not submit Quotation '{}': {} — proceeding with make_sales_order anyway",
+                    externalQuotationId, e.getMessage());
+        }
+    }
+
+    /**
+     * Devis refusé → déclarer comme "Lost" côté système externe.
+     */
+    private void handleQuotationRejected(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findById(event.entityId());
+            if (quotationOpt.isEmpty()) return;
+
+            Quotation quotation = quotationOpt.get();
+            if (quotation.getExternalQuotationId() == null) {
+                logger.debug("📋 [SYNC] Quotation {} has no externalId — skipping reject", quotation.getId());
+                return;
+            }
+
+            // Appeler declare_order_lost sur externalErp
+            externalClient.callMethod(
+                    "erpnext.selling.doctype.quotation.quotation.declare_order_lost",
+                    Map.of(
+                            "docname", quotation.getExternalQuotationId(),
+                            "lost_reasons_list", List.of(Map.of("lost_reason", "Client refusal")),
+                            "detailed_reason", "Rejected by client via LMP"
+                    )
+            );
+
+            logger.info("📋 [SYNC] Quotation {} declared as Lost externally", quotation.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationRejected failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Devis mis à jour → synchroniser les modifications.
+     */
+    private void handleQuotationUpdate(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        try {
+            Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
+            if (quotationOpt.isEmpty()) return;
+
+            Quotation quotation = quotationOpt.get();
+            if (quotation.getExternalQuotationId() == null) {
+                logger.debug("📋 [SYNC] Quotation {} has no externalId — skipping update", quotation.getId());
+                return;
+            }
+
+            Map<String, Object> payload = quotationSyncMapper.toQuotationUpdatePayload(quotation);
+            syncOutboundService.syncEntity(
+                    SyncEntityType.QUOTATION, "UPDATED",
+                    quotation.getId(), quotation.getExternalQuotationId(), payload
+            );
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleQuotationUpdate failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Devis supprimé → supprimer côté système externe.
+     */
+    private void handleQuotationDelete(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isQuotationSync()) return;
+
+        Map<String, Object> payload = event.payload();
+        String externalQuotationId = payload != null ? (String) payload.get("externalQuotationId") : null;
+
+        if (externalQuotationId != null && !externalQuotationId.isBlank()) {
+            syncOutboundService.enqueue(
+                    SyncEntityType.QUOTATION, "DELETED",
+                    event.entityId(), externalQuotationId, Map.of()
+            );
+        }
+    }
+
+    // ==================== Service / ItemPrice Handlers ====================
+
+    private void handleServiceCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isCatalogSync()) {
+            logger.debug("🔇 [SYNC] Catalog sync disabled — skipping");
+            return;
+        }
+        try {
+            Optional<Service> opt = serviceRepository.findByIdWithOffers(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Service {} not found for sync", event.entityId());
+                return;
+            }
+            Service service = opt.get();
+
+            // 1. Sync Item
+            Map<String, Object> itemPayload = itemSyncMapper.toItemCreatePayload(service);
+            syncOutboundService.syncEntity(SyncEntityType.ITEM, "CREATED", service.getId(), null, itemPayload);
+
+            // 2. Sync Item Prices for active offers
+            if (service.getOffers() != null) {
+                for (ServiceOffer offer : service.getOffers()) {
+                    if (Boolean.TRUE.equals(offer.getActive()) && offer.isCurrentlyValid()) {
+                        itemPriceSyncMapper.upsertItemPrice(offer, service);
+                    }
+                }
+            }
+            logger.info("📤 [SYNC] Service {} enqueued with {} offers", service.getId(),
+                    service.getOffers() != null ? service.getOffers().size() : 0);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleServiceCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleServiceUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isCatalogSync()) return;
+        try {
+            Optional<Service> opt = serviceRepository.findByIdWithOffers(event.entityId());
+            if (opt.isEmpty()) return;
+            Service service = opt.get();
+
+            String externalItemCode = service.getExternalItemCode();
+            if (externalItemCode == null || externalItemCode.isBlank()) {
+                logger.debug("📋 [SYNC] Service {} has no externalItemCode — skipping update", service.getId());
+                return;
+            }
+
+            // 1. Update Item
+            Map<String, Object> itemPayload = itemSyncMapper.toItemCreatePayload(service);
+            syncOutboundService.syncEntity(SyncEntityType.ITEM, "UPDATED", service.getId(), externalItemCode, itemPayload);
+
+            // 2. Upsert Item Prices for active offers
+            if (service.getOffers() != null) {
+                for (ServiceOffer offer : service.getOffers()) {
+                    if (Boolean.TRUE.equals(offer.getActive()) && offer.isCurrentlyValid()) {
+                        itemPriceSyncMapper.upsertItemPrice(offer, service);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleServiceUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleServiceDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isCatalogSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalItemCode = payload != null ? (String) payload.get("externalItemCode") : null;
+        if (externalItemCode != null && !externalItemCode.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.ITEM, "DELETED", event.entityId(), externalItemCode, Map.of());
+        }
+    }
+
+    // ==================== Project Handlers ====================
+
+    private void handleProjectCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) {
+            logger.debug("🔇 [SYNC] Project sync disabled — skipping");
+            return;
+        }
+        try {
+            Optional<Project> opt = projectRepository.findById(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Project {} not found for sync", event.entityId());
+                return;
+            }
+            Project project = opt.get();
+            if (project.getExternalProjectId() != null) {
+                logger.debug("📋 [SYNC] Project {} already has externalProjectId {} — skipping",
+                        project.getId(), project.getExternalProjectId());
+                return;
+            }
+            Map<String, Object> payload = projectSyncMapper.toOutboundPayload(project);
+            syncOutboundService.syncEntity(SyncEntityType.PROJECT, "CREATED", project.getId(), null, payload);
+            logger.info("📤 [SYNC] Project {} enqueued for external creation", project.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleProjectCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleProjectUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        try {
+            Optional<Project> opt = projectRepository.findById(event.entityId());
+            if (opt.isEmpty()) return;
+            Project project = opt.get();
+            if (project.getExternalProjectId() == null) {
+                logger.debug("📋 [SYNC] Project {} has no externalProjectId — skipping update", project.getId());
+                return;
+            }
+            Map<String, Object> payload = projectSyncMapper.toOutboundPayload(project);
+            syncOutboundService.syncEntity(SyncEntityType.PROJECT, "UPDATED",
+                    project.getId(), project.getExternalProjectId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleProjectUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleProjectDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalProjectId = payload != null ? (String) payload.get("externalProjectId") : null;
+        if (externalProjectId != null && !externalProjectId.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.PROJECT, "DELETED", event.entityId(), externalProjectId, Map.of());
+        }
+    }
+
+    // ==================== Task Handlers ====================
+
+    private void handleTaskCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) {
+            logger.debug("🔇 [SYNC] Project sync disabled — skipping task sync");
+            return;
+        }
+        try {
+            Optional<ProjectTask> opt = projectTaskRepository.findByIdWithProject(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Task {} not found for sync", event.entityId());
+                return;
+            }
+            ProjectTask task = opt.get();
+            if (task.getExternalTaskId() != null) {
+                logger.debug("📋 [SYNC] Task {} already has externalTaskId {} — skipping",
+                        task.getId(), task.getExternalTaskId());
+                return;
+            }
+            String externalProjectId = task.getProject() != null ? task.getProject().getExternalProjectId() : null;
+            if (externalProjectId == null) {
+                logger.warn("⚠️ [SYNC] Task {} parent project has no externalProjectId — skipping", task.getId());
+                return;
+            }
+            Map<String, Object> payload = taskSyncMapper.toOutboundPayload(task, externalProjectId);
+            syncOutboundService.syncEntity(SyncEntityType.TASK, "CREATED", task.getId(), null, payload);
+            logger.info("📤 [SYNC] Task {} enqueued for external creation", task.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTaskCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTaskUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        try {
+            Optional<ProjectTask> opt = projectTaskRepository.findByIdWithProject(event.entityId());
+            if (opt.isEmpty()) return;
+            ProjectTask task = opt.get();
+            if (task.getExternalTaskId() == null) {
+                logger.debug("📋 [SYNC] Task {} has no externalTaskId — skipping update", task.getId());
+                return;
+            }
+            String externalProjectId = task.getProject() != null ? task.getProject().getExternalProjectId() : null;
+            Map<String, Object> payload = taskSyncMapper.toOutboundPayload(task, externalProjectId);
+            syncOutboundService.syncEntity(SyncEntityType.TASK, "UPDATED",
+                    task.getId(), task.getExternalTaskId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTaskUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTaskDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isProjectSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalTaskId = payload != null ? (String) payload.get("externalTaskId") : null;
+        if (externalTaskId != null && !externalTaskId.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.TASK, "DELETED", event.entityId(), externalTaskId, Map.of());
+        }
+    }
+
+    // ==================== Ticket Handlers ====================
+
+    private void handleTicketCreated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) {
+            logger.debug("🔇 [SYNC] Ticket sync disabled — skipping");
+            return;
+        }
+        try {
+            Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
+            if (opt.isEmpty()) {
+                logger.warn("⚠️ [SYNC] Ticket {} not found for sync", event.entityId());
+                return;
+            }
+            Ticket ticket = opt.get();
+            if (ticket.getExternalIssueId() != null) {
+                logger.debug("📋 [SYNC] Ticket {} already has externalIssueId {} — skipping",
+                        ticket.getId(), ticket.getExternalIssueId());
+                return;
+            }
+            String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
+            Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
+            syncOutboundService.syncEntity(SyncEntityType.ISSUE, "CREATED", ticket.getId(), null, payload);
+            logger.info("📤 [SYNC] Ticket {} enqueued for external creation", ticket.getId());
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTicketCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTicketUpdated(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) return;
+        try {
+            Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
+            if (opt.isEmpty()) return;
+            Ticket ticket = opt.get();
+            if (ticket.getExternalIssueId() == null) {
+                logger.debug("📋 [SYNC] Ticket {} has no externalIssueId — skipping update", ticket.getId());
+                return;
+            }
+            String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
+            Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
+            syncOutboundService.syncEntity(SyncEntityType.ISSUE, "UPDATED",
+                    ticket.getId(), ticket.getExternalIssueId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTicketUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTicketResolved(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) return;
+        try {
+            Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
+            if (opt.isEmpty()) return;
+            Ticket ticket = opt.get();
+            if (ticket.getExternalIssueId() == null) {
+                logger.debug("📋 [SYNC] Ticket {} has no externalIssueId — skipping resolve", ticket.getId());
+                return;
+            }
+            String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
+            Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
+            syncOutboundService.syncEntity(SyncEntityType.ISSUE, "UPDATED",
+                    ticket.getId(), ticket.getExternalIssueId(), payload);
+        } catch (Exception e) {
+            logger.error("❌ [SYNC] handleTicketResolved failed for {}: {}", event.entityId(), e.getMessage(), e);
+        }
+    }
+
+    private void handleTicketDeleted(LmpBusinessEvent event) {
+        if (!syncProperties.getFeatures().isTicketSync()) return;
+        Map<String, Object> payload = event.payload();
+        String externalIssueId = payload != null ? (String) payload.get("externalIssueId") : null;
+        if (externalIssueId != null && !externalIssueId.isBlank()) {
+            syncOutboundService.enqueue(SyncEntityType.ISSUE, "DELETED", event.entityId(), externalIssueId, Map.of());
+        }
+    }
+
+    /**
+     * Auto-provisionne les Items référencés par un devis.
+     */
+    private void ensureQuotationItemsProvisioned(Quotation quotation) {
+        if (quotation.getItems() == null || quotation.getItems().isEmpty()) {
+            ensureSingleItemProvisioned(quotation.getTitle(), null);
+            return;
+        }
+
+        for (QuotationItem item : quotation.getItems()) {
+            com.lmp.catalog.domain.Service service = item.getService();
+            if (service != null && service.getExternalItemCode() == null) {
+                ensureServiceItemProvisioned(service);
+            } else if (service == null) {
+                // Fallback : item sans service lié → provisionner avec le même item_code
+                // que le mapper utilisera (quotation.getTitle())
+                ensureSingleItemProvisioned(quotation.getTitle(), null);
+            }
+        }
     }
 
     private void logEvent(String description, LmpBusinessEvent event) {

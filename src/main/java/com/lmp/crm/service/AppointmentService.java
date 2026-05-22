@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -490,10 +491,6 @@ public class AppointmentService {
             throw new IllegalArgumentException("L'heure du rendez-vous doit être entre 9h et 17h, par créneaux de 30 minutes");
         }
 
-        if (!form.isProfessionalSubject()) {
-            throw new IllegalArgumentException("Le sujet du rendez-vous contient des termes non professionnels ou inappropriés");
-        }
-        
         // Si le sujet contient "Autre", vérifier que la description est fournie
         if (form.getSubject() != null && form.getSubject().toLowerCase().contains("autre")) {
             if (form.getDescription() == null || form.getDescription().trim().length() < 20) {
@@ -1244,6 +1241,8 @@ public class AppointmentService {
      * Envoie les rappels automatiques (exécuté toutes les heures)
      */
     @Scheduled(cron = "0 0 * * * *") // Toutes les heures
+    @SchedulerLock(name = "AppointmentService.sendAutomaticReminders",
+                   lockAtMostFor = "PT15M", lockAtLeastFor = "PT5M")
     public void sendAutomaticReminders() {
         logger.info("Début de l'envoi des rappels automatiques");
 

@@ -148,7 +148,8 @@ public class PaymentRestController {
             boolean reverseCharge,
             String currency,
             String durationType,
-            UUID offerId
+            UUID offerId,
+            String publishableKey
     ) {}
 
     public record GeoCheckResponse(
@@ -185,6 +186,42 @@ public class PaymentRestController {
     // =========================================================================
     // Endpoints
     // =========================================================================
+
+    /**
+     * Indique s'il existe deja une commande pour ce user + cette offre.
+     * Utilise par le frontend avant navigation vers /checkout : permet auto-resume
+     * d'un panier abandonne et detection d'un service deja actif.
+     */
+    @GetMapping("/checkout-availability")
+    @Operation(summary = "Verifier les commandes existantes pour une offre",
+               description = "Retourne les commandes PAYMENT_PENDING et actives du user pour cette offre")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> checkoutAvailability(
+            @RequestParam UUID offerId,
+            Authentication authentication) {
+
+        User user = getAuthenticatedUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Authentication required"));
+        }
+
+        List<Order> pending = orderRepository.findPendingByUserAndOffer(user, offerId);
+        List<Order> active = orderRepository.findActiveByUserAndOffer(user, offerId);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("existingPendingOrderId",
+                pending.isEmpty() ? null : pending.get(0).getId().toString());
+        body.put("activeServices", active.stream().map(o -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("orderId", o.getId().toString());
+            m.put("status", o.getStatus().name());
+            m.put("createdAt", o.getCreatedAt() != null ? o.getCreatedAt().toString() : null);
+            m.put("serviceName", o.getServiceName());
+            return m;
+        }).toList());
+
+        return ResponseEntity.ok(ApiResponse.ok(body));
+    }
 
     @GetMapping("/checkout-preview")
     @Operation(summary = "Aperçu du checkout",
@@ -229,7 +266,8 @@ public class PaymentRestController {
                 reverseCharge,
                 currency,
                 durationType,
-                offerId
+                offerId,
+                stripePaymentIntentCheckoutService.getPublishableKey()
         )));
     }
 
@@ -298,6 +336,7 @@ public class PaymentRestController {
             order.setServiceName(serviceName);
             order.setStatus(OrderStatus.PAYMENT_PENDING);
             order.setUser(user);
+            order.setServiceOfferId(offer.getId());
             order.setCreatedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
             order.setLastModifiedAt(LocalDateTime.now());
@@ -425,25 +464,48 @@ public class PaymentRestController {
                 user.getEmail(), reverseCharge, countryCode, amountHt, currency, amount, currency);
 
         try {
-            Order order = new Order();
-            order.setTotalAmount(amount);
-            order.setCurrency(currency);
-            order.setServiceName(serviceName);
-            order.setStatus(OrderStatus.PAYMENT_PENDING);
-            order.setUser(user);
-            order.setCreatedAt(LocalDateTime.now());
-            order.setUpdatedAt(LocalDateTime.now());
-            order.setLastModifiedAt(LocalDateTime.now());
-            order.setAmountBaseEur(amountEur);
-            order.setFxRate(payCtx2.eurToTargetRate());
-            order.setFxSource(payCtx2.rateSource());
-            order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
+            // Dedup idempotency : reuse existing PAYMENT_PENDING order for same user+offer if present.
+            // Refresh PaymentIntent on existing order instead of creating a new one.
+            List<Order> existingPending = orderRepository.findPendingByUserAndOffer(user, offer.getId());
+            Order order;
+            if (!existingPending.isEmpty()) {
+                order = existingPending.get(0);
+                // Refresh amount/currency in case pricing changed between page load and submit
+                order.setTotalAmount(amount);
+                order.setCurrency(currency);
+                order.setAmountBaseEur(amountEur);
+                order.setFxRate(payCtx2.eurToTargetRate());
+                order.setFxSource(payCtx2.rateSource());
+                order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
+                order.setUpdatedAt(LocalDateTime.now());
+                order.setLastModifiedAt(LocalDateTime.now());
+                applyVatSnapshotFromUser(order, user);
+                logger.info("DEDUP_REUSE_PENDING_ORDER - user {} offer {} -> reusing order {}",
+                        user.getEmail(), offer.getId(), order.getId());
+            } else {
+                order = new Order();
+                order.setTotalAmount(amount);
+                order.setCurrency(currency);
+                order.setServiceName(serviceName);
+                order.setServiceOfferId(offer.getId());
+                order.setStatus(OrderStatus.PAYMENT_PENDING);
+                order.setUser(user);
+                order.setCreatedAt(LocalDateTime.now());
+                order.setUpdatedAt(LocalDateTime.now());
+                order.setLastModifiedAt(LocalDateTime.now());
+                order.setAmountBaseEur(amountEur);
+                order.setFxRate(payCtx2.eurToTargetRate());
+                order.setFxSource(payCtx2.rateSource());
+                order.setAppliedVatRate(reverseCharge ? BigDecimal.ZERO : vatCalculationService.getVatRate(countryCode));
 
-            applyVatSnapshotFromUser(order, user);
-            OrderProgressSync.applyMinimumForStatus(order);
+                applyVatSnapshotFromUser(order, user);
+                OrderProgressSync.applyMinimumForStatus(order);
+            }
 
             Order savedOrder = orderRepository.save(order);
-            orderRealtimeEventPublisher.publishOrderCreated(savedOrder);
+            if (existingPending.isEmpty()) {
+                orderRealtimeEventPublisher.publishOrderCreated(savedOrder);
+            }
 
             StripePaymentIntentCheckoutService.PaymentIntentResult pi =
                     stripePaymentIntentCheckoutService.createOrRefreshPaymentIntent(
@@ -1026,7 +1088,7 @@ public class PaymentRestController {
                 || "anonymousUser".equals(authentication.getName())) {
             return null;
         }
-        return userService.findByEmail(authentication.getName()).orElse(null);
+        return userService.findByLogin(authentication.getName()).orElse(null);
     }
 
     private static void applyVatSnapshotFromUser(Order order, User user) {

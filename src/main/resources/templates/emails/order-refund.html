@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Remboursement traité - LMP Services</title>
+    <title th:text="|Remboursement traité - ${companyName ?: 'LMP Services'}|">Remboursement traité - LMP Services</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
     <!-- Preheader -->
@@ -69,14 +69,14 @@
                             <!-- Info box -->
                             <div style="background-color:#eff6ff;border-left:4px solid #3b82f6;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:24px;">
                                 <div style="font-size:13px;font-weight:600;color:#1e40af;margin-bottom:4px;">À savoir</div>
-                                <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.5;">Le remboursement apparaîtra sur votre relevé sous le nom "<strong>LMP Services</strong>". Si vous ne le voyez pas après 5 jours, contactez votre banque ou notre service client.</p>
+                                <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.5;">Le remboursement apparaîtra sur votre relevé sous le nom "<strong th:text="${companyName ?: 'LMP Services'}">LMP Services</strong>". Si vous ne le voyez pas après 5 jours, contactez votre banque ou notre service client.</p>
                             </div>
 
                             <!-- CTA -->
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td align="center" style="padding:8px 0 24px;">
-                                        <a th:href="${frontendUrl + '/services'}" href="https://lmp-services.ca/services"
+                                        <a th:href="${frontendUrl + '/services'}" href="#"
                                            style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
                                             Repasser une commande
                                         </a>

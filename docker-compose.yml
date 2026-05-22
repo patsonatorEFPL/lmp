@@ -1,0 +1,144 @@
+# ============================================================================
+# LMP app stack (monolithique embed Angular + Spring : tout-en-un compose)
+# ============================================================================
+# Services dans 1 seul Dokploy Compose project :
+#   - app         : Spring Boot avec Angular pré-rendu embed (build local Dockerfile)
+#   - redis-cache : Redis volatile (sessions, rate-limit, SSE pub/sub, caches)
+#
+# Postgres reste géré comme Dokploy app séparée (`lmp-staging-db`) car la donnée
+# est durable et partagée potentiellement entre environnements.
+#
+# Note: `redis-queue` container retiré 2026-05-10 — async work durable
+# (email_queue, sync_event_log) tourne via Postgres claim atomique
+# (UPDATE...RETURNING + FOR UPDATE SKIP LOCKED). Plus de Redis queue nécessaire.
+# 320 MB RAM libérés pour app replicas.
+#
+# Note: service renommé `backend → app` 2026-05-15 — reflète l'archi unifiée
+# (Spring sert API + Angular embed). Container = lmp-app-jftitz-app-N.
+#
+# Network : dokploy-network (overlay externe créé par Dokploy). Tous les services
+# se résolvent par leur service name (redis-cache, app) sur cette network.
+# App lit ainsi REDIS_HOST=redis-cache directement.
+# ============================================================================
+version: "3.8"
+
+services:
+  redis-cache:
+    image: redis:7-alpine
+    # requirepass : bloque clients non-autorisés sur dokploy-network. Sans ça,
+    # le Redis external framework (lmp-menkeps-crm-sli6ws) résout `redis-cache` vers CE
+    # container (collision de service name sur le même overlay) et pollue le
+    # keyspace LMP avec ses doctype_meta::* (vérifié 15/05/2026). Le password
+    # force AUTH → external framework rejeté, isolation effective.
+    # REDIS_PASSWORD doit être défini dans Dokploy env (compose env vars) —
+    # syntax `${VAR:?...}` fait échouer compose si non défini, pas de fallback
+    # en git pour éviter fuite du secret.
+    command: >
+      redis-server
+        --maxmemory 200mb
+        --maxmemory-policy allkeys-lru
+        --save ""
+        --appendonly no
+        --tcp-keepalive 60
+        --notify-keyspace-events Egex
+        --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    networks:
+      - dokploy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}", "--no-auth-warning", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Dokploy injecte les env vars (DB_URL, STRIPE_*, OAUTH2_*, mail, etc.) dans
+    # ./.env à la racine du compose. env_file le charge dans le container.
+    env_file:
+      - .env
+    environment:
+      # Redis : utilise les service names compose (résolus via dokploy-network)
+      # Override l'éventuelle valeur dans .env pour pointer redis-cache.
+      REDIS_HOST: redis-cache
+      REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
+      # Perf tuning validé par bench (cf. tmp-e2e/lmp-short-test.js, 13/05/2026)
+      # Bench 1500 VU 2 min via Traefik HTTPS :
+      #   baseline G1  : p95=3055 p99=6009
+      #   final tuned  : p95=1292 p99=1654 → p99 -72%
+      SPRING_THREADS_VIRTUAL_ENABLED: "true"
+      SPRING_MAIN_LAZY_INITIALIZATION: "true"
+      # Disable ObservationFilterChainDecorator wrap autour de chaque Spring
+      # Security filter. JFR 1k VU 2026-05-15 a montré ~5% CPU dans Micrometer
+      # Counter.builder / Observation.event depuis ce wrapper. Metrics globales
+      # restent OK via management.observations.* (web.client, etc.).
+      SPRING_SECURITY_OBSERVATIONS_ENABLED: "false"
+      # Nuclear: disable ALL Micrometer observations (http.server.requests,
+      # hibernate, jdbc, web.client, etc). async-profiler v4.4 2026-05-15
+      # avait 61.5% CPU sur MeterRegistry/SimpleObservation. Run 5 testait
+      # juste `http.server.requests` (gain modeste -9.6%). Cette fois cap
+      # global. Trade-off: perte metrics /actuator/prometheus mais bench
+      # ceiling > observability ici.
+      MANAGEMENT_OBSERVATIONS_ENABLE_ALL: "false"
+      MANAGEMENT_OBSERVATIONS_ANNOTATIONS_ENABLED: "false"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+      SERVER_TOMCAT_THREADS_MAX: "500"
+      SERVER_TOMCAT_THREADS_MIN_SPARE: "50"
+      SERVER_TOMCAT_ACCEPT_COUNT: "2000"
+      SERVER_TOMCAT_MAX_CONNECTIONS: "10000"
+      # Tomcat access log → stdout (Docker captures → Dokploy UI Logs onglet).
+      # /dev/stdout symlink + buffered=false pour visibilité immédiate.
+      # Pattern combined Apache + duration (%D ms) + user-agent.
+      SERVER_TOMCAT_ACCESSLOG_ENABLED: "true"
+      SERVER_TOMCAT_ACCESSLOG_DIRECTORY: "/dev"
+      SERVER_TOMCAT_ACCESSLOG_PREFIX: "stdout"
+      SERVER_TOMCAT_ACCESSLOG_SUFFIX: ""
+      SERVER_TOMCAT_ACCESSLOG_FILE_DATE_FORMAT: ""
+      SERVER_TOMCAT_ACCESSLOG_BUFFERED: "false"
+      SERVER_TOMCAT_ACCESSLOG_PATTERN: '%h %t "%r" %s %b %D "%{User-Agent}i"'
+    depends_on:
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    deploy:
+      # Baseline = 1. Autoscaler (Oracle host /opt/lmp-autoscaler/)
+      # scale 1..5 selon CPU via `docker compose --scale`. À chaque redeploy
+      # Dokploy, baseline revient ici — autoscaler reprend ensuite si charge.
+      replicas: 1
+      resources:
+        # 4 GiB cap nécessaire pour ZGC : -Xmx 1.5G + shmem multi-mapping ZGC
+        # (pointer color bits) peut atteindre ~2× Xmx. Cap 2 GiB déclenchait
+        # OOM killer kernel cgroup sous load (vérifié 5k VU bench 2026-05-15).
+        # Switch G1 → ZGC = perf p99 -71% mais memory overhead doublé.
+        limits:
+          memory: 4096M
+        reservations:
+          memory: 1024M
+      restart_policy:
+        condition: any
+        delay: 5s
+      update_config:
+        order: start-first
+        failure_action: continue
+        max_failure_ratio: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -m 25 http://localhost:8080/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 90s
+
+networks:
+  dokploy-network:
+    external: true

@@ -113,9 +113,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public List<User> findByStatus(UserStatus status) {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getStatus() == status)
-                .toList();
+        return userRepository.findByStatus(status);
     }
 
     /**
@@ -423,6 +421,54 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    @Transactional
+    public void setUserStaffRole(UUID targetUserId, boolean grantStaff, UUID actingAdminId) {
+        if (!hasRole(actingAdminId, "ADMIN")) {
+            throw new RuntimeException("Seuls les administrateurs peuvent modifier les rôles");
+        }
+
+        User target = userRepository.findByIdWithRoles(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (target.getRoles() == null) {
+            target.setRoles(new HashSet<>());
+        }
+
+        Role staffRole = roleRepository.findByName("STAFF")
+                .orElseThrow(() -> new RuntimeException("Rôle STAFF introuvable"));
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("Rôle USER introuvable"));
+
+        boolean hasStaff = target.getRoles().stream()
+                .anyMatch(r -> "STAFF".equals(r.getName()));
+        boolean rolesMutated = false;
+
+        if (grantStaff) {
+            if (!hasStaff) {
+                target.getRoles().add(staffRole);
+                rolesMutated = true;
+            }
+            if (target.getRoles().stream().noneMatch(r -> "USER".equals(r.getName()))) {
+                target.getRoles().add(userRole);
+                rolesMutated = true;
+            }
+        } else if (hasStaff) {
+            target.getRoles().removeIf(r -> "STAFF".equals(r.getName()));
+            rolesMutated = true;
+            if (target.getRoles().stream().noneMatch(r -> "USER".equals(r.getName()))) {
+                target.getRoles().add(userRole);
+                rolesMutated = true;
+            }
+        }
+
+        if (rolesMutated) {
+            userRepository.save(target);
+            logSessionInvalidationAfterRoleChange(target,
+                    sessionSecurityService.invalidateAllUserSessions(target));
+        }
+    }
+
     private void logSessionInvalidationAfterRoleChange(User target, int invalidatedCount) {
         if (invalidatedCount == 0) {
             logger.warn(
@@ -448,9 +494,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public long countActiveUsers() {
-        return userRepository.findAll().stream()
-                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
-                .count();
+        return userRepository.countByStatus(UserStatus.ACTIVE);
     }
 
     // Nouvelles méthodes pour l'administration avec pagination
@@ -532,10 +576,18 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByIdWithRoles(id);
     }
     
-    /**
-     * Trouve un utilisateur par email avec ses rôles chargés.
-     */
     @Override
+    public Optional<User> findByLogin(String login) {
+        return userRepository.findByLogin(login);
+    }
+
+    @Override
+    @Transactional
+    public void updateLastLoginDate(User user) {
+        user.setLastLoginDate(LocalDateTime.now());
+        userRepository.save(user);
+    }
+
     public Optional<User> findByEmailWithRoles(String email) {
         return userRepository.findByEmailWithRoles(email);
     }
@@ -683,6 +735,9 @@ public class UserServiceImpl implements UserService {
             }
             if (user.getExternalContactId() != null) {
                 deletePayload.put("externalContactId", user.getExternalContactId());
+            }
+            if (user.getExternalErpUserId() != null) {
+                deletePayload.put("externalErpUserId", user.getExternalErpUserId());
             }
             deletePayload.put("email", userEmail);
             eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_DELETED, "auth", id, deletePayload));

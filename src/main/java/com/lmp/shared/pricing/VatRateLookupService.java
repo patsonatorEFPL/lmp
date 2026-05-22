@@ -10,7 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -126,6 +127,8 @@ public class VatRateLookupService {
 
     /** Refresh mensuel : 1er du mois à 06h00 UTC. */
     @Scheduled(cron = "0 0 6 1 * *")
+    @SchedulerLock(name = "VatRateLookupService.scheduledRefresh",
+                   lockAtMostFor = "PT15M", lockAtLeastFor = "PT5M")
     public void scheduledRefresh() {
         refreshAll();
     }

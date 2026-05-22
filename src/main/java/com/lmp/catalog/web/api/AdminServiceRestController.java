@@ -65,10 +65,8 @@ public class AdminServiceRestController {
         stats.put("totalCategories", categoryRepository.count());
         stats.put("totalServices", serviceRepository.count());
         stats.put("totalOffers", offerRepository.count());
-        stats.put("activeServices", serviceRepository.findAll().stream()
-                .filter(s -> Boolean.TRUE.equals(s.getActive())).count());
-        stats.put("featuredServices", serviceRepository.findAll().stream()
-                .filter(s -> Boolean.TRUE.equals(s.getFeatured())).count());
+        stats.put("activeServices", serviceRepository.countByActiveTrue());
+        stats.put("featuredServices", serviceRepository.countByFeaturedTrue());
         return ResponseEntity.ok(ApiResponse.ok(stats));
     }
 

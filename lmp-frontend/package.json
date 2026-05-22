@@ -48,6 +48,7 @@
     "@spartan-ng/cli": "^0.0.1-alpha.648",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
+    "handlebars": "^4.7.9",
     "jsdom": "^28.0.0",
     "ng-openapi-gen": "^1.0.5",
     "postcss-import": "^16.1.1",

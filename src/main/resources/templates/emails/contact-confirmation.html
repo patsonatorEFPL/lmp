@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Confirmation de réception - LMP Services</title>
+    <title th:text="|Confirmation de réception - ${companyName ?: 'LMP Services'}|">Confirmation de réception - LMP Services</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
     <!-- Preheader -->
@@ -65,7 +65,7 @@
                             <div style="background-color:#f0f4ff;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px;">
                                 <div style="font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:6px;">Nos coordonnées</div>
                                 <span style="font-size:13px;color:#4b5563;line-height:1.6;">
-                                    <a href="mailto:support@lmp-services.ca" style="color:#4f6df5;text-decoration:none;">support@lmp-services.ca</a><br>
+                                    <a th:href="'mailto:' + (${companyEmail} ?: 'support@localhost')" th:text="${companyEmail} ?: 'support@localhost'" href="mailto:support@localhost" style="color:#4f6df5;text-decoration:none;">support@localhost</a><br>
                                     Lundi - Vendredi, 9h00 - 18h00
                                 </span>
                             </div>

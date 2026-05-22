@@ -6,8 +6,8 @@ import {
   LucideAngularModule, LifeBuoy, RefreshCw, Filter, X, Plus, Loader2,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Issue, IssueStatus, IssuePriority } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Issue, IssueStatus, IssuePriority } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-tickets',
@@ -178,7 +178,7 @@ import { Issue, IssueStatus, IssuePriority } from '../../core/stubs/portal.model
   `,
 })
 export class UserTicketsComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
   private readonly router = inject(Router);
 
   readonly STATUS_OPTIONS: IssueStatus[] = ['Open', 'Replied', 'On Hold', 'Resolved', 'Closed'];
@@ -218,7 +218,7 @@ export class UserTicketsComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listIssues().subscribe({
+    this.portal.listIssues().subscribe({
       next: (list) => { this.items.set(list); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -230,7 +230,7 @@ export class UserTicketsComponent implements OnInit {
 
   create() {
     if (!this.newSubject.trim() || !this.newDescription.trim()) return;
-    this.stub.createIssue(this.newSubject.trim(), this.newDescription.trim(), this.newPriority)
+    this.portal.createIssue(this.newSubject.trim(), this.newDescription.trim(), this.newPriority)
       .subscribe((created) => {
         this.items.update((list) => [created, ...list]);
         this.cancelCreate();

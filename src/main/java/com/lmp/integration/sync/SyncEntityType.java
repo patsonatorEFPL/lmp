@@ -17,5 +17,8 @@ public enum SyncEntityType {
     TASK,
     ISSUE,
     COMMUNICATION,
-    NOTIFICATION
+    NOTIFICATION,
+    QUOTATION,
+    ADDRESS,
+    ERP_USER
 }

@@ -4,12 +4,17 @@ import com.lmp.billing.domain.CartItem;
 import com.lmp.billing.domain.OrderItem;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "services")
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Service {
 
     @Id

@@ -75,6 +75,13 @@ public interface AuthService {
     void sendPasswordResetEmail(PasswordResetEmailPayload payload);
 
     /**
+     * Pipeline complet forgot-password offload sur authBackgroundExecutor :
+     * découple Tomcat thread du DB query+save (Druid master pool) et de
+     * l'enqueue mail. Le controller peut répondre 200 instantanément.
+     */
+    void processForgotPasswordAsync(String email);
+
+    /**
      * Applique un nouveau mot de passe à partir d'un jeton valide et non expiré.
      */
     void completePasswordReset(ResetPasswordDto dto);

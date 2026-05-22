@@ -1,80 +1,63 @@
 package com.lmp.portal;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 /**
- * Contrôleur de redirection vers le frontend Angular.
- * 
- * Remplace les anciennes pages Thymeleaf en redirigeant toutes les requêtes
- * de navigation vers l'application Angular. Les endpoints API REST (/api/**)
- * ne sont pas affectés par ce contrôleur.
+ * Sert l'application Angular SPA en mode monolithique (forward → index.html)
+ * ou redirige vers le dev server Angular en mode split.
+ *
+ * Pattern JHipster : capture tout chemin sans point dans le dernier segment
+ * ({@code /{path:[^\\.]*}}) — les assets statiques (*.js, *.css…) contiennent
+ * un point et sont servis par le resource handler de Spring Boot avant d'atteindre
+ * ce contrôleur.
+ *
+ * Mode single-host : un seul domaine par environnement (dev = dev.lmp-services.ca,
+ * prod = lmp-services.ca). Pas de séparation auth/marketing par sous-domaine.
+ * Les pages d'auth (/login, /register…) sont servies sur le même host que le
+ * site marketing — Angular gère le routage côté client.
  */
 @Controller
 public class FrontendRedirectController {
 
-    @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
+    private static final List<String> BACKEND_PREFIXES = List.of(
+            "/api/",
+            "/actuator/",
+            "/stripe/"
+    );
+
+    @Value("${app.frontend.url:${app.base.url:http://localhost:8080}}")
     private String frontendUrl;
 
-    // ===== Pages publiques =====
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
 
     @GetMapping("/")
-    public String home() {
-        return "redirect:" + frontendUrl;
+    public String root() {
+        return forwardOrRedirect("/");
     }
 
-    @GetMapping("/about")
-    public String about() {
-        return "redirect:" + frontendUrl + "/about";
+    @GetMapping({"/{path:[^\\.]*}", "/**/{path:[^\\.]*}"})
+    public String forward(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        for (String prefix : BACKEND_PREFIXES) {
+            if (uri.startsWith(prefix)) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+        }
+        return forwardOrRedirect(uri);
     }
 
-    @GetMapping("/services")
-    public String services() {
-        return "redirect:" + frontendUrl + "/services";
-    }
-
-    @GetMapping("/contact")
-    public String contact() {
-        return "redirect:" + frontendUrl + "/contact";
-    }
-
-    @GetMapping("/contact/success")
-    public String contactSuccess() {
-        return "redirect:" + frontendUrl + "/contact";
-    }
-
-    @GetMapping("/map")
-    public String map() {
-        return "redirect:" + frontendUrl + "/map";
-    }
-
-    @GetMapping("/privacy")
-    public String privacy() {
-        return "redirect:" + frontendUrl + "/privacy";
-    }
-
-    @GetMapping("/terms")
-    public String terms() {
-        return "redirect:" + frontendUrl + "/terms";
-    }
-
-    // ===== Pages d'authentification =====
-
-    @GetMapping("/login")
-    public String login() {
-        return "redirect:" + frontendUrl + "/login";
-    }
-
-    @GetMapping("/register")
-    public String register() {
-        return "redirect:" + frontendUrl + "/register";
-    }
-
-    // ===== Pages utilisateur =====
-
-    @GetMapping("/profile")
-    public String profile() {
-        return "redirect:" + frontendUrl + "/settings";
+    private String forwardOrRedirect(String path) {
+        if (frontendUrl != null && !frontendUrl.isBlank() && !frontendUrl.equals(baseUrl)) {
+            return "redirect:" + frontendUrl + path;
+        }
+        return "forward:/index.html";
     }
 }

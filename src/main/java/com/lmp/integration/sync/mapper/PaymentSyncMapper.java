@@ -110,7 +110,7 @@ public class PaymentSyncMapper {
     /**
      * Construit le payload Payment Entry pour une échéance spécifique d'un paiement en plusieurs fois.
      * <p>
-     * Le champ {@code payment_term} sur la référence SINV permet à external ERP de mettre à jour
+     * Le champ {@code payment_term} sur la référence SINV permet à externalErp de mettre à jour
      * le {@code paid_amount} de la bonne ligne du {@code payment_schedule} sur la facture.
      *
      * @param order          la commande LMP
@@ -169,7 +169,7 @@ public class PaymentSyncMapper {
             ref.put("reference_doctype", "Sales Invoice");
             ref.put("reference_name", salesInvoiceId);
             ref.put("allocated_amount", amount);
-            // payment_term permet à external ERP d'identifier quelle échéance du payment_schedule
+            // payment_term permet à externalErp d'identifier quelle échéance du payment_schedule
             // est concernée et de mettre à jour son paid_amount / outstanding
             ref.put("payment_term", installment.getPaymentTerm());
             payload.put("references", List.of(ref));

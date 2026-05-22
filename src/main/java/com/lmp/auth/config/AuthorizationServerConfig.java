@@ -12,6 +12,20 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.util.JSONObjectUtils;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.text.ParseException;
+import java.util.function.Function;
+
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,15 +38,20 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
@@ -80,15 +99,35 @@ public class AuthorizationServerConfig {
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
     private String issuerUri;
 
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.path:lmp-oauth2-jwk.json}")
+    private String jwkPath;
+
+    /**
+     * JWK content inline (JSON string) — pattern 12-factor pour multi-replica.
+     * Si défini (env var {@code OAUTH2_JWK_CONTENT}), prend précédence sur le file
+     * path : toutes les répliques chargent la MÊME clé. Sinon, fallback sur
+     * {@code app.oauth2.jwk.path} (legacy mode mono-replica).
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.content:}")
+    private String jwkContent;
+
     @Bean
     @Order(0) // Avant les autres SecurityFilterChains
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(Customizer.withDefaults()); // Enable OpenID Connect 1.0
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
+                                                                       com.lmp.auth.repository.UserRepository userRepository) throws Exception {
+        OAuth2AuthorizationServerConfigurer configurer = new OAuth2AuthorizationServerConfigurer();
 
         http
+                .securityMatcher(configurer.getEndpointsMatcher())
+                .with(configurer, server -> server
+                        .oidc(oidc -> oidc
+                                .userInfoEndpoint(userInfo -> userInfo
+                                        .userInfoMapper(oidcUserInfoMapper(userRepository))
+                                )
+                        )
+                )
+
+
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
                                 new LoginUrlAuthenticationEntryPoint("/login"),
@@ -156,6 +195,7 @@ public class AuthorizationServerConfig {
                     .scope(OidcScopes.EMAIL)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
+                            .requireProofKey(false)
                             .build())
                     .tokenSettings(TokenSettings.builder()
                             .accessTokenTimeToLive(Duration.ofHours(4))
@@ -174,13 +214,51 @@ public class AuthorizationServerConfig {
     @Bean
     public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate,
                                                             RegisteredClientRepository clientRepository) {
-        return new JdbcOAuth2AuthorizationService(jdbcTemplate, clientRepository);
+        // Use in-memory in dev to avoid Jackson serialization issues with immutable collections
+        OAuth2AuthorizationService delegate = new InMemoryOAuth2AuthorizationService();
+        return new OAuth2AuthorizationService() {
+            @Override
+            public void save(OAuth2Authorization authorization) {
+                var code = authorization.getToken(OAuth2AuthorizationCode.class);
+                logger.info(">>> AUTH-SERVICE SAVE id={} code={} principal={}",
+                    authorization.getId(),
+                    code != null ? code.getToken().getTokenValue() : null,
+                    authorization.getPrincipalName());
+                delegate.save(authorization);
+            }
+            @Override
+            public void remove(OAuth2Authorization authorization) {
+                delegate.remove(authorization);
+            }
+            @Override
+            public OAuth2Authorization findById(String id) {
+                return delegate.findById(id);
+            }
+            @Override
+            public OAuth2Authorization findByToken(String token, OAuth2TokenType tokenType) {
+                OAuth2Authorization result = delegate.findByToken(token, tokenType);
+                logger.info(">>> AUTH-SERVICE FIND token={} type={} found={}", token, tokenType, result != null);
+                return result;
+            }
+        };
     }
 
     @Bean
     public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
                                                                          RegisteredClientRepository clientRepository) {
-        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, clientRepository);
+        return new InMemoryOAuth2AuthorizationConsentService();
+    }
+
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> lmpOAuth2TokenCustomizer(
+            com.lmp.auth.repository.UserRepository userRepository) {
+        return new com.lmp.auth.oauth.LmpOAuth2TokenCustomizer(userRepository);
+    }
+
+    @Bean
+    public Function<OidcUserInfoAuthenticationContext, OidcUserInfo> oidcUserInfoMapper(
+            com.lmp.auth.repository.UserRepository userRepository) {
+        return new com.lmp.auth.oauth.LmpOidcUserInfoMapper(userRepository);
     }
 
     @Bean
@@ -192,16 +270,60 @@ public class AuthorizationServerConfig {
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
-        KeyPair keyPair = generateRsaKey();
-        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
-        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        // 1. Précédence à app.oauth2.jwk.content (env var) — pattern 12-factor.
+        //    Toutes les répliques chargent la même clé. Pas de fichier sur disque.
+        if (jwkContent != null && !jwkContent.isBlank()) {
+            try {
+                JWKSet jwkSet = JWKSet.parse(jwkContent);
+                logger.info("JWK chargé depuis app.oauth2.jwk.content (env var) — multi-replica safe");
+                return new ImmutableJWKSet<>(jwkSet);
+            } catch (ParseException e) {
+                throw new IllegalStateException("app.oauth2.jwk.content (OAUTH2_JWK_CONTENT) ne contient pas un JWKSet JSON valide", e);
+            }
+        }
 
-        RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .privateKey(privateKey)
-                .keyID(UUID.randomUUID().toString())
-                .build();
+        // 2. Fallback : fichier (legacy mono-replica).
+        Path path = Path.of(jwkPath);
+        JWKSet jwkSet;
 
-        JWKSet jwkSet = new JWKSet(rsaKey);
+        if (Files.exists(path)) {
+            try {
+                String json = Files.readString(path);
+                jwkSet = JWKSet.parse(json);
+                logger.info("JWK chargé depuis le fichier : {}", path.toAbsolutePath());
+            } catch (IOException | ParseException e) {
+                throw new IllegalStateException("Impossible de charger le JWK depuis le fichier : " + path, e);
+            }
+        } else {
+            KeyPair keyPair = generateRsaKey();
+            RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+
+            String keyId = UUID.randomUUID().toString();
+            RSAKey rsaKey = new RSAKey.Builder(publicKey)
+                    .privateKey(privateKey)
+                    .keyID(keyId)
+                    .build();
+
+            jwkSet = new JWKSet(rsaKey);
+
+            try {
+                Path parent = path.getParent();
+                Path tempFile;
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                    tempFile = Files.createTempFile(parent, path.getFileName().toString(), ".tmp");
+                } else {
+                    tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
+                }
+                Files.writeString(tempFile, JSONObjectUtils.toJSONString(jwkSet.toJSONObject(false)));
+                Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                logger.info("Nouveau JWK généré et sauvegardé dans : {}", path.toAbsolutePath());
+            } catch (IOException e) {
+                throw new IllegalStateException("Impossible de sauvegarder le JWK dans le fichier : " + path, e);
+            }
+        }
+
         return new ImmutableJWKSet<>(jwkSet);
     }
 

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Client no-op — log uniquement. Actif quand {@code lmp.sync.enabled=false} (défaut).
@@ -63,5 +64,24 @@ public class NoOpExternalClient implements ExternalSystemClient {
     public List<Map<String, Object>> listEntities(SyncEntityType type, Instant modifiedSince) {
         log.info("🔇 [SYNC NO-OP] listEntities({}, since={})", type, modifiedSince);
         return List.of();
+    }
+
+    @Override
+    public java.math.BigDecimal fetchAggregatedTotal(SyncEntityType type, String sumField,
+                                                      String dateField, String startDate, String endDate) {
+        log.info("🔇 [SYNC NO-OP] fetchAggregatedTotal({}, {}, {}→{})", type, sumField, startDate, endDate);
+        return null;
+    }
+
+    @Override
+    public ExternalResponse callMethod(String method, Map<String, Object> args) {
+        log.info("🔇 [SYNC NO-OP] callMethod({}) — args keys: {}", method, args != null ? args.keySet() : "null");
+        return ExternalResponse.unavailable();
+    }
+
+    @Override
+    public Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson) {
+        log.info("🔇 [SYNC NO-OP] findFirstByFilters({}, {})", type, filterJson);
+        return Optional.empty();
     }
 }

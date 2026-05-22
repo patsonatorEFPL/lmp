@@ -51,7 +51,7 @@ public class ItemSyncMapper {
         if (data.containsKey("description")) {
             String desc = (String) data.get("description");
             if (desc != null && !desc.isBlank()) {
-                // Strip HTML tags if present (external CRM stores rich text)
+                // Strip HTML tags if present (externalCrm stores rich text)
                 service.setDescription(stripHtml(desc));
             }
         }

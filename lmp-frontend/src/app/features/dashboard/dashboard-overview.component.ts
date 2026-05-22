@@ -1,5 +1,6 @@
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, DatePipe, CurrencyPipe } from '@angular/common';
 import {
+  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   inject,
@@ -8,10 +9,10 @@ import {
   computed,
   effect,
   resource,
+  signal,
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DatePipe, CurrencyPipe, NgClass } from '@angular/common';
 import {
   LucideAngularModule,
   ShoppingCart,
@@ -19,23 +20,36 @@ import {
   Settings,
   Star,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Loader2,
-  Eye,
   ChevronRight,
   FileText,
+  Box,
+  CreditCard,
+  Plus,
+  LifeBuoy,
+  CheckCircle2,
+  CalendarCheck,
+  Download,
 } from 'lucide-angular';
-import { HlmButton } from '@spartan-ng/helm/button';
+import type { LucideIconData } from 'lucide-angular';
+import { firstValueFrom } from 'rxjs';
+
 import {
   DashboardService,
   DashboardStats,
+  RecentOrder,
 } from '../../core/services/dashboard.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
-import { firstValueFrom } from 'rxjs';
+import { StatCardComponent } from '../../shared/ui/stat-card.component';
+import { QuickActionComponent } from '../../shared/ui/quick-action.component';
+import { PanelComponent } from '../../shared/ui/panel.component';
+import { PageHeadComponent } from '../../shared/ui/page-head.component';
+import { LineChartComponent } from '../../shared/ui/line-chart.component';
+import type { DonutSegment } from '../../shared/ui/donut-chart.component';
+import type { ActivityFeedItem } from '../../shared/ui/activity-feed.component';
 
 const EMPTY_DASHBOARD_STATS: DashboardStats = {
   totalOrders: 0,
@@ -49,274 +63,339 @@ const EMPTY_DASHBOARD_STATS: DashboardStats = {
   upcomingAppointmentsList: [],
 };
 
+type StatusTone = 'is-ok' | 'is-warn' | 'is-info' | 'is-pending' | 'is-danger' | 'is-muted';
+type Period = '7j' | '30j' | '90j' | '12m';
+type OrderFilter = 'all' | 'active' | 'done';
+
+const PERIODS: Period[] = ['7j', '30j', '90j', '12m'];
+const ORDER_FILTERS: { key: OrderFilter; label: string }[] = [
+  { key: 'all', label: 'Toutes' },
+  { key: 'active', label: 'En cours' },
+  { key: 'done', label: 'Livrées' },
+];
+
+/**
+ * Génère les séries d'activité à partir des commandes réelles.
+ * Agrège le nombre de commandes par période.
+ */
+function buildActivitySeries(
+  orders: RecentOrder[],
+  period: Period,
+): { current: number[]; previous: number[]; labels: string[] } {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  let bucketCount: number;
+  let bucketDays: number;
+  let labelFmt: (d: Date) => string;
+
+  switch (period) {
+    case '7j':
+      bucketCount = 7;
+      bucketDays = 1;
+      labelFmt = (d) => d.toLocaleDateString('fr-FR', { weekday: 'narrow' });
+      break;
+    case '30j':
+      bucketCount = 10;
+      bucketDays = 3;
+      labelFmt = (d) => `${d.getDate()}/${d.getMonth() + 1}`;
+      break;
+    case '90j':
+      bucketCount = 12;
+      bucketDays = 7;
+      labelFmt = (d) => `S${Math.ceil(d.getDate() / 7)}`;
+      break;
+    case '12m':
+      bucketCount = 12;
+      bucketDays = 30;
+      labelFmt = (d) => d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
+      break;
+  }
+
+  const current = new Array(bucketCount).fill(0);
+  const previous = new Array(bucketCount).fill(0);
+  const labels: string[] = [];
+
+  for (let i = 0; i < bucketCount; i++) {
+    const bucketStart = new Date(now);
+    bucketStart.setDate(bucketStart.getDate() - (bucketCount - i) * bucketDays);
+    labels.push(labelFmt(bucketStart));
+
+    const bucketEnd = new Date(bucketStart);
+    bucketEnd.setDate(bucketEnd.getDate() + bucketDays);
+
+    const prevBucketStart = new Date(bucketStart);
+    prevBucketStart.setDate(prevBucketStart.getDate() - bucketCount * bucketDays);
+    const prevBucketEnd = new Date(prevBucketStart);
+    prevBucketEnd.setDate(prevBucketEnd.getDate() + bucketDays);
+
+    for (const o of orders) {
+      const d = new Date(o.createdAt);
+      if (d >= bucketStart && d < bucketEnd) {
+        current[i]++;
+      }
+      if (d >= prevBucketStart && d < prevBucketEnd) {
+        previous[i]++;
+      }
+    }
+  }
+
+  return { current, previous, labels };
+}
+
+/** Sparklines fixes pour les stat cards — purement décoratives. */
+const SPARK = {};
+
 @Component({
   selector: 'lmp-dashboard-overview',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
     LucideAngularModule,
-    HlmButton,
     DatePipe,
     CurrencyPipe,
-    NgClass,
+    StatCardComponent,
+    QuickActionComponent,
+    PanelComponent,
+    PageHeadComponent,
+    LineChartComponent,
   ],
   template: `
     @if (blockingLoader()) {
       <div class="flex items-center justify-center py-16">
-        <lucide-icon [img]="Loader2Icon" [size]="32" class="animate-spin text-zinc-600 dark:text-zinc-400"></lucide-icon>
+        <lucide-icon
+          [img]="Loader2Icon"
+          [size]="32"
+          class="animate-spin text-zinc-600 dark:text-zinc-400"
+        ></lucide-icon>
       </div>
     }
 
-    @if (!blockingLoader() && stats()) {
-      <!-- Quick stats (même base que /admin : cartes zinc + ombre légère) -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
+    @if (!blockingLoader() && stats(); as s) {
+      <div class="lmpd-page">
+        <!-- Salutation personnalisée + actions principales -->
+        <lmp-page-head
+          [title]="greeting()"
+          [subtitle]="headerSubtitle()"
         >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Commandes</span>
-            <div
-              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
-            >
-              <lucide-icon [img]="ShoppingCartIcon" [size]="18" class="text-zinc-700 dark:text-zinc-200"></lucide-icon>
-            </div>
-          </div>
-          <div class="mt-3">
-            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.totalOrders }}</span>
-          </div>
-          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ stats()!.completedOrders }} terminée(s)</p>
-        </div>
-
-        <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">En cours</span>
-            <div
-              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
-            >
-              <lucide-icon [img]="ClockIcon" [size]="18" class="text-amber-600 dark:text-amber-500"></lucide-icon>
-            </div>
-          </div>
-          <div class="mt-3">
-            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.inProgressOrders }}</span>
-          </div>
-          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Commandes actives</p>
-        </div>
-
-        <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Rendez-vous</span>
-            <div
-              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
-            >
-              <lucide-icon [img]="CalendarIcon" [size]="18" class="text-zinc-700 dark:text-zinc-200"></lucide-icon>
-            </div>
-          </div>
-          <div class="mt-3">
-            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.upcomingAppointments }}</span>
-          </div>
-          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">À venir</p>
-        </div>
-
-        <div
-          class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Avis</span>
-            <div
-              class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 dark:bg-zinc-800/80"
-            >
-              <lucide-icon [img]="StarIcon" [size]="18" class="text-emerald-600 dark:text-emerald-400"></lucide-icon>
-            </div>
-          </div>
-          <div class="mt-3">
-            <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ stats()!.totalReviews }}</span>
-          </div>
-          <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Avis donnés</p>
-        </div>
-      </div>
-
-      <!-- Two-column layout: Recent orders + Quick actions -->
-      <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <!-- Recent Orders -->
-        <div class="lg:col-span-2">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Commandes récentes</h2>
-            <a
-              routerLink="/dashboard/orders"
-              class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-            >
-              Voir tout →
+          <div actions>
+            <a routerLink="/dashboard/invoices" class="lmpd-btn">
+              <lucide-icon [img]="DownloadIcon" [size]="13"></lucide-icon>
+              Exporter
+            </a>
+            <a routerLink="/services" class="lmpd-btn is-accent">
+              <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+              Nouvelle commande
             </a>
           </div>
-          <div class="rounded border border-zinc-200/90 bg-white dark:border-zinc-800 dark:bg-zinc-950/80">
-            @if (stats()!.recentOrders.length === 0) {
-              <div class="flex flex-col items-center justify-center py-10 text-center">
-                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <lucide-icon [img]="FileTextIcon" [size]="20" class="text-zinc-500 dark:text-zinc-400"></lucide-icon>
+        </lmp-page-head>
+
+        <!-- 4 KPIs -->
+        <div class="lmpd-stat-grid">
+          <lmp-stat-card
+            label="Commandes"
+            [value]="s.totalOrders"
+            [icon]="ShoppingCartIcon"
+            [footer]="s.completedOrders + ' terminée(s)'"
+          />
+          <lmp-stat-card
+            label="En cours"
+            [value]="s.inProgressOrders"
+            [icon]="ClockIcon"
+            footer="Commandes actives"
+            [accent]="true"
+          />
+          <lmp-stat-card
+            label="Rendez-vous"
+            [value]="s.upcomingAppointments"
+            [icon]="CalendarIcon"
+            footer="À venir · 7 jours"
+          />
+          <lmp-stat-card
+            label="Avis donnés"
+            [value]="s.totalReviews"
+            [icon]="StarIcon"
+            footer="Merci pour vos retours"
+          />
+        </div>
+
+        <!-- Activity chart + Quick actions (même grille que la maquette) -->
+        <div class="lmpd-two-col">
+          <section class="lmpd-panel">
+            <header class="lmpd-panel-head">
+              <div>
+                <h3>Activité de vos commandes</h3>
+                <div style="font-size:11.5px;color:var(--lmpd-fg-mute);margin-top:2px">
+                  Évolution · trafic &amp; conversions
                 </div>
-                <p class="mt-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">Aucune commande</p>
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Vos commandes apparaîtront ici.</p>
-                <a routerLink="/services" hlmBtn variant="default" size="sm" class="mt-4 cursor-pointer">
+              </div>
+              <div class="lmpd-tabs">
+                @for (p of periods; track p) {
+                  <button
+                    type="button"
+                    [class.is-on]="period() === p"
+                    (click)="setPeriod(p)"
+                  >{{ p }}</button>
+                }
+              </div>
+            </header>
+            <div class="lmpd-chart-wrap">
+              <lmp-line-chart
+                [data]="series().current"
+                [secondary]="series().previous"
+                [labels]="series().labels"
+              />
+              <div style="display:flex;gap:20px;font-size:11.5px;color:var(--lmpd-fg-mute);padding:8px 4px 0">
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:8px;height:8px;border-radius:2px;background:var(--lmpd-accent)"></span>
+                  Cette période
+                </span>
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:10px;height:2px;background:var(--lmpd-fg-mute);opacity:0.5"></span>
+                  Période précédente
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <div>
+            <div class="lmpd-sec-head">
+              <h2>Actions rapides</h2>
+            </div>
+            <div class="lmpd-qa-grid">
+              @for (action of quickActions; track action.label) {
+                <lmp-quick-action
+                  [icon]="action.icon"
+                  [title]="action.label"
+                  [description]="action.description"
+                  [route]="action.route"
+                />
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Orders + (Appointments + Donut) -->
+        <div class="lmpd-two-col">
+          <section class="lmpd-panel">
+            <header class="lmpd-panel-head">
+              <h3>Commandes récentes</h3>
+              <div class="lmpd-pill-filter">
+                @for (f of orderFilters; track f.key) {
+                  <button
+                    type="button"
+                    [class.is-on]="orderFilter() === f.key"
+                    (click)="setOrderFilter(f.key)"
+                  >{{ f.label }}</button>
+                }
+              </div>
+            </header>
+            @if (filteredOrders().length === 0) {
+              <div class="flex flex-col items-center justify-center py-10 text-center px-6">
+                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <lucide-icon
+                    [img]="FileTextIcon"
+                    [size]="20"
+                    class="text-zinc-500 dark:text-zinc-400"
+                  ></lucide-icon>
+                </div>
+                <p class="mt-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  Aucune commande
+                </p>
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Vos commandes apparaîtront ici.
+                </p>
+                <a routerLink="/services" class="lmpd-btn is-accent mt-4">
                   Découvrir nos services
                 </a>
               </div>
             } @else {
-              <div class="divide-y divide-zinc-200/90 dark:divide-zinc-800">
-                @for (order of stats()!.recentOrders; track order.id) {
-                  <a
-                    [routerLink]="['/dashboard/orders']"
-                    [queryParams]="{ open: order.id }"
-                    class="flex items-center justify-between p-4 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/60"
-                  >
-                    <div class="flex items-center gap-3">
-                      <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm"
-                        [ngClass]="getStatusBgClass(order.status)"
-                      >
-                        <lucide-icon [img]="getStatusIcon(order.status)" [size]="16"></lucide-icon>
-                      </div>
-                      <div>
-                        <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ order.serviceName }}</p>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ order.createdAt | date: 'dd MMM yyyy' }}</p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <div class="text-right">
-                        <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                          {{ order.totalAmount | currency:(order.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
-                        </p>
-                        <span
-                          class="inline-block rounded-xs px-2 py-0.5 text-xs font-medium"
-                          [ngClass]="getStatusBadgeClass(order.status)"
-                        >
-                          {{ getStatusLabel(order.status) }}
+              <table class="lmpd-table">
+                <thead>
+                  <tr>
+                    <th>Référence</th>
+                    <th>Service</th>
+                    <th>Statut</th>
+                    <th>Avancement</th>
+                    <th class="text-right">Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of filteredOrders(); track order.id) {
+                    <tr
+                      class="cursor-pointer"
+                      [routerLink]="['/dashboard/orders']"
+                      [queryParams]="{ open: order.id }"
+                    >
+                      <td class="lmpd-mono">#{{ shortId(order.id) }}</td>
+                      <td>
+                        <div class="font-medium">{{ order.serviceName }}</div>
+                        <div class="text-[11px] text-(--lmpd-fg-mute)">
+                          {{ order.createdAt | date: 'dd MMM yyyy' }}
+                        </div>
+                      </td>
+                      <td>
+                        <span [class]="'lmpd-badge ' + statusTone(order.status)">
+                          {{ statusLabel(order.status) }}
                         </span>
-                      </div>
-                      <lucide-icon [img]="ChevronRightIcon" [size]="16" class="text-zinc-400 dark:text-zinc-500"></lucide-icon>
-                    </div>
-                  </a>
-                }
-              </div>
-            }
-          </div>
-        </div>
-
-        <!-- Quick actions -->
-        <div>
-          <h2 class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Actions rapides</h2>
-          <div class="space-y-3">
-            @for (action of quickActions; track action.label) {
-              <a
-                [routerLink]="action.route"
-                class="group flex items-center gap-3 rounded border border-zinc-200/90 bg-white p-4 shadow-sm transition-all hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:bg-zinc-800/80"
-              >
-                <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100"
-                >
-                  <lucide-icon [img]="action.icon" [size]="18"></lucide-icon>
-                </div>
-                <div class="flex-1">
-                  <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ action.label }}</h3>
-                  <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ action.description }}</p>
-                </div>
-                <lucide-icon
-                  [img]="ChevronRightIcon" [size]="16"
-                  class="text-zinc-400 transition-transform group-hover:translate-x-0.5 dark:text-zinc-500"
-                ></lucide-icon>
-              </a>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Upcoming Appointments -->
-      @if (stats()!.upcomingAppointmentsList.length > 0) {
-        <div class="mt-8">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Prochains rendez-vous</h2>
-            <a
-              routerLink="/dashboard/appointments"
-              class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-100"
-            >
-              Voir tout →
-            </a>
-          </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @for (appt of stats()!.upcomingAppointmentsList; track appt.id) {
-              <div
-                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
-              >
-                <div class="flex items-start justify-between">
-                  <div
-                    class="flex h-9 w-9 items-center justify-center rounded-sm bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200"
-                  >
-                    <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
-                  </div>
-                  <span
-                    class="rounded-xs bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                  >
-                    {{ appt.durationMinutes }} min
-                  </span>
-                </div>
-                <h3 class="mt-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ appt.subject }}</h3>
-                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  {{ appt.appointmentDate | date: 'EEEE dd MMM yyyy à HH:mm' }}
-                </p>
-              </div>
-            }
-          </div>
-        </div>
-      }
-
-      <!-- Recent Reviews -->
-      @if (stats()!.recentReviews.length > 0) {
-        <div class="mt-8">
-          <h2 class="mb-4 text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Vos avis récents</h2>
-          <div class="space-y-3">
-            @for (review of stats()!.recentReviews; track review.id) {
-              <div
-                class="rounded border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
-              >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-1">
-                    @for (s of [1, 2, 3, 4, 5]; track s) {
-                      <lucide-icon
-                        [img]="StarIcon" [size]="14"
-                        [ngClass]="{ 'text-amber-400': s <= review.rating, 'text-zinc-300 dark:text-zinc-600': s > review.rating }"
-                      ></lucide-icon>
-                    }
-                  </div>
-                  @if (review.approved) {
-                    <span
-                      class="rounded-xs bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"
-                      >Approuvé</span
-                    >
-                  } @else {
-                    <span
-                      class="rounded-xs bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-400"
-                      >En attente</span
-                    >
+                      </td>
+                      <td style="min-width:140px">
+                        <div style="display:flex;align-items:center;gap:8px">
+                          <div class="lmpd-bar" style="flex:1">
+                            <span [style.width.%]="progressFor(order.status)"></span>
+                          </div>
+                          <span class="lmpd-num" style="font-size:11px;color:var(--lmpd-fg-mute)">
+                            {{ progressFor(order.status) }}%
+                          </span>
+                        </div>
+                      </td>
+                      <td class="lmpd-num text-right font-medium">
+                        {{ order.totalAmount | currency: (order.currency || 'EUR'):'symbol':'1.2-2':'fr' }}
+                      </td>
+                    </tr>
                   }
-                </div>
-                @if (review.comment) {
-                  <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{{ review.comment }}</p>
-                }
-                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-500">{{ review.createdAt | date: 'dd MMM yyyy' }}</p>
-              </div>
+                </tbody>
+              </table>
             }
+          </section>
+
+          <div class="flex flex-col gap-4">
+            <lmp-panel title="À venir">
+              @if (s.upcomingAppointmentsList.length > 0) {
+                @for (appt of s.upcomingAppointmentsList; track appt.id) {
+                  <div class="lmpd-appt">
+                    <div class="lmpd-appt-date">
+                      <span class="lmpd-d">{{ dayOf(appt.appointmentDate) }}</span>
+                      <span class="lmpd-m">{{ monthOf(appt.appointmentDate) }}</span>
+                    </div>
+                    <div>
+                      <div class="lmpd-appt-tt">{{ appt.subject }}</div>
+                      <div class="lmpd-appt-sub">
+                        {{ appt.appointmentDate | date: 'HH:mm' }}
+                        · {{ appt.durationMinutes }} min
+                      </div>
+                    </div>
+                  </div>
+                }
+              } @else {
+                <div class="flex flex-col items-center justify-center py-8 text-center px-6">
+                  <p class="text-xs text-(--lmpd-fg-mute)">Aucun rendez-vous à venir</p>
+                </div>
+              }
+            </lmp-panel>
           </div>
         </div>
-      }
+
+
+      </div>
     }
   `,
 })
 export class DashboardOverviewComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
   private readonly notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly visiblePoll = inject(VisiblePollService);
   private readonly platformId = inject(PLATFORM_ID);
@@ -330,7 +409,6 @@ export class DashboardOverviewComponent implements OnInit {
     });
   }
 
-  /** Rechargé quand `browser` passe à true (hydratation) ou via `reload()`. */
   readonly statsResource = resource({
     params: () => ({ browser: isPlatformBrowser(this.platformId) }),
     loader: async ({ params }) => {
@@ -351,23 +429,161 @@ export class DashboardOverviewComponent implements OnInit {
     () => this.statsResource.status() === 'loading' && !this.statsResource.hasValue(),
   );
 
-  // Icons
+  readonly greeting = computed(() => {
+    const u = this.authService.user();
+    const name = u?.firstName?.trim();
+    return name ? `Bonjour, ${name} 👋` : 'Bonjour 👋';
+  });
+
+  readonly headerSubtitle = computed(() => {
+    const s = this.stats();
+    if (!s) return 'Voici un résumé de votre activité.';
+    const parts: string[] = [];
+    if (s.inProgressOrders > 0) {
+      parts.push(`${s.inProgressOrders} projet${s.inProgressOrders > 1 ? 's' : ''} avance${s.inProgressOrders > 1 ? 'nt' : ''}`);
+    }
+    if (s.upcomingAppointments > 0) {
+      parts.push(`${s.upcomingAppointments} rendez-vous à venir`);
+    }
+    return parts.length
+      ? `Voici un résumé de votre activité. ${parts.join(', ')}.`
+      : 'Voici un résumé de votre activité.';
+  });
+
+  /** Période sélectionnée pour la courbe d'activité (générée depuis les commandes réelles). */
+  readonly period = signal<Period>('30j');
+  setPeriod(p: Period) {
+    this.period.set(p);
+  }
+  readonly periods = PERIODS;
+  readonly series = computed(() => {
+    const orders = this.stats()?.recentOrders ?? [];
+    return buildActivitySeries(orders, this.period());
+  });
+
+  /** Filtre rapide sur le tableau des commandes. */
+  readonly orderFilter = signal<OrderFilter>('all');
+  setOrderFilter(f: OrderFilter) {
+    this.orderFilter.set(f);
+  }
+  readonly orderFilters = ORDER_FILTERS;
+
+  readonly filteredOrders = computed(() => {
+    const orders = this.stats()?.recentOrders ?? [];
+    const filter = this.orderFilter();
+    if (filter === 'all') return orders;
+    if (filter === 'done') {
+      return orders.filter((o) => o.status === 'COMPLETED' || o.status === 'DELIVERED');
+    }
+    return orders.filter(
+      (o) => o.status !== 'COMPLETED' && o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.status !== 'REFUNDED',
+    );
+  });
+
+  /** Donut « Répartition » — agrégation des commandes récentes par statut. */
+  readonly categorySegments = computed<DonutSegment[]>(() => {
+    const orders = this.stats()?.recentOrders ?? [];
+    if (orders.length === 0) {
+      // Fallback visuel pour rendre le panneau parlant même sans commandes.
+      return [
+        { label: 'Aucune commande', value: 1, color: 'var(--lmpd-fg-faint)' },
+      ];
+    }
+    const counts = new Map<string, number>();
+    for (const o of orders) {
+      counts.set(o.status, (counts.get(o.status) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([status, value]) => ({
+        label: this.statusLabel(status),
+        value,
+        color: this.statusColor(status),
+      }))
+      .sort((a, b) => b.value - a.value);
+  });
+
+  readonly activityItems = computed<ActivityFeedItem[]>(() => {
+    const s = this.stats();
+    if (!s) return [];
+    const items: (ActivityFeedItem & { ts: number })[] = [];
+
+    for (const o of s.recentOrders.slice(0, 5)) {
+      items.push({
+        icon: this.statusIcon(o.status),
+        title: o.serviceName,
+        detail: this.statusLabel(o.status),
+        meta: this.formatRelative(o.createdAt),
+        ts: Date.parse(o.createdAt) || 0,
+      });
+    }
+    for (const a of s.upcomingAppointmentsList.slice(0, 3)) {
+      items.push({
+        icon: this.CalendarCheckIcon,
+        title: a.subject,
+        detail: `Rendez-vous · ${a.durationMinutes} min`,
+        meta: this.formatRelative(a.appointmentDate),
+        ts: Date.parse(a.appointmentDate) || 0,
+      });
+    }
+    for (const r of s.recentReviews.slice(0, 3)) {
+      items.push({
+        icon: this.StarIcon,
+        title: `Avis · ${r.rating}/5`,
+        detail: r.comment || (r.approved ? 'Avis approuvé' : 'Avis en attente'),
+        meta: this.formatRelative(r.createdAt),
+        ts: Date.parse(r.createdAt) || 0,
+      });
+    }
+
+    return items
+      .sort((a, b) => b.ts - a.ts)
+      .slice(0, 6)
+      .map(({ ts: _ts, ...rest }) => rest);
+  });
+
   readonly ShoppingCartIcon = ShoppingCart;
   readonly CalendarIcon = Calendar;
   readonly StarIcon = Star;
   readonly ClockIcon = Clock;
-  readonly CheckCircleIcon = CheckCircle;
-  readonly XCircleIcon = XCircle;
-  readonly AlertCircleIcon = AlertCircle;
   readonly Loader2Icon = Loader2;
-  readonly EyeIcon = Eye;
   readonly ChevronRightIcon = ChevronRight;
   readonly FileTextIcon = FileText;
+  readonly BoxIcon = Box;
+  readonly PlusIcon = Plus;
+  readonly CheckCircleIcon = CheckCircle2;
+  readonly CalendarCheckIcon = CalendarCheck;
+  readonly DownloadIcon = Download;
+
+  readonly sparkOrders = undefined;
+  readonly sparkInProgress = undefined;
+  readonly sparkAppointments = undefined;
+  readonly sparkReviews = undefined;
 
   readonly quickActions = [
-    { label: 'Voir les services', description: 'Parcourir notre catalogue', route: '/services', icon: ShoppingCart },
-    { label: 'Prendre rendez-vous', description: 'Planifier une consultation', route: '/contact', icon: Calendar },
-    { label: 'Paramètres', description: 'Gérer votre compte', route: '/dashboard/settings', icon: Settings },
+    {
+      label: 'Voir les services',
+      description: 'Parcourir notre catalogue',
+      route: '/services',
+      icon: Box,
+    },
+    {
+      label: 'Prendre rendez-vous',
+      description: 'Planifier une consultation',
+      route: '/contact',
+      icon: Calendar,
+    },
+    {
+      label: 'Ouvrir un ticket',
+      description: 'Obtenir de l’aide rapidement',
+      route: '/dashboard/tickets',
+      icon: LifeBuoy,
+    },
+    {
+      label: 'Régler une facture',
+      description: 'Voir les factures en attente',
+      route: '/dashboard/invoices',
+      icon: CreditCard,
+    },
   ];
 
   ngOnInit(): void {
@@ -380,42 +596,155 @@ export class DashboardOverviewComponent implements OnInit {
     }
   }
 
-  getStatusLabel(status: string): string {
+  shortId(raw: string): string {
+    return raw.length > 8 ? raw.slice(0, 8) : raw;
+  }
+
+  dayOf(iso: string): string {
+    const d = new Date(iso);
+    return isNaN(d.valueOf()) ? '--' : String(d.getDate()).padStart(2, '0');
+  }
+
+  monthOf(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.valueOf())) return '';
+    return d
+      .toLocaleDateString('fr-FR', { month: 'short' })
+      .replace('.', '')
+      .toUpperCase();
+  }
+
+  statusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PAYMENT_PENDING: 'Paiement en attente', PENDING: 'En attente',
-      CONFIRMED: 'Confirmée', PROCESSING: 'En traitement',
-      IN_PROGRESS: 'En cours', SHIPPED: 'Expédiée', DELIVERED: 'Livrée',
-      COMPLETED: 'Terminée', UNDER_REVIEW: 'En révision',
-      CANCELLED: 'Annulée', REFUNDED: 'Remboursée',
+      PAYMENT_PENDING: 'Paiement en attente',
+      PENDING: 'En attente',
+      CONFIRMED: 'Confirmée',
+      PROCESSING: 'En traitement',
+      IN_PROGRESS: 'En cours',
+      SHIPPED: 'Expédiée',
+      DELIVERED: 'Livrée',
+      COMPLETED: 'Terminée',
+      UNDER_REVIEW: 'En révision',
+      CANCELLED: 'Annulée',
+      REFUNDED: 'Remboursée',
     };
     return labels[status] || status;
   }
 
-  getStatusBadgeClass(status: string): string {
-    const classes: Record<string, string> = {
-      COMPLETED: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
-      DELIVERED: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
-      CONFIRMED: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
-      IN_PROGRESS: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
-      PROCESSING: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200',
-      PENDING: 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400',
-      PAYMENT_PENDING: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-      CANCELLED: 'bg-red-500/10 text-red-600 dark:text-red-400',
-      REFUNDED: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
-    };
-    return classes[status] || 'bg-zinc-500/10 text-zinc-600';
-  }
-
-  getStatusBgClass(status: string): string {
-    return this.getStatusBadgeClass(status);
-  }
-
-  getStatusIcon(status: string) {
+  /** Mappe le statut métier vers un ton de badge du design system (lmpd-badge). */
+  statusTone(status: string): StatusTone {
     switch (status) {
-      case 'COMPLETED': case 'DELIVERED': return this.CheckCircleIcon;
-      case 'CANCELLED': case 'REFUNDED': return this.XCircleIcon;
-      case 'IN_PROGRESS': case 'PROCESSING': return this.ClockIcon;
-      default: return this.AlertCircleIcon;
+      case 'COMPLETED':
+      case 'DELIVERED':
+        return 'is-ok';
+      case 'CONFIRMED':
+      case 'IN_PROGRESS':
+      case 'PROCESSING':
+      case 'SHIPPED':
+        return 'is-info';
+      case 'UNDER_REVIEW':
+        return 'is-warn';
+      case 'PENDING':
+      case 'PAYMENT_PENDING':
+        return 'is-pending';
+      case 'CANCELLED':
+      case 'REFUNDED':
+        return 'is-danger';
+      default:
+        return 'is-muted';
     }
+  }
+
+  /** Couleur de segment donut pour un statut de commande. */
+  statusColor(status: string): string {
+    switch (status) {
+      case 'COMPLETED':
+      case 'DELIVERED':
+        return 'var(--lmpd-success)';
+      case 'IN_PROGRESS':
+      case 'PROCESSING':
+      case 'SHIPPED':
+      case 'CONFIRMED':
+        return 'var(--lmpd-info)';
+      case 'UNDER_REVIEW':
+        return 'var(--lmpd-warning)';
+      case 'PENDING':
+      case 'PAYMENT_PENDING':
+        return 'var(--lmpd-accent)';
+      case 'CANCELLED':
+      case 'REFUNDED':
+        return 'var(--lmpd-danger)';
+      default:
+        return 'var(--lmpd-fg-faint)';
+    }
+  }
+
+  statusIcon(status: string): LucideIconData {
+    switch (status) {
+      case 'COMPLETED':
+      case 'DELIVERED':
+        return CheckCircle2;
+      case 'CONFIRMED':
+      case 'IN_PROGRESS':
+      case 'PROCESSING':
+      case 'SHIPPED':
+        return Clock;
+      case 'CANCELLED':
+      case 'REFUNDED':
+        return FileText;
+      default:
+        return ShoppingCart;
+    }
+  }
+
+  /**
+   * Avancement (%) dérivé du statut — la maquette montre des barres de
+   * progression mais le back ne renvoie pas de pourcentage par commande.
+   */
+  progressFor(status: string): number {
+    switch (status) {
+      case 'COMPLETED':
+      case 'DELIVERED':
+        return 100;
+      case 'SHIPPED':
+        return 90;
+      case 'UNDER_REVIEW':
+        return 80;
+      case 'IN_PROGRESS':
+      case 'PROCESSING':
+        return 60;
+      case 'CONFIRMED':
+        return 35;
+      case 'PENDING':
+      case 'PAYMENT_PENDING':
+        return 10;
+      case 'CANCELLED':
+      case 'REFUNDED':
+        return 0;
+      default:
+        return 25;
+    }
+  }
+
+  /** Date relative compacte (« il y a 12 min », « hier », etc.). */
+  formatRelative(iso: string): string {
+    const d = Date.parse(iso);
+    if (!d) return '';
+    const diffMs = Date.now() - d;
+    if (diffMs < 0) {
+      const days = Math.round(-diffMs / 86_400_000);
+      if (days < 1) return "aujourd'hui";
+      if (days === 1) return 'demain';
+      return `dans ${days} j`;
+    }
+    const min = Math.round(diffMs / 60_000);
+    if (min < 1) return "à l'instant";
+    if (min < 60) return `il y a ${min} min`;
+    const h = Math.round(min / 60);
+    if (h < 24) return `il y a ${h} h`;
+    const days = Math.round(h / 24);
+    if (days === 1) return 'hier';
+    if (days < 30) return `il y a ${days} j`;
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
   }
 }

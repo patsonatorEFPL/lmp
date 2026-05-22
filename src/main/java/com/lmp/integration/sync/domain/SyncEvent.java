@@ -4,6 +4,7 @@ import com.lmp.integration.sync.SyncDirection;
 import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -65,6 +66,19 @@ public class SyncEvent {
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
 
+    /** Horodatage de la vérification post-sync (GET côté système externe). Null = pas encore vérifié. */
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    /** Message d'erreur de vérification (docstatus incorrect, montant divergent, etc.). */
+    @Column(name = "verification_error", columnDefinition = "TEXT")
+    private String verificationError;
+
+    /** Version du mapper utilisé pour générer ce payload (permet re-jouer/retry ciblés). */
+    @Column(name = "mapper_version", nullable = false, length = 20)
+    @ColumnDefault("'1'")
+    private String mapperVersion = "1";
+
     public SyncEvent() {}
 
     // --- Getters / Setters ---
@@ -113,4 +127,13 @@ public class SyncEvent {
 
     public LocalDateTime getProcessedAt() { return processedAt; }
     public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+
+    public LocalDateTime getVerifiedAt() { return verifiedAt; }
+    public void setVerifiedAt(LocalDateTime verifiedAt) { this.verifiedAt = verifiedAt; }
+
+    public String getVerificationError() { return verificationError; }
+    public void setVerificationError(String verificationError) { this.verificationError = verificationError; }
+
+    public String getMapperVersion() { return mapperVersion; }
+    public void setMapperVersion(String mapperVersion) { this.mapperVersion = mapperVersion; }
 }

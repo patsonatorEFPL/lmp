@@ -56,14 +56,19 @@ public class OrderSyncMapper {
         payload.put("po_no", order.getId().toString());
         payload.put("order_type", "Shopping Cart");
 
+        // Lien vers le Quotation externalErp d'origine (si la commande vient d'un devis)
+        if (order.getQuotation() != null && order.getQuotation().getExternalQuotationId() != null) {
+            payload.put("quotation", order.getQuotation().getExternalQuotationId());
+        }
+
         // Traçabilité bidirectionnelle — UUID LMP stocké côté système externe
         payload.put("lmp_order_id", order.getId().toString());
 
-        // Services — pas de livraison physique requise (champ au niveau SO parent dans external ERP v17)
+        // Services — pas de livraison physique requise (champ au niveau SO parent dans externalErp v17)
         payload.put("skip_delivery_note", 1);
 
         // Lignes d'articles
-        List<Map<String, Object>> items = buildOrderItems(order);
+        List<Map<String, Object>> items = buildOrderItems(order, "Sales Order Item");
         payload.put("items", items);
 
         // Taxes (TVA incluse dans le prix)
@@ -103,7 +108,7 @@ public class OrderSyncMapper {
         payload.put("update_stock", 0);
 
         // Lignes d'articles — avec lien vers le Sales Order pour que per_billed se mette à jour
-        List<Map<String, Object>> items = buildOrderItems(order);
+        List<Map<String, Object>> items = buildOrderItems(order, "Sales Invoice Item");
         if (order.getExternalOrderId() != null) {
             for (Map<String, Object> item : items) {
                 item.put("sales_order", order.getExternalOrderId());
@@ -151,7 +156,7 @@ public class OrderSyncMapper {
 
     // ==================== Helpers ====================
 
-    private List<Map<String, Object>> buildOrderItems(Order order) {
+    private List<Map<String, Object>> buildOrderItems(Order order, String childDoctype) {
         List<Map<String, Object>> items = new ArrayList<>();
 
         if (order.getItems() != null && !order.getItems().isEmpty()) {
@@ -161,7 +166,8 @@ public class OrderSyncMapper {
                 // Item code — use external item code if linked, otherwise service name
                 String itemCode = (item.getService() != null && item.getService().getExternalItemCode() != null)
                         ? item.getService().getExternalItemCode()
-                        : order.getServiceName();
+                        : (item.getService() != null ? item.getService().getTitle() : order.getServiceName());
+                line.put("doctype", childDoctype);
                 line.put("item_code", itemCode);
                 line.put("item_name", order.getServiceName());
                 line.put("qty", item.getQuantity());
@@ -182,6 +188,7 @@ public class OrderSyncMapper {
         } else {
             // Fallback : single-line order from serviceName + totalAmount (TTC)
             Map<String, Object> line = new LinkedHashMap<>();
+            line.put("doctype", childDoctype);
             line.put("item_code", order.getServiceName());
             line.put("item_name", order.getServiceName());
             line.put("qty", 1);

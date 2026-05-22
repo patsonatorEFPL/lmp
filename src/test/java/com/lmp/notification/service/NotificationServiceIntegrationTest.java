@@ -47,9 +47,9 @@ class NotificationServiceIntegrationTest {
     void setUp() {
         // Configuration du MailAddressConfig
         mailAddressConfig = new MailAddressConfig();
-        ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@lmp-services.ca");
-        ReflectionTestUtils.setField(mailAddressConfig, "support", "support@lmp-services.ca");
-        ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@lmp-services.ca");
+        ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@example.com");
+        ReflectionTestUtils.setField(mailAddressConfig, "support", "support@example.com");
+        ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@example.com");
         ReflectionTestUtils.setField(mailAddressConfig, "name", "LMP Digital Services");
         
         // Création du service avec constructor injection
@@ -74,8 +74,8 @@ class NotificationServiceIntegrationTest {
         
         SimpleMailMessage capturedMessage = messageCaptor.getValue();
         assertNotNull(capturedMessage);
-        assertEquals("noreply@lmp-services.ca", capturedMessage.getFrom());
-        assertEquals("noreply@lmp-services.ca", capturedMessage.getReplyTo());
+        assertEquals("noreply@example.com", capturedMessage.getFrom());
+        assertEquals("noreply@example.com", capturedMessage.getReplyTo());
         assertArrayEquals(new String[]{testEmail}, capturedMessage.getTo());
     }
 
@@ -138,9 +138,9 @@ class NotificationServiceIntegrationTest {
         // Test que MailAddressConfig est correctement injecté et utilisé
         assertNotNull(ReflectionTestUtils.getField(notificationService, "mailAddressConfig"));
         
-        assertEquals("noreply@lmp-services.ca", mailAddressConfig.getNoreply());
-        assertEquals("support@lmp-services.ca", mailAddressConfig.getSupport());
-        assertEquals("noreply@lmp-services.ca", mailAddressConfig.getReplyToSupport());
+        assertEquals("noreply@example.com", mailAddressConfig.getNoreply());
+        assertEquals("support@example.com", mailAddressConfig.getSupport());
+        assertEquals("noreply@example.com", mailAddressConfig.getReplyToSupport());
     }
 
     @Test

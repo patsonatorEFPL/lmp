@@ -55,6 +55,13 @@ public class OrderAdminController {
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
 
+    @Value("${app.base.url:http://localhost:8080}")
+    private String baseUrl;
+
+    private boolean isMonolithicMode() {
+        return frontendUrl == null || frontendUrl.isBlank() || frontendUrl.equals(baseUrl);
+    }
+
         private final OrderAdminService orderAdminService;
         private final OrderStatusHistoryService historyService;
         private final RefundService refundService;
@@ -74,32 +81,6 @@ public class OrderAdminController {
         this.reportsService = reportsService;
         this.systemConfigService = systemConfigService;
         this.orderRepository = orderRepository;
-    }
-
-    // ========== Pages principales ==========
-
-    /**
-     * Redirige vers le frontend Angular pour la gestion des commandes.
-     */
-    @GetMapping
-    public String ordersPage() {
-        return "redirect:" + frontendUrl + "/admin/orders";
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour les détails d'une commande.
-     */
-    @GetMapping("/{orderId}")
-    public String orderDetailsRedirect(@PathVariable java.util.UUID orderId) {
-        return "redirect:" + frontendUrl + "/admin/orders/" + orderId;
-    }
-
-    /**
-     * Redirige vers le frontend Angular pour les rapports.
-     */
-    @GetMapping("/reports")
-    public String reportsPage() {
-        return "redirect:" + frontendUrl + "/admin/orders/reports";
     }
 
     // ========== API REST pour recherche et pagination ==========

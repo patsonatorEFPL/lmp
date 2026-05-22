@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Confirmation de votre rendez-vous - LMP Services</title>
+    <title th:text="|Confirmation de votre rendez-vous - ${companyName ?: 'LMP Services'}|">Confirmation de votre rendez-vous - LMP Services</title>
     <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
@@ -21,7 +21,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:36px 32px;text-align:center;">
-                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;">LMP Services</div>
+                            <div style="font-size:14px;color:#8b92a5;margin-bottom:8px;" th:text="${companyName ?: 'LMP Services'}">LMP Services</div>
                             <div style="font-size:24px;font-weight:700;color:#ffffff;">Rendez-vous reçu</div>
                             <div style="display:inline-block;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:6px 16px;border-radius:16px;font-size:12px;font-weight:600;margin-top:12px;">✓ Demande enregistrée</div>
                         </td>
@@ -99,7 +99,7 @@
                             <div style="background-color:#f0f4ff;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px;">
                                 <div style="font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:6px;">Besoin de nous joindre ?</div>
                                 <span style="font-size:13px;color:#4b5563;line-height:1.8;">
-                                    <a href="mailto:support@lmp-services.ca" style="color:#4f6df5;text-decoration:none;">support@lmp-services.ca</a><br>
+                                    <a th:href="'mailto:' + (${companyEmail} ?: 'support@localhost')" th:text="${companyEmail} ?: 'support@localhost'" href="mailto:support@localhost" style="color:#4f6df5;text-decoration:none;">support@localhost</a><br>
                                     Lundi - Vendredi, 9h00 - 18h00
                                 </span>
                             </div>
@@ -113,7 +113,7 @@
 
                             <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
                                 En attendant, n'hésitez pas à découvrir nos
-                                <a th:href="${frontendUrl + '/services'}" href="https://lmp-services.ca/services" style="color:#4f6df5;text-decoration:none;">services</a>.
+                                <a th:href="${frontendUrl + '/services'}" href="#" style="color:#4f6df5;text-decoration:none;">services</a>.
                             </p>
                         </td>
                     </tr>

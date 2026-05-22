@@ -979,10 +979,11 @@ const ORDER_STEPS = [
           <div class="space-y-4 px-6 py-5">
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">
-                Email du client *
+                Email du client <span class="text-(--muted-foreground) font-normal">(optionnel)</span>
               </label>
               <p class="mb-2 text-xs text-(--muted-foreground)">
-                S’il existe un compte avec cet email, la commande y est rattachée. Sinon, une commande « invité » est créée avec un lien de paiement (et une invitation est envoyée à cette adresse si elle est valide).
+                Renseigné : si un compte existe, la commande y est rattachée ; sinon une commande invité est créée et une invitation est envoyée à cette adresse.
+                Laissé vide : une commande invité est créée et le lien de paiement vous est retourné à transmettre vous-même.
               </p>
               <p class="mb-2 text-xs text-(--muted-foreground)">
                 Suggestions : comptes récents au chargement ; tapez au moins 2 caractères pour chercher dans la base.
@@ -1798,16 +1799,20 @@ export class AdminOrdersComponent implements OnInit {
     }
 
     const emailTrim = this.newOrderForm.userEmail.trim();
-    if (!emailTrim) {
-      this.showToast('error', 'Indiquez l’email du client');
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+    // Email is optional. Two flows:
+    //   - empty             → pure guest order, paymentLink returned and admin transmits it manually.
+    //   - filled valid mail → lookup user; rattach if found, else guest order with email invitation.
+    if (emailTrim && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
       this.showToast('error', 'Adresse e-mail invalide');
       return;
     }
 
     this.creatingOrder.set(true);
+
+    if (!emailTrim) {
+      this.postAdminGuestOrderForEmail('');
+      return;
+    }
 
     const cached = this.findCreateOrderUserByEmail(emailTrim);
     if (cached) {

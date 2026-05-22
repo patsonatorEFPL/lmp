@@ -1,0 +1,47 @@
+# PROD — Spring Boot monolithique single-host.
+# Remplace l'ancien YAML avec 14 routers PathPrefix par 2 routers Host catch-all.
+#
+# Avant : Traefik routait /api, /oauth2, /actuator, /ws, /sitemap.xml, /login/oauth2 vers
+# le backend ; le reste (Host=lmp-services.ca) allait au container frontend SSR
+# (lmpfront-zr8wpb). Mode SPLIT.
+#
+# Après : un seul container backend sert tout (Angular SPA embarqué dans classpath:/static/
+# + endpoints REST + OIDC + actuator). Mode MONOLITH.
+#
+# Déploiement :
+#   1. Backup actuel : sudo cp /etc/dokploy/traefik/dynamic/lmp-menkeps-lmpback-bekrag.yml{,.bak}
+#   2. Replace      : sudo cp infra/traefik/lmp-menkeps-lmpback-bekrag.monolith.yml \
+#                            /etc/dokploy/traefik/dynamic/lmp-menkeps-lmpback-bekrag.yml
+#   3. Stop frontend: dokploy → lmpfront-zr8wpb → Stop Application
+#   4. Verify       : curl https://lmp-services.ca/ → 200 (Angular SPA)
+#                     curl https://lmp-services.ca/api/v1/config → 200 (JSON)
+#                     curl https://lmp-services.ca/oauth2/jwks → 200 (JWK Set)
+#   5. Si KO        : restore .bak via sudo cp + Dokploy redeploy lmpfront
+
+http:
+  routers:
+    # HTTP entry → 301 redirect HTTPS (middleware redirect-to-https)
+    lmp-menkeps-lmpback-bekrag-router-web:
+      rule: Host(`lmp-services.ca`) || Host(`www.lmp-services.ca`)
+      service: lmp-menkeps-lmpback-bekrag-service-main
+      middlewares:
+        - redirect-to-https
+      entryPoints:
+        - web
+
+    # HTTPS entry → backend port 8080 (catch-all single-host)
+    lmp-menkeps-lmpback-bekrag-router-websecure:
+      rule: Host(`lmp-services.ca`) || Host(`www.lmp-services.ca`)
+      service: lmp-menkeps-lmpback-bekrag-service-main
+      middlewares: []
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    lmp-menkeps-lmpback-bekrag-service-main:
+      loadBalancer:
+        servers:
+          - url: http://lmp-menkeps-lmpback-bekrag:8080
+        passHostHeader: true

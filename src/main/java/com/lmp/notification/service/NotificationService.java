@@ -193,6 +193,28 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Envoie une alerte administrative générique (sans référence à une commande).
+     * Utilisé par le monitoring de synchronisation et autres sous-systèmes.
+     */
+    public void sendAdminAlert(String adminEmail, String subject, String plainTextBody) {
+        try {
+            String htmlContent = "<html><body>"
+                    + "<h2>" + escapeHtml(subject) + "</h2>"
+                    + "<pre style='font-family:monospace;background:#f5f5f5;padding:12px;border-radius:4px;'>"
+                    + escapeHtml(plainTextBody)
+                    + "</pre>"
+                    + "<hr/><p style='font-size:11px;color:#666;'>Alerte automatique LMP — "
+                    + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                    + "</p></body></html>";
+
+            sendHtmlEmail(adminEmail, "[ALERTE LMP] " + subject, htmlContent);
+            logger.info("Alerte admin envoyée à {} : {}", adminEmail, subject);
+        } catch (Exception e) {
+            logger.error("Erreur envoi alerte admin: {}", e.getMessage(), e);
+        }
+    }
+
     // ========== Méthodes privées de construction des contenus ==========
 
     private String buildStatusChangeSubject(Order order, OrderStatus newStatus) {
@@ -221,9 +243,10 @@ public class NotificationService {
         context.setVariable("newStatus", getStatusDisplayName(newStatus));
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-status-change", context);
     }
 
@@ -233,9 +256,10 @@ public class NotificationService {
         context.setVariable("reason", reason);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-cancellation", context);
     }
 
@@ -246,9 +270,10 @@ public class NotificationService {
         context.setVariable("refundId", refundId);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-refund", context);
     }
 
@@ -257,9 +282,10 @@ public class NotificationService {
         context.setVariable("order", order);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-confirmation", context);
     }
 
@@ -269,10 +295,21 @@ public class NotificationService {
         context.setVariable("trackingNumber", trackingNumber);
         context.setVariable("customerName", getCustomerName(order));
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/order-shipping", context);
+    }
+
+    private static String escapeHtml(String text) {
+        if (text == null) return "";
+        return text
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private String buildAdminNotificationContent(String subject, String message, Order order) {
@@ -281,9 +318,10 @@ public class NotificationService {
         context.setVariable("message", message);
         context.setVariable("order", order);
         context.setVariable("companyName", COMPANY_NAME);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
         context.setVariable("frontendUrl", frontendUrl);
         context.setVariable("currentDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
-        
+
         return templateEngine.process("emails/admin-notification", context);
     }
 

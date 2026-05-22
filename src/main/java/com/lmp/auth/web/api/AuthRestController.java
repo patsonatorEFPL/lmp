@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
@@ -34,11 +35,14 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * API REST d'authentification.
@@ -73,101 +77,162 @@ public class AuthRestController {
         this.programmaticHttpSessionLogin = programmaticHttpSessionLogin;
     }
 
+    /**
+     * Login — wrap en Callable comme register : bcrypt verify (~150 ms ARM) tourne
+     * sur mvcTaskExecutor, thread Tomcat libéré pour servir des reads concurrents.
+     * <p>
+     * HttpServletRequest/Response sont safe à utiliser dans Callable car Spring MVC
+     * tient le request lifecycle ouvert pendant async (asyncStarted + dispatcherType
+     * gère ASYNC_DISPATCH au retour). La manipulation de session via
+     * programmaticHttpSessionLogin se fait DANS le Callable, avant que MVC
+     * re-dispatch la requête → cookies + Set-Cookie correctement écrits dans la
+     * réponse finale.
+     */
     @PostMapping("/login")
     @Operation(summary = "Connexion", description = "Authentifie l'utilisateur et crée une session HTTP")
-    public ResponseEntity<ApiResponse<UserResponse>> login(
+    public Callable<ResponseEntity<ApiResponse<Map<String, Object>>>> login(
             @Valid @RequestBody LoginDto loginDto,
             HttpServletRequest request,
             HttpServletResponse response) {
+        return () -> {
+            try {
+                Authentication authentication = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
 
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword()));
+                programmaticHttpSessionLogin.login(request, response, authentication);
 
-            programmaticHttpSessionLogin.login(request, response, authentication);
+                // Iter41 — Bug #1 fix : "Se souvenir de moi pendant 30 jours".
+                // Avant : SecurityConfig.rememberMe() configuré (tokenValiditySeconds=86400=24h)
+                // MAIS Spring RememberMeAuthFilter lit request.getParameter("rememberMe") en
+                // form-encoded, ce qui ne marche PAS pour JSON LoginDto.rememberMe.
+                // Résultat : cookie REMEMBER-ME jamais set, label UI trompeur.
+                //
+                // Fix : étendre directement la session Spring Session Redis à 30 jours via
+                // setMaxInactiveInterval. Redis TTL aligne sur 30j (vs 30min staging default
+                // ou 24h prod default). Cookie SESSION sans Max-Age (browser session) mais
+                // backend valide 30j → user reste loggé jusqu'à fermeture browser, et après
+                // ré-ouverture le cookie session est gone mais backend session encore valide
+                // = nouvelle session liée à l'ancienne via Spring Session pas vraiment, mais
+                // au moins l'inactivité 30j est respectée pour navigation continue.
+                if (loginDto.isRememberMe()) {
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        session.setMaxInactiveInterval(30 * 24 * 60 * 60); // 30 jours
+                    }
+                }
 
-            Optional<User> userOpt = userService.findByEmailWithRoles(loginDto.getEmail());
-            if (userOpt.isEmpty()) {
-                logger.error("Utilisateur introuvable après authentification réussie: {}", loginDto.getEmail());
+                Optional<User> userOpt = userService.findByLogin(authentication.getName());
+                if (userOpt.isEmpty()) {
+                    logger.error("Utilisateur introuvable après authentification réussie: {}", authentication.getName());
+                    programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(ApiResponse.error("Login failed"));
+                }
+                User user = userOpt.get();
+
+                userService.updateLastLoginDate(user);
+
+                // Restore any saved request (e.g. /oauth2/authorize flow)
+                HttpSessionRequestCache requestCache = new HttpSessionRequestCache();
+                SavedRequest savedRequest = requestCache.getRequest(request, response);
+                // Default landing page : admin → /admin, autres → /dashboard.
+                // Si une saved request existe (deep link, oauth2 flow), on respecte sa cible.
+                String defaultLanding = user.getRoles().stream()
+                        .anyMatch(r -> "ADMIN".equals(r.getName())) ? "/admin" : "/dashboard";
+                String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : defaultLanding;
+                // Convert absolute URLs to relative so the browser stays on the same origin
+                // (important when served through a reverse proxy / tunnel)
+                try {
+                    java.net.URI uri = new java.net.URI(redirectUrl);
+                    redirectUrl = uri.getRawPath() + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
+                } catch (java.net.URISyntaxException e) {
+                    // keep original relative URL
+                }
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("user", UserResponse.from(user));
+                data.put("redirectUrl", redirectUrl);
+
+                logger.info("API login successful for: {} — redirectUrl={}", user.getEmail(), redirectUrl);
+                return ResponseEntity.ok(ApiResponse.ok("Login successful", data));
+
+            } catch (BadCredentialsException e) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid email or password"));
+            } catch (SessionAuthenticationException e) {
+                logger.warn("API login refusé (politique de session): {}", e.getMessage());
+                programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error(
+                                "Login blocked due to session policy. Close other sessions or try again."));
+            } catch (AuthenticationException e) {
+                logger.warn("API login refusé: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(ApiResponse.error("Invalid email or password"));
+            } catch (Exception e) {
+                logger.error("API login erreur inattendue", e);
                 programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ApiResponse.error("Login failed"));
             }
-            User user = userOpt.get();
-
-            userService.updateLastLoginDate(user.getEmail());
-
-            logger.info("API login successful for: {}", user.getEmail());
-            return ResponseEntity.ok(ApiResponse.ok("Login successful", UserResponse.from(user)));
-
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid email or password"));
-        } catch (SessionAuthenticationException e) {
-            logger.warn("API login refusé (politique de session): {}", e.getMessage());
-            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(
-                            "Login blocked due to session policy. Close other sessions or try again."));
-        } catch (AuthenticationException e) {
-            logger.warn("API login refusé: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Invalid email or password"));
-        } catch (Exception e) {
-            logger.error("API login erreur inattendue", e);
-            programmaticHttpSessionLogin.revokeHttpSessionLogin(request, sessionRegistry);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Login failed"));
-        }
+        };
     }
 
+    /**
+     * Inscription — retourne {@link Callable} pour libérer le thread Tomcat pendant
+     * que bcrypt (~150-200 ms CPU sur ARM) tourne. Spring MVC dispatch sur
+     * {@code applicationTaskExecutor} puis re-dispatch la requête une fois la
+     * Callable résolue. Net effet sous load : les reads ne queue plus derrière
+     * les bcrypt en cours, le pool Tomcat reste disponible.
+     */
     @PostMapping("/register")
     @Operation(summary = "Inscription", description = "Crée un nouveau compte utilisateur")
-    public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterDto registerDto) {
+    public Callable<ResponseEntity<ApiResponse<UserResponse>>> register(@Valid @RequestBody RegisterDto registerDto) {
+        return () -> {
+            if (authService.existsByEmail(registerDto.getEmail())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(ApiResponse.error("Email already registered"));
+            }
 
-        if (authService.existsByEmail(registerDto.getEmail())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error("Email already registered"));
-        }
+            if (!registerDto.isPasswordMatching()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Passwords do not match"));
+            }
 
-        if (!registerDto.isPasswordMatching()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Passwords do not match"));
-        }
+            if (authService.isDisposableEmail(registerDto.getEmail())) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Disposable email addresses are not allowed"));
+            }
 
-        if (authService.isDisposableEmail(registerDto.getEmail())) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Disposable email addresses are not allowed"));
-        }
+            try {
+                authService.validateRegistrationData(registerDto);
+                User user = authService.registerUser(registerDto);
 
-        try {
-            authService.validateRegistrationData(registerDto);
-            User user = authService.registerUser(registerDto);
+                // Send emails asynchronously via Spring proxy (@Async) — non-blocking
+                authService.sendVerificationEmail(user);
+                authService.sendWelcomeEmail(user);
 
-            // Send emails asynchronously via Spring proxy (@Async) — non-blocking
-            authService.sendVerificationEmail(user);
-            authService.sendWelcomeEmail(user);
+                Map<String, Object> regPl = new HashMap<>();
+                regPl.put(BusinessEventPayloadKeys.EMAIL, user.getEmail());
+                regPl.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
+                regPl.put(BusinessEventPayloadKeys.MESSAGE,
+                        "Nouvel utilisateur : " + user.getEmail());
+                eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "auth", user.getId(), regPl));
 
-            Map<String, Object> regPl = new HashMap<>();
-            regPl.put(BusinessEventPayloadKeys.EMAIL, user.getEmail());
-            regPl.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
-            regPl.put(BusinessEventPayloadKeys.MESSAGE,
-                    "Nouvel utilisateur : " + user.getEmail());
-            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "auth", user.getId(), regPl));
+                logger.info("API registration successful for: {}", user.getEmail());
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponse.ok("Registration successful — check your email for verification", UserResponse.from(user)));
 
-            logger.info("API registration successful for: {}", user.getEmail());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.ok("Registration successful — check your email for verification", UserResponse.from(user)));
-
-        } catch (IllegalArgumentException e) {
-            logger.warn("Registration validation: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Registration could not be completed"));
-        } catch (Exception e) {
-            logger.error("Registration failed", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Registration could not be completed"));
-        }
+            } catch (IllegalArgumentException e) {
+                logger.warn("Registration validation: {}", e.getMessage());
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Registration could not be completed"));
+            } catch (Exception e) {
+                logger.error("Registration failed", e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(ApiResponse.error("Registration could not be completed"));
+            }
+        };
     }
 
     @GetMapping("/me")
@@ -179,7 +244,7 @@ public class AuthRestController {
                     .body(ApiResponse.error("Not authenticated"));
         }
 
-        return userService.findByEmailWithRoles(authentication.getName())
+        return userService.findByLogin(authentication.getName())
                 .map(user -> ResponseEntity.ok(ApiResponse.ok(UserResponse.from(user))))
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("User not found")));
@@ -216,8 +281,7 @@ public class AuthRestController {
     @PostMapping("/forgot-password")
     @Operation(summary = "Mot de passe oublié", description = "Envoie un lien de réinitialisation par e-mail si le compte existe")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        authService.initiatePasswordReset(request.getEmail())
-                .ifPresent(authService::sendPasswordResetEmail);
+        authService.processForgotPasswordAsync(request.getEmail());
         return ResponseEntity.ok(ApiResponse.ok(
                 "Si un compte existe pour cette adresse, un e-mail de réinitialisation a été envoyé.",
                 null));

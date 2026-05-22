@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser, NgClass, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { LucideAngularModule, Check, ArrowRight, Loader2, ShoppingCart, Filter, Save } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -23,12 +24,29 @@ import {
   ServiceItem,
 } from '../../core/services/catalog.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 import { ProfileService } from '../../core/services/profile.service';
+import { paymentApiUrls } from '../../core/api/payment-api.paths';
+import {
+  DuplicateServiceWarningModalComponent,
+  ActiveServiceInfo,
+} from '../../shared/modals/duplicate-service-warning-modal.component';
+
+interface CheckoutAvailabilityResponse {
+  existingPendingOrderId: string | null;
+  activeServices: ActiveServiceInfo[];
+}
+
+interface ApiEnvelope<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
 
 @Component({
   selector: 'lmp-services',
   standalone: true,
-  imports: [LucideAngularModule, HlmButton, NgClass, CurrencyPipe, FormsModule],
+  imports: [LucideAngularModule, HlmButton, NgClass, CurrencyPipe, FormsModule, DuplicateServiceWarningModalComponent],
   template: `
     <section class="relative">
       <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -243,6 +261,14 @@ import { ProfileService } from '../../core/services/profile.service';
         </section>
       </div>
     </section>
+
+    <lmp-duplicate-service-warning-modal
+      [isOpen]="dupModalOpen()"
+      [service]="dupModalService()"
+      (cancel)="onDupCancel()"
+      (proceedAnyway)="onDupProceedAnyway()"
+      (viewOrder)="onDupViewOrder($event)"
+    />
   `,
 })
 export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -258,13 +284,19 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly catalogService = inject(CatalogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly siteConfig = inject(SiteConfigService);
   private readonly seo = inject(SeoService);
   private readonly profileService = inject(ProfileService);
+  private readonly http = inject(HttpClient);
 
   checkoutTaxForm = {
     vatReverseCharge: false,
     vatNumber: '',
   };
+
+  readonly dupModalOpen = signal(false);
+  readonly dupModalService = signal<ActiveServiceInfo | null>(null);
+  private pendingCheckoutService: ServiceItem | null = null;
 
   readonly services = signal<ServiceItem[]>([]);
   readonly loading = signal(true);
@@ -320,6 +352,65 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       description: 'Découvrez notre gamme complète de services de marketing digital : référencement SEO, gestion Google My Business, création de sites web, publicité en ligne et gestion des avis.',
       url: '/services',
       keywords: 'services marketing digital, référencement SEO, Google My Business, création site web, publicité en ligne, gestion avis, présence locale',
+    });
+
+    this.seo.setJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Services LMP Digital Services',
+      url: `${this.seo.baseUrl}/services`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          item: {
+            '@type': 'Service',
+            name: 'Référencement SEO',
+            description: 'Optimisation technique et sémantique pour dominer les résultats Google.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          item: {
+            '@type': 'Service',
+            name: 'Gestion Google My Business',
+            description: 'Optimisation complète de votre fiche établissement Google.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          item: {
+            '@type': 'Service',
+            name: 'Création de Site Web',
+            description: 'Sites web professionnels avec SSL, référencement optimisé et design responsive.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 4,
+          item: {
+            '@type': 'Service',
+            name: 'Publicité en Ligne',
+            description: 'Campagnes Google Ads et Meta Ads avec ciblage géolocalisé.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+        {
+          '@type': 'ListItem',
+          position: 5,
+          item: {
+            '@type': 'Service',
+            name: 'Gestion des Avis',
+            description: 'Stratégie de collecte et gestion de la e-réputation.',
+            provider: { '@type': 'Organization', name: 'LMP Digital Services' },
+          },
+        },
+      ],
     });
 
     const u = this.authService.user();
@@ -450,7 +541,10 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onCheckout(service: ServiceItem): void {
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      const target = service.currentOffer?.id
+        ? `/checkout/${service.currentOffer.id}`
+        : '/services';
+      this.siteConfig.goToLogin(target);
       return;
     }
 
@@ -497,7 +591,63 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.checkoutLoading.set(null);
-    void this.router.navigate(['/checkout', service.currentOffer.id]);
+    const offerId = service.currentOffer.id;
+
+    this.http
+      .get<ApiEnvelope<CheckoutAvailabilityResponse>>(
+        paymentApiUrls.checkoutAvailability(),
+        { params: { offerId }, withCredentials: true },
+      )
+      .subscribe({
+        next: (res) => {
+          this.checkoutLoading.set(null);
+          const data = res.data;
+
+          if (data?.existingPendingOrderId) {
+            // Cas A : reprend silencieusement le panier abandonne
+            void this.router.navigate(['/checkout/order', data.existingPendingOrderId]);
+            return;
+          }
+
+          if (data?.activeServices?.length) {
+            // Cas B : service deja actif - warning modal
+            this.pendingCheckoutService = service;
+            this.dupModalService.set(data.activeServices[0]);
+            this.dupModalOpen.set(true);
+            return;
+          }
+
+          // Cas C : flow normal
+          void this.router.navigate(['/checkout', offerId]);
+        },
+        error: () => {
+          // Sur erreur availability, fail-open : on continue le flow normal
+          this.checkoutLoading.set(null);
+          void this.router.navigate(['/checkout', offerId]);
+        },
+      });
+  }
+
+  onDupCancel(): void {
+    this.dupModalOpen.set(false);
+    this.dupModalService.set(null);
+    this.pendingCheckoutService = null;
+  }
+
+  onDupProceedAnyway(): void {
+    const service = this.pendingCheckoutService;
+    this.dupModalOpen.set(false);
+    this.dupModalService.set(null);
+    this.pendingCheckoutService = null;
+    if (service?.currentOffer) {
+      void this.router.navigate(['/checkout', service.currentOffer.id]);
+    }
+  }
+
+  onDupViewOrder(orderId: string): void {
+    this.dupModalOpen.set(false);
+    this.dupModalService.set(null);
+    this.pendingCheckoutService = null;
+    void this.router.navigate(['/dashboard/orders'], { queryParams: { highlight: orderId } });
   }
 }

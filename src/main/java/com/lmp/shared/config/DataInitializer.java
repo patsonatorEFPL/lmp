@@ -50,13 +50,15 @@ public class DataInitializer implements CommandLineRunner {
     private final ServiceOfferRepository serviceOfferRepository;
     private final OfferBenefitRepository offerBenefitRepository;
 
-    /**
-     * Mot de passe admin — OBLIGATOIRE.
-     * À chaque démarrage, si le mot de passe en base diffère de cette variable,
-     * il est mis à jour automatiquement. Aucun fallback n'est prévu.
-     */
+    private static final String ADMIN_USERNAME = "Administrator";
+
+    // ENV présente → écrase le hash en base si différent. Absente + admin existe → conserve.
     @org.springframework.beans.factory.annotation.Value("${ADMIN_PASSWORD:}")
     private String adminPassword;
+
+    // Email réel de l'admin (pour les notifications). Le login se fait via "Administrator".
+    @org.springframework.beans.factory.annotation.Value("${ADMIN_EMAIL:${company.admin.email:admin@localhost}}")
+    private String adminEmail;
 
     public DataInitializer(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -87,9 +89,9 @@ public class DataInitializer implements CommandLineRunner {
         logger.info("📦 Nombre total de catégories de services: {}", serviceCategoryRepository.count());
         logger.info("🛒 Nombre total de services: {}", serviceRepository.count());
 
-        userRepository.findByEmail("admin@lmp.ca").ifPresentOrElse(
-            admin -> logger.info("✅ Compte administrateur configuré: {}", admin.getEmail()),
-            () -> logger.error("❌ Erreur: Compte administrateur non trouvé!")
+        userRepository.findByUsernameWithRoles(ADMIN_USERNAME).ifPresentOrElse(
+            admin -> logger.info("Compte administrateur configure: login={} email={}", ADMIN_USERNAME, admin.getEmail()),
+            () -> logger.error("Erreur: compte Administrator introuvable en base!")
         );
 
         logger.info("🏁 === Initialisation des données LMP terminée ===");
@@ -116,45 +118,49 @@ public class DataInitializer implements CommandLineRunner {
     // -------------------------------------------------------------------------
 
     private void initializeDefaultUsers() {
-        if (adminPassword == null || adminPassword.isBlank()) {
-            throw new IllegalStateException(
-                "❌ ADMIN_PASSWORD n'est pas défini. "
-                + "Définissez la variable d'environnement ADMIN_PASSWORD pour démarrer l'application.");
-        }
-
         Role adminRole = roleRepository.findByName("ADMIN")
-                .orElseThrow(() -> new RuntimeException("Rôle ADMIN non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Role ADMIN non trouve"));
 
-        var existingAdmin = userRepository.findByEmail("admin@lmp.ca");
-        if (existingAdmin.isPresent()) {
-            User admin = existingAdmin.get();
-            // Si le mot de passe en base diffère de ADMIN_PASSWORD, le mettre à jour
-            if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
-                admin.setPassword(passwordEncoder.encode(adminPassword));
-                userRepository.save(admin);
-                logger.info("🔄 Mot de passe admin mis à jour depuis ADMIN_PASSWORD.");
+        boolean envProvided = adminPassword != null && !adminPassword.isBlank();
+        var existing = userRepository.findByUsernameWithRoles(ADMIN_USERNAME);
+
+        if (existing.isPresent()) {
+            User admin = existing.get();
+            if (envProvided) {
+                if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+                    admin.setPassword(passwordEncoder.encode(adminPassword));
+                    userRepository.save(admin);
+                    logger.info("Mot de passe Administrator mis a jour depuis ADMIN_PASSWORD.");
+                }
             } else {
-                logger.debug("📋 Compte admin existant — mot de passe déjà synchronisé.");
+                logger.info("ADMIN_PASSWORD absent — mot de passe Administrator conserve en base.");
             }
-        } else {
-            User admin = new User();
-            admin.setEmail("admin@lmp.ca");
-            admin.setPassword(passwordEncoder.encode(adminPassword));
-            admin.setFirstName("Admin");
-            admin.setLastName("LMP");
-            admin.setRegistrationDate(LocalDateTime.now());
-            admin.setStatus(UserStatus.ACTIVE);
-            admin.setAccountLocked(false);
-            admin.setEmailVerified(true);
-            admin.setRoles(Set.of(adminRole));
-
-            userRepository.save(admin);
-            logger.info("✅ Administrateur créé : admin@lmp.ca");
+            return;
         }
+
+        if (!envProvided) {
+            throw new IllegalStateException(
+                "Aucun compte Administrator en base et ADMIN_PASSWORD non defini. "
+                + "Definissez ADMIN_PASSWORD pour le bootstrap initial.");
+        }
+
+        User admin = new User();
+        admin.setUsername(ADMIN_USERNAME);
+        admin.setPassword(passwordEncoder.encode(adminPassword));
+        admin.setFirstName("Administrator");
+        admin.setLastName("");
+        admin.setRegistrationDate(LocalDateTime.now());
+        admin.setStatus(UserStatus.ACTIVE);
+        admin.setAccountLocked(false);
+        admin.setEmailVerified(true);
+        admin.setRoles(Set.of(adminRole));
+
+        userRepository.save(admin);
+        logger.info("Administrateur cree: login=Administrator email={}", adminEmail);
     }
 
     /**
-     * Génère un mot de passe aléatoire sécurisé (même approche que external CRM.utils.password).
+     * Génère un mot de passe aléatoire sécurisé (même approche que la lib password de l'external framework).
      */
     private String generateRandomPassword(int length) {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";

@@ -33,6 +33,8 @@ import {
 } from 'lucide-angular';
 import { ThemeService, type ThemePreference } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
+import { GlobalSearchComponent } from '../components/global-search/global-search.component';
 
 @Component({
   selector: 'lmp-navbar',
@@ -42,6 +44,7 @@ import { AuthService } from '../../core/services/auth.service';
     RouterLinkActive,
     LucideAngularModule,
     NgClass,
+    GlobalSearchComponent,
   ],
   styles: `
     :host {
@@ -63,7 +66,7 @@ import { AuthService } from '../../core/services/auth.service';
       }"
     >
       <nav
-        class="relative mx-auto flex min-h-14 max-w-7xl items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8 overflow-visible md:min-h-0"
+        class="relative mx-auto flex min-h-14 max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 lg:px-8 overflow-visible md:min-h-0 md:py-3"
         [ngClass]="{
           'max-md:items-start max-md:pt-2 md:items-center': isAtTop(),
           'items-center': !isAtTop(),
@@ -108,6 +111,7 @@ import { AuthService } from '../../core/services/auth.service';
 
         <!-- Actions : invité ou connecté = menu compte seul (tableau de bord, admin, thème, langue, aide, déconnexion dans le panneau) -->
         <div class="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <lmp-global-search />
           @if (authService.loading()) {
             <div
               class="lmp-nav-auth-placeholder h-9 w-9 shrink-0 rounded-full animate-pulse bg-(--muted)"
@@ -117,7 +121,8 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="relative" #accountMenuHost>
               <button
                 type="button"
-                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-(--border) bg-(--muted)/35 text-(--muted-foreground) transition-colors hover:bg-(--muted)/55 hover:text-(--foreground) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                class="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-[11px] font-semibold tracking-wide text-white transition-colors focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:outline-none"
+                [style.background]="connectedAccountAvatarBg()"
                 (click)="$event.stopPropagation(); toggleAccountMenu()"
                 (keydown.enter)="$event.preventDefault(); openAccountMenuFromKeyboard()"
                 (keydown.space)="$event.preventDefault(); openAccountMenuFromKeyboard()"
@@ -125,7 +130,7 @@ import { AuthService } from '../../core/services/auth.service';
                 aria-haspopup="true"
                 aria-label="Menu compte"
               >
-                <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
+                {{ connectedAccountInitials() || '?' }}
               </button>
 
               @if (accountMenuOpen()) {
@@ -136,9 +141,10 @@ import { AuthService } from '../../core/services/auth.service';
                   <div class="w-full border-b border-(--border) px-3 pb-3 pt-2">
                     <div class="flex gap-3">
                       <div
-                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--primary)/15 text-(--primary)"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                        [style.background]="connectedAccountAvatarBg()"
                       >
-                        <lucide-icon [img]="UserIcon" [size]="20"></lucide-icon>
+                        {{ connectedAccountInitials() || '?' }}
                       </div>
                       <div class="min-w-0 flex-1 text-left">
                         <p class="truncate text-sm font-semibold">{{ connectedAccountTitle() }}</p>
@@ -329,24 +335,24 @@ import { AuthService } from '../../core/services/auth.service';
                   </div>
 
                   <div class="w-full py-1">
-                    <a
-                      routerLink="/login"
+                    <button
+                      type="button"
                       role="menuitem"
-                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
-                      (click)="closeAccountMenu()"
+                      class="flex w-full items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="goToLoginPreservingPath()"
                     >
                       <lucide-icon [img]="LogInIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
                       <span>Se connecter</span>
-                    </a>
-                    <a
-                      routerLink="/register"
+                    </button>
+                    <button
+                      type="button"
                       role="menuitem"
-                      class="flex items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
-                      (click)="closeAccountMenu()"
+                      class="flex w-full items-center gap-3 whitespace-nowrap px-3 py-2.5 text-sm text-(--foreground) transition-colors hover:bg-(--accent)"
+                      (click)="goToRegisterPreservingPath()"
                     >
                       <lucide-icon [img]="UserPlusIcon" [size]="18" class="shrink-0 opacity-80"></lucide-icon>
                       <span>Créer un compte</span>
-                    </a>
+                    </button>
                   </div>
 
                   <div class="mx-3 h-px shrink-0 bg-(--border)"></div>
@@ -511,6 +517,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class NavbarComponent implements OnInit, OnDestroy {
   protected readonly themeService = inject(ThemeService);
   protected readonly authService = inject(AuthService);
+  protected readonly siteConfig = inject(SiteConfigService);
 
   readonly accountMenuHost = viewChild<ElementRef<HTMLElement>>('accountMenuHost');
 
@@ -573,6 +580,27 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   readonly connectedAccountEmail = computed(() => this.authService.user()?.email ?? '');
 
+  readonly connectedAccountInitials = computed(() => {
+    const title = this.connectedAccountTitle();
+    if (!title) return '';
+    return title
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? '')
+      .join('');
+  });
+
+  readonly connectedAccountAvatarBg = computed(() => {
+    const name = this.connectedAccountTitle();
+    if (!name) return 'linear-gradient(135deg, oklch(0.72 0.15 260), oklch(0.6 0.2 300))';
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    const hues = [10, 30, 60, 150, 200, 230, 260, 290, 320, 350];
+    const hue = hues[h % hues.length];
+    return `linear-gradient(135deg, oklch(0.7 0.15 ${hue}), oklch(0.55 0.2 ${(hue + 40) % 360}))`;
+  });
+
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
@@ -580,6 +608,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   readonly navLinks = [
     { path: '/', label: 'Accueil' },
     { path: '/services', label: 'Services' },
+    { path: '/blog', label: 'Blog' },
     { path: '/map', label: 'Carte' },
     { path: '/about', label: 'À propos' },
     { path: '/contact', label: 'Contact' },
@@ -689,6 +718,23 @@ export class NavbarComponent implements OnInit, OnDestroy {
   logoutFromMenu(): void {
     this.closeAccountMenu();
     this.authService.logout();
+  }
+
+  /**
+   * Capture l'URL courante AU MOMENT DU CLIC (pas au render initial du menu)
+   * pour pré-remplir return_to. Évite le bug où loginHref/registerHref bindés
+   * en [href] étaient évalués trop tôt avec une URL obsolète.
+   */
+  goToLoginPreservingPath(): void {
+    this.closeAccountMenu();
+    if (typeof window === 'undefined') return;
+    this.siteConfig.goToLogin(window.location.pathname + window.location.search);
+  }
+
+  goToRegisterPreservingPath(): void {
+    this.closeAccountMenu();
+    if (typeof window === 'undefined') return;
+    this.siteConfig.goToRegister(window.location.pathname + window.location.search);
   }
 
   @HostListener('document:click', ['$event'])

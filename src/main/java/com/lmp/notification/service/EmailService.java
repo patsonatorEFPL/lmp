@@ -8,7 +8,6 @@ import jakarta.mail.internet.MimeMultipart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -16,6 +15,8 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import com.lmp.notification.config.MailAddressConfig;
+import com.lmp.notification.mail.queue.EmailQueueRequest;
+import com.lmp.notification.mail.queue.MailQueueService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,13 +31,12 @@ import java.util.Map;
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
-    
-        private final JavaMailSender mailSender;
-    
-        private final TemplateEngine templateEngine;
-    
-        private final MailAddressConfig mailAddressConfig;
-    
+
+    private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
+    private final MailAddressConfig mailAddressConfig;
+    private final MailQueueService mailQueueService;
+
     @Value("${app.name:LMP Digital Services}")
     private String appName;
 
@@ -46,62 +46,50 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender,
                            TemplateEngine templateEngine,
-                           MailAddressConfig mailAddressConfig) {
+                           MailAddressConfig mailAddressConfig,
+                           MailQueueService mailQueueService) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.mailAddressConfig = mailAddressConfig;
+        this.mailQueueService = mailQueueService;
     }
 
     /**
-     * Envoie un email texte simple depuis noreply (Reply-To = noreply)
+     * Enqueue un email texte simple depuis noreply (Reply-To = noreply).
+     * Persisté dans {@code email_queue}, envoyé asynchrone par {@code MailQueueProcessor}.
      */
     public void sendSimpleEmail(String to, String subject, String text) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(mailAddressConfig.getNoreply());
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
-            message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply
-            
-            mailSender.send(message);
-            logger.info("Email simple envoyé avec succès à: {} (Reply-To: noreply)", to);
-            
-        } catch (Exception e) {
-            logger.error("Erreur lors de l'envoi de l'email simple à {}: {}", to, e.getMessage(), e);
-            throw new RuntimeException("Échec de l'envoi de l'email", e);
-        }
+        mailQueueService.enqueue(EmailQueueRequest.builder()
+                .sender(mailAddressConfig.getNoreply())
+                .senderName(mailAddressConfig.getName())
+                .replyTo(mailAddressConfig.getNoreply())
+                .recipient(to)
+                .subject(subject)
+                .bodyText(text)
+                .priority(MailQueueService.PRIORITY_NORMAL)
+                .build());
+        logger.info("📥 Email simple enqueued to={} (Reply-To: noreply)", to);
     }
 
     /**
-     * Envoie un email HTML avec template Thymeleaf depuis noreply (Reply-To = noreply)
+     * Enqueue un email HTML avec template Thymeleaf rendu maintenant (template
+     * vars pas persistées en DB — render synchrone + enqueue HTML résultant).
      */
     public void sendHtmlEmail(String to, String subject, String templateName, Map<String, Object> variables) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            // Configuration de l'expéditeur
-            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply
-            
-            // Rendu du template HTML
-            Context context = new Context();
-            context.setVariables(variables);
-            String htmlContent = templateEngine.process(templateName, context);
-            
-            helper.setText(htmlContent, true);
-            
-            mailSender.send(message);
-            logger.info("Email HTML envoyé avec succès à: {} (template: {})", to, templateName);
-            
-        } catch (Exception e) {
-            logger.error("Erreur lors de l'envoi de l'email HTML à {} avec template {}: {}", 
-                to, templateName, e.getMessage(), e);
-            throw new RuntimeException("Échec de l'envoi de l'email HTML", e);
-        }
+        Context context = new Context();
+        context.setVariables(variables);
+        String htmlContent = templateEngine.process(templateName, context);
+
+        mailQueueService.enqueue(EmailQueueRequest.builder()
+                .sender(mailAddressConfig.getNoreply())
+                .senderName(mailAddressConfig.getName())
+                .replyTo(mailAddressConfig.getNoreply())
+                .recipient(to)
+                .subject(subject)
+                .bodyHtml(htmlContent)
+                .priority(MailQueueService.PRIORITY_NORMAL)
+                .build());
+        logger.info("📥 Email HTML enqueued to={} template={}", to, templateName);
     }
 
     /**
@@ -149,26 +137,25 @@ public class EmailService {
     }
 
     /**
-     * Envoie un email à plusieurs destinataires
+     * Enqueue un email à plusieurs destinataires (single row, recipients comma-séparés).
      */
     public void sendEmailToMultipleRecipients(String[] to, String subject, String body) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(mailAddressConfig.getNoreply(), mailAddressConfig.getName());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(body);
-            helper.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To = noreply
-            
-            mailSender.send(message);
-            logger.info("Email envoyé avec succès à {} destinataires", to.length);
-            
-        } catch (Exception e) {
-            logger.error("Erreur lors de l'envoi de l'email multiple: {}", e.getMessage(), e);
-            throw new RuntimeException("Échec de l'envoi de l'email multiple", e);
+        if (to == null || to.length == 0) {
+            throw new IllegalArgumentException("Recipients required");
         }
+        String primary = to[0];
+        String cc = to.length > 1 ? String.join(",", java.util.Arrays.copyOfRange(to, 1, to.length)) : null;
+        mailQueueService.enqueue(EmailQueueRequest.builder()
+                .sender(mailAddressConfig.getNoreply())
+                .senderName(mailAddressConfig.getName())
+                .replyTo(mailAddressConfig.getNoreply())
+                .recipient(primary)
+                .cc(cc)
+                .subject(subject)
+                .bodyText(body)
+                .priority(MailQueueService.PRIORITY_NORMAL)
+                .build());
+        logger.info("📥 Email multi-recipients enqueued — primary={} cc={}", primary, cc);
     }
 
     /**
@@ -198,31 +185,25 @@ public class EmailService {
     }
 
     /**
-     * Envoie un email de support (From et Reply-To = support@lmp-services.ca)
+     * Enqueue un email de support (From et Reply-To = support@domaine.com).
+     * Priority transactional — claim worker prend en priorité.
      */
     public void sendSupportEmail(String to, String subject, String body) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(mailAddressConfig.getSupport(), mailAddressConfig.getName());
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(body);
-            helper.setReplyTo(mailAddressConfig.getSupport()); // Reply-To = support
-            
-            mailSender.send(message);
-            logger.info("Email de support envoyé avec succès à: {} (Reply-To: support)", to);
-            
-        } catch (Exception e) {
-            logger.error("Erreur lors de l'envoi de l'email de support à {}: {}", to, e.getMessage(), e);
-            throw new RuntimeException("Échec de l'envoi de l'email de support", e);
-        }
+        mailQueueService.enqueue(EmailQueueRequest.builder()
+                .sender(mailAddressConfig.getSupport())
+                .senderName(mailAddressConfig.getName())
+                .replyTo(mailAddressConfig.getSupport())
+                .recipient(to)
+                .subject(subject)
+                .bodyText(body)
+                .priority(MailQueueService.PRIORITY_TRANSACTIONAL)
+                .build());
+        logger.info("📥 Email support enqueued to={} (Reply-To: support)", to);
     }
 
     /**
      * Envoie un email de bienvenue HTML avec template
-     * Utilise TOUJOURS noreply@lmp-services.ca comme expéditeur ET Reply-To
+     * Utilise TOUJOURS noreply@domaine.com comme expéditeur ET Reply-To
      */
     public void sendWelcomeEmail(String to, String firstName) {
         logger.info("📞 Email de bienvenue - De: {} vers: {} (Prénom: {})", 

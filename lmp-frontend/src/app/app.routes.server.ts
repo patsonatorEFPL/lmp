@@ -17,6 +17,8 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'map', renderMode: RenderMode.Server },
   { path: 'privacy', renderMode: RenderMode.Server },
   { path: 'terms', renderMode: RenderMode.Server },
+  { path: 'blog', renderMode: RenderMode.Server },
+  { path: 'blog/**', renderMode: RenderMode.Server },
 
   // Auth pages — client-only
   { path: 'login', renderMode: RenderMode.Client },
@@ -39,6 +41,6 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'admin', renderMode: RenderMode.Client },
   { path: 'admin/**', renderMode: RenderMode.Client },
 
-  // Fallback — server-render
-  { path: '**', renderMode: RenderMode.Server },
+  // Fallback — server-render avec status HTTP 404 explicite (SEO + monitoring)
+  { path: '**', renderMode: RenderMode.Server, status: 404 },
 ];

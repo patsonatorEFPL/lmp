@@ -22,6 +22,7 @@ public class SyncProperties {
     private Retry retry = new Retry();
     private Queue queue = new Queue();
     private Reconciliation reconciliation = new Reconciliation();
+    private Alert alert = new Alert();
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
@@ -37,6 +38,8 @@ public class SyncProperties {
     public void setQueue(Queue queue) { this.queue = queue; }
     public Reconciliation getReconciliation() { return reconciliation; }
     public void setReconciliation(Reconciliation reconciliation) { this.reconciliation = reconciliation; }
+    public Alert getAlert() { return alert; }
+    public void setAlert(Alert alert) { this.alert = alert; }
 
     public static class External {
         private String baseUrl = "";
@@ -44,6 +47,7 @@ public class SyncProperties {
         private String apiSecret = "";
         private String currency = "EUR";
         private String company = "LMP Services";
+        private ErpUser erpUser = new ErpUser();
         /** Compte comptable de TVA par défaut (fallback). */
         private String taxAccount = "";
         /**
@@ -58,6 +62,8 @@ public class SyncProperties {
         private String paymentAccount = "";
         /** Compte débiteur pour les Payment Entry (paid_from). */
         private String receivableAccount = "";
+        /** Price List pour les Item Price (ex: Standard Selling). */
+        private String priceList = "Standard Selling";
 
         public String getBaseUrl() { return baseUrl; }
         public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -79,6 +85,10 @@ public class SyncProperties {
         public void setPaymentAccount(String paymentAccount) { this.paymentAccount = paymentAccount; }
         public String getReceivableAccount() { return receivableAccount; }
         public void setReceivableAccount(String receivableAccount) { this.receivableAccount = receivableAccount; }
+        public String getPriceList() { return priceList; }
+        public void setPriceList(String priceList) { this.priceList = priceList; }
+        public ErpUser getErpUser() { return erpUser; }
+        public void setErpUser(ErpUser erpUser) { this.erpUser = erpUser; }
 
         /**
          * Résout le compte comptable de taxe pour un taux donné (en %).
@@ -105,19 +115,44 @@ public class SyncProperties {
         public void setHmacSecret(String hmacSecret) { this.hmacSecret = hmacSecret; }
     }
 
+    /**
+     * Configuration des collaborateurs poussés vers externalErp en tant que DocType "User".
+     * <p>
+     * {@code userType} : "System User" (login backend) ou "Website User" (login portail).
+     * {@code roles} : rôles externalErp attribués par défaut (ex: "Sales User", "Employee").
+     */
+    public static class ErpUser {
+        private String userType = "System User";
+        private java.util.List<String> roles = java.util.List.of("Sales User");
+        private boolean sendWelcomeEmail = false;
+
+        public String getUserType() { return userType; }
+        public void setUserType(String userType) { this.userType = userType; }
+        public java.util.List<String> getRoles() { return roles; }
+        public void setRoles(java.util.List<String> roles) { this.roles = roles; }
+        public boolean isSendWelcomeEmail() { return sendWelcomeEmail; }
+        public void setSendWelcomeEmail(boolean sendWelcomeEmail) { this.sendWelcomeEmail = sendWelcomeEmail; }
+    }
+
     public static class Features {
         private boolean userProvisioning = true;
+        private boolean staffProvisioning = true;
         private boolean catalogSync = true;
         private boolean orderSync = true;
+        private boolean quotationSync = true;
         private boolean projectSync = false;
         private boolean ticketSync = false;
 
         public boolean isUserProvisioning() { return userProvisioning; }
         public void setUserProvisioning(boolean userProvisioning) { this.userProvisioning = userProvisioning; }
+        public boolean isStaffProvisioning() { return staffProvisioning; }
+        public void setStaffProvisioning(boolean staffProvisioning) { this.staffProvisioning = staffProvisioning; }
         public boolean isCatalogSync() { return catalogSync; }
         public void setCatalogSync(boolean catalogSync) { this.catalogSync = catalogSync; }
         public boolean isOrderSync() { return orderSync; }
         public void setOrderSync(boolean orderSync) { this.orderSync = orderSync; }
+        public boolean isQuotationSync() { return quotationSync; }
+        public void setQuotationSync(boolean quotationSync) { this.quotationSync = quotationSync; }
         public boolean isProjectSync() { return projectSync; }
         public void setProjectSync(boolean projectSync) { this.projectSync = projectSync; }
         public boolean isTicketSync() { return ticketSync; }
@@ -158,5 +193,41 @@ public class SyncProperties {
         public void setMaxIntervalSeconds(int maxIntervalSeconds) { this.maxIntervalSeconds = maxIntervalSeconds; }
         public int getIncrementSeconds() { return incrementSeconds; }
         public void setIncrementSeconds(int incrementSeconds) { this.incrementSeconds = incrementSeconds; }
+    }
+
+    public static class Alert {
+        private boolean enabled = true;
+        private int deadThreshold = 1;
+        private int failedStaleThreshold = 5;
+        private int unverifiedThreshold = 3;
+        private boolean unknownErrorAlert = true;
+        private int cooldownMinutes = 60;
+        private String adminEmail = "admin@localhost";
+        private String webhookUrl = "";
+        /** DSN Sentry pour l'alerting avancé (grouping, rate-limiting, dashboard). */
+        private String sentryDsn = "";
+        /** Environnement Sentry (dev, staging, production). */
+        private String sentryEnvironment = "dev";
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public int getDeadThreshold() { return deadThreshold; }
+        public void setDeadThreshold(int deadThreshold) { this.deadThreshold = deadThreshold; }
+        public int getFailedStaleThreshold() { return failedStaleThreshold; }
+        public void setFailedStaleThreshold(int failedStaleThreshold) { this.failedStaleThreshold = failedStaleThreshold; }
+        public int getUnverifiedThreshold() { return unverifiedThreshold; }
+        public void setUnverifiedThreshold(int unverifiedThreshold) { this.unverifiedThreshold = unverifiedThreshold; }
+        public boolean isUnknownErrorAlert() { return unknownErrorAlert; }
+        public void setUnknownErrorAlert(boolean unknownErrorAlert) { this.unknownErrorAlert = unknownErrorAlert; }
+        public int getCooldownMinutes() { return cooldownMinutes; }
+        public void setCooldownMinutes(int cooldownMinutes) { this.cooldownMinutes = cooldownMinutes; }
+        public String getAdminEmail() { return adminEmail; }
+        public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
+        public String getWebhookUrl() { return webhookUrl; }
+        public void setWebhookUrl(String webhookUrl) { this.webhookUrl = webhookUrl; }
+        public String getSentryDsn() { return sentryDsn; }
+        public void setSentryDsn(String sentryDsn) { this.sentryDsn = sentryDsn; }
+        public String getSentryEnvironment() { return sentryEnvironment; }
+        public void setSentryEnvironment(String sentryEnvironment) { this.sentryEnvironment = sentryEnvironment; }
     }
 }

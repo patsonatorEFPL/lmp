@@ -23,6 +23,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByResetToken(String resetToken);
     
     Page<User> findByStatus(UserStatus status, Pageable pageable);
+    List<User> findByStatus(UserStatus status);
     Page<User> findByEmailContainingIgnoreCase(String email, Pageable pageable);
     long countByStatus(UserStatus status);
     long countByAccountLocked(Boolean locked);
@@ -33,6 +34,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email")
     Optional<User> findByEmailWithRoles(@Param("email") String email);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.username = :username")
+    Optional<User> findByUsernameWithRoles(@Param("username") String username);
+
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.username = :login OR u.email = :login")
+    Optional<User> findByLogin(@Param("login") String login);
     
     @Query("SELECT DISTINCT u FROM User u " +
            "LEFT JOIN FETCH u.roles " +
@@ -49,5 +56,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT COUNT(DISTINCT u.id) FROM User u JOIN u.roles r WHERE r.name = :roleName")
     long countDistinctUsersWithRoleName(@Param("roleName") String roleName);
 
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName")
+    List<User> findByRoleName(@Param("roleName") String roleName);
+
     Optional<User> findByExternalCustomerId(String externalCustomerId);
+
+    Optional<User> findByExternalErpUserId(String externalErpUserId);
 }

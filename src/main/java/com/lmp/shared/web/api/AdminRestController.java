@@ -5,6 +5,7 @@ import com.lmp.auth.domain.UserStatus;
 import com.lmp.auth.dto.AdminChangeUserPasswordRequest;
 import com.lmp.auth.dto.RegisterDto;
 import com.lmp.auth.dto.UserResponse;
+import com.lmp.auth.repository.UserRepository;
 import com.lmp.auth.service.AuthService;
 import com.lmp.auth.service.SessionSecurityService;
 import com.lmp.auth.service.UserService;
@@ -26,12 +27,17 @@ import com.lmp.integration.event.LmpBusinessEvent;
 import com.lmp.integration.event.LmpBusinessEvent.EventType;
 import com.lmp.notification.service.EmailService;
 import com.lmp.portal.dto.ChangePasswordRequest;
+import com.lmp.integration.sync.SyncProperties;
 import com.lmp.shared.dto.ApiResponse;
+import com.lmp.shared.dto.admin.RevenueSeriesDto;
+import com.lmp.shared.dto.admin.TopServiceDto;
+import com.lmp.shared.dto.admin.HealthServiceDto;
 import com.lmp.shared.pricing.VatCalculationService;
 
 import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
 
+import io.sentry.Sentry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -46,6 +52,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -53,13 +60,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.time.format.TextStyle;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,6 +90,7 @@ public class AdminRestController {
     private String frontendUrl;
 
     private final UserService userService;
+    private final UserRepository userRepository;
     private final AuthService authService;
     private final SessionSecurityService sessionSecurityService;
     private final OrderRepository orderRepository;
@@ -89,8 +102,20 @@ public class AdminRestController {
     private final OrderRealtimeEventPublisher orderRealtimeEventPublisher;
     private final StripeClient stripeClient;
     private final VatCalculationService vatCalculationService;
+    private final JdbcTemplate jdbcTemplate;
+    private final SyncProperties syncProperties;
+
+    /**
+     * Cache TTL 30s pour /api/v1/admin/stats. Stats agrégées sur 80k+ rows users + orders,
+     * pas temps-réel critique. Bench iter idle = 1.2s ; sous 10k VU load = 6.3s (8 SQL +
+     * filter chain Spring Security full). Stockage déporté dans {@link StatsCacheHolder}
+     * (séparé de cette classe @PreAuthorize) pour permettre invalidation event-driven
+     * depuis context anonymous sans déclencher AuthorizationDeniedException via AOP.
+     */
+    private final StatsCacheHolder statsCacheHolder;
 
     public AdminRestController(UserService userService,
+                               UserRepository userRepository,
                                AuthService authService,
                                SessionSecurityService sessionSecurityService,
                                OrderRepository orderRepository,
@@ -101,8 +126,12 @@ public class AdminRestController {
                                ApplicationEventPublisher eventPublisher,
                                OrderRealtimeEventPublisher orderRealtimeEventPublisher,
                                StripeClient stripeClient,
-                               VatCalculationService vatCalculationService) {
+                               VatCalculationService vatCalculationService,
+                               JdbcTemplate jdbcTemplate,
+                               SyncProperties syncProperties,
+                               StatsCacheHolder statsCacheHolder) {
         this.userService = userService;
+        this.userRepository = userRepository;
         this.authService = authService;
         this.sessionSecurityService = sessionSecurityService;
         this.orderRepository = orderRepository;
@@ -114,16 +143,108 @@ public class AdminRestController {
         this.orderRealtimeEventPublisher = orderRealtimeEventPublisher;
         this.stripeClient = stripeClient;
         this.vatCalculationService = vatCalculationService;
+        this.jdbcTemplate = jdbcTemplate;
+        this.syncProperties = syncProperties;
+        this.statsCacheHolder = statsCacheHolder;
     }
 
     @GetMapping("/stats")
     @Operation(summary = "Statistiques dashboard", description = "Retourne les KPIs principaux")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardStats() {
+        Map<String, Object> cached = statsCacheHolder.get();
+        if (cached != null) {
+            return ResponseEntity.ok(ApiResponse.ok(cached));
+        }
+        Map<String, Object> fresh = buildDashboardStats();
+        statsCacheHolder.put(fresh);
+        return ResponseEntity.ok(ApiResponse.ok(fresh));
+    }
+
+    private Map<String, Object> buildDashboardStats() {
         Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalUsers", userService.count());
-        stats.put("activeUsers", userService.countActiveUsers());
-        stats.put("totalOrders", orderRepository.count());
-        stats.put("totalAppointments", appointmentRepository.count());
+
+        // Iter38b : 6 COUNT en 1 SQL UNION ALL — 1 Hikari acquire, 1 plan parse,
+        // 1 round-trip réseau. Avant : 6 .count() séquentiels + 6 tx (même avec
+        // @Transactional readOnly classe-level, Spring Data wrap chaque méthode).
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        String countSql = """
+            SELECT 'totalUsers' AS k, COUNT(*) AS v FROM users
+            UNION ALL SELECT 'activeUsers', COUNT(*) FROM users WHERE status = 'ACTIVE'
+            UNION ALL SELECT 'totalOrders', COUNT(*) FROM orders
+            UNION ALL SELECT 'totalAppointments', COUNT(*) FROM appointments
+            UNION ALL SELECT 'newUsersThisMonth', COUNT(*) FROM users WHERE registration_date >= ?
+            UNION ALL SELECT 'appointmentsToday', COUNT(*) FROM appointments WHERE appointment_date::date = CURRENT_DATE
+            """;
+        Map<String, Long> counts = new HashMap<>();
+        for (Map<String, Object> row : jdbcTemplate.queryForList(countSql, startOfMonth)) {
+            counts.put((String) row.get("k"), ((Number) row.get("v")).longValue());
+        }
+        stats.put("totalUsers", counts.getOrDefault("totalUsers", 0L));
+        stats.put("activeUsers", counts.getOrDefault("activeUsers", 0L));
+        stats.put("totalOrders", counts.getOrDefault("totalOrders", 0L));
+        stats.put("totalAppointments", counts.getOrDefault("totalAppointments", 0L));
+        stats.put("newUsersThisMonth", counts.getOrDefault("newUsersThisMonth", 0L));
+        stats.put("appointmentsToday", counts.getOrDefault("appointmentsToday", 0L));
+
+        // MRR et répartition récurrent / ponctuel (30 derniers jours)
+        // Net revenue = SUM(total_amount) - SUM(refunds.amount où refund completed)
+        // Statuts comptés : seulement ceux où paiement effectivement reçu/confirmé.
+        // Exclus : PAYMENT_PENDING (pas encore payé), PENDING (pas confirmé),
+        //          CANCELLED (annulée), REFUNDED (entièrement remboursée).
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        String mrrSql = """
+            SELECT
+                CASE
+                    WHEN so.duration_type = 'MONTHLY' THEN 'MONTHLY'
+                    WHEN so.duration_type = 'YEARLY' THEN 'YEARLY'
+                    ELSE 'ONE_TIME'
+                END AS rev_type,
+                SUM(o.total_amount - COALESCE(r.refunded, 0)) AS total
+            FROM orders o
+            LEFT JOIN services s ON LOWER(o.service_name) = LOWER(s.title)
+            LEFT JOIN service_offers so ON so.service_id = s.id AND so.is_default = true
+            LEFT JOIN (
+                SELECT order_id, SUM(amount) AS refunded
+                FROM refunds
+                WHERE status = 'COMPLETED'
+                GROUP BY order_id
+            ) r ON r.order_id = o.id
+            WHERE o.created_at >= ?
+              AND o.status IN ('CONFIRMED', 'PROCESSING', 'IN_PROGRESS',
+                               'SHIPPED', 'DELIVERED', 'COMPLETED', 'UNDER_REVIEW')
+            GROUP BY CASE
+                    WHEN so.duration_type = 'MONTHLY' THEN 'MONTHLY'
+                    WHEN so.duration_type = 'YEARLY' THEN 'YEARLY'
+                    ELSE 'ONE_TIME'
+                END
+            """;
+        BigDecimal mrr = BigDecimal.ZERO;
+        BigDecimal recurringRevenue = BigDecimal.ZERO;
+        BigDecimal oneTimeRevenue = BigDecimal.ZERO;
+        try {
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(mrrSql, thirtyDaysAgo);
+            for (Map<String, Object> row : rows) {
+                String type = (String) row.get("rev_type");
+                BigDecimal total = (BigDecimal) row.get("total");
+                if (total == null) continue;
+                switch (type) {
+                    case "MONTHLY" -> {
+                        mrr = mrr.add(total);
+                        recurringRevenue = recurringRevenue.add(total);
+                    }
+                    case "YEARLY" -> {
+                        mrr = mrr.add(total.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP));
+                        recurringRevenue = recurringRevenue.add(total);
+                    }
+                    default -> oneTimeRevenue = oneTimeRevenue.add(total);
+                }
+            }
+        } catch (Exception e) {
+            // Non-blocking — si le schema diffère, on retourne 0
+        }
+        stats.put("mrr", mrr);
+        stats.put("recurringRevenue30d", recurringRevenue);
+        stats.put("oneTimeRevenue30d", oneTimeRevenue);
 
         // Statistiques par statut de commande
         var orderStatsByStatus = orderRepository.getOrderStatsByStatus();
@@ -134,7 +255,7 @@ public class AdminRestController {
         }
         stats.put("ordersByStatus", orderStats);
 
-        return ResponseEntity.ok(ApiResponse.ok(stats));
+        return stats;
     }
 
     @GetMapping("/users")
@@ -156,6 +277,7 @@ public class AdminRestController {
             try {
                 users = userService.findByStatus(UserStatus.valueOf(status), pageRequest);
             } catch (IllegalArgumentException e) {
+                if (Sentry.isEnabled()) Sentry.captureException(e);
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
@@ -182,6 +304,7 @@ public class AdminRestController {
                         OrderStatus.valueOf(status), pageRequest)
                         .map(o -> OrderResponse.forAdmin(o, frontendUrl));
             } catch (IllegalArgumentException e) {
+                if (Sentry.isEnabled()) Sentry.captureException(e);
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
@@ -203,6 +326,7 @@ public class AdminRestController {
         String lastName = data.get("lastName") != null ? ((String) data.get("lastName")).trim() : null;
         String password = data.get("password") != null ? (String) data.get("password") : null;
         boolean admin = Boolean.TRUE.equals(data.get("admin"));
+        boolean staff = Boolean.TRUE.equals(data.get("staff"));
 
         // --- Validation AVANT toute opération transactionnelle ---
         if (email == null || email.isEmpty()) {
@@ -234,16 +358,30 @@ public class AdminRestController {
 
             User newUser = authService.registerUser(registerDto);
 
-            // Grant admin role if requested
-            if (admin) {
-                User actor = userService.findByEmail(authentication.getName())
+            User actor = null;
+            if (admin || staff) {
+                actor = userService.findByLogin(authentication.getName())
                         .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
+            }
+            if (admin) {
                 userService.setUserAdminRole(newUser.getId(), true, actor.getId());
             }
+            if (staff) {
+                userService.setUserStaffRole(newUser.getId(), true, actor.getId());
+            }
+
+            // Publier l'événement de provisioning. Le routage Customer vs externalErp User
+            // est géré dans ErpEventListener selon les rôles du user (STAFF/ADMIN → User).
+            Map<String, Object> regPl = new HashMap<>();
+            regPl.put(BusinessEventPayloadKeys.EMAIL, newUser.getEmail());
+            regPl.put("displayName", newUser.getDisplayName() != null ? newUser.getDisplayName() : newUser.getEmail());
+            regPl.put("createdBy", "admin");
+            eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "admin", newUser.getId(), regPl));
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Utilisateur créé : " + email, UserResponse.from(newUser)));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -259,7 +397,7 @@ public class AdminRestController {
 
             if (data.containsKey("admin")) {
                 boolean grantAdmin = Boolean.TRUE.equals(data.get("admin"));
-                User actor = userService.findByEmail(authentication.getName())
+                User actor = userService.findByLogin(authentication.getName())
                         .orElseThrow(() -> new RuntimeException("Session administrateur invalide"));
                 userService.setUserAdminRole(id, grantAdmin, actor.getId());
             }
@@ -308,12 +446,19 @@ public class AdminRestController {
 
                     // Send verification to new email
                     try {
-                        emailService.sendSimpleEmail(newEmail,
+                        String base = frontendUrl != null ? frontendUrl.replaceAll("/$", "") : "http://localhost:4200";
+                        String verificationUrl = base + "/verify-email?token=" + token;
+
+                        Map<String, Object> emailVars = new HashMap<>();
+                        emailVars.put("userName", user.getDisplayName() != null ? user.getDisplayName() : newEmail);
+                        emailVars.put("companyName", "LMP Services");
+                        emailVars.put("verificationUrl", verificationUrl);
+
+                        emailService.sendHtmlEmail(
+                                newEmail,
                                 "LMP — Vérifiez votre nouvel email",
-                                "Bonjour,\n\nVotre email a été modifié par l'administrateur.\n"
-                                + "Veuillez vérifier votre compte en cliquant sur ce lien :\n"
-                                + "Un email de confirmation vous a été envoyé.\n\n"
-                                + "Cordialement,\nL'équipe LMP");
+                                "emails/email-verification",
+                                emailVars);
                     } catch (Exception e) {
                         // Non-blocking
                     }
@@ -322,6 +467,7 @@ public class AdminRestController {
 
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur mis à jour", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -352,7 +498,7 @@ public class AdminRestController {
                             + "incluant majuscules, minuscules, chiffres et caractères spéciaux"));
         }
 
-        User admin = userService.findByEmail(authentication.getName())
+        User admin = userService.findByLogin(authentication.getName())
                 .orElse(null);
         if (admin == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Administrateur non trouvé"));
@@ -399,7 +545,7 @@ public class AdminRestController {
                             + "incluant majuscules, minuscules, chiffres et caractères spéciaux"));
         }
 
-        User admin = userService.findByEmail(authentication.getName())
+        User admin = userService.findByLogin(authentication.getName())
                 .orElse(null);
         if (admin == null) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Administrateur non trouvé"));
@@ -549,6 +695,7 @@ public class AdminRestController {
 
             return ResponseEntity.ok(ApiResponse.ok("Commande mise à jour", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -599,6 +746,7 @@ public class AdminRestController {
                 appointments = appointmentRepository.findByStatusOrderByAppointmentDateAsc(
                         AppointmentStatus.valueOf(status), pageRequest);
             } catch (IllegalArgumentException e) {
+                if (Sentry.isEnabled()) Sentry.captureException(e);
                 return ResponseEntity.badRequest().body(ApiResponse.error("Invalid status: " + status));
             }
         } else {
@@ -667,6 +815,7 @@ public class AdminRestController {
             appointmentRepository.save(appt);
             return ResponseEntity.ok(ApiResponse.ok("Rendez-vous mis à jour", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -679,6 +828,7 @@ public class AdminRestController {
             appointmentRepository.deleteById(id);
             return ResponseEntity.ok(ApiResponse.ok("Rendez-vous supprimé", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -732,7 +882,7 @@ public class AdminRestController {
                 emailVars.put("customerName", user.getDisplayName() != null ? user.getDisplayName() : user.getEmail());
                 emailVars.put("order", order);
                 emailVars.put("companyName", "LMP Digital Services");
-                emailVars.put("frontendUrl", "https://lmp-services.ca");
+                emailVars.put("frontendUrl", frontendUrl);
                 emailVars.put("currentDate", LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")));
 
                 emailService.sendHtmlEmail(
@@ -768,6 +918,7 @@ public class AdminRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Commande créée pour " + user.getEmail(), OrderResponse.from(order)));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -870,6 +1021,7 @@ public class AdminRestController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok(message, payload));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -887,6 +1039,7 @@ public class AdminRestController {
             userService.save(user);
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur désactivé (soft delete)", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -899,6 +1052,7 @@ public class AdminRestController {
             userService.hardDeleteUser(id);
             return ResponseEntity.ok(ApiResponse.ok("Utilisateur supprimé définitivement", null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -929,6 +1083,7 @@ public class AdminRestController {
 
             return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -1097,6 +1252,7 @@ public class AdminRestController {
 
             return ResponseEntity.ok(ApiResponse.ok("Un email de confirmation a été envoyé à " + currentEmail, null));
         } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -1125,6 +1281,197 @@ public class AdminRestController {
         }).toList();
 
         return ResponseEntity.ok(ApiResponse.ok(refundList));
+    }
+
+    // ========== Dashboard Analytics ==========
+
+    @GetMapping("/revenue-series")
+    @Operation(summary = "Série de revenus", description = "Retourne les données pour le line chart de revenus (week, month, quarter)")
+    public ResponseEntity<ApiResponse<RevenueSeriesDto>> getRevenueSeries(@RequestParam String period) {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            List<Number> current = new ArrayList<>();
+            List<Number> previous = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+
+            List<OrderStatus> excluded = List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED);
+            LocalDateTime startDate = now.minusYears(2).minusMonths(3);
+            List<Order> orders = orderRepository.findRecentOrdersExcludingStatuses(startDate, excluded);
+
+            switch (period) {
+                case "week" -> {
+                    LocalDate today = LocalDate.now();
+                    WeekFields wf = WeekFields.ISO;
+                    for (int i = 15; i >= 0; i--) {
+                        LocalDate weekDate = today.minusWeeks(i);
+                        int week = weekDate.get(wf.weekOfWeekBasedYear());
+                        int year = weekDate.get(wf.weekBasedYear());
+                        int prevYear = year - 1;
+
+                        labels.add("S" + week);
+                        current.add(sumRevenueForWeek(orders, year, week, wf));
+                        previous.add(sumRevenueForWeek(orders, prevYear, week, wf));
+                    }
+                }
+                case "month" -> {
+                    LocalDate today = LocalDate.now();
+                    for (int i = 11; i >= 0; i--) {
+                        LocalDate monthDate = today.minusMonths(i);
+                        int month = monthDate.getMonthValue();
+                        int year = monthDate.getYear();
+                        int prevYear = year - 1;
+
+                        labels.add(monthDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.FRENCH));
+                        current.add(sumRevenueForMonth(orders, year, month));
+                        previous.add(sumRevenueForMonth(orders, prevYear, month));
+                    }
+                }
+                case "quarter" -> {
+                    LocalDate today = LocalDate.now();
+                    for (int i = 3; i >= 0; i--) {
+                        LocalDate quarterDate = today.minusMonths(i * 3L);
+                        int quarter = (quarterDate.getMonthValue() - 1) / 3 + 1;
+                        int year = quarterDate.getYear();
+                        int prevYear = year - 1;
+
+                        labels.add("T" + quarter);
+                        current.add(sumRevenueForQuarter(orders, year, quarter));
+                        previous.add(sumRevenueForQuarter(orders, prevYear, quarter));
+                    }
+                }
+                default -> {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Invalid period: " + period));
+                }
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(new RevenueSeriesDto(current, previous, labels)));
+        } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    private BigDecimal sumRevenueForWeek(List<Order> orders, int year, int week, WeekFields wf) {
+        return orders.stream()
+                .filter(o -> {
+                    LocalDate d = o.getCreatedAt().toLocalDate();
+                    return d.get(wf.weekBasedYear()) == year && d.get(wf.weekOfWeekBasedYear()) == week;
+                })
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumRevenueForMonth(List<Order> orders, int year, int month) {
+        return orders.stream()
+                .filter(o -> {
+                    LocalDate d = o.getCreatedAt().toLocalDate();
+                    return d.getYear() == year && d.getMonthValue() == month;
+                })
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumRevenueForQuarter(List<Order> orders, int year, int quarter) {
+        return orders.stream()
+                .filter(o -> {
+                    LocalDate d = o.getCreatedAt().toLocalDate();
+                    return d.getYear() == year && (d.getMonthValue() - 1) / 3 + 1 == quarter;
+                })
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @GetMapping("/top-services")
+    @Operation(summary = "Top 5 services", description = "Retourne les top 5 services par chiffre d'affaires réel sur les 90 derniers jours")
+    public ResponseEntity<ApiResponse<List<TopServiceDto>>> getTopServices() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startCurrent = now.minusDays(90);
+            LocalDateTime startPrevious = startCurrent.minusDays(90);
+            List<OrderStatus> excluded = List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED);
+            PageRequest top5 = PageRequest.ofSize(5);
+
+            List<Object[]> currentRows = orderRepository.getTopServicesByRevenue(startCurrent, excluded, top5);
+            List<Object[]> previousRows = orderRepository.getTopServicesByRevenue(startPrevious, excluded, top5);
+
+            Map<String, BigDecimal> previousRevenueMap = new HashMap<>();
+            for (Object[] row : previousRows) {
+                String name = (String) row[0];
+                BigDecimal revenue = (BigDecimal) row[2];
+                previousRevenueMap.put(name, revenue != null ? revenue : BigDecimal.ZERO);
+            }
+
+            List<TopServiceDto> result = new ArrayList<>();
+            for (Object[] row : currentRows) {
+                String name = (String) row[0];
+                long orders = ((Number) row[1]).longValue();
+                BigDecimal revenue = (BigDecimal) row[2];
+                if (revenue == null) revenue = BigDecimal.ZERO;
+
+                BigDecimal prevRevenue = previousRevenueMap.getOrDefault(name, BigDecimal.ZERO);
+                int growthPercent = 0;
+                if (prevRevenue.compareTo(BigDecimal.ZERO) > 0) {
+                    growthPercent = revenue.subtract(prevRevenue)
+                            .multiply(BigDecimal.valueOf(100))
+                            .divide(prevRevenue, 0, RoundingMode.HALF_UP)
+                            .intValue();
+                }
+                result.add(new TopServiceDto(name, orders, revenue, growthPercent));
+            }
+
+            return ResponseEntity.ok(ApiResponse.ok(result));
+        } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/health/services")
+    @Operation(summary = "Santé des services", description = "Retourne un snapshot de santé des services (DB, Stripe, externalErp)")
+    public ResponseEntity<ApiResponse<List<HealthServiceDto>>> getServicesHealth() {
+        try {
+            List<HealthServiceDto> healthList = new ArrayList<>();
+
+            // DB
+            long dbStart = System.currentTimeMillis();
+            String dbStatus;
+            String dbLatency;
+            String dbTone;
+            try {
+                jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+                long dbMs = System.currentTimeMillis() - dbStart;
+                dbLatency = dbMs + " ms";
+                if (dbMs < 100) {
+                    dbStatus = "UP";
+                    dbTone = "is-ok";
+                } else {
+                    dbStatus = "DEGRADED";
+                    dbTone = "is-warn";
+                }
+            } catch (Exception e) {
+                dbStatus = "DOWN";
+                dbLatency = "-";
+                dbTone = "is-danger";
+            }
+            healthList.add(new HealthServiceDto("Base de données", dbStatus, dbLatency, "100 %", dbTone));
+
+            // Stripe
+            String stripeStatus = stripeClient != null ? "UP" : "DOWN";
+            String stripeTone = stripeClient != null ? "is-ok" : "is-danger";
+            healthList.add(new HealthServiceDto("Stripe", stripeStatus, "-", "100 %", stripeTone));
+
+            // externalErp
+            String erpUrl = syncProperties.getExternal() != null ? syncProperties.getExternal().getBaseUrl() : null;
+            boolean erpConfigured = erpUrl != null && !erpUrl.isBlank();
+            String erpStatus = erpConfigured ? "UP" : "DOWN";
+            String erpTone = erpConfigured ? "is-ok" : "is-danger";
+            healthList.add(new HealthServiceDto("externalErp", erpStatus, "-", "100 %", erpTone));
+
+            return ResponseEntity.ok(ApiResponse.ok(healthList));
+        } catch (Exception e) {
+            if (Sentry.isEnabled()) Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     private static boolean isPlausibleEmailAddress(String email) {

@@ -1,18 +1,28 @@
 package com.lmp.integration.sync.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
 import com.lmp.integration.sync.SyncProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,17 +41,40 @@ public class RestExternalClient implements ExternalSystemClient {
 
     private final RestClient restClient;
     private final EntityTypeMapping entityTypeMapping;
+    private final ObjectMapper objectMapper;
     private final boolean autoSubmit;
 
-    public RestExternalClient(SyncProperties syncProperties, EntityTypeMapping entityTypeMapping) {
+    public RestExternalClient(SyncProperties syncProperties, EntityTypeMapping entityTypeMapping,
+                              ObjectMapper objectMapper) {
         this.entityTypeMapping = entityTypeMapping;
+        this.objectMapper = objectMapper;
         this.autoSubmit = syncProperties.getExternal().isAutoSubmit();
+
+        // Timeouts agressifs : sans ces caps, RestClient.builder() défaut = JDK HttpClient
+        // sans read-timeout = bloque la requête appelante (et son thread carrier sous
+        // virtual threads) tant que ERP/externalCrm n'a pas répondu. Sous load on accumule
+        // les threads en wait indéfini → backend health timeout → SIGKILL swarm.
+        // 2s connect / 8s read couvre les pires cas externalCrm normaux ; au-delà l'erreur
+        // est meilleure que la latence pour un sync async (le caller log + retry plus tard).
+        HttpClient jdkClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(2))
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(jdkClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(8));
+
         this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
                 .baseUrl(syncProperties.getExternal().getBaseUrl())
                 .defaultHeader("Authorization",
                         "token " + syncProperties.getExternal().getApiKey()
                                 + ":" + syncProperties.getExternal().getApiSecret())
-                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .requestInitializer(request -> {
+                    // Propagation du correlation ID pour le tracing distribué
+                    String correlationId = MDC.get("correlationId");
+                    if (correlationId != null) {
+                        request.getHeaders().set("X-Correlation-Id", correlationId);
+                    }
+                })
                 .build();
     }
 
@@ -49,7 +82,7 @@ public class RestExternalClient implements ExternalSystemClient {
     public boolean isAvailable() {
         try {
             restClient.get()
-                    .uri("/api/method/external CRM.auth.get_logged_user")
+                    .uri("/api/method/frappe.auth.get_logged_user")
                     .retrieve()
                     .toBodilessEntity();
             return true;
@@ -64,13 +97,22 @@ public class RestExternalClient implements ExternalSystemClient {
     public ExternalResponse createEntity(SyncEntityType type, Map<String, Object> data) {
         String docType = entityTypeMapping.toExternalDocType(type);
         try {
-            Map<String, Object> response = restClient.post()
-                    .uri("/api/resource/{docType}", docType)
-                    .body(data)
-                    .retrieve()
-                    .body(Map.class);
+            // Idempotence : check-before-create via lmp_idempotency_key
+            String idempotencyKey = data != null ? (String) data.get("lmp_idempotency_key") : null;
+            if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+                ExternalResponse existing = findByIdempotencyKey(type, docType, idempotencyKey);
+                if (existing != null) {
+                    return existing;
+                }
+            }
 
-            String externalId = extractId(response);
+            // Injecter le doctype dans le payload (requis par frappe.client.insert)
+            Map<String, Object> doc = new LinkedHashMap<>(data);
+            doc.put("doctype", docType);
+
+            Map<String, Object> response = postexternalCrmClientInsert(doc);
+
+            String externalId = extractIdFromMethodResponse(response);
             log.info("✅ [SYNC] Created {} → externalId={}", type, externalId);
 
             // Auto-submit pour les documents soumissibles (Draft → Submitted)
@@ -80,9 +122,50 @@ public class RestExternalClient implements ExternalSystemClient {
 
             return ExternalResponse.created(externalId, response);
         } catch (Exception e) {
-            log.error("❌ [SYNC] Failed to create {}: {}", type, e.getMessage());
-            return ExternalResponse.failure(e.getMessage(), 500);
+            String errorMsg = extractErrorMessage(e);
+            log.error("❌ [SYNC] Failed to create {}: {}", type, errorMsg);
+            return ExternalResponse.failure(errorMsg, extractHttpStatus(e));
         }
+    }
+
+    /**
+     * Vérifie si un document avec la même clé d'idempotence existe déjà.
+     * Évite les doublons lors des retries après timeout réseau.
+     *
+     * @return ExternalResponse si trouvé, null sinon
+     */
+    @SuppressWarnings("unchecked")
+    private ExternalResponse findByIdempotencyKey(SyncEntityType type, String docType, String idempotencyKey) {
+        try {
+            Map<String, Object> response = restClient.get()
+                    .uri(uri -> uri
+                            .path("/api/resource/{docType}")
+                            .queryParam("filters", "[[\"lmp_idempotency_key\",\"=\",\"" + idempotencyKey + "\"]]")
+                            .queryParam("fields", "[\"name\"]")
+                            .queryParam("limit_page_length", 1)
+                            .build(docType))
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("data")) {
+                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("data");
+                if (results != null && !results.isEmpty()) {
+                    String existingId = results.get(0).get("name").toString();
+                    log.info("🔁 [SYNC IDEMPOTENT] {} already exists with key {} → reusing {}",
+                            type, idempotencyKey, existingId);
+                    // Fetch full document for the response data
+                    ExternalResponse fullDoc = getEntity(type, existingId);
+                    return ExternalResponse.created(existingId, fullDoc.data());
+                }
+            }
+        } catch (Exception e) {
+            // Si la vérification échoue (ex: custom field pas encore créé),
+            // on continue avec le POST normal — mieux vaut risquer un doublon
+            // détectable que de bloquer le sync.
+            log.debug("⚠️ [SYNC IDEMPOTENT] Check failed for {} (key={}): {} — proceeding with create",
+                    type, idempotencyKey, e.getMessage());
+        }
+        return null;
     }
 
     @Override
@@ -90,17 +173,19 @@ public class RestExternalClient implements ExternalSystemClient {
     public ExternalResponse updateEntity(SyncEntityType type, String externalId, Map<String, Object> data) {
         String docType = entityTypeMapping.toExternalDocType(type);
         try {
-            Map<String, Object> response = restClient.put()
-                    .uri("/api/resource/{docType}/{name}", docType, externalId)
-                    .body(data)
-                    .retrieve()
-                    .body(Map.class);
+            // frappe.client.save : injecter doctype + name pour identifier le document
+            Map<String, Object> doc = new LinkedHashMap<>(data);
+            doc.put("doctype", docType);
+            doc.put("name", externalId);
+
+            Map<String, Object> response = postexternalCrmClientSave(doc);
 
             log.info("✅ [SYNC] Updated {} {}", type, externalId);
             return ExternalResponse.success(externalId, response);
         } catch (Exception e) {
-            log.error("❌ [SYNC] Failed to update {} {}: {}", type, externalId, e.getMessage());
-            return ExternalResponse.failure(e.getMessage(), 500);
+            String errorMsg = extractErrorMessage(e);
+            log.error("❌ [SYNC] Failed to update {} {}: {}", type, externalId, errorMsg);
+            return ExternalResponse.failure(errorMsg, extractHttpStatus(e));
         }
     }
 
@@ -152,7 +237,8 @@ public class RestExternalClient implements ExternalSystemClient {
     private static final Set<SyncEntityType> SUBMITTABLE_TYPES = Set.of(
             SyncEntityType.SALES_ORDER,
             SyncEntityType.SALES_INVOICE,
-            SyncEntityType.PAYMENT
+            SyncEntityType.PAYMENT,
+            SyncEntityType.QUOTATION
     );
 
     @Override
@@ -211,25 +297,35 @@ public class RestExternalClient implements ExternalSystemClient {
 
     /**
      * Soumet un document Draft (docstatus = 0 → 1) après création.
-     * Transforme le document en document comptable officiel.
+     * Utilise frappe.client.submit pour garantir le calcul correct des totaux.
      */
     private void submitDocument(String docType, String externalId) {
         try {
-            restClient.put()
+            // Récupérer le document complet pour éviter TimestampMismatchError
+            @SuppressWarnings("unchecked")
+            Map<String, Object> doc = restClient.get()
                     .uri("/api/resource/{docType}/{name}", docType, externalId)
-                    .body(Map.of("docstatus", 1))
                     .retrieve()
-                    .toBodilessEntity();
+                    .body(Map.class);
+            if (doc != null && doc.containsKey("data")) {
+                doc = (Map<String, Object>) doc.get("data");
+            }
+            if (doc == null) {
+                log.warn("⚠️ [SYNC] Could not fetch {} '{}' for submit — document remains as Draft", docType, externalId);
+                return;
+            }
+            doc.put("docstatus", 1);
+            postexternalCrmClientMethod("frappe.client.submit", "doc", doc);
             log.info("📋 [SYNC] Submitted {} '{}'", docType, externalId);
         } catch (Exception e) {
             log.warn("⚠️ [SYNC] Failed to submit {} '{}': {} — document remains as Draft",
-                    docType, externalId, e.getMessage());
+                    docType, externalId, extractErrorMessage(e));
         }
     }
 
     /**
      * Annule un document soumis (docstatus = 1 → 2) avant suppression.
-     * Si le document est en draft (docstatus = 0), ne fait rien.
+     * Utilise frappe.client.cancel pour respecter les hooks externalErp.
      */
     @SuppressWarnings("unchecked")
     private void cancelIfSubmitted(String docType, String externalId) {
@@ -245,10 +341,13 @@ public class RestExternalClient implements ExternalSystemClient {
                 int status = (docstatus instanceof Number) ? ((Number) docstatus).intValue() : 0;
 
                 if (status == 1) {
-                    // Amend to Cancel via PUT with docstatus = 2
-                    restClient.put()
-                            .uri("/api/resource/{docType}/{name}", docType, externalId)
-                            .body(Map.of("docstatus", 2))
+                    MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+                    formData.add("doctype", docType);
+                    formData.add("name", externalId);
+                    restClient.post()
+                            .uri("/api/method/frappe.client.cancel")
+                            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                            .body(formData)
                             .retrieve()
                             .toBodilessEntity();
                     log.info("↩️ [SYNC] Cancelled submitted {} '{}' before deletion", docType, externalId);
@@ -256,17 +355,216 @@ public class RestExternalClient implements ExternalSystemClient {
             }
         } catch (Exception e) {
             log.warn("⚠️ [SYNC] Could not check/cancel {} '{}': {} — proceeding with delete",
-                    docType, externalId, e.getMessage());
+                    docType, externalId, extractErrorMessage(e));
         }
     }
 
+    @Override
     @SuppressWarnings("unchecked")
-    private String extractId(Map<String, Object> response) {
+    public java.math.BigDecimal fetchAggregatedTotal(SyncEntityType type, String sumField,
+                                                      String dateField, String startDate, String endDate) {
+        String docType = entityTypeMapping.toExternalDocType(type);
+        try {
+            Map<String, Object> response = restClient.get()
+                    .uri(uri -> uri
+                            .path("/api/resource/{docType}")
+                            .queryParam("filters", "[[\"docstatus\",\"=\",1]," +
+                                    "[\"" + dateField + "\",\">=\",\"" + startDate + "\"]," +
+                                    "[\"" + dateField + "\",\"<\",\"" + endDate + "\"]]")
+                            .queryParam("fields", "[\"sum(" + sumField + ") as total\"]")
+                            .queryParam("limit_page_length", 1)
+                            .build(docType))
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("data")) {
+                List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
+                if (data != null && !data.isEmpty()) {
+                    Object total = data.get(0).get("total");
+                    if (total != null) {
+                        return new java.math.BigDecimal(total.toString());
+                    }
+                }
+            }
+            return java.math.BigDecimal.ZERO;
+        } catch (Exception e) {
+            log.warn("⚠️ [SYNC] Failed to fetch aggregated {} for {}: {}", sumField, type, e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public ExternalResponse callMethod(String method, Map<String, Object> args) {
+        try {
+            // Envoyer chaque argument comme champ form-data
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            if (args != null) {
+                for (Map.Entry<String, Object> entry : args.entrySet()) {
+                    Object val = entry.getValue();
+                    if (val instanceof String s) {
+                        formData.add(entry.getKey(), s);
+                    } else {
+                        formData.add(entry.getKey(), toJson(val));
+                    }
+                }
+            }
+
+            Map<String, Object> response = restClient.post()
+                    .uri("/api/method/{method}", method)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(formData)
+                    .retrieve()
+                    .body(Map.class);
+
+            String externalId = extractIdFromMethodResponse(response);
+            log.info("✅ [SYNC] Called method {} → result={}", method, externalId);
+            return ExternalResponse.success(externalId, response);
+        } catch (Exception e) {
+            String errorMsg = extractErrorMessage(e);
+            log.error("❌ [SYNC] Failed to call method {}: {}", method, errorMsg);
+            return ExternalResponse.failure(errorMsg, extractHttpStatus(e));
+        }
+    }
+
+    // ==================== externalCrm Client API helpers ====================
+
+    /**
+     * Crée un document via {@code frappe.client.insert} (form-data).
+     * Cette méthode exécute les hooks de validation et calcule les totaux
+     * automatiquement — contourne le bug base_grand_total de externalErp v17-dev.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> postexternalCrmClientInsert(Map<String, Object> doc) {
+        return postexternalCrmClientMethod("frappe.client.insert", "doc", doc);
+    }
+
+    /**
+     * Met à jour un document via {@code frappe.client.save} (form-data).
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> postexternalCrmClientSave(Map<String, Object> doc) {
+        return postexternalCrmClientMethod("frappe.client.save", "doc", doc);
+    }
+
+    /**
+     * Appelle une méthode externalCrm avec un paramètre JSON en form-data.
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> postexternalCrmClientMethod(String method, String paramName, Object paramValue) {
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add(paramName, toJson(paramValue));
+
+        return restClient.post()
+                .uri("/api/method/{method}", method)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(formData)
+                .retrieve()
+                .body(Map.class);
+    }
+
+    // ==================== Response extraction ====================
+
+    /**
+     * Extrait l'ID depuis une réponse {@code /api/method/} (format: {@code {"message": {"name": "..."}}} ).
+     */
+    @SuppressWarnings("unchecked")
+    private String extractIdFromMethodResponse(Map<String, Object> response) {
         if (response == null) return null;
+        // /api/method/ retourne {"message": {...}}
+        Object message = response.get("message");
+        if (message instanceof Map<?, ?> msgMap) {
+            Object name = msgMap.get("name");
+            return name != null ? name.toString() : null;
+        }
+        // Fallback : /api/resource/ retourne {"data": {...}}
         Object data = response.get("data");
         if (data instanceof Map<?, ?> dataMap) {
-            return (String) dataMap.get("name");
+            Object name = dataMap.get("name");
+            return name != null ? name.toString() : null;
         }
         return null;
+    }
+
+    // ==================== Error handling ====================
+
+    /**
+     * Extrait un message d'erreur lisible depuis une exception REST.
+     * Pour les {@link RestClientResponseException}, parse le corps JSON de la réponse
+     * pour extraire le message externalErp (champ {@code _server_messages}).
+     */
+    private String extractErrorMessage(Exception e) {
+        if (e instanceof RestClientResponseException restEx) {
+            String body = restEx.getResponseBodyAsString();
+            if (body != null && !body.isBlank()) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> errMap = objectMapper.readValue(body, Map.class);
+                    // externalErp renvoie _server_messages comme JSON-encoded string array
+                    Object serverMessages = errMap.get("_server_messages");
+                    if (serverMessages instanceof String sMsg) {
+                        return "externalErp: " + sMsg.substring(0, Math.min(sMsg.length(), 500));
+                    }
+                    Object excType = errMap.get("exc_type");
+                    Object exception = errMap.get("exception");
+                    if (exception != null) {
+                        return "externalErp " + excType + ": " + exception.toString()
+                                .substring(0, Math.min(exception.toString().length(), 300));
+                    }
+                } catch (Exception ignored) {
+                    // Fallback to raw body
+                    return body.substring(0, Math.min(body.length(), 500));
+                }
+            }
+            return restEx.getStatusCode() + " " + restEx.getStatusText();
+        }
+        return e.getMessage();
+    }
+
+    /**
+     * Extrait le code HTTP depuis une exception REST, ou 500 par défaut.
+     */
+    private int extractHttpStatus(Exception e) {
+        if (e instanceof RestClientResponseException restEx) {
+            return restEx.getStatusCode().value();
+        }
+        return 500;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public java.util.Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson) {
+        String docType = entityTypeMapping.toExternalDocType(type);
+        try {
+            Map<String, Object> response = restClient.get()
+                    .uri(uri -> uri
+                            .path("/api/resource/{docType}")
+                            .queryParam("filters", filterJson)
+                            .queryParam("fields", "[\"name\"]")
+                            .queryParam("limit_page_length", 1)
+                            .build(docType))
+                    .retrieve()
+                    .body(Map.class);
+
+            if (response != null && response.containsKey("data")) {
+                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("data");
+                if (results != null && !results.isEmpty()) {
+                    return java.util.Optional.of(results.get(0));
+                }
+            }
+        } catch (Exception e) {
+            log.debug("⚠️ [SYNC] findFirstByFilters failed for {} (filters={}): {}",
+                    type, filterJson, e.getMessage());
+        }
+        return java.util.Optional.empty();
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.warn("⚠️ [SYNC] Failed to serialize to JSON: {}", e.getMessage());
+            return "{}";
+        }
     }
 }

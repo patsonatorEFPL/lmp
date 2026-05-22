@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.4</version>
+		<version>4.0.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.lmp</groupId>
@@ -27,11 +27,11 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>21</java.version>
-		<maven.compiler.source>21</maven.compiler.source>
-		<maven.compiler.target>21</maven.compiler.target>
-		<testcontainers.version>1.20.4</testcontainers.version>
-		<spring-modulith.version>1.3.5</spring-modulith.version>
+		<java.version>25</java.version>
+		<maven.compiler.source>25</maven.compiler.source>
+		<maven.compiler.target>25</maven.compiler.target>
+		<testcontainers.version>1.21.4</testcontainers.version>
+		<spring-modulith.version>2.0.6</spring-modulith.version>
 	</properties>
 	<dependencies>
 
@@ -44,6 +44,24 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- Spring Boot RestClient (SB 4 separated artifact) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
+
+		<!-- Jackson 2 compat (SB 4 uses Jackson 3 by default) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-jackson2</artifactId>
+		</dependency>
+
+		<!-- WebSocket/STOMP — HelpDesk P5 voice signaling -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
 		</dependency>
 
 		<!-- Thymeleaf — utilisé pour les emails HTML et le back-office admin -->
@@ -79,6 +97,18 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Sentry SDK — error tracking & alerting with intelligent grouping -->
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry</artifactId>
+			<version>8.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry-logback</artifactId>
+			<version>8.16.0</version>
+		</dependency>
+
 		<!-- Flyway pour les migrations de base de données (PostgreSQL) -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
@@ -87,6 +117,12 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
+		<!-- SB 4 a déplacé l'auto-config Flyway hors de spring-boot-autoconfigure -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-flyway</artifactId>
 		</dependency>
 
 		<!-- Spring Security pour l'authentification et l'autorisation -->
@@ -113,12 +149,10 @@
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
 
-		<!-- Mailtrap Java SDK pour l'authentification de domaine -->
-		<dependency>
-			<groupId>io.mailtrap</groupId>
-			<artifactId>mailtrap-java</artifactId>
-			<version>1.0.0</version>
-		</dependency>
+		<!-- Mailtrap Java SDK retiré : staging utilise Mailpit catch-all SMTP
+		     (lmp-mailhog:1025), prod migre vers Gmail App Password via JavaMailSender
+		     standard. Le SDK Mailtrap (~3 MB classes + okhttp transitif) n'est plus
+		     nécessaire. -->
 
 		<!-- Stripe pour les paiements -->
 		<dependency>
@@ -140,6 +174,73 @@
 		<artifactId>caffeine</artifactId>
 	</dependency>
 
+	<!-- Caffeine JCache provider — backend pour Hibernate 2L cache. -->
+	<dependency>
+		<groupId>com.github.ben-manes.caffeine</groupId>
+		<artifactId>jcache</artifactId>
+	</dependency>
+
+	<!-- Hibernate JCache module — bridge entity 2L cache vers JCache provider (Caffeine). -->
+	<dependency>
+		<groupId>org.hibernate.orm</groupId>
+		<artifactId>hibernate-jcache</artifactId>
+	</dependency>
+
+		<!-- Spring Boot Cache Starter (SB 4 requires explicit dep for cache auto-config) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
+		<!-- Redis : cache + queue + pub/sub partagés entre replicas (style external CRM) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<!-- Pool de connexions Lettuce — requis par spring.data.redis.lettuce.pool.enabled=true.
+		     Sans cette dep, NoClassDefFoundError sur GenericObjectPoolConfig au boot. -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-pool2</artifactId>
+		</dependency>
+
+		<!-- Spring Session Redis : sessions HTTP partagées (replace JDBC pour latence ↓) -->
+		<dependency>
+			<groupId>org.springframework.session</groupId>
+			<artifactId>spring-session-data-redis</artifactId>
+		</dependency>
+
+	<!-- Resilience4j — Circuit breaker & retry pour appels ERP -->
+	<dependency>
+		<groupId>io.github.resilience4j</groupId>
+		<artifactId>resilience4j-spring-boot4</artifactId>
+		<version>2.4.0</version>
+	</dependency>
+	<dependency>
+		<groupId>io.github.resilience4j</groupId>
+		<artifactId>resilience4j-micrometer</artifactId>
+		<version>2.4.0</version>
+	</dependency>
+
+	<!-- Micrometer Prometheus registry -->
+	<dependency>
+		<groupId>io.micrometer</groupId>
+		<artifactId>micrometer-registry-prometheus</artifactId>
+	</dependency>
+
+	<!-- Bucket4j — Rate limiting avec Caffeine backend -->
+	<dependency>
+		<groupId>com.bucket4j</groupId>
+		<artifactId>bucket4j-core</artifactId>
+		<version>8.10.1</version>
+	</dependency>
+	<dependency>
+		<groupId>com.bucket4j</groupId>
+		<artifactId>bucket4j-caffeine</artifactId>
+		<version>8.10.1</version>
+	</dependency>
+
 		<!-- OpenPDF pour génération de factures PDF -->
 		<dependency>
 			<groupId>com.github.librepdf</groupId>
@@ -148,10 +249,12 @@
 		</dependency>
 
 		<!-- springdoc-openapi — documentation API automatique -->
+		<!-- springdoc 3.0.3 : Spring Boot 4 compatible (2.8.5 référençait TypeInformation
+		     déplacée dans Spring Data 4 → NoClassDefFoundError au AOT processing). -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.8.5</version>
+			<version>3.0.3</version>
 		</dependency>
 
 		<!-- ===== TEST DEPENDENCIES ===== -->
@@ -160,6 +263,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- WebMvc test starter (SB 4 split MockMvc auto-config) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -193,21 +303,56 @@
 			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
 		</dependency>
 
-		<!-- Spring Session JDBC — persist sessions in PostgreSQL to survive deployments -->
+		<!-- Spring Session : remplacé par spring-session-data-redis ci-dessus.
+		     L'ancien spring-session-jdbc est retiré pour éviter ambiguity sur le
+		     SessionRepository bean. La table SPRING_SESSION reste en DB (V40)
+		     mais inutilisée — peut être supprimée par migration future. -->
+
+
+		<!-- ShedLock — coordonne les @Scheduled critiques entre N répliques swarm.
+		     Une instance leader-only acquiert le lock dans la table `shedlock`
+		     pour la durée déclarée. Indispensable avant scaling horizontal. -->
 		<dependency>
-			<groupId>org.springframework.session</groupId>
-			<artifactId>spring-session-jdbc</artifactId>
+			<groupId>net.javacrumbs.shedlock</groupId>
+			<artifactId>shedlock-spring</artifactId>
+			<version>5.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.javacrumbs.shedlock</groupId>
+			<artifactId>shedlock-provider-jdbc-template</artifactId>
+			<version>5.16.0</version>
 		</dependency>
 
-		<!-- Spring Modulith — Architecture modulaire -->
+		<!-- Spring Modulith — Architecture modulaire.
+		     spring-modulith-api (compile, 11 KB) : juste les annotations @ApplicationModule
+		     utilisées dans les package-info.java pour marquer les boundaries.
+		     spring-modulith-starter-core (test) : pour ModulithArchitectureTest qui
+		     utilise ApplicationModules.of(...).verify() — ce starter charge ArchUnit
+		     (4.5 MB), inutile en runtime prod. Évite de pulluer le fat-jar. -->
+		<dependency>
+			<groupId>org.springframework.modulith</groupId>
+			<artifactId>spring-modulith-api</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-starter-core</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.modulith</groupId>
 			<artifactId>spring-modulith-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Argon2id support for Spring Security Argon2PasswordEncoder. -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.78.1</version>
 		</dependency>
 	</dependencies>
 
@@ -235,6 +380,24 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- DevTools cause un fork automatique → 2 JVMs simultanés avec IntelliJ.
+					     fork=false : Maven et Spring Boot partagent le même JVM. -->
+					<fork>false</fork>
+					<!-- Exclut spring-boot-devtools du JAR repackagé (~5 MB classes
+					     + auto-config Spring chargée au boot, inutile en prod/staging). -->
+					<excludeDevtools>true</excludeDevtools>
+				</configuration>
+				<executions>
+					<!-- Spring Boot 4 AOT processing : génère bean definitions +
+					     reflection metadata au build → boot ~30% faster runtime. -->
+					<execution>
+						<id>process-aot</id>
+						<goals>
+							<goal>process-aot</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

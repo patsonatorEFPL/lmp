@@ -87,36 +87,13 @@ class AdminAppointmentControllerTest {
         testAppointment.setCreatedAt(LocalDateTime.now());
     }
 
-    // ======== REDIRECT TESTS (simplified controller methods) ========
-
-    @Test
-    void testListAppointments_RedirectsToAngular() {
-        String result = controller.listAppointments();
-        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments", result);
-    }
-
-    @Test
-    void testViewAppointment_RedirectsToAngular() {
-        String result = controller.viewAppointment(appointmentId);
-        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/" + appointmentId, result);
-    }
-
-    @Test
-    void testNewAppointmentForm_RedirectsToAngular() {
-        String result = controller.newAppointmentForm();
-        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/new", result);
-    }
+    // ======== REDIRECT TESTS (POST legacy methods only — GET shells removed,
+    //          SPA shell forwarding via FrontendRedirectController) ========
 
     @Test
     void testSaveAppointment_RedirectsToAngular() {
         String result = controller.saveAppointment();
         assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments", result);
-    }
-
-    @Test
-    void testEditAppointmentForm_RedirectsToAngular() {
-        String result = controller.editAppointmentForm(appointmentId);
-        assertEquals("redirect:" + FRONTEND_URL + "/admin/appointments/" + appointmentId + "/edit", result);
     }
 
     @Test

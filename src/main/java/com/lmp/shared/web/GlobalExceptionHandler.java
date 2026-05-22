@@ -1,5 +1,7 @@
 package com.lmp.shared.web;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -11,7 +13,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Gestionnaire global des exceptions pour l'application LMP.
@@ -23,8 +27,22 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @org.springframework.core.annotation.Order(10)
 public class GlobalExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @Value("${app.frontend.url:${app.base.url:http://localhost:4200}}")
     private String frontendUrl;
+
+    /** URL de base de l'host auth — utilisée pour rediriger vers /login (canonique). */
+    @Value("${app.oauth2.issuer-uri:${app.base.url:http://localhost:8080}}")
+    private String authBaseUrl;
+
+    @Value("${company.email:support@localhost}")
+    private String companyEmail;
+
+    @org.springframework.web.bind.annotation.ModelAttribute("companyEmail")
+    public String globalCompanyEmail() {
+        return companyEmail;
+    }
 
     /**
      * Gère les erreurs d'accès refusé (403 Forbidden).
@@ -39,14 +57,26 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Accès refusé");
         model.addAttribute("errorMessage", "Vous n'avez pas les permissions nécessaires pour accéder à cette page.");
         model.addAttribute("errorCode", "403");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         
         return "error/403";
     }
 
     /**
+     * Laisse passer les ResponseStatusException levées intentionnellement
+     * (ex. FrontendRedirectController : 404 sur l'host auth pour pages marketing,
+     * ou préfixes backend sans handler) au resolver Spring built-in, qui respecte
+     * le statut HTTP demandé. Sans cela, le handler RuntimeException.class
+     * ci-dessous les avalerait et renverrait une vue d'erreur 500.
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public void handleResponseStatus(ResponseStatusException ex) {
+        throw ex;
+    }
+
+    /**
      * Gère les erreurs de ressource non trouvée.
-     * 
+     *
      * @param ex L'exception de ressource non trouvée
      * @param model Le modèle pour la vue
      * @return La vue d'erreur 404
@@ -57,11 +87,11 @@ public class GlobalExceptionHandler {
             model.addAttribute("errorTitle", "Ressource non trouvée");
             model.addAttribute("errorMessage", ex.getMessage());
             model.addAttribute("errorCode", "404");
-            model.addAttribute("returnUrl", "/");
-            
+            model.addAttribute("returnUrl", frontendUrl);
+
             return "error/404";
         }
-        
+
         // Pour les autres RuntimeException, rediriger vers l'erreur 500
         return handleGeneralException(ex, model);
     }
@@ -85,7 +115,7 @@ public class GlobalExceptionHandler {
         }
         
         redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
-        return "redirect:" + frontendUrl + "/login?error=true";
+        return "redirect:" + authBaseUrl + "/login?error=true";
     }
 
     /**
@@ -99,7 +129,7 @@ public class GlobalExceptionHandler {
     public String handleDisabledException(DisabledException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", 
             "Votre compte est désactivé. Contactez l'administrateur.");
-        return "redirect:" + frontendUrl + "/login?error=true";
+        return "redirect:" + authBaseUrl + "/login?error=true";
     }
 
     /**
@@ -113,7 +143,7 @@ public class GlobalExceptionHandler {
     public String handleLockedException(LockedException ex, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("errorMessage", 
             "Votre compte est temporairement verrouillé. Contactez l'administrateur.");
-        return "redirect:" + frontendUrl + "/login?error=true";
+        return "redirect:" + authBaseUrl + "/login?error=true";
     }
 
     /**
@@ -129,7 +159,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Données invalides");
         model.addAttribute("errorMessage", ex.getMessage());
         model.addAttribute("errorCode", "400");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         
         return "error/400";
     }
@@ -147,14 +177,26 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Opération non autorisée");
         model.addAttribute("errorMessage", ex.getMessage());
         model.addAttribute("errorCode", "400");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         
         return "error/400";
     }
 
     /**
+     * Static resource 404 (e.g. {@code /chunk-PKHOQFAK.js} demandé par un browser
+     * sur un build précédent). Retourne 404 silencieux — pas de stack trace.
+     * Volume élevé sous deploy rolling : chaque user avec onglet ouvert avant
+     * deploy tape l'ancien chunk path.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleStaticResourceNotFound(NoResourceFoundException ex) {
+        logger.debug("Static resource missing: {}", ex.getResourcePath());
+    }
+
+    /**
      * Gère toutes les autres exceptions non spécifiques.
-     * 
+     *
      * @param ex L'exception générale
      * @param model Le modèle pour la vue
      * @return La vue d'erreur 500
@@ -165,13 +207,11 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Erreur interne du serveur");
         model.addAttribute("errorMessage", "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.");
         model.addAttribute("errorCode", "500");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         model.addAttribute("technicalDetails", ex.getMessage());
-        
-        // Log l'erreur pour le debugging
-        System.err.println("Erreur non gérée: " + ex.getMessage());
-        ex.printStackTrace();
-        
+
+        logger.error("Erreur non gérée: {}", ex.getMessage(), ex);
+
         return "error/500";
     }
 
@@ -188,7 +228,7 @@ public class GlobalExceptionHandler {
         model.addAttribute("errorTitle", "Erreur de configuration");
         model.addAttribute("errorMessage", "Une erreur de configuration s'est produite. Contactez l'administrateur.");
         model.addAttribute("errorCode", "500");
-        model.addAttribute("returnUrl", "/");
+        model.addAttribute("returnUrl", frontendUrl);
         model.addAttribute("technicalDetails", "NullPointerException: " + ex.getMessage());
         
         // Log l'erreur pour le debugging

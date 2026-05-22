@@ -6,8 +6,8 @@ import {
   AlertTriangle, Download, FileIcon, ListChecks, Timer,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Project, ProjectStatus, ProjectPriority, TaskStatus } from '../../core/stubs/portal.models';
+import { PortalService } from '../../core/services/portal.service';
+import { Project, ProjectStatus, ProjectPriority, TaskStatus } from '../../shared/models/portal.models';
 
 type StatusTone = 'neutral' | 'info' | 'warning' | 'success' | 'danger';
 type Tab = 'tasks' | 'timesheets' | 'files';
@@ -202,7 +202,7 @@ type Tab = 'tasks' | 'timesheets' | 'files';
   `,
 })
 export class UserProjectDetailComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
   private readonly route = inject(ActivatedRoute);
 
   readonly ArrowLeftIcon = ArrowLeft;
@@ -219,7 +219,7 @@ export class UserProjectDetailComponent implements OnInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
-    this.stub.getProject(id).subscribe({
+    this.portal.getProject(id).subscribe({
       next: (p) => { this.project.set(p); this.loading.set(false); },
       error: () => this.loading.set(false),
     });

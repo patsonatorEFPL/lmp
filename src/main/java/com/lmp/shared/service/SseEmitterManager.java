@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -40,7 +42,15 @@ public class SseEmitterManager {
                 return t;
             });
 
-    public SseEmitterManager() {
+    /**
+     * Broadcaster Redis pub/sub. Lazy car circular dep (Broadcaster injects
+     * Manager pour dispatcher localement les messages reçus de Redis). Si
+     * Redis indisponible, fallback fanout local seulement (single-replica mode).
+     */
+    private final ObjectProvider<SseRedisBroadcaster> broadcasterProvider;
+
+    public SseEmitterManager(@Lazy ObjectProvider<SseRedisBroadcaster> broadcasterProvider) {
+        this.broadcasterProvider = broadcasterProvider;
         heartbeatScheduler.scheduleAtFixedRate(
                 this::sendHeartbeats,
                 HEARTBEAT_INTERVAL_SECONDS,
@@ -94,11 +104,40 @@ public class SseEmitterManager {
 
     /**
      * Sends an SSE event to all emitters of a specific user.
+     * <p>Si {@link SseRedisBroadcaster} disponible : publie sur Redis pub/sub →
+     * toutes les replicas (incluant celle-ci par loopback) reçoivent et appellent
+     * {@link #dispatchLocalUser}. Sinon fallback local-only.</p>
      */
     public void sendToUser(String userId, String eventName, Object data) {
+        SseRedisBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+        if (broadcaster != null) {
+            broadcaster.publishToUser(userId, eventName, data);
+        } else {
+            dispatchLocalUser(userId, eventName, data);
+        }
+    }
+
+    /**
+     * Sends an SSE event to all admin emitters (broadcast).
+     * <p>Voir {@link #sendToUser} pour le pattern Redis pub/sub multi-replica.</p>
+     */
+    public void sendToAdmins(String eventName, Object data) {
+        SseRedisBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
+        if (broadcaster != null) {
+            broadcaster.publishToAdmins(eventName, data);
+        } else {
+            dispatchLocalAdmin(eventName, data);
+        }
+    }
+
+    /**
+     * Fan-out vers les emitters locaux pour un userId. Appelé par
+     * {@link SseRedisBroadcaster} quand un message Redis pub/sub arrive.
+     */
+    public void dispatchLocalUser(String userId, String eventName, Object data) {
         List<SseEmitter> emitters = userEmitters.get(userId);
         if (emitters == null || emitters.isEmpty()) {
-            logger.debug("No SSE emitters found for user {}, event {} dropped", userId, eventName);
+            logger.debug("No local SSE emitters for user {}, event {} dropped on this replica", userId, eventName);
             return;
         }
 
@@ -122,11 +161,12 @@ public class SseEmitterManager {
     }
 
     /**
-     * Sends an SSE event to all admin emitters (broadcast).
+     * Fan-out vers les admin emitters locaux. Appelé par
+     * {@link SseRedisBroadcaster} sur message Redis pub/sub admin channel.
      */
-    public void sendToAdmins(String eventName, Object data) {
+    public void dispatchLocalAdmin(String eventName, Object data) {
         if (adminEmitters.isEmpty()) {
-            logger.debug("No admin SSE emitters, event {} dropped", eventName);
+            logger.debug("No local admin SSE emitters, event {} dropped on this replica", eventName);
             return;
         }
 

@@ -20,8 +20,12 @@ import jakarta.servlet.http.HttpServletResponse;
  * Priorité haute (@Order(1)) pour intercepter avant GlobalExceptionHandler.
  */
 @RestControllerAdvice(basePackages = {
-        "com.lmp.catalog.web.api",
+        "com.lmp.auth.web.api",
         "com.lmp.billing.web.api",
+        "com.lmp.catalog.web.api",
+        "com.lmp.content.web.api",
+        "com.lmp.crm.web.api",
+        "com.lmp.notification.web.api",
         "com.lmp.portal.api",
         "com.lmp.shared.web.api"
 })

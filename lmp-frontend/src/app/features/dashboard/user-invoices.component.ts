@@ -1,17 +1,18 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   LucideAngularModule, Receipt, RefreshCw, Filter, X, Download, CreditCard, Loader2,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
+import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { PortalService } from '../../core/services/portal.service';
+import { Invoice, InvoiceStatus } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-invoices',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, NgClass, FormsModule, LucideAngularModule, HlmButton],
+  imports: [DatePipe, NgClass, FormsModule, LucideAngularModule, HlmButton, AppCurrencyPipe],
   template: `
     <div class="flex h-full flex-col overflow-hidden">
       <!-- Summary strip -->
@@ -20,7 +21,7 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
           <div class="rounded-md border border-(--border) bg-(--card) p-4">
             <p class="text-[11px] uppercase tracking-wider text-(--muted-foreground)">À régler</p>
             <p class="mt-1 text-xl font-semibold text-(--foreground)">
-              {{ totalOutstanding() | number: '1.2-2' }} $
+              {{ totalOutstanding() | appCurrency }}
             </p>
           </div>
           <div class="rounded-md border border-(--border) bg-(--card) p-4">
@@ -28,13 +29,13 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
             <p class="mt-1 text-xl font-semibold"
               [ngClass]="totalOverdue() > 0 ? 'text-red-600 dark:text-red-400' : 'text-(--foreground)'"
             >
-              {{ totalOverdue() | number: '1.2-2' }} $
+              {{ totalOverdue() | appCurrency }}
             </p>
           </div>
           <div class="rounded-md border border-(--border) bg-(--card) p-4">
             <p class="text-[11px] uppercase tracking-wider text-(--muted-foreground)">Payé 2026</p>
             <p class="mt-1 text-xl font-semibold text-(--foreground)">
-              {{ totalPaid() | number: '1.2-2' }} $
+              {{ totalPaid() | appCurrency }}
             </p>
           </div>
         </div>
@@ -104,12 +105,12 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
                   [ngClass]="isOverdue(inv) ? 'text-red-500 font-medium' : 'text-zinc-600 dark:text-zinc-400'"
                 >{{ inv.dueDate | date: 'dd/MM/yyyy' }}</div>
                 <div class="w-32 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-900 dark:text-zinc-100">
-                  {{ inv.grandTotal | number: '1.2-2' }} {{ currencySymbol(inv.currency) }}
+                  {{ inv.grandTotal | appCurrency:inv.currency }}
                 </div>
                 <div class="w-32 shrink-0 truncate px-2 text-center text-sm leading-normal"
                   [ngClass]="inv.outstandingAmount > 0 ? 'font-medium text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-500'"
                 >
-                  {{ inv.outstandingAmount | number: '1.2-2' }} {{ currencySymbol(inv.currency) }}
+                  {{ inv.outstandingAmount | appCurrency:inv.currency }}
                 </div>
                 <div class="w-32 shrink-0 px-2 text-center">
                   <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium" [ngClass]="getStatusClass(inv.status)">
@@ -203,7 +204,7 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
                     <tr class="border-b border-(--border) last:border-0">
                       <td class="px-3 py-2 text-(--foreground)">{{ it.description }}</td>
                       <td class="px-3 py-2 text-right text-(--muted-foreground)">{{ it.qty }}</td>
-                      <td class="px-3 py-2 text-right font-medium text-(--foreground)">{{ it.amount | number: '1.2-2' }}</td>
+                      <td class="px-3 py-2 text-right font-medium text-(--foreground)">{{ it.amount | appCurrency }}</td>
                     </tr>
                   }
                 </tbody>
@@ -213,14 +214,14 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
 
           <div class="mt-4 rounded-md border border-(--border) bg-(--background) p-4 text-sm">
             <div class="flex justify-between text-(--muted-foreground)">
-              <span>Total facture</span><span>{{ selected()!.grandTotal | number: '1.2-2' }} {{ currencySymbol(selected()!.currency) }}</span>
+              <span>Total facture</span><span>{{ selected()!.grandTotal | appCurrency:selected()!.currency }}</span>
             </div>
             <div class="mt-1 flex justify-between text-(--muted-foreground)">
-              <span>Payé</span><span>{{ selected()!.paidAmount | number: '1.2-2' }} {{ currencySymbol(selected()!.currency) }}</span>
+              <span>Payé</span><span>{{ selected()!.paidAmount | appCurrency:selected()!.currency }}</span>
             </div>
             <div class="mt-2 flex justify-between border-t border-(--border) pt-2 text-base font-semibold"
               [ngClass]="selected()!.outstandingAmount > 0 ? 'text-(--foreground)' : 'text-emerald-600 dark:text-emerald-400'">
-              <span>Restant dû</span><span>{{ selected()!.outstandingAmount | number: '1.2-2' }} {{ currencySymbol(selected()!.currency) }}</span>
+              <span>Restant dû</span><span>{{ selected()!.outstandingAmount | appCurrency:selected()!.currency }}</span>
             </div>
           </div>
         </div>
@@ -243,7 +244,7 @@ import { Invoice, InvoiceStatus } from '../../core/stubs/portal.models';
   `,
 })
 export class UserInvoicesComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
 
   readonly STATUS_OPTIONS: InvoiceStatus[] = ['Draft', 'Submitted', 'Paid', 'Partly Paid', 'Unpaid', 'Overdue', 'Return', 'Credit Note Issued', 'Cancelled'];
 
@@ -288,7 +289,7 @@ export class UserInvoicesComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listInvoices().subscribe({
+    this.portal.listInvoices().subscribe({
       next: (list) => { this.items.set(list); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -307,10 +308,7 @@ export class UserInvoicesComponent implements OnInit {
     this.currentPage.set(0);
   }
 
-  currencySymbol(code: string): string {
-    const map: Record<string, string> = { CAD: '$', EUR: '€', USD: '$', GBP: '£' };
-    return map[code] ?? code;
-  }
+
 
   getStatusClass(status: InvoiceStatus): string {
     switch (status) {

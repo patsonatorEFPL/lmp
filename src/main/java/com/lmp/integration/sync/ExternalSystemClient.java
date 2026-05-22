@@ -73,4 +73,39 @@ public interface ExternalSystemClient {
      * Liste les entités modifiées depuis un instant donné (pour réconciliation).
      */
     List<Map<String, Object>> listEntities(SyncEntityType type, Instant modifiedSince);
+
+    /**
+     * Récupère un total agrégé (ex: SUM(grand_total)) côté système externe
+     * pour une fenêtre de dates. Utilisé par la réconciliation des totaux.
+     *
+     * @param type       type d'entité (ex: SALES_INVOICE)
+     * @param sumField   champ à agréger (ex: "grand_total")
+     * @param dateField  champ date pour le filtre (ex: "posting_date")
+     * @param startDate  début de la fenêtre (inclus)
+     * @param endDate    fin de la fenêtre (exclus)
+     * @return le total agrégé, ou null si non récupérable
+     */
+    java.math.BigDecimal fetchAggregatedTotal(SyncEntityType type, String sumField,
+                                               String dateField, String startDate, String endDate);
+
+    /**
+     * Appelle une méthode serveur (Whitelisted API method) sur le système externe.
+     * <p>
+     * Ex: {@code callMethod("erpnext.selling.doctype.quotation.quotation.make_sales_order", args)}
+     * pour convertir un Quotation en Sales Order côté externalErp.
+     *
+     * @param method chemin complet de la méthode (dotted path)
+     * @param args   arguments de la méthode (ex: source_name, etc.)
+     * @return réponse contenant les données retournées par la méthode
+     */
+    ExternalResponse callMethod(String method, Map<String, Object> args);
+
+    /**
+     * Recherche la première entité correspondant aux filtres externalErp.
+     *
+     * @param type   type d'entité
+     * @param filterJson filtres au format externalErp (ex: [["item_code","=","ABC"],["price_list","=","Standard Selling"]])
+     * @return Optional contenant la map du document trouvé, ou empty
+     */
+    java.util.Optional<Map<String, Object>> findFirstByFilters(SyncEntityType type, String filterJson);
 }

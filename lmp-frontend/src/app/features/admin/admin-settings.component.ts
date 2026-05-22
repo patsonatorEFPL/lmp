@@ -18,15 +18,18 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminService, CompanyAddressPayload } from '../../core/services/admin.service';
+import { AdminSiteConfigComponent } from './admin-site-config.component';
 
 @Component({
   selector: 'lmp-admin-settings',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, HlmButton],
+  imports: [FormsModule, LucideAngularModule, HlmButton, AdminSiteConfigComponent],
   template: `
     <div class="p-4 sm:p-5">
     <!-- Titre dans lmp-admin-layout -->
     <div class="space-y-6">
+      <lmp-admin-site-config></lmp-admin-site-config>
+
       <!-- General Settings -->
       <div class="rounded-sm border border-(--border) bg-(--card) p-6">
         <div class="flex items-center gap-3 mb-4">

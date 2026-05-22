@@ -1,11 +1,16 @@
 package com.lmp.catalog.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "service_categories")
+@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class ServiceCategory {
 
     @Id

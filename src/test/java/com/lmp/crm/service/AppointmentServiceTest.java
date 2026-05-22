@@ -18,6 +18,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.time.LocalDate;
@@ -50,6 +51,9 @@ class AppointmentServiceTest {
 
     @Mock
     private MailAddressConfig mailAddressConfig;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private AppointmentService appointmentService;
@@ -99,9 +103,9 @@ class AppointmentServiceTest {
         existingAppointment.setStatus(AppointmentStatus.PENDING);
 
         // Configuration du mock MailAddressConfig
-        when(mailAddressConfig.getNoreply()).thenReturn("noreply@lmp-services.ca");
-        when(mailAddressConfig.getSupport()).thenReturn("support@lmp-services.ca");
-        when(mailAddressConfig.getReplyToSupport()).thenReturn("support@lmp-services.ca");
+        when(mailAddressConfig.getNoreply()).thenReturn("noreply@example.com");
+        when(mailAddressConfig.getSupport()).thenReturn("support@example.com");
+        when(mailAddressConfig.getReplyToSupport()).thenReturn("support@example.com");
         when(mailAddressConfig.getName()).thenReturn("LMP Digital Services");
     }
 

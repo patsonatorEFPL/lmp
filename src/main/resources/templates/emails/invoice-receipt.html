@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Votre facture LMP</title>
+    <title th:text="|Votre facture - ${companyName ?: 'LMP Services'}|">Votre facture - LMP Services</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
     <!-- Preheader -->
@@ -20,7 +20,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background:linear-gradient(135deg,#1a1f36 0%,#2d3352 100%);padding:40px 32px;text-align:center;">
-                            <div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:0.5px;margin-bottom:8px;">LMP Services</div>
+                            <div style="font-size:28px;font-weight:700;color:#ffffff;letter-spacing:0.5px;margin-bottom:8px;" th:text="${companyName ?: 'LMP Services'}">LMP Services</div>
                             <div style="font-size:14px;color:#8b92a5;">Votre partenaire de confiance</div>
                         </td>
                     </tr>
@@ -81,7 +81,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                                 <tr>
                                     <td align="center" style="padding:8px 0 24px;">
-                                        <a th:href="${frontendUrl + '/dashboard'}" href="https://lmp-services.ca/dashboard"
+                                        <a th:href="${frontendUrl + '/dashboard'}" href="#"
                                            style="display:inline-block;background:linear-gradient(135deg,#4f6df5,#3b5de7);color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:600;">
                                             Voir mes commandes
                                         </a>
@@ -93,9 +93,9 @@
                             <div style="background-color:#f8f9fb;border-radius:8px;padding:16px;text-align:center;">
                                 <div style="font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:6px;">Une question sur votre facture ?</div>
                                 <span style="font-size:13px;color:#4b5563;">
-                                    <a href="mailto:lmp.assistance@gmail.com" style="color:#4f6df5;text-decoration:none;">lmp.assistance@gmail.com</a>
+                                    <a th:href="|mailto:${companyEmail ?: 'info@lmp-services.ca'}|" th:text="${companyEmail ?: 'info@lmp-services.ca'}" href="mailto:info@lmp-services.ca" style="color:#4f6df5;text-decoration:none;">info@lmp-services.ca</a>
                                     &nbsp;·&nbsp;
-                                    <a href="https://lmp-services.ca" style="color:#4f6df5;text-decoration:none;">lmp-services.ca</a>
+                                    <a href="#" style="color:#4f6df5;text-decoration:none;">Site web</a>
                                 </span>
                             </div>
                         </td>

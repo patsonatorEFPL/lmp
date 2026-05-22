@@ -6,6 +6,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +44,10 @@ public class ServiceCatalogService {
 
     /**
      * Retourne tous les services actifs avec leur offre courante.
+     * Cache Caffeine — invalidation manuelle via {@link #evictCatalogCaches()}
+     * quand l'admin modifie un service (cf {@link com.lmp.catalog.web.api.AdminServiceRestController}).
      */
+    @Cacheable("catalog-active-services")
     public List<com.lmp.catalog.domain.Service> getActiveServices() {
         return serviceRepository.findByActiveTrue();
     }
@@ -50,15 +55,38 @@ public class ServiceCatalogService {
     /**
      * Retourne les services mis en avant (featured) pour la page d'accueil.
      */
+    @Cacheable("catalog-featured-services")
     public List<com.lmp.catalog.domain.Service> getFeaturedServices() {
         return serviceRepository.findByFeaturedTrueAndActiveTrue();
     }
 
     /**
+     * Full-text search on active services via V42 tsvector index. Caller
+     * trims/validates the query and clamps {@code max}.
+     * Cached by query+max (Caffeine TTL 5min) — bench 5k VU sustained 2026-05-16
+     * a montré Hikari pool 50 saturé par 2250+ concurrent FTS sous load.
+     */
+    @Cacheable(value = "catalog-search-active", key = "#query + '-' + #max")
+    public List<com.lmp.catalog.domain.Service> searchActive(String query, int max) {
+        return serviceRepository.searchActive(query, max);
+    }
+
+    /**
      * Retourne toutes les catégories avec leurs services.
      */
+    @Cacheable("catalog-categories")
     public List<ServiceCategory> getAllCategories() {
         return categoryRepository.findAll();
+    }
+
+    /**
+     * Invalide les caches du catalogue. À appeler depuis les endpoints admin
+     * qui modifient les services / offres / catégories.
+     */
+    @CacheEvict(value = {"catalog-active-services", "catalog-featured-services", "catalog-categories",
+            "catalog-search-active", "catalog-service-by-slug"}, allEntries = true)
+    public void evictCatalogCaches() {
+        logger.info("Catalog caches evicted");
     }
 
     /**
@@ -69,8 +97,9 @@ public class ServiceCatalogService {
     }
 
     /**
-     * Retourne un service par son slug.
+     * Retourne un service par son slug. Cached by slug.
      */
+    @Cacheable(value = "catalog-service-by-slug", key = "#slug")
     public Optional<com.lmp.catalog.domain.Service> getServiceBySlug(String slug) {
         return serviceRepository.findBySlug(slug);
     }

@@ -7,6 +7,7 @@ import com.lmp.billing.domain.Order;
 import com.lmp.billing.domain.OrderInstallment;
 import com.lmp.billing.repository.OrderInstallmentRepository;
 import com.lmp.billing.repository.OrderRepository;
+import com.lmp.billing.repository.QuotationRepository;
 import com.lmp.catalog.domain.Service;
 import com.lmp.catalog.domain.ServiceCategory;
 import com.lmp.catalog.repository.ServiceCategoryRepository;
@@ -14,6 +15,7 @@ import com.lmp.catalog.repository.ServiceRepository;
 import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.integration.sync.SyncEntityType;
+import com.lmp.integration.sync.mapper.AddressSyncMapper;
 import com.lmp.integration.sync.mapper.OrderSyncMapper;
 import com.lmp.integration.sync.mapper.PaymentSyncMapper;
 import com.lmp.project.repository.ProjectRepository;
@@ -43,6 +45,7 @@ public class SyncCallbackService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final OrderInstallmentRepository installmentRepository;
+    private final QuotationRepository quotationRepository;
     private final ServiceRepository serviceRepository;
     private final ServiceCategoryRepository serviceCategoryRepository;
     private final ProjectRepository projectRepository;
@@ -51,11 +54,13 @@ public class SyncCallbackService {
     private final ExternalSystemClient externalClient;
     private final OrderSyncMapper orderSyncMapper;
     private final PaymentSyncMapper paymentSyncMapper;
+    private final AddressSyncMapper addressSyncMapper;
     private final SyncOutboundService syncOutboundService;
 
     public SyncCallbackService(UserRepository userRepository,
                                OrderRepository orderRepository,
                                OrderInstallmentRepository installmentRepository,
+                               QuotationRepository quotationRepository,
                                ServiceRepository serviceRepository,
                                ServiceCategoryRepository serviceCategoryRepository,
                                ProjectRepository projectRepository,
@@ -64,10 +69,12 @@ public class SyncCallbackService {
                                ExternalSystemClient externalClient,
                                OrderSyncMapper orderSyncMapper,
                                PaymentSyncMapper paymentSyncMapper,
+                               AddressSyncMapper addressSyncMapper,
                                @Lazy SyncOutboundService syncOutboundService) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.installmentRepository = installmentRepository;
+        this.quotationRepository = quotationRepository;
         this.serviceRepository = serviceRepository;
         this.serviceCategoryRepository = serviceCategoryRepository;
         this.projectRepository = projectRepository;
@@ -76,6 +83,7 @@ public class SyncCallbackService {
         this.externalClient = externalClient;
         this.orderSyncMapper = orderSyncMapper;
         this.paymentSyncMapper = paymentSyncMapper;
+        this.addressSyncMapper = addressSyncMapper;
         this.syncOutboundService = syncOutboundService;
     }
 
@@ -100,6 +108,9 @@ public class SyncCallbackService {
             case PROJECT -> clearProjectExternalId(localEntityId);
             case TASK -> clearTaskExternalId(localEntityId);
             case ISSUE -> clearTicketExternalId(localEntityId);
+            case QUOTATION -> clearQuotationExternalId(localEntityId);
+            case ADDRESS -> clearUserExternalAddressId(localEntityId);
+            case ERP_USER -> clearUserExternalErpUserId(localEntityId);
             default -> log.debug("📋 [CALLBACK] No cleanup needed for {}", entityType);
         }
     }
@@ -115,6 +126,7 @@ public class SyncCallbackService {
         switch (entityType) {
             case CUSTOMER -> updateUserExternalCustomerId(localEntityId, externalId);
             case CONTACT -> updateUserExternalContactId(localEntityId, externalId);
+            case ERP_USER -> updateUserExternalErpUserId(localEntityId, externalId);
             case SALES_ORDER -> updateOrderExternalOrderId(localEntityId, externalId);
             case SALES_INVOICE -> updateOrderExternalInvoiceId(localEntityId, externalId, responseData);
             case PAYMENT -> updateOrderExternalPaymentId(localEntityId, externalId);
@@ -123,6 +135,7 @@ public class SyncCallbackService {
             case PROJECT -> updateProjectExternalId(localEntityId, externalId);
             case TASK -> updateTaskExternalId(localEntityId, externalId);
             case ISSUE -> updateTicketExternalId(localEntityId, externalId);
+            case QUOTATION -> updateQuotationExternalId(localEntityId, externalId);
             default -> log.debug("📋 [CALLBACK] No local update needed for {}", entityType);
         }
     }
@@ -133,9 +146,31 @@ public class SyncCallbackService {
                     user.setExternalCustomerId(externalId);
                     userRepository.save(user);
                     log.info("🔗 [CALLBACK] User {} linked to external Customer {}", userId, externalId);
+
+                    // Enchaîner la création de l'Address si le user a une adresse
+                    if (addressSyncMapper.hasAddressData(user)) {
+                        createAddressForUser(user, externalId);
+                    }
                 },
                 () -> log.warn("⚠️ [CALLBACK] User {} not found for customer link", userId)
         );
+    }
+
+    private void createAddressForUser(User user, String customerExternalId) {
+        try {
+            Map<String, Object> payload = addressSyncMapper.toCreatePayload(user, customerExternalId);
+            ExternalResponse response = externalClient.createEntity(SyncEntityType.ADDRESS, payload);
+            if (response.success() && response.externalId() != null) {
+                user.setExternalAddressId(response.externalId());
+                userRepository.save(user);
+                log.info("🔗 [CALLBACK] User {} linked to external Address {}", user.getId(), response.externalId());
+            } else {
+                log.warn("⚠️ [CALLBACK] Failed to create Address for User {}: {}",
+                        user.getId(), response.errorMessage());
+            }
+        } catch (Exception e) {
+            log.error("❌ [CALLBACK] Error creating Address for User {}: {}", user.getId(), e.getMessage());
+        }
     }
 
     private void updateUserExternalContactId(UUID userId, String externalId) {
@@ -146,6 +181,22 @@ public class SyncCallbackService {
                     log.info("🔗 [CALLBACK] User {} linked to external Contact {}", userId, externalId);
                 },
                 () -> log.warn("⚠️ [CALLBACK] User {} not found for contact link", userId)
+        );
+    }
+
+    /**
+     * Pour le DocType externalErp "User", la clé primaire est l'email lui-même.
+     * On stocke donc cet email comme externalErpUserId pour pouvoir cibler le bon document
+     * lors d'un update / delete ultérieur.
+     */
+    private void updateUserExternalErpUserId(UUID userId, String externalId) {
+        userRepository.findById(userId).ifPresentOrElse(
+                user -> {
+                    user.setExternalErpUserId(externalId);
+                    userRepository.save(user);
+                    log.info("🔗 [CALLBACK] User {} linked to external externalErp User {}", userId, externalId);
+                },
+                () -> log.warn("⚠️ [CALLBACK] User {} not found for externalErp User link", userId)
         );
     }
 
@@ -180,7 +231,7 @@ public class SyncCallbackService {
             Map<String, Object> siPayload = orderSyncMapper.toSalesInvoicePayload(order);
 
             // Fetch SO item row names from ERP pour renseigner so_detail sur chaque ligne SINV.
-            // Sans so_detail, external ERP ne met pas à jour per_billed sur le Sales Order.
+            // Sans so_detail, externalErp ne met pas à jour per_billed sur le Sales Order.
             enrichWithSoDetail(siPayload, order.getExternalOrderId());
 
             syncOutboundService.enqueue(
@@ -196,7 +247,7 @@ public class SyncCallbackService {
 
     /**
      * Enrichit le payload SINV avec les so_detail (noms des lignes SO)
-     * pour que external ERP puisse calculer per_billed sur le Sales Order.
+     * pour que externalErp puisse calculer per_billed sur le Sales Order.
      */
     @SuppressWarnings("unchecked")
     private void enrichWithSoDetail(Map<String, Object> siPayload, String salesOrderId) {
@@ -266,7 +317,7 @@ public class SyncCallbackService {
     @SuppressWarnings("unchecked")
     private java.math.BigDecimal extractErpGrandTotal(Map<String, Object> responseData) {
         if (responseData == null) return null;
-        // external ERP API returns {"data": {"grand_total": ...}} — navigate the nested structure
+        // externalErp API returns {"data": {"grand_total": ...}} — navigate the nested structure
         Map<String, Object> dataMap = responseData;
         if (dataMap.containsKey("data") && dataMap.get("data") instanceof Map) {
             dataMap = (Map<String, Object>) dataMap.get("data");
@@ -290,7 +341,7 @@ public class SyncCallbackService {
      * <ul>
      *   <li>Paiement unique : 1 PE pour le montant total (comportement existant)</li>
      *   <li>Paiement en plusieurs fois : 1 PE par échéance payée (status=PAID),
-     *       avec {@code payment_term} sur la référence SINV pour que external ERP mette à jour
+     *       avec {@code payment_term} sur la référence SINV pour que externalErp mette à jour
      *       le bon slot du {@code payment_schedule}</li>
      * </ul>
      *
@@ -331,7 +382,7 @@ public class SyncCallbackService {
      * Enqueue un Payment Entry pour chaque échéance payée d'une commande en plusieurs fois.
      * <p>
      * Récupère le {@code payment_schedule} de la SINV pour utiliser les montants exacts
-     * calculés par external ERP (évite les écarts d'arrondi entre LMP et l'ERP).
+     * calculés par externalErp (évite les écarts d'arrondi entre LMP et l'ERP).
      */
     @SuppressWarnings("unchecked")
     private void enqueueInstallmentPaymentEntries(Order order, String salesInvoiceId) {
@@ -379,7 +430,7 @@ public class SyncCallbackService {
 
     /**
      * Récupère les montants du payment_schedule depuis la SINV ERP.
-     * Retourne un map payment_term → payment_amount (montant exact calculé par external ERP).
+     * Retourne un map payment_term → payment_amount (montant exact calculé par externalErp).
      */
     @SuppressWarnings("unchecked")
     private Map<String, java.math.BigDecimal> fetchErpPaymentScheduleAmounts(String salesInvoiceId) {
@@ -535,6 +586,22 @@ public class SyncCallbackService {
         });
     }
 
+    private void clearUserExternalAddressId(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setExternalAddressId(null);
+            userRepository.save(user);
+            log.info("🧹 [CALLBACK] Cleared external Address ID on User {}", userId);
+        });
+    }
+
+    private void clearUserExternalErpUserId(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setExternalErpUserId(null);
+            userRepository.save(user);
+            log.info("🧹 [CALLBACK] Cleared external externalErp User ID on User {}", userId);
+        });
+    }
+
     private void clearOrderExternalOrderId(UUID localEntityId, String externalOrderId) {
         // Essayer d'abord par localEntityId (cas normal : l'order lui-même est supprimé)
         Optional<Order> orderOpt = orderRepository.findById(localEntityId);
@@ -612,6 +679,27 @@ public class SyncCallbackService {
             ticket.setExternalIssueId(null);
             ticketRepository.save(ticket);
             log.info("🧹 [CALLBACK] Cleared external Issue ID on Ticket {}", ticketId);
+        });
+    }
+
+    // ==================== Quotation ====================
+
+    private void updateQuotationExternalId(UUID quotationId, String externalId) {
+        quotationRepository.findById(quotationId).ifPresentOrElse(
+                quotation -> {
+                    quotation.setExternalQuotationId(externalId);
+                    quotationRepository.save(quotation);
+                    log.info("🔗 [CALLBACK] Quotation {} linked to external Quotation {}", quotationId, externalId);
+                },
+                () -> log.warn("⚠️ [CALLBACK] Quotation {} not found for quotation link", quotationId)
+        );
+    }
+
+    private void clearQuotationExternalId(UUID quotationId) {
+        quotationRepository.findById(quotationId).ifPresent(quotation -> {
+            quotation.setExternalQuotationId(null);
+            quotationRepository.save(quotation);
+            log.info("🧹 [CALLBACK] Cleared external Quotation ID on Quotation {}", quotationId);
         });
     }
 }

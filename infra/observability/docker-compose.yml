@@ -1,0 +1,166 @@
+# ============================================================================
+# LMP — Stack observabilité self-hostée (Dokploy)
+# ============================================================================
+# Déployé en tant que projet Dokploy "Compose" séparé du monolithe LMP.
+#
+# Scrape topology:
+#   - prod  : Prometheus → http://${LMP_BACKEND_HOST}:8080/actuator/prometheus
+#             (interne réseau Docker, Basic Auth, jamais via Traefik)
+#   - dev   : Prometheus → https://dev.lmp-services.ca/actuator/prometheus
+#             (via tunnel Cloudflare, Basic Auth, métriques laptop)
+#
+# Exposition publique:
+#   - Grafana : grafana.lmp-services.ca (Traefik + Let's Encrypt + login admin)
+#   - Prometheus : JAMAIS exposé publiquement (réseau interne uniquement)
+#
+# Variables requises dans .env Dokploy (cf .env.example) :
+#   - GRAFANA_ADMIN_PASSWORD
+#   - PROMETHEUS_BASIC_USER (par défaut "prometheus")
+#   - PROMETHEUS_BASIC_PASS_PROD
+#   - PROMETHEUS_BASIC_PASS_DEV
+#   - POSTGRES_EXPORTER_DSN_PROD
+#   - LMP_BACKEND_HOST (hostname du conteneur backend prod, ex: "lmpback")
+#   - LMP_NETWORK_NAME (réseau Docker partagé avec le backend prod)
+# ============================================================================
+
+version: '3.8'
+
+networks:
+  observability:
+    driver: bridge
+  lmp-shared:
+    name: ${LMP_NETWORK_NAME:-dokploy-network}
+    external: true
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+services:
+  # --------------------------------------------------------------------------
+  # Prometheus — TSDB + scrape engine
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    user: "65534:65534"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Secrets dir is mounted from a persistent host path that survives Dokploy
+      # git pulls (which wipe untracked files inside the compose checkout).
+      # Provision /etc/lmp/prometheus-secrets/{prom-prod-pass,prom-dev-pass} on the host
+      # before first deploy, mode 0444. Cf README.
+      - /etc/lmp/prometheus-secrets:/etc/prometheus/secrets:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=5GB
+      - --web.enable-lifecycle
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    networks:
+      - observability
+      - lmp-shared
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # --------------------------------------------------------------------------
+  # Grafana — Dashboards + alerting
+  # --------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    user: "472:472"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: https://grafana.lmp-services.ca
+      GF_SERVER_DOMAIN: grafana.lmp-services.ca
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: lax
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_INSTALL_PLUGINS: ""
+    networks:
+      - observability
+      # Joined to dokploy-network so Traefik can reach grafana via the
+      # labels below (Traefik only routes to containers on its own network).
+      - lmp-shared
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.grafana.rule=Host(`grafana.lmp-services.ca`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.tls.certresolver=letsencrypt
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # --------------------------------------------------------------------------
+  # Node Exporter — métriques host (CPU, RAM, disk, network)
+  # --------------------------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker)($$|/)
+      - --collector.netclass.ignored-devices=^(veth.*|docker.*|br-.*|lo)$$
+    networks:
+      - observability
+
+  # --------------------------------------------------------------------------
+  # cAdvisor — métriques par conteneur Docker
+  # --------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+      - --store_container_labels=false
+    networks:
+      - observability
+
+  # --------------------------------------------------------------------------
+  # Postgres Exporter — métriques DB prod
+  # --------------------------------------------------------------------------
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.16.0
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DSN_PROD:?POSTGRES_EXPORTER_DSN_PROD required}
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "false"
+    networks:
+      - observability
+      - lmp-shared

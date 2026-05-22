@@ -1,17 +1,18 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
+import { DatePipe, NgClass } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   LucideAngularModule, FileText, RefreshCw, Filter, X, Check, Loader2,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { PortalStubService } from '../../core/stubs/portal-stub.service';
-import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
+import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { PortalService } from '../../core/services/portal.service';
+import { Quotation, QuotationStatus } from '../../shared/models/portal.models';
 
 @Component({
   selector: 'lmp-user-quotations',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, NgClass, FormsModule, LucideAngularModule, HlmButton],
+  imports: [DatePipe, NgClass, FormsModule, LucideAngularModule, HlmButton, AppCurrencyPipe],
   template: `
     <div class="flex h-full flex-col overflow-hidden">
       <!-- Toolbar -->
@@ -73,7 +74,7 @@ import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
                 <div class="w-32 shrink-0 truncate px-2 font-mono text-xs leading-normal text-zinc-700 dark:text-zinc-300">{{ q.id }}</div>
                 <div class="w-64 shrink-0 truncate px-2 text-sm leading-normal text-zinc-900 dark:text-zinc-100">{{ q.title }}</div>
                 <div class="w-32 shrink-0 truncate px-2 text-center text-sm leading-normal text-zinc-600 dark:text-zinc-400">
-                  {{ q.grandTotal | number: '1.2-2' }} {{ currencySymbol(q.currency) }}
+                  {{ q.grandTotal | appCurrency:q.currency }}
                 </div>
                 <div class="w-32 shrink-0 px-2 text-center">
                   <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium" [ngClass]="getStatusClass(q.status)">
@@ -177,8 +178,8 @@ import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
                     <tr class="border-b border-(--border) last:border-0">
                       <td class="px-3 py-2 text-(--foreground)">{{ it.description }}</td>
                       <td class="px-3 py-2 text-right text-(--muted-foreground)">{{ it.qty }}</td>
-                      <td class="px-3 py-2 text-right text-(--muted-foreground)">{{ it.rate | number: '1.2-2' }}</td>
-                      <td class="px-3 py-2 text-right font-medium text-(--foreground)">{{ it.amount | number: '1.2-2' }}</td>
+                      <td class="px-3 py-2 text-right text-(--muted-foreground)">{{ it.rate | appCurrency }}</td>
+                      <td class="px-3 py-2 text-right font-medium text-(--foreground)">{{ it.amount | appCurrency }}</td>
                     </tr>
                   }
                 </tbody>
@@ -188,13 +189,13 @@ import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
 
           <div class="mt-4 rounded-md border border-(--border) bg-(--background) p-4 text-sm">
             <div class="flex justify-between text-(--muted-foreground)">
-              <span>Sous-total</span><span>{{ selected()!.netTotal | number: '1.2-2' }} {{ currencySymbol(selected()!.currency) }}</span>
+              <span>Sous-total</span><span>{{ selected()!.netTotal | appCurrency:selected()!.currency }}</span>
             </div>
             <div class="mt-1 flex justify-between text-(--muted-foreground)">
-              <span>TVA / Taxes</span><span>{{ selected()!.taxAmount | number: '1.2-2' }} {{ currencySymbol(selected()!.currency) }}</span>
+              <span>TVA / Taxes</span><span>{{ selected()!.taxAmount | appCurrency:selected()!.currency }}</span>
             </div>
             <div class="mt-2 flex justify-between border-t border-(--border) pt-2 text-base font-semibold text-(--foreground)">
-              <span>Total</span><span>{{ selected()!.grandTotal | number: '1.2-2' }} {{ currencySymbol(selected()!.currency) }}</span>
+              <span>Total</span><span>{{ selected()!.grandTotal | appCurrency:selected()!.currency }}</span>
             </div>
           </div>
 
@@ -218,7 +219,7 @@ import { Quotation, QuotationStatus } from '../../core/stubs/portal.models';
   `,
 })
 export class UserQuotationsComponent implements OnInit {
-  private readonly stub = inject(PortalStubService);
+  private readonly portal = inject(PortalService);
 
   readonly STATUS_OPTIONS: QuotationStatus[] = ['Draft', 'Open', 'Replied', 'Partially Ordered', 'Ordered', 'Lost', 'Cancelled', 'Expired'];
 
@@ -252,7 +253,7 @@ export class UserQuotationsComponent implements OnInit {
 
   load() {
     this.loading.set(true);
-    this.stub.listQuotations().subscribe({
+    this.portal.listQuotations().subscribe({
       next: (list) => { this.items.set(list); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
@@ -265,7 +266,7 @@ export class UserQuotationsComponent implements OnInit {
   }
 
   accept(q: Quotation) {
-    this.stub.acceptQuotation(q.id).subscribe((updated) => {
+    this.portal.acceptQuotation(q.id).subscribe((updated) => {
       if (updated) {
         this.items.update((list) => list.map((x) => (x.id === updated.id ? updated : x)));
         if (this.selected()?.id === updated.id) this.selected.set(updated);
@@ -278,10 +279,7 @@ export class UserQuotationsComponent implements OnInit {
     this.currentPage.set(0);
   }
 
-  currencySymbol(code: string): string {
-    const map: Record<string, string> = { CAD: '$', EUR: '€', USD: '$', GBP: '£' };
-    return map[code] ?? code;
-  }
+
 
   getStatusClass(status: QuotationStatus): string {
     switch (status) {

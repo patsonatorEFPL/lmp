@@ -1,13 +1,14 @@
 import { Component, ElementRef, OnDestroy, PLATFORM_ID, ViewChild, inject, signal } from '@angular/core';
 import { isPlatformBrowser, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 
 import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { AuthService, UserInfo } from '../../core/services/auth.service';
+import { SiteConfigService } from '../../core/services/site-config.service';
 
 interface ApiOk<T> {
   success: boolean;
@@ -18,7 +19,7 @@ interface ApiOk<T> {
 @Component({
   selector: 'lmp-payment-guest',
   standalone: true,
-  imports: [FormsModule, DecimalPipe, RouterLink],
+  imports: [FormsModule, DecimalPipe],
   template: `
     <div class="flex min-h-screen flex-col bg-(--background) px-4 py-10">
       <div class="mx-auto w-full max-w-lg">
@@ -38,9 +39,32 @@ interface ApiOk<T> {
         } @else if (preview()) {
           <div class="mt-6 rounded-sm border border-(--border) bg-(--card) p-4">
             <p class="text-sm font-medium text-(--foreground)">{{ preview()!.serviceName }}</p>
-            <p class="mt-1 text-lg font-semibold text-(--primary)">
-              {{ preview()!.totalAmount | number: '1.2-2' }} {{ preview()!.currency }}
-            </p>
+            <dl class="mt-3 space-y-1 text-sm">
+              <div class="flex items-baseline justify-between gap-4">
+                <dt class="text-(--muted-foreground)">Sous-total HT</dt>
+                <dd class="text-(--foreground)">{{ preview()!.amountHt | number: '1.2-2' }} {{ preview()!.currency }}</dd>
+              </div>
+              @if (preview()!.reverseCharge) {
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-(--muted-foreground)">TVA (autoliquidation)</dt>
+                  <dd class="text-(--foreground)">0,00 {{ preview()!.currency }}</dd>
+                </div>
+              } @else {
+                <div class="flex items-baseline justify-between gap-4">
+                  <dt class="text-(--muted-foreground)">TVA ({{ preview()!.vatRate }} %)</dt>
+                  <dd class="text-(--foreground)">{{ preview()!.vatAmount | number: '1.2-2' }} {{ preview()!.currency }}</dd>
+                </div>
+              }
+              <div class="mt-2 flex items-baseline justify-between gap-4 border-t border-(--border) pt-2">
+                <dt class="font-semibold text-(--foreground)">Total à payer</dt>
+                <dd class="text-lg font-semibold text-(--primary)">{{ preview()!.totalAmount | number: '1.2-2' }} {{ preview()!.currency }}</dd>
+              </div>
+            </dl>
+            @if (preview()!.estimated) {
+              <p class="mt-2 text-xs text-(--muted-foreground)">
+                Le taux de TVA définitif est calculé après votre inscription en fonction de votre pays de facturation.
+              </p>
+            }
           </div>
         }
 
@@ -53,8 +77,8 @@ interface ApiOk<T> {
             <p>{{ guestAttachError() }}</p>
             <a
               class="inline-block font-medium text-(--primary) underline cursor-pointer"
-              routerLink="/login"
-              [queryParams]="loginReturnQueryParams()"
+              [href]="siteConfig.loginHref"
+              (click)="goToLoginCrossHost($event)"
               >Se connecter avec un autre compte</a
             >
           </div>
@@ -162,6 +186,7 @@ export class PaymentGuestComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly authService = inject(AuthService);
+  protected readonly siteConfig = inject(SiteConfigService);
   private readonly platformId = inject(PLATFORM_ID);
 
   @ViewChild('stripeHost') stripeHost?: ElementRef<HTMLDivElement>;
@@ -182,6 +207,11 @@ export class PaymentGuestComponent implements OnDestroy {
     serviceName: string;
     totalAmount: number;
     currency: string;
+    amountHt: number;
+    vatAmount: number;
+    vatRate: number;
+    reverseCharge: boolean;
+    estimated: boolean;
   } | null>(null);
   readonly loadError = signal<string | null>(null);
   readonly formError = signal<string | null>(null);
@@ -231,9 +261,10 @@ export class PaymentGuestComponent implements OnDestroy {
     return `lmp_guest_resume_${token}`;
   }
 
-  loginReturnQueryParams(): { returnUrl: string } {
-    const path = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
-    return { returnUrl: path };
+  goToLoginCrossHost(event?: MouseEvent): void {
+    event?.preventDefault();
+    const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
+    this.siteConfig.goToLogin(returnUrl);
   }
 
   private resetGuestPaymentState(): void {
@@ -255,7 +286,17 @@ export class PaymentGuestComponent implements OnDestroy {
 
   private fetchPreview(token: string): void {
     this.http
-      .get<ApiOk<{ orderId: string; serviceName: string; totalAmount: number; currency: string }>>(
+      .get<ApiOk<{
+        orderId: string;
+        serviceName: string;
+        totalAmount: number;
+        currency: string;
+        amountHt: number;
+        vatAmount: number;
+        vatRate: number;
+        reverseCharge: boolean;
+        estimated: boolean;
+      }>>(
         paymentApiUrls.guestOrderPreview(token),
         { withCredentials: true },
       )
@@ -316,7 +357,7 @@ export class PaymentGuestComponent implements OnDestroy {
           this.guestAttachPending.set(false);
           if (err.status === 401) {
             const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
-            void this.router.navigate(['/login'], { queryParams: { returnUrl } });
+            this.siteConfig.goToLogin(returnUrl);
             return;
           }
           this.guestAttachError.set(err.error?.message || 'Impossible de préparer le paiement.');
@@ -421,7 +462,7 @@ export class PaymentGuestComponent implements OnDestroy {
           this.preparing.set(false);
           if (err.status === 409) {
             const returnUrl = `/payment/guest?t=${encodeURIComponent(this.checkoutToken)}`;
-            void this.router.navigate(['/login'], { queryParams: { returnUrl } });
+            this.siteConfig.goToLogin(returnUrl);
             return;
           }
           this.formError.set(err.error?.message || 'Erreur lors de l’inscription.');

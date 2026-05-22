@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -30,15 +31,26 @@ import java.util.Optional;
  */
 @Component
 public class PurchaseIntentAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(PurchaseIntentAuthenticationSuccessHandler.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + PurchaseIntentAuthenticationSuccessHandler.class.getName());
 
         private final UserRepository userRepository;
 
+    /** Base URL du site principal — utilisée pour redirects absolus cross-host
+     *  (form login fire sur auth.*, mais le user doit atterrir sur le site principal). */
+    @org.springframework.beans.factory.annotation.Value("${app.base.url:}")
+    private String baseUrl;
+
 
     public PurchaseIntentAuthenticationSuccessHandler(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    /** Préfixe le path avec baseUrl pour cross-host redirect (form login sur auth.* → site sur baseUrl). */
+    private String absoluteUrl(String path) {
+        if (baseUrl == null || baseUrl.isBlank()) return path;
+        return baseUrl + path;
     }
 
     @Override
@@ -81,8 +93,8 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
                                purchaseIntent.getAmount(), purchaseIntent.getCurrency());
                 
                 // Rediriger vers le dashboard avec un paramètre indiquant qu'il faut traiter le paiement
-                String redirectUrl = "/dashboard?processPurchase=true";
-                
+                String redirectUrl = absoluteUrl("/dashboard?processPurchase=true");
+
                 logger.info("Redirecting user {} to {} for purchase processing", userEmail, redirectUrl);
                 response.sendRedirect(redirectUrl);
                 return;
@@ -102,8 +114,20 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
             // Continue avec la redirection normale même en cas d'erreur
         }
         
-        // Redirection normale vers le dashboard
-        String defaultRedirectUrl = "/dashboard";
+        // Vérifier s'il y a une requête sauvegardée (ex: /oauth2/authorize en flow SSO)
+        Object savedRequestObj = request.getSession().getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+        if (savedRequestObj instanceof DefaultSavedRequest savedRequest) {
+            String targetUrl = savedRequest.getRequestURL();
+            if (savedRequest.getQueryString() != null) {
+                targetUrl += "?" + savedRequest.getQueryString();
+            }
+            logger.info("Redirecting user {} to saved request: {}", userEmail, targetUrl);
+            response.sendRedirect(targetUrl);
+            return;
+        }
+
+        // Redirection normale vers le dashboard sur le site principal (cross-host depuis auth.*).
+        String defaultRedirectUrl = absoluteUrl("/dashboard");
         logger.info("Standard authentication redirect for user {} to {}", userEmail, defaultRedirectUrl);
         response.sendRedirect(defaultRedirectUrl);
     }

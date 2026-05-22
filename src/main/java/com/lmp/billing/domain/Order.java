@@ -54,7 +54,11 @@ public class Order {
     
     @Column(name = "service_name", nullable = false)
     private String serviceName;
-    
+
+    /** FK vers ServiceOffer (lien pour dedup, resume, et detection des doublons d'achat). */
+    @Column(name = "service_offer_id")
+    private java.util.UUID serviceOfferId;
+
     @Column(name = "currency", length = 3)
     private String currency = "EUR";
     
@@ -242,6 +246,9 @@ public class Order {
     public void setStatusHistories(Set<OrderStatusHistory> statusHistories) { this.statusHistories = statusHistories; }
     public String getServiceName() { return serviceName; }
     public void setServiceName(String serviceName) { this.serviceName = serviceName; }
+
+    public java.util.UUID getServiceOfferId() { return serviceOfferId; }
+    public void setServiceOfferId(java.util.UUID serviceOfferId) { this.serviceOfferId = serviceOfferId; }
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
     public String getStripePaymentIntentId() { return stripePaymentIntentId; }
@@ -348,13 +355,19 @@ public class Order {
     @Column(name = "installment_count")
     private Integer installmentCount;
 
-    /** Nom du Payment Terms Template external ERP associé (ex: "Paiement en 3x"). */
+    /** Nom du Payment Terms Template externalErp associé (ex: "Paiement en 3x"). */
     @Column(name = "payment_terms_template", length = 140)
     private String paymentTermsTemplate;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @jakarta.persistence.OrderBy("installmentNumber ASC")
     private Set<OrderInstallment> installments;
+
+    // --- Lien vers le devis d'origine ---
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quotation_id")
+    private Quotation quotation;
 
     // --- Champs de liaison système externe (agnostique ERP) ---
 
@@ -380,6 +393,9 @@ public class Order {
     public boolean isInstallmentOrder() {
         return installmentCount != null && installmentCount > 1;
     }
+
+    public Quotation getQuotation() { return quotation; }
+    public void setQuotation(Quotation quotation) { this.quotation = quotation; }
 
     public String getExternalOrderId() { return externalOrderId; }
     public void setExternalOrderId(String externalOrderId) { this.externalOrderId = externalOrderId; }

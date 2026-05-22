@@ -6,16 +6,16 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.lmp.integration.sync.SyncProperties;
 import com.lmp.shared.geo.GetIPIntelService;
 import com.lmp.shared.geo.IPHubService;
 import com.lmp.shared.geo.IpApiComGeoService;
 import com.lmp.shared.geo.IpWhoIsGeoService;
 import com.lmp.shared.vat.ViesVatValidationService;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.stripe.StripeClient;
 import com.stripe.param.BalanceRetrieveParams;
@@ -46,17 +46,11 @@ public class ApiHealthProbeService {
     private final StripeClient stripeClient;
     private final ApiHealthRecorder recorder;
     private final RestTemplate fxProbeTemplate;
-
-    @Value("${mailtrap.api.token:}")
-    private String mailtrapApiToken;
+    private final SyncProperties syncProperties;
 
     /** Frankfurter (même URL que FxRateCacheService). */
     private static final String FX_PROBE_URL =
             "https://api.frankfurter.app/latest?from=EUR&to=USD";
-
-    /** Mailtrap accounts endpoint — lecture seule, gratuit. */
-    private static final String MAILTRAP_ACCOUNTS_URL =
-            "https://mailtrap.io/api/accounts";
 
     public ApiHealthProbeService(IpApiComGeoService ipApiComGeoService,
                                   IpWhoIsGeoService ipWhoIsGeoService,
@@ -64,7 +58,8 @@ public class ApiHealthProbeService {
                                   IPHubService ipHubService,
                                   ViesVatValidationService viesService,
                                   StripeClient stripeClient,
-                                  ApiHealthRecorder recorder) {
+                                  ApiHealthRecorder recorder,
+                                  SyncProperties syncProperties) {
         this.ipApiComGeoService = ipApiComGeoService;
         this.ipWhoIsGeoService = ipWhoIsGeoService;
         this.getIPIntelService = getIPIntelService;
@@ -72,6 +67,7 @@ public class ApiHealthProbeService {
         this.viesService = viesService;
         this.stripeClient = stripeClient;
         this.recorder = recorder;
+        this.syncProperties = syncProperties;
         this.fxProbeTemplate = new RestTemplateBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .readTimeout(Duration.ofSeconds(5))
@@ -109,11 +105,14 @@ public class ApiHealthProbeService {
         // FX Rates — probe direct car le cache ne re-fetch pas à chaque appel
         results.put("FX Rates", probeFxRates());
 
-        // Mailtrap — probe via GET /api/accounts (lecture seule)
-        results.put("Mailtrap", probeMailtrap());
+        // Mailtrap probe retiré : staging utilise Mailpit (lmp-mailhog:1025) en
+        // catch-all SMTP. Plus de dépendance Mailtrap → plus de probe à faire.
 
         // Stripe — balance.retrieve() est gratuit et en lecture seule
         results.put("Stripe", probeStripe());
+
+        // Sentry — heartbeat léger via le SDK
+        results.put("Sentry", probeSentry());
 
         logger.info("[API-PROBE] Probe terminé : {}", results);
         return results;
@@ -155,34 +154,6 @@ public class ApiHealthProbeService {
         }
     }
 
-    /**
-     * Probe Mailtrap via GET /api/accounts — lecture seule, gratuit.
-     * Vérifie la connectivité réseau + validité du token API.
-     */
-    private String probeMailtrap() {
-        if (mailtrapApiToken == null || mailtrapApiToken.isBlank()) {
-            recorder.record("Mailtrap", 0, false, "Token API non configuré");
-            return "Token API non configuré";
-        }
-        long t0 = System.currentTimeMillis();
-        try {
-            var headers = new org.springframework.http.HttpHeaders();
-            headers.set("Api-Token", mailtrapApiToken);
-            headers.set("Accept", "application/json");
-            var entity = new org.springframework.http.HttpEntity<>(null, headers);
-            fxProbeTemplate.exchange(MAILTRAP_ACCOUNTS_URL,
-                    org.springframework.http.HttpMethod.GET, entity, String.class);
-            long latency = System.currentTimeMillis() - t0;
-            recorder.record("Mailtrap", latency, true, null);
-            return "ok";
-        } catch (Exception e) {
-            long latency = System.currentTimeMillis() - t0;
-            recorder.record("Mailtrap", latency, false, e.getMessage());
-            logger.warn("[API-PROBE] Mailtrap failed: {}", e.getMessage());
-            return e.getMessage();
-        }
-    }
-
     private String probeFxRates() {
         long t0 = System.currentTimeMillis();
         try {
@@ -196,6 +167,32 @@ public class ApiHealthProbeService {
             return "empty response";
         } catch (Exception e) {
             recorder.record("FX Rates", System.currentTimeMillis() - t0, false, e.getMessage());
+            return e.getMessage();
+        }
+    }
+
+    private String probeSentry() {
+        String dsn = syncProperties.getAlert().getSentryDsn();
+        if (dsn == null || dsn.isBlank()) {
+            recorder.record("Sentry", 0, false, "DSN non configuré");
+            return "DSN non configuré";
+        }
+        long t0 = System.currentTimeMillis();
+        try {
+            io.sentry.SentryEvent event = new io.sentry.SentryEvent();
+            event.setLevel(io.sentry.SentryLevel.INFO);
+            io.sentry.protocol.Message message = new io.sentry.protocol.Message();
+            message.setFormatted("[PROBE] Sentry connectivity test");
+            event.setMessage(message);
+            event.setTag("probe", "true");
+            io.sentry.Sentry.captureEvent(event);
+            long latency = System.currentTimeMillis() - t0;
+            recorder.record("Sentry", latency, true, null);
+            return "ok";
+        } catch (Exception e) {
+            long latency = System.currentTimeMillis() - t0;
+            recorder.record("Sentry", latency, false, e.getMessage());
+            logger.warn("[API-PROBE] Sentry failed: {}", e.getMessage());
             return e.getMessage();
         }
     }

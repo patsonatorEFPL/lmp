@@ -74,12 +74,27 @@ public class AppointmentRequest {
      */
     public AppointmentForm toAppointmentForm() {
         AppointmentForm form = new AppointmentForm();
-        form.setSubject(service); // Juste le service, le nom est dans l'utilisateur
+        form.setSubject(resolveServiceLabel(service));
         form.setDescription(message);
         form.setAppointmentDate(getAppointmentDateTime());
         form.setDurationMinutes(60); // Défaut 60 minutes
         form.setPriority(5); // Priorité normale
         return form;
+    }
+
+    private static String resolveServiceLabel(String slug) {
+        if (slug == null) return "Consultation";
+        return switch (slug) {
+            case "consultation" -> "Consultation générale";
+            case "web"         -> "Développement Web";
+            case "seo"         -> "Référencement SEO";
+            case "formation"   -> "Formation";
+            case "audit"       -> "Audit technique";
+            case "marketing"   -> "Marketing Digital";
+            case "security"    -> "Sécurité Web";
+            case "other"       -> "Autre";
+            default            -> slug;
+        };
     }
 
     // Getters et Setters
