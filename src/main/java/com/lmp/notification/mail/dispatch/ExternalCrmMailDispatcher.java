@@ -4,7 +4,6 @@ import com.lmp.integration.sync.ExternalResponse;
 import com.lmp.integration.sync.ExternalSystemClient;
 import com.lmp.notification.mail.queue.EmailQueueEvent;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,14 +39,14 @@ public class ExternalCrmMailDispatcher implements MailDispatcher {
 
         Map<String, Object> args = new HashMap<>();
 
-        List<String> recipients = new ArrayList<>();
-        recipients.add(event.getRecipient());
-        args.put("recipients", recipients);
+        // Frappe rejects array shape via REST (validates stringified array as single email).
+        // Pass comma-separated strings instead.
+        args.put("recipients", event.getRecipient());
 
         List<String> ccList = event.getCcList();
-        if (!ccList.isEmpty()) args.put("cc", ccList);
+        if (!ccList.isEmpty()) args.put("cc", String.join(", ", ccList));
         List<String> bccList = event.getBccList();
-        if (!bccList.isEmpty()) args.put("bcc", bccList);
+        if (!bccList.isEmpty()) args.put("bcc", String.join(", ", bccList));
 
         args.put("subject", event.getSubject());
 
