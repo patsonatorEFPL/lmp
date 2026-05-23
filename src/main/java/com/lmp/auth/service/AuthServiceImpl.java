@@ -144,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setEmail(registerDto.getEmail());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
-        user.setFirstName(registerDto.getFirstName());
+        user.setFirstName(deriveFirstName(registerDto.getFirstName(), registerDto.getEmail()));
         user.setLastName(registerDto.getLastName());
         user.setPhone(registerDto.getPhone());
         user.setAddress(registerDto.getAddress());
@@ -492,5 +492,23 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             logger.warn("Erreur lors de l'invalidation des sessions pour {} : {}", username, e.getMessage());
         }
+    }
+
+    /**
+     * Fallback firstName : if the form omits it (legacy guest checkout, programmatic register),
+     * derive a friendly capitalized token from the email local-part so the welcome mail does
+     * not greet the user with "Utilisateur".
+     */
+    private static String deriveFirstName(String provided, String email) {
+        if (provided != null && !provided.isBlank()) {
+            return provided.trim();
+        }
+        if (email == null || email.isBlank() || !email.contains("@")) {
+            return "";
+        }
+        String local = email.substring(0, email.indexOf('@'));
+        String token = local.split("[._+-]")[0];
+        if (token.isEmpty()) return "";
+        return Character.toUpperCase(token.charAt(0)) + token.substring(1).toLowerCase(java.util.Locale.ROOT);
     }
 }

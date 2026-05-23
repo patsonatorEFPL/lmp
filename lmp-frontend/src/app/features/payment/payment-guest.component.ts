@@ -86,6 +86,30 @@ interface ApiOk<T> {
 
         @if (preview() && !payReady() && !authService.isAuthenticated()) {
           <form class="mt-8 space-y-4" (ngSubmit)="onRegisterAndPrepare()">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Prénom *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="reg.firstName"
+                  name="firstName"
+                  required
+                  autocomplete="given-name"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Nom *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="reg.lastName"
+                  name="lastName"
+                  required
+                  autocomplete="family-name"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Email *</label>
               <input
@@ -227,6 +251,8 @@ export class PaymentGuestComponent implements OnDestroy {
   vatNumber = '';
 
   reg = {
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -401,6 +427,10 @@ export class PaymentGuestComponent implements OnDestroy {
 
   onRegisterAndPrepare(): void {
     this.formError.set(null);
+    if (!this.reg.firstName.trim() || !this.reg.lastName.trim()) {
+      this.formError.set('Indiquez votre prénom et votre nom.');
+      return;
+    }
     if (this.reg.password !== this.reg.confirmPassword) {
       this.formError.set('Les mots de passe ne correspondent pas.');
       return;
@@ -420,6 +450,8 @@ export class PaymentGuestComponent implements OnDestroy {
       vatReverseCharge: this.vatReverseCharge,
       vatNumber: this.vatNumber.trim(),
       registration: {
+        firstName: this.reg.firstName.trim(),
+        lastName: this.reg.lastName.trim(),
         email: this.reg.email.trim(),
         password: this.reg.password,
         confirmPassword: this.reg.confirmPassword,
