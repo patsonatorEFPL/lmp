@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"/><title th:text="${subject}">LMP</title></head>
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:Inter,'Segoe UI',Roboto,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:32px 32px 16px 32px;color:#1f2937;font-size:14px;line-height:1.6;white-space:pre-wrap;" th:text="${bodyText}">Body</td>
+        </tr>
+        <tr>
+            <td>
+                <div th:replace="~{emails/common-footer :: email-footer}"></div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

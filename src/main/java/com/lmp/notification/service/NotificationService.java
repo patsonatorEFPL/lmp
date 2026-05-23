@@ -114,14 +114,10 @@ public class NotificationService {
 
     public void sendAdminAlert(String adminEmail, String subject, String plainTextBody) {
         try {
-            String htmlContent = "<html><body>"
-                    + "<h2>" + escapeHtml(subject) + "</h2>"
-                    + "<pre style='font-family:monospace;background:#f5f5f5;padding:12px;border-radius:4px;'>"
-                    + escapeHtml(plainTextBody)
-                    + "</pre>"
-                    + "<hr/><p style='font-size:11px;color:#666;'>Alerte automatique LMP — "
-                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                    + "</p></body></html>";
+            String alertBody = "[ALERTE] " + subject + "\n\n" + plainTextBody
+                    + "\n\n— Alerte automatique LMP "
+                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            String htmlContent = renderPlainWithFooter("[ALERTE LMP] " + subject, alertBody);
 
             mailQueueService.enqueue(
                     mailAddressConfig.getNoreply(),
@@ -195,16 +191,6 @@ public class NotificationService {
         return context;
     }
 
-    private static String escapeHtml(String text) {
-        if (text == null) return "";
-        return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-
     private String getCustomerName(Order order) {
         if (order.getUser() != null) {
             String firstName = order.getUser().getFirstName();
@@ -244,6 +230,7 @@ public class NotificationService {
 
     /** Test path — enqueues a plain email to verify the queue + active dispatcher are wired. */
     public void sendTestEmail(String toEmail) {
+        String subject = "Test Email — " + COMPANY_NAME;
         String content = "Email de test enqueued le "
                 + LocalDateTime.now().format(DATE_FORMAT)
                 + ". Si vous recevez cet email, la queue et le dispatcher actif fonctionnent.";
@@ -251,9 +238,19 @@ public class NotificationService {
                 mailAddressConfig.getNoreply(),
                 mailAddressConfig.getName(),
                 toEmail,
-                "Test Email — " + COMPANY_NAME,
-                "<html><body><p>" + escapeHtml(content) + "</p></body></html>");
+                subject,
+                renderPlainWithFooter(subject, content));
         logger.info("Test email enqueued à {}", toEmail);
+    }
+
+    private String renderPlainWithFooter(String subject, String bodyText) {
+        Context ctx = new Context();
+        ctx.setVariable("subject", subject);
+        ctx.setVariable("bodyText", bodyText);
+        ctx.setVariable("companyName", COMPANY_NAME);
+        ctx.setVariable("companyEmail", mailAddressConfig.getSupport());
+        ctx.setVariable("companyWebsite", frontendUrl);
+        return templateEngine.process("emails/plain-with-footer", ctx);
     }
 
     /** Test path — bienvenue template via queue. */

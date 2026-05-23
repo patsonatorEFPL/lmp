@@ -59,6 +59,14 @@ public class EmailService {
      * Persisté dans {@code email_queue}, envoyé asynchrone par {@code MailQueueProcessor}.
      */
     public void sendSimpleEmail(String to, String subject, String text) {
+        Context context = new Context();
+        context.setVariable("subject", subject);
+        context.setVariable("bodyText", text);
+        context.setVariable("companyName", appName);
+        context.setVariable("companyEmail", mailAddressConfig.getSupport());
+        context.setVariable("companyWebsite", frontendUrl);
+        String htmlContent = templateEngine.process("emails/plain-with-footer", context);
+
         mailQueueService.enqueue(EmailQueueRequest.builder()
                 .sender(mailAddressConfig.getNoreply())
                 .senderName(mailAddressConfig.getName())
@@ -66,6 +74,7 @@ public class EmailService {
                 .recipient(to)
                 .subject(subject)
                 .bodyText(text)
+                .bodyHtml(htmlContent)
                 .priority(MailQueueService.PRIORITY_NORMAL)
                 .build());
         logger.info("📥 Email simple enqueued to={} (Reply-To: noreply)", to);
