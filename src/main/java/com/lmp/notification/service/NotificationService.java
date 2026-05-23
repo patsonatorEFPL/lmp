@@ -114,10 +114,12 @@ public class NotificationService {
 
     public void sendAdminAlert(String adminEmail, String subject, String plainTextBody) {
         try {
-            String alertBody = "[ALERTE] " + subject + "\n\n" + plainTextBody
-                    + "\n\n— Alerte automatique LMP "
-                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            String htmlContent = renderPlainWithFooter("[ALERTE LMP] " + subject, alertBody);
+            String htmlContent = "<html><body><h2>" + subject + "</h2>"
+                    + "<pre style='font-family:monospace;background:#f5f5f5;padding:12px;border-radius:4px;white-space:pre-wrap;'>"
+                    + plainTextBody.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    + "</pre><p style='font-size:11px;color:#666;'>"
+                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                    + "</p></body></html>";
 
             mailQueueService.enqueue(
                     mailAddressConfig.getNoreply(),
@@ -239,18 +241,8 @@ public class NotificationService {
                 mailAddressConfig.getName(),
                 toEmail,
                 subject,
-                renderPlainWithFooter(subject, content));
+                "<html><body><p>" + content + "</p></body></html>");
         logger.info("Test email enqueued à {}", toEmail);
-    }
-
-    private String renderPlainWithFooter(String subject, String bodyText) {
-        Context ctx = new Context();
-        ctx.setVariable("subject", subject);
-        ctx.setVariable("bodyText", bodyText);
-        ctx.setVariable("companyName", COMPANY_NAME);
-        ctx.setVariable("companyEmail", mailAddressConfig.getSupport());
-        ctx.setVariable("companyWebsite", frontendUrl);
-        return templateEngine.process("emails/plain-with-footer", ctx);
     }
 
     /** Test path — bienvenue template via queue. */
