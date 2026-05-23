@@ -9,7 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.Status;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
+import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,11 +28,22 @@ class ErpEmailHealthIndicatorTest {
     @Mock
     private ExternalSystemClient externalClient;
 
+    @Mock
+    private StringRedisTemplate redis;
+
+    @Mock
+    @SuppressWarnings("rawtypes")
+    private ValueOperations valueOps;
+
     private ErpEmailHealthIndicator indicator;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
-        indicator = new ErpEmailHealthIndicator(externalClient);
+        // Default : Redis empty so the indicator falls through to performCheck().
+        when(redis.opsForValue()).thenReturn(valueOps);
+        when(valueOps.get(any(String.class))).thenReturn(null);
+        indicator = new ErpEmailHealthIndicator(externalClient, redis);
     }
 
     @Test
@@ -77,15 +91,24 @@ class ErpEmailHealthIndicatorTest {
     }
 
     @Test
-    void cachesResultBetweenCallsWithinTtl() {
+    void usesCachedValueOnSecondCall() {
         when(externalClient.callMethod(eq("frappe.ping"), any(Map.class)))
                 .thenReturn(ExternalResponse.success(null, Map.of("message", "pong")));
 
+        // First call : cache miss → triggers performCheck + writeCache.
         Health first = indicator.health();
-        Health second = indicator.health();
-
         assertThat(first.getStatus()).isEqualTo(Status.UP);
+
+        // Simulate Redis SETEX persistence : next get() returns the JSON the indicator
+        // would have written.
+        String cachedJson = "{\"status\":\"UP\",\"latencyMs\":1,\"message\":\"ERPNext email relay reachable\",\"error\":null}";
+        when(valueOps.get(any(String.class))).thenReturn(cachedJson);
+
+        Health second = indicator.health();
         assertThat(second.getStatus()).isEqualTo(Status.UP);
+
+        // External client called exactly once across the two health() calls.
         verify(externalClient, times(1)).callMethod(eq("frappe.ping"), any(Map.class));
+        verify(valueOps).set(any(String.class), any(String.class), eq(Duration.ofSeconds(30)));
     }
 }

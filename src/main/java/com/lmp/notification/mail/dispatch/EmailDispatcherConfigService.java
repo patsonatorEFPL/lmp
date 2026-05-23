@@ -6,23 +6,31 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Runtime configuration of the active email dispatcher strategy.
+ * Stateless runtime configuration of the active email dispatcher strategy.
  *
- * <p>Persisted in {@code site_config_entry} under key {@value #DB_KEY} so the
- * admin choice survives pod restarts. In-memory {@link AtomicReference} caches
- * the value to avoid a DB hit on every send. Single-replica today; multi-replica
- * needs a sync event (cf [[project_email_dispatch_stateless_debt]]).</p>
+ * <ul>
+ *   <li><b>Source of truth</b> : {@code site_config} row {@value #DB_KEY}. Survives
+ *       restart. Read on boot, refreshed on broadcast.</li>
+ *   <li><b>Per-pod hot path</b> : {@link AtomicReference} cache so {@link #getActiveStrategy()}
+ *       stays lock-free on the email-send path.</li>
+ *   <li><b>Cross-pod sync</b> : Redis pub/sub channel {@value #CHANNEL}. Any pod
+ *       updating the value publishes the new value; all pods (including the
+ *       publisher, loopback) refresh their cache → eventual consistency in ms.</li>
+ * </ul>
  */
 @Service
 public class EmailDispatcherConfigService {
@@ -32,37 +40,41 @@ public class EmailDispatcherConfigService {
     public static final String STRATEGY_SMTP = "smtp";
     public static final String STRATEGY_ERPNEXT = "erpnext";
     public static final String DB_KEY = "lmp.mail.dispatcher";
+    public static final String CHANNEL = "lmp:dispatcher:changed";
+
     private static final String LEGACY_ALIAS = "external-crm";
     private static final Set<String> KNOWN = Set.of(STRATEGY_SMTP, STRATEGY_ERPNEXT);
 
     private final SiteConfigRepository repository;
+    private final StringRedisTemplate redis;
+    private final RedisMessageListenerContainer listenerContainer;
     private final AtomicReference<String> activeStrategy = new AtomicReference<>();
 
     @Value("${lmp.mail.dispatcher:smtp}")
     private String envDefaultStrategy;
 
-    public EmailDispatcherConfigService(SiteConfigRepository repository) {
+    public EmailDispatcherConfigService(SiteConfigRepository repository,
+                                        StringRedisTemplate redis,
+                                        RedisMessageListenerContainer listenerContainer) {
         this.repository = repository;
+        this.redis = redis;
+        this.listenerContainer = listenerContainer;
     }
 
     @PostConstruct
     void init() {
-        String dbValue = repository.findByKey(DB_KEY)
-                .map(SiteConfigEntry::getValue)
-                .filter(v -> v != null && !v.isBlank())
-                .orElse(null);
-
-        String initial = dbValue != null ? dbValue : envDefaultStrategy;
-        String normalized;
-        try {
-            normalized = normalize(initial);
-        } catch (IllegalArgumentException e) {
-            log.warn("Stored dispatcher value '{}' invalid — falling back to '{}'", initial, STRATEGY_SMTP);
-            normalized = STRATEGY_SMTP;
-        }
-        activeStrategy.set(normalized);
-        log.info("📧 [DISPATCHER] Strategy loaded from {} : {}",
-                dbValue != null ? "DB" : "env", normalized);
+        loadFromSource();
+        MessageListener listener = (message, pattern) -> {
+            String payload = new String(message.getBody());
+            try {
+                activeStrategy.set(normalize(payload));
+                log.info("📧 [DISPATCHER] Cache refreshed from pub/sub : {}", payload);
+            } catch (IllegalArgumentException e) {
+                log.warn("📧 [DISPATCHER] Ignored invalid pub/sub payload '{}'", payload);
+            }
+        };
+        listenerContainer.addMessageListener(listener, new ChannelTopic(CHANNEL));
+        log.info("📧 [DISPATCHER] Subscribed to {} for cross-pod sync", CHANNEL);
     }
 
     public String getActiveStrategy() {
@@ -80,25 +92,33 @@ public class EmailDispatcherConfigService {
         entry.setValue(normalized);
         repository.save(entry);
 
+        // Local cache + broadcast so other replicas refresh.
         activeStrategy.set(normalized);
+        redis.convertAndSend(CHANNEL, normalized);
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String actor = auth != null ? auth.getName() : "anonymous";
-        log.info("📧 [DISPATCHER] Strategy switched {} -> {} by user={} (persisted)",
+        log.info("📧 [DISPATCHER] Strategy switched {} -> {} by user={} (persisted + broadcast)",
                 previous, normalized, actor);
     }
 
-    /** Test seam : reload from DB without restart (e.g. external mutation). */
-    public void reloadFromDb() {
-        Optional<String> dbValue = repository.findByKey(DB_KEY)
+    private void loadFromSource() {
+        String dbValue = repository.findByKey(DB_KEY)
                 .map(SiteConfigEntry::getValue)
-                .filter(v -> v != null && !v.isBlank());
-        if (dbValue.isPresent()) {
-            try {
-                activeStrategy.set(normalize(dbValue.get()));
-            } catch (IllegalArgumentException ignored) {
-                // keep current value
-            }
+                .filter(v -> v != null && !v.isBlank())
+                .orElse(null);
+
+        String initial = dbValue != null ? dbValue : envDefaultStrategy;
+        String normalized;
+        try {
+            normalized = normalize(initial);
+        } catch (IllegalArgumentException e) {
+            log.warn("Stored dispatcher value '{}' invalid — falling back to '{}'", initial, STRATEGY_SMTP);
+            normalized = STRATEGY_SMTP;
         }
+        activeStrategy.set(normalized);
+        log.info("📧 [DISPATCHER] Strategy loaded from {} : {}",
+                dbValue != null ? "DB" : "env", normalized);
     }
 
     private String normalize(String strategy) {
