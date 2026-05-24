@@ -799,9 +799,11 @@ export class CheckoutComponent implements OnDestroy {
         return;
       }
 
-      // Wait one microtask so @if-guarded host elements are present after the latest CD.
-      await Promise.resolve();
-      if (!this.addressHost?.nativeElement || !this.stripeHost?.nativeElement) {
+      // Wait up to ~500ms for the @if-guarded host elements to render after the latest CD.
+      // Pure Promise.resolve() (microtask) is not enough on Angular component re-init
+      // because the preview signal may emit BEFORE the template branch reactivates the
+      // ViewChild reference.
+      if (!(await this.waitForStripeHosts())) {
         this.stripeError.set('Erreur d\'initialisation du paiement (DOM non prêt).');
         this.stripeLoading.set(false);
         return;
@@ -893,9 +895,9 @@ export class CheckoutComponent implements OnDestroy {
         return;
       }
 
-      // Wait one microtask so @if-guarded host elements are present.
-      await Promise.resolve();
-      if (!this.addressHost?.nativeElement || !this.stripeHost?.nativeElement) {
+      // See waitForStripeHosts() — handles component re-init races where the host
+      // divs are remounted after the latest CD pass.
+      if (!(await this.waitForStripeHosts())) {
         this.stripeError.set('Erreur d\'initialisation du paiement (DOM non prêt).');
         this.stripeLoading.set(false);
         return;
@@ -1489,5 +1491,23 @@ export class CheckoutComponent implements OnDestroy {
     if (this.beforeUnloadHandler) window.removeEventListener('beforeunload', this.beforeUnloadHandler);
     this.disposeStripeState();
     this.stripe = null;
+  }
+
+  /**
+   * Poll until the @ViewChild host elements are mounted in the DOM. Returns true if
+   * both became available within {@code maxWaitMs}, false on timeout. Required on
+   * component re-instantiation (back-and-forth between two /checkout routes) where
+   * the preview signal emits BEFORE Angular re-projects the template branch carrying
+   * the host divs — Promise.resolve() alone is insufficient.
+   */
+  private async waitForStripeHosts(maxWaitMs = 500, stepMs = 25): Promise<boolean> {
+    const deadline = Date.now() + maxWaitMs;
+    while (Date.now() < deadline) {
+      if (this.addressHost?.nativeElement && this.stripeHost?.nativeElement) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, stepMs));
+    }
+    return !!(this.addressHost?.nativeElement && this.stripeHost?.nativeElement);
   }
 }
