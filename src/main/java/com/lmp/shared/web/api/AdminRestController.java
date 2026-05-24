@@ -1042,14 +1042,23 @@ public class AdminRestController {
 
     @PutMapping("/users/{id}/soft-delete")
     @Transactional
-    @Operation(summary = "Soft delete", description = "Désactive un utilisateur (DELETED status)")
+    @Operation(summary = "Soft delete", description = "Désactive un utilisateur (DELETED status) et invalide ses sessions actives")
     public ResponseEntity<ApiResponse<Void>> softDeleteUser(@PathVariable UUID id) {
         try {
             User user = userService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             user.setStatus(UserStatus.DELETED);
             userService.save(user);
-            return ResponseEntity.ok(ApiResponse.ok("Utilisateur désactivé (soft delete)", null));
+
+            // SECURITY (auth audit related) : sans cet appel, un user fraîchement
+            // soft-delete par l'admin conservait ses sessions actives et pouvait
+            // continuer à naviguer / faire des appels API jusqu'à expiration TTL.
+            // Le principal Spring Security suit la même résolution que
+            // CustomUserDetailsService (username || email).
+            String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
+            int expired = authService.invalidateUserSessions(principal);
+            return ResponseEntity.ok(ApiResponse.ok(
+                    "Utilisateur désactivé (soft delete) — " + expired + " session(s) invalidée(s)", null));
         } catch (Exception e) {
             if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

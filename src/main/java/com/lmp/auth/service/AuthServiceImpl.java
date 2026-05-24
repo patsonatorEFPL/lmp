@@ -487,8 +487,13 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Invalide toutes les sessions d'un utilisateur via le SessionRegistry.
+     * Méthode promue à l'interface (M-related fix) pour pouvoir l'appeler depuis
+     * AdminRestController.softDeleteUser et autres call sites qui ont besoin de
+     * forcer la déconnexion immédiate.
      */
-    private void invalidateUserSessions(String username) {
+    @Override
+    public int invalidateUserSessions(String username) {
+        int expired = 0;
         try {
             List<Object> principals = sessionRegistry.getAllPrincipals();
             for (Object principal : principals) {
@@ -497,6 +502,7 @@ public class AuthServiceImpl implements AuthService {
                         List<SessionInformation> sessions = sessionRegistry.getAllSessions(principal, false);
                         for (SessionInformation session : sessions) {
                             session.expireNow();
+                            expired++;
                             logger.debug("Session invalidée pour {} : {}", username, session.getSessionId());
                         }
                     }
@@ -505,6 +511,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             logger.warn("Erreur lors de l'invalidation des sessions pour {} : {}", username, e.getMessage());
         }
+        return expired;
     }
 
     /**
