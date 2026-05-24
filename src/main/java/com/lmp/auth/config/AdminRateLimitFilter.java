@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,17 @@ public class AdminRateLimitFilter extends OncePerRequestFilter {
 
     private final StringRedisTemplate redis;
 
+    /**
+     * SECURITY (M6) : comportement quand Redis est down.
+     * {@code false} (default) = fail-open historique (laisse passer, log warn).
+     * {@code true} = fail-closed (503), à activer en prod après vérification
+     * que la dispo Redis (≥99.9%) ne génère pas de blackouts admin.
+     * Override via env {@code LMP_RATE_LIMIT_FAIL_CLOSED} (mapping
+     * Spring : {@code lmp.rate-limit.fail-closed}).
+     */
+    @Value("${lmp.rate-limit.fail-closed:false}")
+    private boolean failClosedOnRedisDown;
+
     public AdminRateLimitFilter(StringRedisTemplate redis) {
         this.redis = redis;
     }
@@ -65,9 +77,18 @@ public class AdminRateLimitFilter extends OncePerRequestFilter {
                 redis.expire(key, WINDOW);
             }
         } catch (RuntimeException e) {
-            // Redis down → fail-open (laisse passer) plutôt que bloquer tout l'admin.
-            // Trade-off conscient : sécurité vs disponibilité. Cloudflare WAF ou
-            // alertes Prometheus doivent compenser si Redis flappe.
+            // SECURITY (M6) : Redis down — comportement configurable.
+            // Default = fail-open (compat historique, évite blackout admin si Redis flappe).
+            // Prod recommandée = fail-closed via LMP_RATE_LIMIT_FAIL_CLOSED=true
+            // pour empêcher attaquant de désactiver le rate-limit en down-ant Redis.
+            if (failClosedOnRedisDown) {
+                log.error("[RATE-LIMIT] Redis indisponible — fail-CLOSED (503): {}", e.getMessage());
+                response.setStatus(503);
+                response.setContentType("application/json");
+                response.setHeader("Retry-After", "30");
+                response.getWriter().write("{\"error\":\"SERVICE_UNAVAILABLE\",\"message\":\"Rate-limit backend indisponible. Retry après 30s.\",\"status\":503}");
+                return;
+            }
             log.warn("[RATE-LIMIT] Redis indisponible — fail-open: {}", e.getMessage());
             filterChain.doFilter(request, response);
             return;

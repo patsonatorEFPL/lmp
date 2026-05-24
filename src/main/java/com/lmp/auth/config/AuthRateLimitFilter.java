@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -55,6 +56,14 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 
     private final StringRedisTemplate redis;
 
+    /**
+     * SECURITY (M6) : comportement si Redis down.
+     * Même flag que AdminRateLimitFilter ({@code lmp.rate-limit.fail-closed}).
+     * Default false = fail-open. Prod recommandée = true.
+     */
+    @Value("${lmp.rate-limit.fail-closed:false}")
+    private boolean failClosedOnRedisDown;
+
     public AuthRateLimitFilter(StringRedisTemplate redis) {
         this.redis = redis;
     }
@@ -85,6 +94,18 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
                 redis.expire(key, policy.window());
             }
         } catch (RuntimeException e) {
+            // SECURITY (M6) : Redis down — comportement configurable.
+            // Fail-closed protège contre brute-force quand attaquant down-e Redis,
+            // au prix de bloquer le login légitime. Fail-open inverse le trade-off.
+            if (failClosedOnRedisDown) {
+                log.error("[AUTH-RATE-LIMIT] Redis indisponible — fail-CLOSED (503): {}", e.getMessage());
+                response.setStatus(503);
+                response.setContentType("application/json");
+                response.setHeader("Retry-After", "30");
+                response.getWriter().write(
+                        "{\"success\":false,\"message\":\"Service d'authentification temporairement indisponible. Réessayez dans quelques instants.\"}");
+                return;
+            }
             log.warn("[AUTH-RATE-LIMIT] Redis indisponible — fail-open: {}", e.getMessage());
             chain.doFilter(request, response);
             return;
