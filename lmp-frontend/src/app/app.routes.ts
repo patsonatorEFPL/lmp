@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './features/home/home.component';
 import { PublicLayoutComponent } from './shared/layout/public-layout.component';
-import { authGuard, adminGuard } from './core/guards';
+import { authGuard, adminGuard, guestGuard } from './core/guards';
 
 export const routes: Routes = [
   // Public pages with navbar + footer
@@ -84,14 +84,19 @@ export const routes: Routes = [
     ],
   },
 
-  // Auth pages (no navbar/footer)
+  // Auth pages (no navbar/footer). guestGuard redirige les users déjà connectés
+  // vers /admin ou /dashboard pour éviter d'exposer le formulaire à un user authentifié.
+  // reset-password + accept-invitation restent sans guard : leur token est valide même
+  // pour un user déjà connecté (ex : admin reset son propre mdp).
   {
     path: 'login',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'register',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/auth/register.component').then(
         (m) => m.RegisterComponent,
@@ -99,6 +104,7 @@ export const routes: Routes = [
   },
   {
     path: 'forgot-password',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/auth/forgot-password.component').then(
         (m) => m.ForgotPasswordComponent,

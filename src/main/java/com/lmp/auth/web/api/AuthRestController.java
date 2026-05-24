@@ -237,7 +237,8 @@ public class AuthRestController {
 
     @GetMapping("/me")
     @Operation(summary = "Utilisateur courant", description = "Retourne les données de l'utilisateur authentifié")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication,
+                                                                    HttpServletRequest request) {
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -246,8 +247,15 @@ public class AuthRestController {
 
         return userService.findByLogin(authentication.getName())
                 .map(user -> ResponseEntity.ok(ApiResponse.ok(UserResponse.from(user))))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("User not found")));
+                .orElseGet(() -> {
+                    // User authenticated but row missing (hard-deleted) — purge session + 401
+                    // so the SPA logs out cleanly on the next /me poll.
+                    SecurityContextHolder.clearContext();
+                    HttpSession s = request.getSession(false);
+                    if (s != null) s.invalidate();
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(ApiResponse.error("Session invalid — user no longer exists"));
+                });
     }
 
     @PostMapping("/logout")
