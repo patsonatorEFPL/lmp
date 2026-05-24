@@ -33,6 +33,7 @@ import com.lmp.shared.dto.admin.RevenueSeriesDto;
 import com.lmp.shared.dto.admin.TopServiceDto;
 import com.lmp.shared.dto.admin.HealthServiceDto;
 import com.lmp.shared.pricing.VatCalculationService;
+import com.lmp.shared.service.SseEmitterManager;
 
 import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
@@ -113,6 +114,7 @@ public class AdminRestController {
      * depuis context anonymous sans déclencher AuthorizationDeniedException via AOP.
      */
     private final StatsCacheHolder statsCacheHolder;
+    private final SseEmitterManager sseEmitterManager;
 
     public AdminRestController(UserService userService,
                                UserRepository userRepository,
@@ -129,7 +131,8 @@ public class AdminRestController {
                                VatCalculationService vatCalculationService,
                                JdbcTemplate jdbcTemplate,
                                SyncProperties syncProperties,
-                               StatsCacheHolder statsCacheHolder) {
+                               StatsCacheHolder statsCacheHolder,
+                               SseEmitterManager sseEmitterManager) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.authService = authService;
@@ -146,6 +149,7 @@ public class AdminRestController {
         this.jdbcTemplate = jdbcTemplate;
         this.syncProperties = syncProperties;
         this.statsCacheHolder = statsCacheHolder;
+        this.sseEmitterManager = sseEmitterManager;
     }
 
     @GetMapping("/stats")
@@ -1057,8 +1061,15 @@ public class AdminRestController {
             // CustomUserDetailsService (username || email).
             String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
             int expired = authService.invalidateUserSessions(principal);
+
+            // SECURITY (related) : fermer aussi les SSE streams en cours pour ce
+            // user. Sans ça, EventSource continue de recevoir notifications
+            // jusqu'au prochain heartbeat (15s) → fenêtre de fuite d'events.
+            int sseClosed = sseEmitterManager.closeUserEmitters(user.getId().toString());
+
             return ResponseEntity.ok(ApiResponse.ok(
-                    "Utilisateur désactivé (soft delete) — " + expired + " session(s) invalidée(s)", null));
+                    "Utilisateur désactivé (soft delete) — " + expired + " session(s) + "
+                            + sseClosed + " stream(s) SSE fermé(s)", null));
         } catch (Exception e) {
             if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
