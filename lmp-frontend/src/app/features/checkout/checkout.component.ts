@@ -785,10 +785,24 @@ export class CheckoutComponent implements OnDestroy {
     currency: string,
   ): Promise<void> {
     this.stripeLoading.set(true);
+    this.stripeError.set(null);
+    // Reset any prior Stripe Elements left over from a previous attempt within the
+    // same component instance (Retour → click another service, or VAT toggle race).
+    // Without this, elements.create('payment', ...) throws because the previous
+    // payment element is still bound to the (now-stale) elements instance.
+    this.disposeStripeState();
     try {
       this.stripe = await loadStripe(publishableKey);
       if (!this.stripe) {
         this.stripeError.set('Impossible de charger Stripe.');
+        this.stripeLoading.set(false);
+        return;
+      }
+
+      // Wait one microtask so @if-guarded host elements are present after the latest CD.
+      await Promise.resolve();
+      if (!this.addressHost?.nativeElement || !this.stripeHost?.nativeElement) {
+        this.stripeError.set('Erreur d\'initialisation du paiement (DOM non prêt).');
         this.stripeLoading.set(false);
         return;
       }
@@ -836,10 +850,23 @@ export class CheckoutComponent implements OnDestroy {
         this.stripeReady.set(true);
       });
       this.paymentElement.mount(this.stripeHost.nativeElement);
-    } catch {
+    } catch (e) {
+      console.error('[CHECKOUT] mountStripeDeferred failed', e);
       this.stripeError.set('Erreur d\'initialisation du paiement.');
       this.stripeLoading.set(false);
+      this.disposeStripeState();
     }
+  }
+
+  /** Dispose any active Stripe Elements / Address / Payment element references. */
+  private disposeStripeState(): void {
+    try { this.paymentElement?.unmount(); } catch {}
+    try { this.addressElement?.unmount(); } catch {}
+    this.paymentElement = null;
+    this.addressElement = null;
+    this.elements = null;
+    // Keep this.stripe : loadStripe returns a cached singleton per publishableKey ;
+    // nulling it forces another network round-trip for nothing.
   }
 
   /** Update Stripe Elements amount when total changes (e.g. VAT reverse charge toggle). */
@@ -856,10 +883,20 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   private async mountStripe(clientSecret: string, publishableKey: string): Promise<void> {
+    this.stripeError.set(null);
+    this.disposeStripeState();
     try {
       this.stripe = await loadStripe(publishableKey);
       if (!this.stripe) {
         this.stripeError.set('Impossible de charger Stripe.');
+        this.stripeLoading.set(false);
+        return;
+      }
+
+      // Wait one microtask so @if-guarded host elements are present.
+      await Promise.resolve();
+      if (!this.addressHost?.nativeElement || !this.stripeHost?.nativeElement) {
+        this.stripeError.set('Erreur d\'initialisation du paiement (DOM non prêt).');
         this.stripeLoading.set(false);
         return;
       }
@@ -916,9 +953,11 @@ export class CheckoutComponent implements OnDestroy {
         this.stripeReady.set(true);
       });
       this.paymentElement.mount(this.stripeHost.nativeElement);
-    } catch {
+    } catch (e) {
+      console.error('[CHECKOUT] mountStripe failed', e);
       this.stripeError.set('Erreur d\'initialisation du paiement.');
       this.stripeLoading.set(false);
+      this.disposeStripeState();
     }
   }
 
@@ -1448,11 +1487,7 @@ export class CheckoutComponent implements OnDestroy {
     if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
     if (this.viesTimer) clearTimeout(this.viesTimer);
     if (this.beforeUnloadHandler) window.removeEventListener('beforeunload', this.beforeUnloadHandler);
-    this.addressElement?.unmount();
-    this.addressElement = null;
-    this.paymentElement?.unmount();
-    this.paymentElement = null;
-    this.elements = null;
+    this.disposeStripeState();
     this.stripe = null;
   }
 }
