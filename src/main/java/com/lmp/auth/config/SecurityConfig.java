@@ -401,11 +401,12 @@ public class SecurityConfig {
 
                 // Configuration de la déconnexion.
                 // logoutSuccessUrl absolu vers baseUrl (sur auth.* "/" est 404).
-                // deleteCookies couvre Spring Session (SESSION) + JSESSIONID legacy + XSRF-TOKEN.
+                // deleteCookies couvre Spring Session (SESSION) + JSESSIONID legacy + XSRF-TOKEN
+                // + remember-me (sinon une session post-logout peut être ressuscitée par le cookie résiduel).
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl(absoluteBaseUrl("/"))
-                        .deleteCookies("SESSION", "JSESSIONID", "XSRF-TOKEN")
+                        .deleteCookies("SESSION", "JSESSIONID", "XSRF-TOKEN", "remember-me")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .permitAll())
