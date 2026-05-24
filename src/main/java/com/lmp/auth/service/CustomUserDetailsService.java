@@ -83,16 +83,10 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     private UserDetails createUserPrincipal(User user) {
         logger.info("🔍 [SESSION-SECURITY] Création UserPrincipal pour: {} (Statut: {})", user.getEmail(), user.getStatus());
-        
+
         // Note: Les utilisateurs supprimés sont maintenant physiquement effacés de la base (hard delete)
         // Cette vérification n'est plus nécessaire
-        
-        // VÉRIFICATION: Bloquer les comptes verrouillés
-        if (user.getAccountLocked()) {
-            logger.warn("🔒 [SESSION-SECURITY] BLOCAGE: Compte verrouillé pour {}", user.getEmail());
-            throw new UsernameNotFoundException("Compte utilisateur verrouillé");
-        }
-        
+
         Set<GrantedAuthority> authorities = user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .collect(Collectors.toSet());
@@ -103,18 +97,28 @@ public class CustomUserDetailsService implements UserDetailsService {
         boolean statusAllows = user.getStatus() == UserStatus.ACTIVE || user.getStatus() == UserStatus.INACTIVE;
         boolean emailVerifiedOk = !requireEmailVerified || Boolean.TRUE.equals(user.getEmailVerified());
         boolean isEnabled = statusAllows && emailVerifiedOk;
-        boolean isAccountNonLocked = !user.getAccountLocked();
 
+        // SECURITY (M1) : expose accountLocked sur UserDetails plutôt que throw
+        // UsernameNotFoundException. DefaultPreAuthenticationChecks lève alors
+        // LockedException, ce qui permet aux callers + handlers d'exception de
+        // distinguer "compte verrouillé" de "compte absent".
+        boolean isAccountNonLocked = !Boolean.TRUE.equals(user.getAccountLocked());
+
+        if (!isAccountNonLocked) {
+            logger.warn("🔒 [SESSION-SECURITY] Compte verrouillé pour {} — LockedException sera levée par DaoAuthenticationProvider",
+                    user.getEmail());
+        }
         if (statusAllows && !emailVerifiedOk) {
             logger.warn("🔒 [SESSION-SECURITY] BLOCAGE login non-vérifié pour {} (require-email-verified actif)",
                     user.getEmail());
         }
-        
+
         logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}, Mot de passe haché: {}",
                     isEnabled, isAccountNonLocked, user.getPassword().substring(0, 10) + "...");
         logger.debug("🎭 Autorités utilisateur: {}", authorities);
-        
-        logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {})", user.getEmail(), user.getStatus());
+
+        logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {}, Locked: {})",
+                    user.getEmail(), user.getStatus(), !isAccountNonLocked);
 
         String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
         return org.springframework.security.core.userdetails.User.builder()
@@ -122,7 +126,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(authorities)
                 .accountExpired(false)
-                .accountLocked(false) // Déjà vérifié ci-dessus
+                .accountLocked(!isAccountNonLocked)
                 .credentialsExpired(false)
                 .disabled(!isEnabled) // Inactif si pas ACTIVE
                 .build();
