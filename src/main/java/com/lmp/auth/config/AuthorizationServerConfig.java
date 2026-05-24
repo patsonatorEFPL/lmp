@@ -195,10 +195,18 @@ public class AuthorizationServerConfig {
                     .scope(OidcScopes.EMAIL)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
+                            // SECURITY (M10) : PKCE laissé OFF temporairement — client confidentiel
+                            // server-to-server (Frappe ERP → LMP auth server), secret protège le flux.
+                            // OAuth 2.1 recommande PKCE pour TOUS les clients y compris confidentiels :
+                            // À activer dès qu'on a validé que Frappe (Frappe.Integrations.OAuth2) envoie
+                            // bien code_challenge. Ticket suivi : voir backlog.
                             .requireProofKey(false)
                             .build())
                     .tokenSettings(TokenSettings.builder()
-                            .accessTokenTimeToLive(Duration.ofHours(4))
+                            // SECURITY (M10) : access TTL réduit 4h → 1h. Token compromis
+                            // = fenêtre d'exploitation 4x plus courte. Refresh token 30j
+                            // permet renouvellement transparent côté Frappe sans re-login user.
+                            .accessTokenTimeToLive(Duration.ofHours(1))
                             .refreshTokenTimeToLive(Duration.ofDays(30))
                             .build())
                     .build();
