@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  Injector,
   OnDestroy,
   PLATFORM_ID,
   ViewChild,
@@ -435,6 +436,7 @@ export class CheckoutComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly injector = inject(Injector);
   readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
 
@@ -600,8 +602,6 @@ export class CheckoutComponent implements OnDestroy {
       )
       .subscribe({
         next: (res) => {
-          // eslint-disable-next-line no-console
-          console.debug('[STRIPE-PREVIEW]', 'success=', res.success, 'hasData=', !!res.data, 'hasPK=', !!res.data?.publishableKey);
           if (res.success && res.data) {
             this.preview.set(res.data);
             this.loading.set(false);
@@ -786,8 +786,6 @@ export class CheckoutComponent implements OnDestroy {
     totalAmount: number,
     currency: string,
   ): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.debug('[STRIPE-MOUNT-DEFERRED]', 'enter loading=', this.loading(), 'preview=', !!this.preview(), 'aH=', !!this.addressHost, 'sH=', !!this.stripeHost);
     this.stripeLoading.set(true);
     this.stripeError.set(null);
     // Reset any prior Stripe Elements left over from a previous attempt within the
@@ -1103,18 +1101,23 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   private setupAutoSave(): void {
-    // Debounced auto-save via effect
-    effect(() => {
-      // Track all form signals
-      const _bn = this.useDifferentBillingName();
-      const _cn = this.customBillingName();
-      const _vr = this.vatReverseCharge();
-      const _vn = this.vatNumber();
+    // Debounced auto-save via effect.
+    // setupAutoSave is invoked from afterNextRender (OUT of injection context),
+    // so effect() must be given an explicit injector or it throws NG0203.
+    effect(
+      () => {
+        // Track all form signals
+        const _bn = this.useDifferentBillingName();
+        const _cn = this.customBillingName();
+        const _vr = this.vatReverseCharge();
+        const _vn = this.vatNumber();
 
-      // Debounce
-      if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
-      this.autoSaveTimer = setTimeout(() => this.saveDraft(), 1500);
-    });
+        // Debounce
+        if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
+        this.autoSaveTimer = setTimeout(() => this.saveDraft(), 1500);
+      },
+      { injector: this.injector },
+    );
 
     // Also save on beforeunload
     this.beforeUnloadHandler = () => this.saveDraft();
@@ -1505,37 +1508,13 @@ export class CheckoutComponent implements OnDestroy {
    * the host divs — Promise.resolve() alone is insufficient.
    */
   private async waitForStripeHosts(maxWaitMs = 500, stepMs = 25): Promise<boolean> {
-    const tag = `[STRIPE-WAIT-${Math.random().toString(36).slice(2, 6)}]`;
-    // eslint-disable-next-line no-console
-    console.debug(
-      tag,
-      'enter loading=', this.loading(),
-      'loadError=', this.loadError(),
-      'preview=', !!this.preview(),
-      'aH=', !!this.addressHost,
-      'sH=', !!this.stripeHost,
-    );
     const deadline = Date.now() + maxWaitMs;
-    let i = 0;
     while (Date.now() < deadline) {
       if (this.addressHost?.nativeElement && this.stripeHost?.nativeElement) {
-        // eslint-disable-next-line no-console
-        console.debug(tag, 'resolved at iter', i);
         return true;
       }
       await new Promise((r) => setTimeout(r, stepMs));
-      i++;
     }
-    // eslint-disable-next-line no-console
-    console.debug(
-      tag,
-      'TIMEOUT iter', i,
-      'loading=', this.loading(),
-      'loadError=', this.loadError(),
-      'preview=', !!this.preview(),
-      'aH=', !!this.addressHost,
-      'sH=', !!this.stripeHost,
-    );
     return !!(this.addressHost?.nativeElement && this.stripeHost?.nativeElement);
   }
 }
