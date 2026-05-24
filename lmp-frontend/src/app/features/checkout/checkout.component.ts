@@ -600,6 +600,8 @@ export class CheckoutComponent implements OnDestroy {
       )
       .subscribe({
         next: (res) => {
+          // eslint-disable-next-line no-console
+          console.debug('[STRIPE-PREVIEW]', 'success=', res.success, 'hasData=', !!res.data, 'hasPK=', !!res.data?.publishableKey);
           if (res.success && res.data) {
             this.preview.set(res.data);
             this.loading.set(false);
@@ -784,6 +786,8 @@ export class CheckoutComponent implements OnDestroy {
     totalAmount: number,
     currency: string,
   ): Promise<void> {
+    // eslint-disable-next-line no-console
+    console.debug('[STRIPE-MOUNT-DEFERRED]', 'enter loading=', this.loading(), 'preview=', !!this.preview(), 'aH=', !!this.addressHost, 'sH=', !!this.stripeHost);
     this.stripeLoading.set(true);
     this.stripeError.set(null);
     // Reset any prior Stripe Elements left over from a previous attempt within the
@@ -1501,13 +1505,37 @@ export class CheckoutComponent implements OnDestroy {
    * the host divs — Promise.resolve() alone is insufficient.
    */
   private async waitForStripeHosts(maxWaitMs = 500, stepMs = 25): Promise<boolean> {
+    const tag = `[STRIPE-WAIT-${Math.random().toString(36).slice(2, 6)}]`;
+    // eslint-disable-next-line no-console
+    console.debug(
+      tag,
+      'enter loading=', this.loading(),
+      'loadError=', this.loadError(),
+      'preview=', !!this.preview(),
+      'aH=', !!this.addressHost,
+      'sH=', !!this.stripeHost,
+    );
     const deadline = Date.now() + maxWaitMs;
+    let i = 0;
     while (Date.now() < deadline) {
       if (this.addressHost?.nativeElement && this.stripeHost?.nativeElement) {
+        // eslint-disable-next-line no-console
+        console.debug(tag, 'resolved at iter', i);
         return true;
       }
       await new Promise((r) => setTimeout(r, stepMs));
+      i++;
     }
+    // eslint-disable-next-line no-console
+    console.debug(
+      tag,
+      'TIMEOUT iter', i,
+      'loading=', this.loading(),
+      'loadError=', this.loadError(),
+      'preview=', !!this.preview(),
+      'aH=', !!this.addressHost,
+      'sH=', !!this.stripeHost,
+    );
     return !!(this.addressHost?.nativeElement && this.stripeHost?.nativeElement);
   }
 }
