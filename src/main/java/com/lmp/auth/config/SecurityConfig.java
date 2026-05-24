@@ -199,10 +199,11 @@ public class SecurityConfig {
                                 "/api/orders/clear-purchase-intent")
                         .permitAll()
 
-                        // Admin + Dev endpoints (DevSyncController n'existe qu'en @Profile("dev"))
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // Dev endpoints — @Profile("dev") controller only exists in dev
-                        .requestMatchers("/api/v1/dev/**").permitAll()
+                        // SECURITY (H4) : /api/v1/dev/** matcher retiré — aucun controller
+                        // n'expose ce path. Si un dev controller revient, le déclarer @Profile("dev")
+                        // + ajouter le matcher conditionnel. Sans ça, un controller oublié sans
+                        // @PreAuthorize tomberait sur anyRequest().authenticated() — safe par défaut.
 
                         // Tout le reste nécessite authentification
                         .anyRequest().authenticated())
@@ -226,7 +227,6 @@ public class SecurityConfig {
                                 pathMatcher.matcher(HttpMethod.GET, "/api/v1/services"),
                                 pathMatcher.matcher(HttpMethod.GET, "/api/v1/services/**"))
                         .ignoringRequestMatchers(
-                                "/api/v1/dev/**",
                                 "/api/webhooks/**",
                                 "/api/v1/webhooks/**",
                                 "/api/v1/auth/login",

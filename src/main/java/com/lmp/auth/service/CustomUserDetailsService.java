@@ -17,6 +17,7 @@ import com.lmp.auth.domain.Role;
 import com.lmp.auth.domain.User;
 import com.lmp.auth.domain.UserStatus;
 import com.lmp.auth.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Service personnalisé pour charger les détails des utilisateurs lors de l'authentification.
@@ -29,6 +30,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         private final UserRepository userRepository;
 
+    /**
+     * SECURITY (M2) : when {@code true}, block login if {@code emailVerified=false}.
+     * Default {@code false} for backwards compatibility (bench users on staging). Flip
+     * to {@code true} via env {@code LMP_AUTH_REQUIRE_EMAIL_VERIFIED} in prod.
+     */
+    @Value("${lmp.auth.require-email-verified:false}")
+    private boolean requireEmailVerified;
 
     public CustomUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -89,9 +97,18 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .collect(Collectors.toSet());
 
-        // Autoriser le login même si INACTIVE (pour afficher la page suspendue / bannière)
-        boolean isEnabled = user.getStatus() == UserStatus.ACTIVE || user.getStatus() == UserStatus.INACTIVE;
+        // Autoriser le login même si INACTIVE (pour afficher la page suspendue / bannière).
+        // SECURITY (M2) : si requireEmailVerified=true, un compte non-vérifié est désactivé
+        // → Spring Security lèvera DisabledException, le front demandera renvoi du lien.
+        boolean statusAllows = user.getStatus() == UserStatus.ACTIVE || user.getStatus() == UserStatus.INACTIVE;
+        boolean emailVerifiedOk = !requireEmailVerified || Boolean.TRUE.equals(user.getEmailVerified());
+        boolean isEnabled = statusAllows && emailVerifiedOk;
         boolean isAccountNonLocked = !user.getAccountLocked();
+
+        if (statusAllows && !emailVerifiedOk) {
+            logger.warn("🔒 [SESSION-SECURITY] BLOCAGE login non-vérifié pour {} (require-email-verified actif)",
+                    user.getEmail());
+        }
         
         logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}, Mot de passe haché: {}",
                     isEnabled, isAccountNonLocked, user.getPassword().substring(0, 10) + "...");

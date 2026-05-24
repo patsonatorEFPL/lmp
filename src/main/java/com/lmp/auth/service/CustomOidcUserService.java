@@ -75,6 +75,19 @@ public class CustomOidcUserService extends OidcUserService {
             throw new OAuth2AuthenticationException("Email non disponible depuis " + registrationId);
         }
 
+        // SECURITY (H2) : le claim email_verified doit être true. Google le renvoie
+        // toujours via OIDC ; sans cette garantie, un attaquant peut prétendre détenir
+        // n'importe quel email.
+        Object verifiedClaim = attributes.get("email_verified");
+        boolean verified = (verifiedClaim instanceof Boolean b && b)
+                || (verifiedClaim instanceof String s && "true".equalsIgnoreCase(s));
+        if (!verified) {
+            logger.warn("OIDC: email_verified=false depuis {} pour {} — login refusé", registrationId, email);
+            throw new OAuth2AuthenticationException(
+                    "Votre adresse email n'est pas vérifiée chez le fournisseur (" + registrationId
+                    + "). Vérifiez votre compte côté provider puis réessayez.");
+        }
+
         logger.info("OIDC login - Provider: {}, Email: {}, Name: {} {}", registrationId, email, firstName, lastName);
 
         // Chercher un utilisateur existant par email avec rôles (évite LazyInitializationException)
