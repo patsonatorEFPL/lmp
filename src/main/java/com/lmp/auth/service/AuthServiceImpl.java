@@ -261,14 +261,27 @@ public class AuthServiceImpl implements AuthService {
             return false;
         }
 
+        // SECURITY (M3) : capturer l'état AVANT de flip emailVerified, pour
+        // distinguer "INACTIVE car email non-vérifié" de "INACTIVE car admin
+        // a suspendu le compte". Sans ce check, un user admin-suspendu qui
+        // clique sur un vieux lien de vérification se retrouvait réactivé.
+        //
+        // HEURISTIQUE : la distinction passe par emailVerified=false
+        // (donc INACTIVE = registration pending). Le jour où on introduit
+        // un état SUSPENDED dédié (ou un flag suspendedByAdmin sur User),
+        // remplacer ce check par la vraie information.
+        boolean wasUnverified = !Boolean.TRUE.equals(user.getEmailVerified());
+
         // Marquer l'email comme vérifié
         user.setEmailVerified(true);
         user.setVerificationToken(null);
 
-        // Si le compte a été suspendu (INACTIVE), le réactiver
-        if (user.getStatus() == UserStatus.INACTIVE) {
+        if (user.getStatus() == UserStatus.INACTIVE && wasUnverified) {
             user.setStatus(UserStatus.ACTIVE);
             logger.info("Compte réactivé suite à la vérification email : {}", user.getEmail());
+        } else if (user.getStatus() == UserStatus.INACTIVE) {
+            logger.warn("Email vérifié pour {} mais compte reste INACTIVE (vraisemblablement admin-suspendu)",
+                    user.getEmail());
         }
 
         userRepository.save(user);
