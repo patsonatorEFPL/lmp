@@ -8,6 +8,9 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -74,8 +77,19 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000,http://localhost:8080}")
     private String corsAllowedOrigins;
 
-    @org.springframework.beans.factory.annotation.Value("${security.remember-me.secret:lmpRememberMe-dev-changeme}")
+    /**
+     * Clé HMAC remember-me. Le default {@code lmpRememberMe-dev-changeme} est
+     * acceptable en dev/staging local mais doit IMPÉRATIVEMENT être remplacé en
+     * prod via {@code REMEMBER_ME_SECRET}. Le {@link #assertRememberMeSecretNotDefaultInProd()}
+     * fail-fast au startup si le default est encore en place sous profil {@code prod}.
+     */
+    public static final String REMEMBER_ME_DEFAULT_SECRET = "lmpRememberMe-dev-changeme";
+
+    @org.springframework.beans.factory.annotation.Value("${security.remember-me.secret:" + REMEMBER_ME_DEFAULT_SECRET + "}")
     private String rememberMeSecret;
+
+    @Autowired
+    private Environment environment;
 
     /** Cookie domain partagé cross-subdomain (ex. lmp-services.ca pour partager auth.* ↔ dev.* ↔ apex). */
     @org.springframework.beans.factory.annotation.Value("${server.servlet.session.cookie.domain:}")
@@ -97,6 +111,25 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
         this.purchaseIntentAuthenticationSuccessHandler = purchaseIntentAuthenticationSuccessHandler;
         this.adminRateLimitFilter = adminRateLimitFilter;
+    }
+
+    /**
+     * SECURITY (M5) : refuser de démarrer sous profil {@code prod} si la clé
+     * remember-me est encore le default dev. Empêche un déploiement prod
+     * silencieux avec une clé devinable qui permettrait à un attaquant de
+     * forger des cookies remember-me valides.
+     *
+     * Pas de fail-fast sous staging/dev pour ne pas casser les boots locaux.
+     */
+    @PostConstruct
+    public void assertRememberMeSecretNotDefaultInProd() {
+        boolean isProd = environment.acceptsProfiles(Profiles.of("prod"));
+        if (isProd && REMEMBER_ME_DEFAULT_SECRET.equals(rememberMeSecret)) {
+            throw new IllegalStateException(
+                "REMEMBER_ME_SECRET est encore le default dev sous profil prod — "
+                + "set la variable d'environnement REMEMBER_ME_SECRET sur une valeur aléatoire "
+                + "(>= 256 bits) avant de démarrer en production.");
+        }
     }
 
     // =========================================================================
