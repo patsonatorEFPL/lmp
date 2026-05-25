@@ -99,7 +99,7 @@ public class CircuitBreakerExternalClient implements ExternalSystemClient {
     }
 
     @Override
-    @CircuitBreaker(name = "erp", fallbackMethod = "fallbackResponse")
+    @CircuitBreaker(name = "erp", fallbackMethod = "fallbackMethod")
     public ExternalResponse callMethod(String method, Map<String, Object> args) {
         ExternalResponse r = delegate.callMethod(method, args);
         if (!r.success()) {
