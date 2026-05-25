@@ -60,17 +60,15 @@ public class CustomUserDetailsService implements UserDetailsService {
                     return new UsernameNotFoundException("Utilisateur non trouvé: " + login);
                 });
 
-        logger.info("Utilisateur trouvé: {} avec {} rôles", user.getUsername() != null ? user.getUsername() : user.getEmail(), user.getRoles().size());
-        
-        logger.info("🔑 Mot de passe hashé (10 premiers caractères): {}", user.getPassword() != null ? user.getPassword().substring(0, 10) + "..." : "null");
-        if (user.getPassword() != null && user.getPassword().startsWith("$2a$")) {
-            logger.info("✅ Mot de passe encodé en BCrypt détecté.");
-        } else {
-            logger.warn("⚠️ Mot de passe NON encodé en BCrypt !");
+        logger.debug("Utilisateur trouvé: {} avec {} rôles", user.getUsername() != null ? user.getUsername() : user.getEmail(), user.getRoles().size());
+
+        // SECURITY (L1) : prefix du hash bcrypt retiré des logs INFO.
+        // Le prefix `$2a$<cost>$<salt>` ne révèle pas le mot de passe en clair
+        // mais expose le cost + facilite identification de l'algo en cas de
+        // log leak. On garde un warn binaire si l'encodage est inattendu.
+        if (user.getPassword() == null || !user.getPassword().startsWith("$2a$")) {
+            logger.warn("⚠️ Mot de passe NON encodé en BCrypt pour user {}", user.getEmail());
         }
-        
-        // Log user roles for debugging navigation issues
-        user.getRoles().forEach(role -> logger.info("🎭 Rôle utilisateur: {}", role.getName()));
         
         return createUserPrincipal(user);
     }
@@ -113,8 +111,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                     user.getEmail());
         }
 
-        logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}, Mot de passe haché: {}",
-                    isEnabled, isAccountNonLocked, user.getPassword().substring(0, 10) + "...");
+        // SECURITY (L1) : hash bcrypt prefix retiré du log debug aussi.
+        logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}",
+                    isEnabled, isAccountNonLocked);
         logger.debug("🎭 Autorités utilisateur: {}", authorities);
 
         logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {}, Locked: {})",
