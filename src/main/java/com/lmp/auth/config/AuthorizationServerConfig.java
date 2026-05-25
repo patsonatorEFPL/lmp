@@ -15,11 +15,8 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.util.JSONObjectUtils;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
+import java.util.List;
 import java.util.function.Function;
 
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
@@ -99,14 +96,17 @@ public class AuthorizationServerConfig {
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.issuer-uri:http://localhost:8080}")
     private String issuerUri;
 
-    @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.path:lmp-oauth2-jwk.json}")
-    private String jwkPath;
-
     /**
      * JWK content inline (JSON string) — pattern 12-factor pour multi-replica.
-     * Si défini (env var {@code OAUTH2_JWK_CONTENT}), prend précédence sur le file
-     * path : toutes les répliques chargent la MÊME clé. Sinon, fallback sur
-     * {@code app.oauth2.jwk.path} (legacy mode mono-replica).
+     * Si défini (env var {@code OAUTH2_JWK_CONTENT}), prend précédence sur la DB :
+     * toutes les répliques chargent la MÊME clé, immutable, déployable via
+     * pipeline secrets. Sinon, fallback DB-backed (M8 fix) — voir
+     * {@link #jwkSource}.
+     *
+     * <p>Le legacy {@code app.oauth2.jwk.path} file-based fallback a été retiré
+     * dans le commit M8 : prod + staging utilisaient déjà env var, et la DB
+     * couvre désormais le cas single-replica sans risque de drift entre
+     * filesystems éphémères de containers.</p>
      */
     @org.springframework.beans.factory.annotation.Value("${app.oauth2.jwk.content:}")
     private String jwkContent;
@@ -277,7 +277,9 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() {
+    public JWKSource<SecurityContext> jwkSource(
+            com.lmp.auth.repository.OAuth2SigningKeyRepository signingKeyRepository,
+            org.springframework.transaction.support.TransactionTemplate txTemplate) {
         // 1. Précédence à app.oauth2.jwk.content (env var) — pattern 12-factor.
         //    Toutes les répliques chargent la même clé. Pas de fichier sur disque.
         if (jwkContent != null && !jwkContent.isBlank()) {
@@ -290,49 +292,55 @@ public class AuthorizationServerConfig {
             }
         }
 
-        // 2. Fallback : fichier (legacy mono-replica).
-        Path path = Path.of(jwkPath);
-        JWKSet jwkSet;
-
-        if (Files.exists(path)) {
+        // 2. SECURITY (M8) : DB-backed key (multi-replica safe sans env var).
+        //    Si la table contient au moins une clé active, on les expose toutes
+        //    dans le JWKSet. La PREMIÈRE (most recent par createdAt DESC) sert
+        //    pour signer ; les autres restent disponibles pour validation
+        //    pendant la fenêtre de grâce d'une rotation.
+        List<com.lmp.auth.domain.OAuth2SigningKey> dbKeys = signingKeyRepository.findByActiveTrueOrderByCreatedAtDesc();
+        if (!dbKeys.isEmpty()) {
             try {
-                String json = Files.readString(path);
-                jwkSet = JWKSet.parse(json);
-                logger.info("JWK chargé depuis le fichier : {}", path.toAbsolutePath());
-            } catch (IOException | ParseException e) {
-                throw new IllegalStateException("Impossible de charger le JWK depuis le fichier : " + path, e);
+                List<JWK> jwks = new java.util.ArrayList<>(dbKeys.size());
+                for (com.lmp.auth.domain.OAuth2SigningKey row : dbKeys) {
+                    jwks.add(JWK.parse(row.getJwkJson()));
+                }
+                JWKSet jwkSet = new JWKSet(jwks);
+                logger.info("JWK chargé depuis DB : {} clé(s) active(s), kid principal={} (multi-replica safe)",
+                        dbKeys.size(), dbKeys.get(0).getKeyId());
+                return new ImmutableJWKSet<>(jwkSet);
+            } catch (ParseException e) {
+                throw new IllegalStateException("Une entrée oauth2_signing_key contient un JWK JSON invalide", e);
             }
-        } else {
+        }
+
+        // 3. DB vide → générer une clé fresh et la persister sous transaction.
+        //    Évite que deux replicas génèrent des clés différentes en concurrence
+        //    (premier wins via UNIQUE(key_id) ; deuxième relit et utilise celle persistée).
+        com.lmp.auth.domain.OAuth2SigningKey persistedRow = txTemplate.execute(status -> {
+            List<com.lmp.auth.domain.OAuth2SigningKey> raceRecheck = signingKeyRepository.findByActiveTrueOrderByCreatedAtDesc();
+            if (!raceRecheck.isEmpty()) {
+                return raceRecheck.get(0);
+            }
             KeyPair keyPair = generateRsaKey();
             RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
             RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
-
             String keyId = UUID.randomUUID().toString();
             RSAKey rsaKey = new RSAKey.Builder(publicKey)
                     .privateKey(privateKey)
                     .keyID(keyId)
                     .build();
-
-            jwkSet = new JWKSet(rsaKey);
-
-            try {
-                Path parent = path.getParent();
-                Path tempFile;
-                if (parent != null) {
-                    Files.createDirectories(parent);
-                    tempFile = Files.createTempFile(parent, path.getFileName().toString(), ".tmp");
-                } else {
-                    tempFile = Files.createTempFile(path.getFileName().toString(), ".tmp");
-                }
-                Files.writeString(tempFile, JSONObjectUtils.toJSONString(jwkSet.toJSONObject(false)));
-                Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                logger.info("Nouveau JWK généré et sauvegardé dans : {}", path.toAbsolutePath());
-            } catch (IOException e) {
-                throw new IllegalStateException("Impossible de sauvegarder le JWK dans le fichier : " + path, e);
-            }
+            String jwkJson = JSONObjectUtils.toJSONString(rsaKey.toJSONObject());
+            com.lmp.auth.domain.OAuth2SigningKey newKey = new com.lmp.auth.domain.OAuth2SigningKey(keyId, jwkJson);
+            com.lmp.auth.domain.OAuth2SigningKey saved = signingKeyRepository.save(newKey);
+            logger.info("M8 : nouvelle clé JWK générée + persistée DB (kid={}) — sera réutilisée sur tous les replicas + restarts", keyId);
+            return saved;
+        });
+        try {
+            JWKSet jwkSet = new JWKSet(JWK.parse(persistedRow.getJwkJson()));
+            return new ImmutableJWKSet<>(jwkSet);
+        } catch (ParseException e) {
+            throw new IllegalStateException("JWK fraîchement généré illisible — ne devrait jamais arriver", e);
         }
-
-        return new ImmutableJWKSet<>(jwkSet);
     }
 
     @Bean
