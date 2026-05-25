@@ -38,8 +38,12 @@ public class LmpOAuth2TokenCustomizer implements OAuth2TokenCustomizer<JwtEncodi
             return;
         }
 
-        String email = context.getPrincipal().getName();
-        Optional<User> userOpt = userRepository.findByEmailWithRoles(email);
+        // Principal name = username || email (CustomUserDetailsService). Use
+        // findByLogin to resolve either. Previously findByEmailWithRoles failed
+        // silently for any user whose username != email, leaving JWT without
+        // email/name claims and breaking downstream OIDC consumers.
+        String principalName = context.getPrincipal().getName();
+        Optional<User> userOpt = userRepository.findByLogin(principalName);
         if (userOpt.isEmpty()) {
             return;
         }

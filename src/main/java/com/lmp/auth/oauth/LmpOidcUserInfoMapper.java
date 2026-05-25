@@ -30,7 +30,13 @@ public class LmpOidcUserInfoMapper implements Function<OidcUserInfoAuthenticatio
     public OidcUserInfo apply(OidcUserInfoAuthenticationContext context) {
         String principalName = context.getAuthorization().getPrincipalName();
 
-        Optional<User> userOpt = userRepository.findByEmailWithRoles(principalName);
+        // Principal name stored at authorization time = username || email
+        // (see CustomUserDetailsService.createUserPrincipal). For Administrator
+        // user qui a username="Administrator" + email="patsonator32@gmail.com",
+        // principalName = "Administrator". findByEmailWithRoles(...) renvoyait
+        // empty → /userinfo retournait juste {"sub":"Administrator"} → Frappe
+        // SSO échouait sur "email claim missing".
+        Optional<User> userOpt = userRepository.findByLogin(principalName);
         if (userOpt.isEmpty()) {
             return OidcUserInfo.builder()
                     .subject(principalName)
