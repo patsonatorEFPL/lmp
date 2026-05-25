@@ -127,6 +127,13 @@ public class AuthorizationServerConfig {
                         )
                 )
 
+                // Force Spring Security à exiger une auth AVANT que le filter OAuth2
+                // touche la request. Sinon : sur /oauth2/authorize avec session anonyme,
+                // OAuth2AuthorizationEndpointFilter lance "invalid_request: principal"
+                // et redirige vers redirect_uri avec error= → Frappe callback 500.
+                // Avec .authenticated() le LoginUrlAuthenticationEntryPoint déclenche
+                // un 302 vers /login d'abord (browser TEXT_HTML).
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
 
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
