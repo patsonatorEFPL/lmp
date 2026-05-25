@@ -62,12 +62,18 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         logger.debug("Utilisateur trouvé: {} avec {} rôles", user.getUsername() != null ? user.getUsername() : user.getEmail(), user.getRoles().size());
 
-        // SECURITY (L1) : prefix du hash bcrypt retiré des logs INFO.
-        // Le prefix `$2a$<cost>$<salt>` ne révèle pas le mot de passe en clair
-        // mais expose le cost + facilite identification de l'algo en cas de
-        // log leak. On garde un warn binaire si l'encodage est inattendu.
-        if (user.getPassword() == null || !user.getPassword().startsWith("$2a$")) {
-            logger.warn("⚠️ Mot de passe NON encodé en BCrypt pour user {}", user.getEmail());
+        // SECURITY (L1) : prefix du hash retiré des logs.
+        // Le codebase utilise DelegatingPasswordEncoder : Argon2id par défaut pour
+        // les nouveaux hashes ({argon2id}...), bcrypt ($2a$) pour les legacy.
+        // On warn seulement si l'entrée est null OU ne correspond à AUCUN format
+        // connu — sinon on flood les logs sur chaque login Argon2.
+        if (user.getPassword() == null
+                || (!user.getPassword().startsWith("{argon2id}")
+                        && !user.getPassword().startsWith("{bcrypt}")
+                        && !user.getPassword().startsWith("$2a$")
+                        && !user.getPassword().startsWith("$2b$")
+                        && !user.getPassword().startsWith("$2y$"))) {
+            logger.warn("⚠️ Mot de passe non reconnu (ni Argon2id ni BCrypt) pour user {}", user.getEmail());
         }
         
         return createUserPrincipal(user);
