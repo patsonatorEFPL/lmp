@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
  * Implémente UserDetailsService de Spring Security.
  */
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService, UserDetailsPasswordService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
 
@@ -151,6 +152,51 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'ID: " + userId));
 
         return createUserPrincipal(user);
+    }
+
+    /**
+     * Hook {@link UserDetailsPasswordService} appelé automatiquement par
+     * {@code DaoAuthenticationProvider} après chaque login réussi quand
+     * {@link org.springframework.security.crypto.password.PasswordEncoder#upgradeEncoding(String)}
+     * retourne {@code true}. C'est le cas pour tout hash legacy bcrypt
+     * ({@code {bcrypt}$2a$...} ou raw {@code $2a$...}) puisque l'encoder
+     * par défaut du {@code DelegatingPasswordEncoder} est désormais
+     * {@code argon2id}.
+     *
+     * <p>Le mot de passe reçu en paramètre est déjà ré-encodé avec
+     * Argon2id par {@code DaoAuthenticationProvider} ; on n'a qu'à le persister.</p>
+     *
+     * <p>Effet net : à chaque login réussi d'un user dont le hash est encore
+     * en bcrypt, on upgrade silencieusement vers Argon2id. Migration
+     * progressive sans demander reset password.</p>
+     */
+    @Override
+    @Transactional
+    public UserDetails updatePassword(UserDetails userDetails, String newEncodedPassword) {
+        String login = userDetails.getUsername();
+        User user = userRepository.findByLogin(login)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "Utilisateur introuvable pour upgrade encoding: " + login));
+
+        String previousPrefix = extractEncodingPrefix(user.getPassword());
+        user.setPassword(newEncodedPassword);
+        userRepository.save(user);
+
+        logger.info("🔄 [PASSWORD-UPGRADE] Hash {} → argon2id pour {}",
+                previousPrefix, user.getEmail());
+
+        // Rebuild UserDetails avec le nouveau hash (l'instance reçue est immutable).
+        return createUserPrincipal(user);
+    }
+
+    private static String extractEncodingPrefix(String hash) {
+        if (hash == null || hash.isEmpty()) return "unknown";
+        if (hash.startsWith("{")) {
+            int end = hash.indexOf('}');
+            return end > 0 ? hash.substring(0, end + 1) : "unknown";
+        }
+        if (hash.startsWith("$2")) return "$2*$ (raw bcrypt)";
+        return "unknown";
     }
 
     /**

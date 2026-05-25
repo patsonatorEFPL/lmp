@@ -510,7 +510,11 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         // Argon2id for new hashes (memory-hard, GPU/ASIC-resistant, OWASP 2024 preferred).
         // Existing {bcrypt} hashes keep verifying via DelegatingPasswordEncoder.
-        // Successful login re-encodes to argon2id transparently (delegating encoder behavior).
+        // Successful login auto-upgrades bcrypt → argon2id via
+        // CustomUserDetailsService.updatePassword() (UserDetailsPasswordService impl).
+        // Spring Security wires it on the auto-discovered DaoAuthenticationProvider
+        // when DelegatingPasswordEncoder.upgradeEncoding() returns true (= prefix
+        // differs from "argon2id").
         //
         // Argon2id parameters (OWASP fast tier ~50ms on ARM A1 4-OCPU):
         //   saltLength = 16 bytes
