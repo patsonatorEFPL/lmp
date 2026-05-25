@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  Injector,
   OnDestroy,
   PLATFORM_ID,
   ViewChild,
@@ -435,6 +436,7 @@ export class CheckoutComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly injector = inject(Injector);
   readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
 
@@ -785,10 +787,26 @@ export class CheckoutComponent implements OnDestroy {
     currency: string,
   ): Promise<void> {
     this.stripeLoading.set(true);
+    this.stripeError.set(null);
+    // Reset any prior Stripe Elements left over from a previous attempt within the
+    // same component instance (Retour → click another service, or VAT toggle race).
+    // Without this, elements.create('payment', ...) throws because the previous
+    // payment element is still bound to the (now-stale) elements instance.
+    this.disposeStripeState();
     try {
       this.stripe = await loadStripe(publishableKey);
       if (!this.stripe) {
         this.stripeError.set('Impossible de charger Stripe.');
+        this.stripeLoading.set(false);
+        return;
+      }
+
+      // Wait up to ~500ms for the @if-guarded host elements to render after the latest CD.
+      // Pure Promise.resolve() (microtask) is not enough on Angular component re-init
+      // because the preview signal may emit BEFORE the template branch reactivates the
+      // ViewChild reference.
+      if (!(await this.waitForStripeHosts())) {
+        this.stripeError.set('Erreur d\'initialisation du paiement (DOM non prêt).');
         this.stripeLoading.set(false);
         return;
       }
@@ -836,10 +854,23 @@ export class CheckoutComponent implements OnDestroy {
         this.stripeReady.set(true);
       });
       this.paymentElement.mount(this.stripeHost.nativeElement);
-    } catch {
+    } catch (e) {
+      console.error('[CHECKOUT] mountStripeDeferred failed', e);
       this.stripeError.set('Erreur d\'initialisation du paiement.');
       this.stripeLoading.set(false);
+      this.disposeStripeState();
     }
+  }
+
+  /** Dispose any active Stripe Elements / Address / Payment element references. */
+  private disposeStripeState(): void {
+    try { this.paymentElement?.unmount(); } catch {}
+    try { this.addressElement?.unmount(); } catch {}
+    this.paymentElement = null;
+    this.addressElement = null;
+    this.elements = null;
+    // Keep this.stripe : loadStripe returns a cached singleton per publishableKey ;
+    // nulling it forces another network round-trip for nothing.
   }
 
   /** Update Stripe Elements amount when total changes (e.g. VAT reverse charge toggle). */
@@ -856,10 +887,20 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   private async mountStripe(clientSecret: string, publishableKey: string): Promise<void> {
+    this.stripeError.set(null);
+    this.disposeStripeState();
     try {
       this.stripe = await loadStripe(publishableKey);
       if (!this.stripe) {
         this.stripeError.set('Impossible de charger Stripe.');
+        this.stripeLoading.set(false);
+        return;
+      }
+
+      // See waitForStripeHosts() — handles component re-init races where the host
+      // divs are remounted after the latest CD pass.
+      if (!(await this.waitForStripeHosts())) {
+        this.stripeError.set('Erreur d\'initialisation du paiement (DOM non prêt).');
         this.stripeLoading.set(false);
         return;
       }
@@ -916,9 +957,11 @@ export class CheckoutComponent implements OnDestroy {
         this.stripeReady.set(true);
       });
       this.paymentElement.mount(this.stripeHost.nativeElement);
-    } catch {
+    } catch (e) {
+      console.error('[CHECKOUT] mountStripe failed', e);
       this.stripeError.set('Erreur d\'initialisation du paiement.');
       this.stripeLoading.set(false);
+      this.disposeStripeState();
     }
   }
 
@@ -1058,18 +1101,23 @@ export class CheckoutComponent implements OnDestroy {
   }
 
   private setupAutoSave(): void {
-    // Debounced auto-save via effect
-    effect(() => {
-      // Track all form signals
-      const _bn = this.useDifferentBillingName();
-      const _cn = this.customBillingName();
-      const _vr = this.vatReverseCharge();
-      const _vn = this.vatNumber();
+    // Debounced auto-save via effect.
+    // setupAutoSave is invoked from afterNextRender (OUT of injection context),
+    // so effect() must be given an explicit injector or it throws NG0203.
+    effect(
+      () => {
+        // Track all form signals
+        const _bn = this.useDifferentBillingName();
+        const _cn = this.customBillingName();
+        const _vr = this.vatReverseCharge();
+        const _vn = this.vatNumber();
 
-      // Debounce
-      if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
-      this.autoSaveTimer = setTimeout(() => this.saveDraft(), 1500);
-    });
+        // Debounce
+        if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
+        this.autoSaveTimer = setTimeout(() => this.saveDraft(), 1500);
+      },
+      { injector: this.injector },
+    );
 
     // Also save on beforeunload
     this.beforeUnloadHandler = () => this.saveDraft();
@@ -1448,11 +1496,25 @@ export class CheckoutComponent implements OnDestroy {
     if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer);
     if (this.viesTimer) clearTimeout(this.viesTimer);
     if (this.beforeUnloadHandler) window.removeEventListener('beforeunload', this.beforeUnloadHandler);
-    this.addressElement?.unmount();
-    this.addressElement = null;
-    this.paymentElement?.unmount();
-    this.paymentElement = null;
-    this.elements = null;
+    this.disposeStripeState();
     this.stripe = null;
+  }
+
+  /**
+   * Poll until the @ViewChild host elements are mounted in the DOM. Returns true if
+   * both became available within {@code maxWaitMs}, false on timeout. Required on
+   * component re-instantiation (back-and-forth between two /checkout routes) where
+   * the preview signal emits BEFORE Angular re-projects the template branch carrying
+   * the host divs — Promise.resolve() alone is insufficient.
+   */
+  private async waitForStripeHosts(maxWaitMs = 500, stepMs = 25): Promise<boolean> {
+    const deadline = Date.now() + maxWaitMs;
+    while (Date.now() < deadline) {
+      if (this.addressHost?.nativeElement && this.stripeHost?.nativeElement) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, stepMs));
+    }
+    return !!(this.addressHost?.nativeElement && this.stripeHost?.nativeElement);
   }
 }

@@ -189,6 +189,35 @@ public class SseEmitterManager {
         }
     }
 
+    /**
+     * SECURITY (auth audit related) : ferme immédiatement tous les emitters SSE
+     * actifs d'un utilisateur. Appelé après soft-delete, suspension admin, ou
+     * autre invalidation de session pour éviter qu'un client continue de
+     * recevoir des events après que le backend ait coupé son auth.
+     *
+     * Le heartbeat 15s rattrappe normalement les sessions timeout, mais un
+     * soft-delete intervenu entre deux heartbeats laisserait une fenêtre de
+     * 15s pendant laquelle le client reçoit encore des données. Cet appel
+     * ferme proprement (emitter.complete()) → le client EventSource reconnecte
+     * automatiquement et le prochain handshake fail sur 401.
+     *
+     * @param userId UUID utilisateur (même string que createEmitter)
+     * @return nombre d'emitters fermés
+     */
+    public int closeUserEmitters(String userId) {
+        List<SseEmitter> emitters = userEmitters.remove(userId);
+        if (emitters == null || emitters.isEmpty()) {
+            return 0;
+        }
+        int closed = 0;
+        for (SseEmitter emitter : emitters) {
+            safeComplete(emitter);
+            closed++;
+        }
+        logger.info("SSE: {} emitter(s) fermé(s) pour user {} (invalidation session)", closed, userId);
+        return closed;
+    }
+
     private void removeAdminEmitter(SseEmitter emitter) {
         adminEmitters.remove(emitter);
         logger.debug("Admin SSE emitter removed (remaining: {})", adminEmitters.size());

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, NgZone, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, inject, NgZone, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import {
@@ -15,10 +15,21 @@ import {
   Loader2,
   AlertCircle,
   KeyRound,
+  Activity,
+  Wifi,
+  WifiOff,
+  RefreshCw,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { AdminService, CompanyAddressPayload } from '../../core/services/admin.service';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { AdminSiteConfigComponent } from './admin-site-config.component';
+import { VisiblePollService } from '../../core/services/visible-poll.service';
+
+type DispatcherStrategy = 'smtp' | 'erpnext';
+type HealthStatus = 'UP' | 'DOWN';
+interface ErpHealth { status: HealthStatus; latencyMs: number; lastError: string; message: string; }
+interface ApiAck { success: boolean; message: string; }
 
 @Component({
   selector: 'lmp-admin-settings',
@@ -128,6 +139,98 @@ import { AdminSiteConfigComponent } from './admin-site-config.component';
               </label>
             </div>
           }
+        </div>
+      </div>
+
+      <!-- Email Configuration -->
+      <div class="rounded-sm border border-(--border) bg-(--card) p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex h-9 w-9 items-center justify-center rounded-sm bg-(--muted)">
+            <lucide-icon [img]="ActivityIcon" [size]="18" class="text-(--foreground)"></lucide-icon>
+          </div>
+          <div>
+            <h2 class="text-base font-medium tracking-[0.02em] text-zinc-500 dark:text-zinc-400">Configuration Email</h2>
+            <p class="text-xs text-(--muted-foreground)">État du relais ERPNext</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          @if (erpnextHealth(); as health) {
+            <div class="flex items-center justify-between rounded-sm border border-(--border) px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full"
+                     [class.bg-emerald-500\/15]="health.status === 'UP'"
+                     [class.text-emerald-500]="health.status === 'UP'"
+                     [class.bg-red-500\/15]="health.status === 'DOWN'"
+                     [class.text-red-500]="health.status === 'DOWN'">
+                  <lucide-icon [img]="health.status === 'UP' ? WifiIcon : WifiOffIcon" [size]="16"></lucide-icon>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-(--foreground)">Connexion ERPNext Email</p>
+                  <p class="text-xs text-(--muted-foreground)">
+                    @if (health.status === 'UP') {
+                      Latence {{ health.latencyMs }}ms — {{ health.message }}
+                    } @else {
+                      {{ health.lastError || 'Indisponible' }}
+                    }
+                  </p>
+                </div>
+              </div>
+              <span data-testid="erpnext-health-badge"
+                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    [class.bg-emerald-500\/15]="health.status === 'UP'"
+                    [class.text-emerald-500]="health.status === 'UP'"
+                    [class.bg-red-500\/15]="health.status === 'DOWN'"
+                    [class.text-red-500]="health.status === 'DOWN'">
+                {{ health.status === 'UP' ? 'En ligne' : 'Hors ligne' }}
+              </span>
+            </div>
+          } @else {
+            <div class="flex items-center gap-2 text-sm text-(--muted-foreground)">
+              <lucide-icon [img]="Loader2Icon" [size]="16" class="animate-spin"></lucide-icon>
+              Vérification du relais ERPNext…
+            </div>
+          }
+
+          <!-- Dispatcher switcher -->
+          <div class="mt-4 rounded-sm border border-(--border) px-4 py-3">
+            <p class="mb-2 text-sm font-medium text-(--foreground)">Moteur d'envoi actif</p>
+            <div class="flex items-center gap-2">
+              <button
+                class="rounded-sm px-3 py-1.5 text-xs font-medium transition-colors"
+                [class.bg-(--primary)]="dispatcherStrategy() === 'smtp'"
+                [class.text-(--primary-foreground)]="dispatcherStrategy() === 'smtp'"
+                [class.bg-(--muted)]="dispatcherStrategy() !== 'smtp'"
+                [class.text-(--muted-foreground)]="dispatcherStrategy() !== 'smtp'"
+                (click)="setDispatcher('smtp')"
+                [disabled]="changingDispatcher()"
+              >
+                SMTP (Mailtrap)
+              </button>
+              <button
+                class="rounded-sm px-3 py-1.5 text-xs font-medium transition-colors"
+                [class.bg-(--primary)]="dispatcherStrategy() === 'erpnext'"
+                [class.text-(--primary-foreground)]="dispatcherStrategy() === 'erpnext'"
+                [class.bg-(--muted)]="dispatcherStrategy() !== 'erpnext'"
+                [class.text-(--muted-foreground)]="dispatcherStrategy() !== 'erpnext'"
+                (click)="setDispatcher('erpnext')"
+                [disabled]="changingDispatcher()"
+              >
+                ERPNext
+              </button>
+            </div>
+            <div class="mt-3 flex items-center gap-2">
+              <button
+                hlmBtn variant="outline" size="sm" class="cursor-pointer gap-1"
+                (click)="testDispatcherEmail()"
+              >
+                <lucide-icon [img]="MailIcon" [size]="14"></lucide-icon>
+                Tester l'envoi
+              </button>
+              @if (dispatcherTestResult(); as result) {
+                <span class="text-xs text-(--foreground)">{{ result }}</span>
+              }
+            </div>
+          </div>
         </div>
       </div>
 
@@ -274,6 +377,9 @@ import { AdminSiteConfigComponent } from './admin-site-config.component';
   `,
 })
 export class AdminSettingsComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly visiblePoll = inject(VisiblePollService);
   /** Aligné sur {@code V8__company_profile.sql} (seed Flyway). */
   private static readonly FLYWAY_ADDRESS_SEED =
     '123 Rue Principale, Ville, Province, Code Postal';
@@ -289,6 +395,15 @@ export class AdminSettingsComponent implements OnInit {
   readonly Loader2Icon = Loader2;
   readonly AlertCircleIcon = AlertCircle;
   readonly KeyRoundIcon = KeyRound;
+  readonly ActivityIcon = Activity;
+  readonly WifiIcon = Wifi;
+  readonly WifiOffIcon = WifiOff;
+  readonly RefreshCwIcon = RefreshCw;
+
+  dispatcherStrategy = signal<DispatcherStrategy>('smtp');
+  changingDispatcher = signal(false);
+  dispatcherTestResult = signal<string | null>(null);
+  private healthInflight = false;
 
   private readonly adminService = inject(AdminService);
   private readonly ngZone = inject(NgZone);
@@ -328,7 +443,13 @@ export class AdminSettingsComponent implements OnInit {
     return this.companyAddress.addressLine.trim() === AdminSettingsComponent.FLYWAY_ADDRESS_SEED;
   }
 
+  erpnextHealth = signal<ErpHealth | null>(null);
+
   ngOnInit(): void {
+    this.loadErpnextHealth();
+    this.loadDispatcher();
+    this.visiblePoll.subscribeWhileVisible(this.destroyRef, 10000, () => this.loadErpnextHealth());
+
     this.adminService.getCompanyAddress().subscribe({
       next: (c) => {
         // withFetch() peut livrer hors zone ; ngModel peut rester visuellement figé sans CD explicite
@@ -359,6 +480,65 @@ export class AdminSettingsComponent implements OnInit {
         },
         error: () => {
           /* erreur validation ou réseau */
+        },
+      });
+  }
+
+  loadErpnextHealth(): void {
+    if (this.healthInflight) return;
+    this.healthInflight = true;
+    this.http.get<ErpHealth>('/admin/email-test/erpnext-health')
+      .subscribe({
+        next: (data) => {
+          this.ngZone.run(() => {
+            this.erpnextHealth.set(data);
+            this.healthInflight = false;
+            this.cdr.detectChanges();
+          });
+        },
+        error: () => {
+          this.ngZone.run(() => {
+            this.erpnextHealth.set({ status: 'DOWN', latencyMs: -1, lastError: 'Unreachable', message: '' });
+            this.healthInflight = false;
+            this.cdr.detectChanges();
+          });
+        },
+      });
+  }
+
+  loadDispatcher(): void {
+    this.http.get<{ strategy: DispatcherStrategy }>('/admin/email-test/dispatcher')
+      .subscribe({
+        next: (data) => this.dispatcherStrategy.set(data.strategy),
+        error: () => this.dispatcherStrategy.set('smtp'),
+      });
+  }
+
+  setDispatcher(strategy: DispatcherStrategy): void {
+    this.changingDispatcher.set(true);
+    const params = new HttpParams().set('strategy', strategy);
+    this.http.post<ApiAck>('/admin/email-test/dispatcher', null, { params })
+      .subscribe({
+        next: (res) => {
+          this.changingDispatcher.set(false);
+          if (res.success) {
+            this.dispatcherStrategy.set(strategy);
+          }
+        },
+        error: () => this.changingDispatcher.set(false),
+      });
+  }
+
+  testDispatcherEmail(): void {
+    this.dispatcherTestResult.set('Envoi en cours…');
+    const params = new HttpParams().set('testEmail', this.settings.supportEmail);
+    this.http.post<ApiAck>('/admin/email-test/test', null, { params })
+      .subscribe({
+        next: (res) => {
+          this.dispatcherTestResult.set(res.success ? '✅ ' + res.message : '❌ ' + res.message);
+        },
+        error: (err) => {
+          this.dispatcherTestResult.set('❌ Échec : ' + (err.error?.message || err.message));
         },
       });
   }

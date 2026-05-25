@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { loadStripe, Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
+import { LucideAngularModule, Eye, EyeOff } from 'lucide-angular';
 
 import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { AuthService, UserInfo } from '../../core/services/auth.service';
@@ -19,7 +20,7 @@ interface ApiOk<T> {
 @Component({
   selector: 'lmp-payment-guest',
   standalone: true,
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, LucideAngularModule],
   template: `
     <div class="flex min-h-screen flex-col bg-(--background) px-4 py-10">
       <div class="mx-auto w-full max-w-lg">
@@ -86,6 +87,30 @@ interface ApiOk<T> {
 
         @if (preview() && !payReady() && !authService.isAuthenticated()) {
           <form class="mt-8 space-y-4" (ngSubmit)="onRegisterAndPrepare()">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Prénom *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="reg.firstName"
+                  name="firstName"
+                  required
+                  autocomplete="given-name"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Nom *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="reg.lastName"
+                  name="lastName"
+                  required
+                  autocomplete="family-name"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Email *</label>
               <input
@@ -98,24 +123,48 @@ interface ApiOk<T> {
             </div>
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Mot de passe *</label>
-              <input
-                type="password"
-                [(ngModel)]="reg.password"
-                name="password"
-                required
-                minlength="6"
-                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm"
-              />
+              <div class="relative">
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  [(ngModel)]="reg.password"
+                  name="password"
+                  required
+                  minlength="6"
+                  autocomplete="new-password"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 pr-10 text-sm"
+                />
+                <button
+                  type="button"
+                  (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+                  [attr.aria-pressed]="showPassword()"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded text-(--muted-foreground) hover:text-(--foreground) cursor-pointer"
+                >
+                  <lucide-icon [img]="showPassword() ? EyeOffIcon : EyeIcon" [size]="16"></lucide-icon>
+                </button>
+              </div>
             </div>
             <div>
               <label class="mb-1 block text-xs font-medium text-(--muted-foreground)">Confirmer le mot de passe *</label>
-              <input
-                type="password"
-                [(ngModel)]="reg.confirmPassword"
-                name="confirmPassword"
-                required
-                class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 text-sm"
-              />
+              <div class="relative">
+                <input
+                  [type]="showConfirmPassword() ? 'text' : 'password'"
+                  [(ngModel)]="reg.confirmPassword"
+                  name="confirmPassword"
+                  required
+                  autocomplete="new-password"
+                  class="w-full rounded-sm border border-(--border) bg-(--background) px-3 py-2 pr-10 text-sm"
+                />
+                <button
+                  type="button"
+                  (click)="showConfirmPassword.set(!showConfirmPassword())"
+                  [attr.aria-label]="showConfirmPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+                  [attr.aria-pressed]="showConfirmPassword()"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded text-(--muted-foreground) hover:text-(--foreground) cursor-pointer"
+                >
+                  <lucide-icon [img]="showConfirmPassword() ? EyeOffIcon : EyeIcon" [size]="16"></lucide-icon>
+                </button>
+              </div>
             </div>
             <div class="flex items-start gap-2">
               <input type="checkbox" id="vatRev" [(ngModel)]="vatReverseCharge" name="vatRev" class="mt-1" />
@@ -217,6 +266,12 @@ export class PaymentGuestComponent implements OnDestroy {
   readonly formError = signal<string | null>(null);
   readonly preparing = signal(false);
   readonly payReady = signal(false);
+  readonly showPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
+
+  readonly EyeIcon = Eye;
+  readonly EyeOffIcon = EyeOff;
+
   readonly payError = signal<string | null>(null);
   readonly paySubmitting = signal(false);
   readonly stripeMounted = signal(false);
@@ -227,6 +282,8 @@ export class PaymentGuestComponent implements OnDestroy {
   vatNumber = '';
 
   reg = {
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -401,6 +458,10 @@ export class PaymentGuestComponent implements OnDestroy {
 
   onRegisterAndPrepare(): void {
     this.formError.set(null);
+    if (!this.reg.firstName.trim() || !this.reg.lastName.trim()) {
+      this.formError.set('Indiquez votre prénom et votre nom.');
+      return;
+    }
     if (this.reg.password !== this.reg.confirmPassword) {
       this.formError.set('Les mots de passe ne correspondent pas.');
       return;
@@ -420,6 +481,8 @@ export class PaymentGuestComponent implements OnDestroy {
       vatReverseCharge: this.vatReverseCharge,
       vatNumber: this.vatNumber.trim(),
       registration: {
+        firstName: this.reg.firstName.trim(),
+        lastName: this.reg.lastName.trim(),
         email: this.reg.email.trim(),
         password: this.reg.password,
         confirmPassword: this.reg.confirmPassword,

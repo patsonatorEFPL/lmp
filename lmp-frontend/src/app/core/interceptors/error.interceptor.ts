@@ -17,12 +17,12 @@ function shouldSkip401Redirect(req: { url: string }, authService: AuthService): 
   if (SKIP_401_REDIRECT_URL_PARTS.some((part) => req.url.includes(part))) {
     return true;
   }
+  // Pendant le bootstrap : aucun signal fiable sur l'auth → ne pas rediriger sur 401 transitoire.
   if (authService.loading()) {
     return true;
   }
-  if (authService.isLoggedIn()) {
-    return true;
-  }
+  // NOTE : on NE PAS skip si isLoggedIn() — un 401 pendant qu'on se croit authentifié
+  // = session backend invalidée (user supprimé, expiré côté Spring Session) → MUST logout.
   return false;
 }
 

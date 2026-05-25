@@ -144,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setEmail(registerDto.getEmail());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
-        user.setFirstName(registerDto.getFirstName());
+        user.setFirstName(deriveFirstName(registerDto.getFirstName(), registerDto.getEmail()));
         user.setLastName(registerDto.getLastName());
         user.setPhone(registerDto.getPhone());
         user.setAddress(registerDto.getAddress());
@@ -261,14 +261,27 @@ public class AuthServiceImpl implements AuthService {
             return false;
         }
 
+        // SECURITY (M3) : capturer l'état AVANT de flip emailVerified, pour
+        // distinguer "INACTIVE car email non-vérifié" de "INACTIVE car admin
+        // a suspendu le compte". Sans ce check, un user admin-suspendu qui
+        // clique sur un vieux lien de vérification se retrouvait réactivé.
+        //
+        // HEURISTIQUE : la distinction passe par emailVerified=false
+        // (donc INACTIVE = registration pending). Le jour où on introduit
+        // un état SUSPENDED dédié (ou un flag suspendedByAdmin sur User),
+        // remplacer ce check par la vraie information.
+        boolean wasUnverified = !Boolean.TRUE.equals(user.getEmailVerified());
+
         // Marquer l'email comme vérifié
         user.setEmailVerified(true);
         user.setVerificationToken(null);
 
-        // Si le compte a été suspendu (INACTIVE), le réactiver
-        if (user.getStatus() == UserStatus.INACTIVE) {
+        if (user.getStatus() == UserStatus.INACTIVE && wasUnverified) {
             user.setStatus(UserStatus.ACTIVE);
             logger.info("Compte réactivé suite à la vérification email : {}", user.getEmail());
+        } else if (user.getStatus() == UserStatus.INACTIVE) {
+            logger.warn("Email vérifié pour {} mais compte reste INACTIVE (vraisemblablement admin-suspendu)",
+                    user.getEmail());
         }
 
         userRepository.save(user);
@@ -474,8 +487,13 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Invalide toutes les sessions d'un utilisateur via le SessionRegistry.
+     * Méthode promue à l'interface (M-related fix) pour pouvoir l'appeler depuis
+     * AdminRestController.softDeleteUser et autres call sites qui ont besoin de
+     * forcer la déconnexion immédiate.
      */
-    private void invalidateUserSessions(String username) {
+    @Override
+    public int invalidateUserSessions(String username) {
+        int expired = 0;
         try {
             List<Object> principals = sessionRegistry.getAllPrincipals();
             for (Object principal : principals) {
@@ -484,6 +502,7 @@ public class AuthServiceImpl implements AuthService {
                         List<SessionInformation> sessions = sessionRegistry.getAllSessions(principal, false);
                         for (SessionInformation session : sessions) {
                             session.expireNow();
+                            expired++;
                             logger.debug("Session invalidée pour {} : {}", username, session.getSessionId());
                         }
                     }
@@ -492,5 +511,24 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             logger.warn("Erreur lors de l'invalidation des sessions pour {} : {}", username, e.getMessage());
         }
+        return expired;
+    }
+
+    /**
+     * Fallback firstName : if the form omits it (legacy guest checkout, programmatic register),
+     * derive a friendly capitalized token from the email local-part so the welcome mail does
+     * not greet the user with "Utilisateur".
+     */
+    private static String deriveFirstName(String provided, String email) {
+        if (provided != null && !provided.isBlank()) {
+            return provided.trim();
+        }
+        if (email == null || email.isBlank() || !email.contains("@")) {
+            return "";
+        }
+        String local = email.substring(0, email.indexOf('@'));
+        String token = local.split("[._+-]")[0];
+        if (token.isEmpty()) return "";
+        return Character.toUpperCase(token.charAt(0)) + token.substring(1).toLowerCase(java.util.Locale.ROOT);
     }
 }

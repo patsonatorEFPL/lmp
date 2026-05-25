@@ -1,6 +1,9 @@
 package com.lmp.notification.service;
 
 import com.lmp.notification.config.MailAddressConfig;
+import com.lmp.notification.mail.queue.EmailQueueEvent;
+import com.lmp.notification.mail.queue.EmailQueueRepository;
+import com.lmp.notification.mail.queue.MailQueueService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,13 +12,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.thymeleaf.TemplateEngine;
 
-import jakarta.mail.Address;
 import jakarta.mail.internet.MimeMessage;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,8 +24,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests d'intégration pour NotificationService
- * Valide que les headers From et Reply-To sont correctement configurés
+ * Vérifie que NotificationService enqueue les emails via MailQueueService,
+ * et que MailAddressConfig est utilisé pour les adresses From.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -33,128 +33,84 @@ class NotificationServiceIntegrationTest {
 
     @Mock
     private JavaMailSender mailSender;
-    
+
     @Mock
     private TemplateEngine templateEngine;
-    
+
     @Mock
     private MimeMessage mimeMessage;
-    
+
+    @Mock
+    private EmailQueueRepository emailQueueRepository;
+
     private MailAddressConfig mailAddressConfig;
+    private MailQueueService mailQueueService;
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        // Configuration du MailAddressConfig
         mailAddressConfig = new MailAddressConfig();
         ReflectionTestUtils.setField(mailAddressConfig, "noreply", "noreply@example.com");
         ReflectionTestUtils.setField(mailAddressConfig, "support", "support@example.com");
         ReflectionTestUtils.setField(mailAddressConfig, "replyToSupport", "noreply@example.com");
         ReflectionTestUtils.setField(mailAddressConfig, "name", "LMP Digital Services");
-        
-        // Création du service avec constructor injection
-        notificationService = new NotificationService(mailSender, templateEngine, mailAddressConfig);
-        ReflectionTestUtils.setField(notificationService, "mailHost", "smtp.gmail.com");
-        ReflectionTestUtils.setField(notificationService, "mailUsername", "lmp.assistance@gmail.com");
-        ReflectionTestUtils.setField(notificationService, "mailPassword", "****");
+
+        when(emailQueueRepository.save(any(EmailQueueEvent.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        mailQueueService = new MailQueueService(emailQueueRepository);
+        notificationService = new NotificationService(mailSender, templateEngine, mailAddressConfig, mailQueueService);
     }
 
     @Test
-    void testSendTestEmailUsesCorrectAddresses() throws Exception {
-        // Given
-        String testEmail = "test@example.com";
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        
-        // When
-        notificationService.sendTestEmail(testEmail);
-        
-        // Then
-        ArgumentCaptor<SimpleMailMessage> messageCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(messageCaptor.capture());
-        
-        SimpleMailMessage capturedMessage = messageCaptor.getValue();
-        assertNotNull(capturedMessage);
-        assertEquals("noreply@example.com", capturedMessage.getFrom());
-        assertEquals("noreply@example.com", capturedMessage.getReplyTo());
-        assertArrayEquals(new String[]{testEmail}, capturedMessage.getTo());
+    void sendTestEmailEnqueuesWithNoreplyFrom() {
+        notificationService.sendTestEmail("test@example.com");
+
+        ArgumentCaptor<EmailQueueEvent> captor = ArgumentCaptor.forClass(EmailQueueEvent.class);
+        verify(emailQueueRepository).save(captor.capture());
+        EmailQueueEvent event = captor.getValue();
+
+        assertEquals("noreply@example.com", event.getSender());
+        assertEquals("LMP Digital Services", event.getSenderName());
+        assertEquals("test@example.com", event.getRecipient());
+        assertTrue(event.getSubject().startsWith("Test Email"));
+        assertNotNull(event.getBodyHtml());
     }
 
     @Test
-    void testEmailConfigurationLogging() throws Exception {
-        // Given
-        String testEmail = "test@example.com";
+    void testConnectivityReturnsTrueWhenMailSenderCreatesMessage() {
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        
-        // When
-        notificationService.sendTestEmail(testEmail);
-        
-        // Then - Vérifier que les logs montrent les bonnes adresses
-        // (Les logs sont vérifiés par observation dans les tests manuels)
-        verify(mailSender).send(any(SimpleMailMessage.class));
-    }
-
-    @Test 
-    void testConnectivityTest() {
-        // Given
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        
-        // When
-        boolean result = notificationService.testEmailConnectivity();
-        
-        // Then
-        assertTrue(result);
+        assertTrue(notificationService.testEmailConnectivity());
         verify(mailSender).createMimeMessage();
     }
 
     @Test
-    void testConnectivityTestFailure() {
-        // Given
+    void testConnectivityReturnsFalseOnException() {
         when(mailSender.createMimeMessage()).thenThrow(new RuntimeException("Connection failed"));
-        
-        // When
-        boolean result = notificationService.testEmailConnectivity();
-        
-        // Then
-        assertFalse(result);
+        assertFalse(notificationService.testEmailConnectivity());
     }
 
     @Test
-    void testSendTestWelcomeEmailConfiguration() throws Exception {
-        // Given
-        String testEmail = "welcome@example.com";
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        when(templateEngine.process(eq("emails/welcome-minimal-clean"), any())).thenReturn("<html>Welcome!</html>");
-        
-        // When
-        notificationService.sendTestWelcomeEmail(testEmail);
-        
-        // Then
-        verify(mailSender).send(any(MimeMessage.class));
+    void sendTestWelcomeEmailEnqueuesWithRenderedTemplate() {
+        when(templateEngine.process(eq("emails/welcome-minimal-clean"), any()))
+                .thenReturn("<html>Welcome!</html>");
+
+        notificationService.sendTestWelcomeEmail("welcome@example.com");
+
+        ArgumentCaptor<EmailQueueEvent> captor = ArgumentCaptor.forClass(EmailQueueEvent.class);
+        verify(emailQueueRepository).save(captor.capture());
+        EmailQueueEvent event = captor.getValue();
+
+        assertEquals("welcome@example.com", event.getRecipient());
+        assertEquals("<html>Welcome!</html>", event.getBodyHtml());
         verify(templateEngine).process(eq("emails/welcome-minimal-clean"), any());
     }
 
     @Test
-    void testMailAddressConfigIntegration() {
-        // Test que MailAddressConfig est correctement injecté et utilisé
-        assertNotNull(ReflectionTestUtils.getField(notificationService, "mailAddressConfig"));
-        
-        assertEquals("noreply@example.com", mailAddressConfig.getNoreply());
-        assertEquals("support@example.com", mailAddressConfig.getSupport());
-        assertEquals("noreply@example.com", mailAddressConfig.getReplyToSupport());
-    }
-
-    @Test
-    void testEmailAddressStrategy() {
-        // Vérifier que la stratégie d'adresses est cohérente
-        
-        // Emails transactionnels = noreply + reply-to cohérent (noreply)
+    void mailAddressConfigStrategyIsCoherent() {
         assertTrue(mailAddressConfig.getAppropriateFromAddress(true).contains("noreply"));
-        assertNotNull(mailAddressConfig.getAppropriateReplyTo(true));
         assertTrue(mailAddressConfig.getAppropriateReplyTo(true).contains("noreply"));
-        
-        // Emails support = support + reply-to cohérent (support)
         assertTrue(mailAddressConfig.getAppropriateFromAddress(false).contains("support"));
-        assertNotNull(mailAddressConfig.getAppropriateReplyTo(false));
         assertTrue(mailAddressConfig.getAppropriateReplyTo(false).contains("support"));
     }
 }

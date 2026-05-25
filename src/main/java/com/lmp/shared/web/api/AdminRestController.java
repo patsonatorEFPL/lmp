@@ -33,6 +33,7 @@ import com.lmp.shared.dto.admin.RevenueSeriesDto;
 import com.lmp.shared.dto.admin.TopServiceDto;
 import com.lmp.shared.dto.admin.HealthServiceDto;
 import com.lmp.shared.pricing.VatCalculationService;
+import com.lmp.shared.service.SseEmitterManager;
 
 import com.stripe.StripeClient;
 import com.stripe.model.PaymentIntent;
@@ -113,6 +114,7 @@ public class AdminRestController {
      * depuis context anonymous sans déclencher AuthorizationDeniedException via AOP.
      */
     private final StatsCacheHolder statsCacheHolder;
+    private final SseEmitterManager sseEmitterManager;
 
     public AdminRestController(UserService userService,
                                UserRepository userRepository,
@@ -129,7 +131,8 @@ public class AdminRestController {
                                VatCalculationService vatCalculationService,
                                JdbcTemplate jdbcTemplate,
                                SyncProperties syncProperties,
-                               StatsCacheHolder statsCacheHolder) {
+                               StatsCacheHolder statsCacheHolder,
+                               SseEmitterManager sseEmitterManager) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.authService = authService;
@@ -146,6 +149,7 @@ public class AdminRestController {
         this.jdbcTemplate = jdbcTemplate;
         this.syncProperties = syncProperties;
         this.statsCacheHolder = statsCacheHolder;
+        this.sseEmitterManager = sseEmitterManager;
     }
 
     @GetMapping("/stats")
@@ -1042,14 +1046,30 @@ public class AdminRestController {
 
     @PutMapping("/users/{id}/soft-delete")
     @Transactional
-    @Operation(summary = "Soft delete", description = "Désactive un utilisateur (DELETED status)")
+    @Operation(summary = "Soft delete", description = "Désactive un utilisateur (DELETED status) et invalide ses sessions actives")
     public ResponseEntity<ApiResponse<Void>> softDeleteUser(@PathVariable UUID id) {
         try {
             User user = userService.findById(id)
                     .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             user.setStatus(UserStatus.DELETED);
             userService.save(user);
-            return ResponseEntity.ok(ApiResponse.ok("Utilisateur désactivé (soft delete)", null));
+
+            // SECURITY (auth audit related) : sans cet appel, un user fraîchement
+            // soft-delete par l'admin conservait ses sessions actives et pouvait
+            // continuer à naviguer / faire des appels API jusqu'à expiration TTL.
+            // Le principal Spring Security suit la même résolution que
+            // CustomUserDetailsService (username || email).
+            String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
+            int expired = authService.invalidateUserSessions(principal);
+
+            // SECURITY (related) : fermer aussi les SSE streams en cours pour ce
+            // user. Sans ça, EventSource continue de recevoir notifications
+            // jusqu'au prochain heartbeat (15s) → fenêtre de fuite d'events.
+            int sseClosed = sseEmitterManager.closeUserEmitters(user.getId().toString());
+
+            return ResponseEntity.ok(ApiResponse.ok(
+                    "Utilisateur désactivé (soft delete) — " + expired + " session(s) + "
+                            + sseClosed + " stream(s) SSE fermé(s)", null));
         } catch (Exception e) {
             if (Sentry.isEnabled()) Sentry.captureException(e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

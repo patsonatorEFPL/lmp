@@ -8,6 +8,9 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -74,8 +77,19 @@ public class SecurityConfig {
     @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:3000,http://localhost:8080}")
     private String corsAllowedOrigins;
 
-    @org.springframework.beans.factory.annotation.Value("${security.remember-me.secret:lmpRememberMe-dev-changeme}")
+    /**
+     * Clé HMAC remember-me. Le default {@code lmpRememberMe-dev-changeme} est
+     * acceptable en dev/staging local mais doit IMPÉRATIVEMENT être remplacé en
+     * prod via {@code REMEMBER_ME_SECRET}. Le {@link #assertRememberMeSecretNotDefaultInProd()}
+     * fail-fast au startup si le default est encore en place sous profil {@code prod}.
+     */
+    public static final String REMEMBER_ME_DEFAULT_SECRET = "lmpRememberMe-dev-changeme";
+
+    @org.springframework.beans.factory.annotation.Value("${security.remember-me.secret:" + REMEMBER_ME_DEFAULT_SECRET + "}")
     private String rememberMeSecret;
+
+    @Autowired
+    private Environment environment;
 
     /** Cookie domain partagé cross-subdomain (ex. lmp-services.ca pour partager auth.* ↔ dev.* ↔ apex). */
     @org.springframework.beans.factory.annotation.Value("${server.servlet.session.cookie.domain:}")
@@ -97,6 +111,25 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
         this.purchaseIntentAuthenticationSuccessHandler = purchaseIntentAuthenticationSuccessHandler;
         this.adminRateLimitFilter = adminRateLimitFilter;
+    }
+
+    /**
+     * SECURITY (M5) : refuser de démarrer sous profil {@code prod} si la clé
+     * remember-me est encore le default dev. Empêche un déploiement prod
+     * silencieux avec une clé devinable qui permettrait à un attaquant de
+     * forger des cookies remember-me valides.
+     *
+     * Pas de fail-fast sous staging/dev pour ne pas casser les boots locaux.
+     */
+    @PostConstruct
+    public void assertRememberMeSecretNotDefaultInProd() {
+        boolean isProd = environment.acceptsProfiles(Profiles.of("prod"));
+        if (isProd && REMEMBER_ME_DEFAULT_SECRET.equals(rememberMeSecret)) {
+            throw new IllegalStateException(
+                "REMEMBER_ME_SECRET est encore le default dev sous profil prod — "
+                + "set la variable d'environnement REMEMBER_ME_SECRET sur une valeur aléatoire "
+                + "(>= 256 bits) avant de démarrer en production.");
+        }
     }
 
     // =========================================================================
@@ -199,10 +232,11 @@ public class SecurityConfig {
                                 "/api/orders/clear-purchase-intent")
                         .permitAll()
 
-                        // Admin + Dev endpoints (DevSyncController n'existe qu'en @Profile("dev"))
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // Dev endpoints — @Profile("dev") controller only exists in dev
-                        .requestMatchers("/api/v1/dev/**").permitAll()
+                        // SECURITY (H4) : /api/v1/dev/** matcher retiré — aucun controller
+                        // n'expose ce path. Si un dev controller revient, le déclarer @Profile("dev")
+                        // + ajouter le matcher conditionnel. Sans ça, un controller oublié sans
+                        // @PreAuthorize tomberait sur anyRequest().authenticated() — safe par défaut.
 
                         // Tout le reste nécessite authentification
                         .anyRequest().authenticated())
@@ -226,7 +260,6 @@ public class SecurityConfig {
                                 pathMatcher.matcher(HttpMethod.GET, "/api/v1/services"),
                                 pathMatcher.matcher(HttpMethod.GET, "/api/v1/services/**"))
                         .ignoringRequestMatchers(
-                                "/api/v1/dev/**",
                                 "/api/webhooks/**",
                                 "/api/v1/webhooks/**",
                                 "/api/v1/auth/login",
@@ -401,11 +434,12 @@ public class SecurityConfig {
 
                 // Configuration de la déconnexion.
                 // logoutSuccessUrl absolu vers baseUrl (sur auth.* "/" est 404).
-                // deleteCookies couvre Spring Session (SESSION) + JSESSIONID legacy + XSRF-TOKEN.
+                // deleteCookies couvre Spring Session (SESSION) + JSESSIONID legacy + XSRF-TOKEN
+                // + remember-me (sinon une session post-logout peut être ressuscitée par le cookie résiduel).
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl(absoluteBaseUrl("/"))
-                        .deleteCookies("SESSION", "JSESSIONID", "XSRF-TOKEN")
+                        .deleteCookies("SESSION", "JSESSIONID", "XSRF-TOKEN", "remember-me")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .permitAll())
@@ -476,7 +510,11 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         // Argon2id for new hashes (memory-hard, GPU/ASIC-resistant, OWASP 2024 preferred).
         // Existing {bcrypt} hashes keep verifying via DelegatingPasswordEncoder.
-        // Successful login re-encodes to argon2id transparently (delegating encoder behavior).
+        // Successful login auto-upgrades bcrypt → argon2id via
+        // CustomUserDetailsService.updatePassword() (UserDetailsPasswordService impl).
+        // Spring Security wires it on the auto-discovered DaoAuthenticationProvider
+        // when DelegatingPasswordEncoder.upgradeEncoding() returns true (= prefix
+        // differs from "argon2id").
         //
         // Argon2id parameters (OWASP fast tier ~50ms on ARM A1 4-OCPU):
         //   saltLength = 16 bytes

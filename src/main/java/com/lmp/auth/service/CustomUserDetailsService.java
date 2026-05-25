@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -17,18 +18,26 @@ import com.lmp.auth.domain.Role;
 import com.lmp.auth.domain.User;
 import com.lmp.auth.domain.UserStatus;
 import com.lmp.auth.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Service personnalisé pour charger les détails des utilisateurs lors de l'authentification.
  * Implémente UserDetailsService de Spring Security.
  */
 @Service
-public class CustomUserDetailsService implements UserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService, UserDetailsPasswordService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
 
         private final UserRepository userRepository;
 
+    /**
+     * SECURITY (M2) : when {@code true}, block login if {@code emailVerified=false}.
+     * Default {@code false} for backwards compatibility (bench users on staging). Flip
+     * to {@code true} via env {@code LMP_AUTH_REQUIRE_EMAIL_VERIFIED} in prod.
+     */
+    @Value("${lmp.auth.require-email-verified:false}")
+    private boolean requireEmailVerified;
 
     public CustomUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -52,17 +61,21 @@ public class CustomUserDetailsService implements UserDetailsService {
                     return new UsernameNotFoundException("Utilisateur non trouvé: " + login);
                 });
 
-        logger.info("Utilisateur trouvé: {} avec {} rôles", user.getUsername() != null ? user.getUsername() : user.getEmail(), user.getRoles().size());
-        
-        logger.info("🔑 Mot de passe hashé (10 premiers caractères): {}", user.getPassword() != null ? user.getPassword().substring(0, 10) + "..." : "null");
-        if (user.getPassword() != null && user.getPassword().startsWith("$2a$")) {
-            logger.info("✅ Mot de passe encodé en BCrypt détecté.");
-        } else {
-            logger.warn("⚠️ Mot de passe NON encodé en BCrypt !");
+        logger.debug("Utilisateur trouvé: {} avec {} rôles", user.getUsername() != null ? user.getUsername() : user.getEmail(), user.getRoles().size());
+
+        // SECURITY (L1) : prefix du hash retiré des logs.
+        // Le codebase utilise DelegatingPasswordEncoder : Argon2id par défaut pour
+        // les nouveaux hashes ({argon2id}...), bcrypt ($2a$) pour les legacy.
+        // On warn seulement si l'entrée est null OU ne correspond à AUCUN format
+        // connu — sinon on flood les logs sur chaque login Argon2.
+        if (user.getPassword() == null
+                || (!user.getPassword().startsWith("{argon2id}")
+                        && !user.getPassword().startsWith("{bcrypt}")
+                        && !user.getPassword().startsWith("$2a$")
+                        && !user.getPassword().startsWith("$2b$")
+                        && !user.getPassword().startsWith("$2y$"))) {
+            logger.warn("⚠️ Mot de passe non reconnu (ni Argon2id ni BCrypt) pour user {}", user.getEmail());
         }
-        
-        // Log user roles for debugging navigation issues
-        user.getRoles().forEach(role -> logger.info("🎭 Rôle utilisateur: {}", role.getName()));
         
         return createUserPrincipal(user);
     }
@@ -75,29 +88,43 @@ public class CustomUserDetailsService implements UserDetailsService {
      */
     private UserDetails createUserPrincipal(User user) {
         logger.info("🔍 [SESSION-SECURITY] Création UserPrincipal pour: {} (Statut: {})", user.getEmail(), user.getStatus());
-        
+
         // Note: Les utilisateurs supprimés sont maintenant physiquement effacés de la base (hard delete)
         // Cette vérification n'est plus nécessaire
-        
-        // VÉRIFICATION: Bloquer les comptes verrouillés
-        if (user.getAccountLocked()) {
-            logger.warn("🔒 [SESSION-SECURITY] BLOCAGE: Compte verrouillé pour {}", user.getEmail());
-            throw new UsernameNotFoundException("Compte utilisateur verrouillé");
-        }
-        
+
         Set<GrantedAuthority> authorities = user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .collect(Collectors.toSet());
 
-        // Autoriser le login même si INACTIVE (pour afficher la page suspendue / bannière)
-        boolean isEnabled = user.getStatus() == UserStatus.ACTIVE || user.getStatus() == UserStatus.INACTIVE;
-        boolean isAccountNonLocked = !user.getAccountLocked();
-        
-        logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}, Mot de passe haché: {}",
-                    isEnabled, isAccountNonLocked, user.getPassword().substring(0, 10) + "...");
+        // Autoriser le login même si INACTIVE (pour afficher la page suspendue / bannière).
+        // SECURITY (M2) : si requireEmailVerified=true, un compte non-vérifié est désactivé
+        // → Spring Security lèvera DisabledException, le front demandera renvoi du lien.
+        boolean statusAllows = user.getStatus() == UserStatus.ACTIVE || user.getStatus() == UserStatus.INACTIVE;
+        boolean emailVerifiedOk = !requireEmailVerified || Boolean.TRUE.equals(user.getEmailVerified());
+        boolean isEnabled = statusAllows && emailVerifiedOk;
+
+        // SECURITY (M1) : expose accountLocked sur UserDetails plutôt que throw
+        // UsernameNotFoundException. DefaultPreAuthenticationChecks lève alors
+        // LockedException, ce qui permet aux callers + handlers d'exception de
+        // distinguer "compte verrouillé" de "compte absent".
+        boolean isAccountNonLocked = !Boolean.TRUE.equals(user.getAccountLocked());
+
+        if (!isAccountNonLocked) {
+            logger.warn("🔒 [SESSION-SECURITY] Compte verrouillé pour {} — LockedException sera levée par DaoAuthenticationProvider",
+                    user.getEmail());
+        }
+        if (statusAllows && !emailVerifiedOk) {
+            logger.warn("🔒 [SESSION-SECURITY] BLOCAGE login non-vérifié pour {} (require-email-verified actif)",
+                    user.getEmail());
+        }
+
+        // SECURITY (L1) : hash bcrypt prefix retiré du log debug aussi.
+        logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}",
+                    isEnabled, isAccountNonLocked);
         logger.debug("🎭 Autorités utilisateur: {}", authorities);
-        
-        logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {})", user.getEmail(), user.getStatus());
+
+        logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {}, Locked: {})",
+                    user.getEmail(), user.getStatus(), !isAccountNonLocked);
 
         String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
         return org.springframework.security.core.userdetails.User.builder()
@@ -105,7 +132,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(authorities)
                 .accountExpired(false)
-                .accountLocked(false) // Déjà vérifié ci-dessus
+                .accountLocked(!isAccountNonLocked)
                 .credentialsExpired(false)
                 .disabled(!isEnabled) // Inactif si pas ACTIVE
                 .build();
@@ -125,6 +152,51 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'ID: " + userId));
 
         return createUserPrincipal(user);
+    }
+
+    /**
+     * Hook {@link UserDetailsPasswordService} appelé automatiquement par
+     * {@code DaoAuthenticationProvider} après chaque login réussi quand
+     * {@link org.springframework.security.crypto.password.PasswordEncoder#upgradeEncoding(String)}
+     * retourne {@code true}. C'est le cas pour tout hash legacy bcrypt
+     * ({@code {bcrypt}$2a$...} ou raw {@code $2a$...}) puisque l'encoder
+     * par défaut du {@code DelegatingPasswordEncoder} est désormais
+     * {@code argon2id}.
+     *
+     * <p>Le mot de passe reçu en paramètre est déjà ré-encodé avec
+     * Argon2id par {@code DaoAuthenticationProvider} ; on n'a qu'à le persister.</p>
+     *
+     * <p>Effet net : à chaque login réussi d'un user dont le hash est encore
+     * en bcrypt, on upgrade silencieusement vers Argon2id. Migration
+     * progressive sans demander reset password.</p>
+     */
+    @Override
+    @Transactional
+    public UserDetails updatePassword(UserDetails userDetails, String newEncodedPassword) {
+        String login = userDetails.getUsername();
+        User user = userRepository.findByLogin(login)
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "Utilisateur introuvable pour upgrade encoding: " + login));
+
+        String previousPrefix = extractEncodingPrefix(user.getPassword());
+        user.setPassword(newEncodedPassword);
+        userRepository.save(user);
+
+        logger.info("🔄 [PASSWORD-UPGRADE] Hash {} → argon2id pour {}",
+                previousPrefix, user.getEmail());
+
+        // Rebuild UserDetails avec le nouveau hash (l'instance reçue est immutable).
+        return createUserPrincipal(user);
+    }
+
+    private static String extractEncodingPrefix(String hash) {
+        if (hash == null || hash.isEmpty()) return "unknown";
+        if (hash.startsWith("{")) {
+            int end = hash.indexOf('}');
+            return end > 0 ? hash.substring(0, end + 1) : "unknown";
+        }
+        if (hash.startsWith("$2")) return "$2*$ (raw bcrypt)";
+        return "unknown";
     }
 
     /**

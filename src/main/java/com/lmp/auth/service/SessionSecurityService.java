@@ -5,10 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.lmp.auth.domain.User;
 import com.lmp.auth.service.CustomUserDetailsService;
+
+import io.sentry.Sentry;
 
 import java.util.List;
 
@@ -75,9 +78,22 @@ public class SessionSecurityService {
             
             return invalidatedCount;
             
+        } catch (UsernameNotFoundException e) {
+            // SECURITY : utilisateur disparu pendant la transaction (hard-delete race,
+            // ou compte qui n'existe simplement plus). Pas d'erreur Sentry-worthy.
+            logger.warn("SESSION SECURITY - Utilisateur {} introuvable pour invalidation sessions: {}",
+                    user.getEmail(), e.getMessage());
+            return 0;
         } catch (Exception e) {
-            logger.error("💥 SESSION SECURITY - ERREUR lors de l'invalidation des sessions pour l'utilisateur {}: {}", 
+            // SECURITY : exception INATTENDUE pendant lookup ou expireNow.
+            // Avant ce fix le swallow silencieux faisait passer un échec d'invalidation
+            // de sessions critique pour un cas "0 session trouvée" → admin pensait
+            // que la sécurité avait pris effet alors qu'aucune session n'avait été
+            // touchée. On log error + capture Sentry pour alerter ; le caller voit
+            // toujours 0 mais l'évènement est visible côté ops.
+            logger.error("💥 SESSION SECURITY - ERREUR INATTENDUE invalidation sessions pour {} : {}",
                         user.getEmail(), e.getMessage(), e);
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return 0;
         }
     }
@@ -121,9 +137,16 @@ public class SessionSecurityService {
             
             return invalidatedCount;
             
+        } catch (UsernameNotFoundException e) {
+            logger.warn("SESSION SECURITY - Email {} introuvable pour invalidation sessions",
+                    userEmail);
+            return 0;
         } catch (Exception e) {
-            logger.error("💥 SESSION SECURITY - ERREUR lors de l'invalidation des sessions pour l'email {}: {}", 
+            // Voir invalidateAllUserSessions(User) : swallow silencieux historique
+            // → maintenant log error + Sentry pour alerte ops.
+            logger.error("💥 SESSION SECURITY - ERREUR INATTENDUE invalidation sessions pour email {} : {}",
                         userEmail, e.getMessage(), e);
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return 0;
         }
     }
@@ -148,9 +171,13 @@ public class SessionSecurityService {
             
             return (int) activeCount;
             
+        } catch (UsernameNotFoundException e) {
+            logger.debug("SESSION SECURITY - Email {} introuvable pour count sessions", userEmail);
+            return 0;
         } catch (Exception e) {
-            logger.error("💥 SESSION SECURITY - ERREUR lors du comptage des sessions pour {}: {}", 
-                        userEmail, e.getMessage());
+            logger.error("💥 SESSION SECURITY - ERREUR INATTENDUE count sessions pour {} : {}",
+                        userEmail, e.getMessage(), e);
+            if (Sentry.isEnabled()) Sentry.captureException(e);
             return 0;
         }
     }

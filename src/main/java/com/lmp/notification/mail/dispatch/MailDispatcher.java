@@ -11,7 +11,9 @@ import com.lmp.notification.mail.queue.EmailQueueEvent;
  *   <li>{@link ExternalCrmMailDispatcher} — relais via l'API du framework externe (Email Queue distante). Default prod.</li>
  * </ul>
  *
- * <p>Sélection par propriété {@code lmp.mail.dispatcher=smtp|external-crm}.</p>
+ * <p>Stratégie active : défaut depuis {@code lmp.mail.dispatcher=smtp|erpnext}, overrideable
+ * à chaud via {@link EmailDispatcherConfigService}. Sélection runtime déléguée par
+ * {@link CompositeMailDispatcher} (bean @Primary).</p>
  */
 public interface MailDispatcher {
 

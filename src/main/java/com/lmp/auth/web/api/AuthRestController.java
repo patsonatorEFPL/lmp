@@ -140,14 +140,10 @@ public class AuthRestController {
                 String defaultLanding = user.getRoles().stream()
                         .anyMatch(r -> "ADMIN".equals(r.getName())) ? "/admin" : "/dashboard";
                 String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : defaultLanding;
-                // Convert absolute URLs to relative so the browser stays on the same origin
-                // (important when served through a reverse proxy / tunnel)
-                try {
-                    java.net.URI uri = new java.net.URI(redirectUrl);
-                    redirectUrl = uri.getRawPath() + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
-                } catch (java.net.URISyntaxException e) {
-                    // keep original relative URL
-                }
+                // SECURITY (M7) : ne renvoyer qu'une URL relative same-origin pour bloquer
+                // open-redirect. Toute saved request avec hôte externe OU URI non parsable
+                // est remplacée par la landing par défaut.
+                redirectUrl = sanitizeRedirect(redirectUrl, defaultLanding);
 
                 Map<String, Object> data = new HashMap<>();
                 data.put("user", UserResponse.from(user));
@@ -187,28 +183,37 @@ public class AuthRestController {
      */
     @PostMapping("/register")
     @Operation(summary = "Inscription", description = "Crée un nouveau compte utilisateur")
-    public Callable<ResponseEntity<ApiResponse<UserResponse>>> register(@Valid @RequestBody RegisterDto registerDto) {
+    public Callable<ResponseEntity<ApiResponse<Void>>> register(@Valid @RequestBody RegisterDto registerDto) {
         return () -> {
-            if (authService.existsByEmail(registerDto.getEmail())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(ApiResponse.error("Email already registered"));
-            }
+            // SECURITY (H5) : réponse générique constante pour éviter account enumeration.
+            // Format/password issues = 400 (UX legit, attacker contrôle l'input). Email
+            // déjà pris = 200 silencieux + reminder async — l'attaquant ne peut pas
+            // distinguer un nouveau compte d'un email existant.
+            ApiResponse<Void> generic = ApiResponse.ok(
+                    "Si cette adresse est valide et nouvelle, un email de confirmation a été envoyé.",
+                    null);
 
             if (!registerDto.isPasswordMatching()) {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Passwords do not match"));
             }
-
             if (authService.isDisposableEmail(registerDto.getEmail())) {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Disposable email addresses are not allowed"));
+            }
+
+            if (authService.existsByEmail(registerDto.getEmail())) {
+                // Log only (PII-safe : log.info already captures email at request edge). User
+                // owning the email can use "Mot de passe oublié" to recover ; attacker gets
+                // identical response shape & status as a fresh-email request.
+                logger.info("API registration skipped — email already registered: {}", registerDto.getEmail());
+                return ResponseEntity.ok(generic);
             }
 
             try {
                 authService.validateRegistrationData(registerDto);
                 User user = authService.registerUser(registerDto);
 
-                // Send emails asynchronously via Spring proxy (@Async) — non-blocking
                 authService.sendVerificationEmail(user);
                 authService.sendWelcomeEmail(user);
 
@@ -220,8 +225,7 @@ public class AuthRestController {
                 eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.USER_REGISTERED, "auth", user.getId(), regPl));
 
                 logger.info("API registration successful for: {}", user.getEmail());
-                return ResponseEntity.status(HttpStatus.CREATED)
-                        .body(ApiResponse.ok("Registration successful — check your email for verification", UserResponse.from(user)));
+                return ResponseEntity.ok(generic);
 
             } catch (IllegalArgumentException e) {
                 logger.warn("Registration validation: {}", e.getMessage());
@@ -237,7 +241,8 @@ public class AuthRestController {
 
     @GetMapping("/me")
     @Operation(summary = "Utilisateur courant", description = "Retourne les données de l'utilisateur authentifié")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication,
+                                                                    HttpServletRequest request) {
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getName())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -246,8 +251,15 @@ public class AuthRestController {
 
         return userService.findByLogin(authentication.getName())
                 .map(user -> ResponseEntity.ok(ApiResponse.ok(UserResponse.from(user))))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("User not found")));
+                .orElseGet(() -> {
+                    // User authenticated but row missing (hard-deleted) — purge session + 401
+                    // so the SPA logs out cleanly on the next /me poll.
+                    SecurityContextHolder.clearContext();
+                    HttpSession s = request.getSession(false);
+                    if (s != null) s.invalidate();
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(ApiResponse.error("Session invalid — user no longer exists"));
+                });
     }
 
     @PostMapping("/logout")
@@ -302,6 +314,45 @@ public class AuthRestController {
         } catch (RuntimeException e) {
             logger.warn("Reset password failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
+     * Normalize a post-login redirect to a same-origin relative path.
+     *
+     * <p>Accept only :</p>
+     * <ul>
+     *   <li>relative paths that start with {@code /} and not {@code //} or {@code /\} (block
+     *       scheme-relative attacks like {@code //evil.com/x});</li>
+     *   <li>absolute URLs whose authority is null after parsing (path-only)
+     *       — extract path + query.</li>
+     * </ul>
+     * Any other shape (external host, malformed URI, empty) falls back to {@code defaultLanding}.
+     */
+    static String sanitizeRedirect(String candidate, String defaultLanding) {
+        if (candidate == null || candidate.isBlank()) return defaultLanding;
+        String trimmed = candidate.trim();
+        // Scheme-relative / backslash tricks → always external.
+        if (trimmed.startsWith("//") || trimmed.startsWith("/\\") || trimmed.startsWith("\\")) {
+            return defaultLanding;
+        }
+        if (trimmed.startsWith("/")) {
+            return trimmed;
+        }
+        try {
+            java.net.URI uri = new java.net.URI(trimmed);
+            // Reject any absolute URL with a host — even if it points to our own domain,
+            // returning a relative path avoids origin-mismatch leaks.
+            if (uri.getHost() != null) {
+                return defaultLanding;
+            }
+            String path = uri.getRawPath();
+            if (path == null || path.isBlank() || !path.startsWith("/")) {
+                return defaultLanding;
+            }
+            return uri.getRawQuery() != null ? path + "?" + uri.getRawQuery() : path;
+        } catch (java.net.URISyntaxException e) {
+            return defaultLanding;
         }
     }
 }

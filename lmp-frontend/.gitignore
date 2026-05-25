@@ -35,6 +35,11 @@ testem.log
 __screenshots__/
 previous-context
 
+# Playwright
+/test-results/
+/e2e-report/
+/.playwright-auth/
+
 # System files
 .DS_Store
 Thumbs.db

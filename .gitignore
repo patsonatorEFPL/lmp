@@ -232,3 +232,13 @@ tmp-loadtest/
 tools/loadtest/k6-*.js
 # Playwright E2E scratch dir (npm install playwright lives here)
 tmp-e2e/
+
+### Bench results (local performance benchmarks) ###
+bench-results/
+
+### E2E capture screenshots (local Playwright runs) ###
+e2e-captures-*/
+
+### Local temp directories (logs, scratch files, tool artifacts) ###
+tmp-logs/
+tmp-local/

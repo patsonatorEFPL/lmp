@@ -11,7 +11,10 @@
     "fetch-spec": "node -e \"const h=require('http');const f=require('fs');h.get('http://localhost:8080/v3/api-docs',r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{f.writeFileSync('openapi.json',d);console.log('openapi.json mis à jour');});}).on('error',e=>{console.error('Backend non disponible:',e.message);process.exit(1);});\"",
     "update-api": "npm run fetch-spec && npm run codegen",
     "prebuild": "npm run codegen",
-    "prestart": "npm run codegen"
+    "prestart": "npm run codegen",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:debug": "playwright test --headed --slowMo 500"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
@@ -45,6 +48,7 @@
     "@angular/build": "^21.2.1",
     "@angular/cli": "^21.2.1",
     "@angular/compiler-cli": "^21.2.0",
+    "@playwright/test": "^1.60.0",
     "@spartan-ng/cli": "^0.0.1-alpha.648",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",

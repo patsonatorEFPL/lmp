@@ -368,62 +368,43 @@ export class RegisterComponent {
 
     this.submitting.set(true);
 
+    // SECURITY (H5) : ne pas chaîner /register → /login automatiquement. Si l'email
+    // est déjà pris, le backend renvoie 200 générique (anti-enumeration), mais un
+    // auto-login subséquent échouerait → leak de l'existence du compte. À la place,
+    // on affiche le message générique du backend et on demande à l'utilisateur de
+    // vérifier son email avant de se connecter.
     this.http
-      .post<any>(`${environment.apiUrl}/api/v1/auth/register`, {
-        firstName: this.form.firstName,
-        lastName: this.form.lastName,
-        email: this.form.email,
-        password: this.form.password,
-        confirmPassword: this.form.confirmPassword,
-        acceptTerms: this.form.acceptTerms,
-      }, { withCredentials: true })
-      .pipe(
-        switchMap(() =>
-          this.http.post<any>(
-            `${environment.apiUrl}/api/v1/auth/login`,
-            { email: this.form.email, password: this.form.password },
-            { withCredentials: true },
-          ),
-        ),
+      .post<{ success: boolean; message?: string }>(
+        `${environment.apiUrl}/api/v1/auth/register`,
+        {
+          firstName: this.form.firstName,
+          lastName: this.form.lastName,
+          email: this.form.email,
+          password: this.form.password,
+          confirmPassword: this.form.confirmPassword,
+          acceptTerms: this.form.acceptTerms,
+        },
+        { withCredentials: true },
       )
       .subscribe({
-        next: (response: any) => {
-          const user = response.data ?? response;
-          this.authService.setUser({
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            displayName: user.displayName ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-            roles: Array.isArray(user.roles) ? user.roles : [],
-            emailVerified: user.emailVerified ?? false,
-            companyName: user.companyName,
-            phone: user.phone,
-            city: user.city,
-            country: user.country,
-          });
+        next: (response) => {
+          this.successMessage.set(
+            response?.message
+              ?? 'Si cette adresse est valide et nouvelle, un email de confirmation a été envoyé. Vérifiez votre boîte avant de vous connecter.',
+          );
+          this.form.firstName = '';
+          this.form.lastName = '';
+          this.form.email = '';
+          this.form.password = '';
+          this.form.confirmPassword = '';
+          this.form.acceptTerms = false;
           this.submitting.set(false);
-          // Cross-host : on quitte auth host pour le site principal.
-          // Honore return_to query si présent (deep link préservé après register).
-          const back = this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('return_to'))
-                    ?? this.safeInternalReturnPath(this.route.snapshot.queryParamMap.get('returnUrl'));
-          if (typeof window !== 'undefined') {
-            window.location.href = this.siteConfig.baseUrl + (back ?? '/dashboard');
-          }
         },
         error: (err) => {
-          // Registration may have succeeded but auto-login failed
-          if (err.url?.includes('/login')) {
-            this.successMessage.set('Compte créé ! Connectez-vous pour accéder à votre espace.');
-            this.submitting.set(false);
-            // Stays on auth host (login is here) — Angular Router OK
-            this.router.navigate(['/login']);
-          } else {
-            this.errorMessage.set(
-              err.error?.message || 'Une erreur est survenue. Veuillez réessayer.',
-            );
-            this.submitting.set(false);
-          }
+          this.errorMessage.set(
+            err.error?.message ?? 'Une erreur est survenue. Veuillez réessayer.',
+          );
+          this.submitting.set(false);
         },
       });
   }

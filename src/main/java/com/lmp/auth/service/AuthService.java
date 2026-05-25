@@ -90,4 +90,14 @@ public interface AuthService {
      * E-mail de confirmation après changement de mot de passe (asynchrone).
      */
     void sendPasswordResetConfirmationEmail(String email, String userDisplayName);
+
+    /**
+     * Invalide toutes les sessions actives d'un utilisateur via SessionRegistry.
+     * Utilisé après soft-delete admin, suspension, ou changement de credentials
+     * sensibles pour forcer la déconnexion immédiate sur tous les appareils.
+     *
+     * @param username login ou email utilisé comme principal Spring Security
+     * @return nombre de sessions expirées
+     */
+    int invalidateUserSessions(String username);
 }

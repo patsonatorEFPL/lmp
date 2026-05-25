@@ -9,6 +9,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -152,4 +154,12 @@ public class EmailQueueEvent {
 
     public UUID getCorrelationId() { return correlationId; }
     public void setCorrelationId(UUID correlationId) { this.correlationId = correlationId; }
+
+    public List<String> getCcList() { return splitCsv(cc); }
+    public List<String> getBccList() { return splitCsv(bcc); }
+
+    private static List<String> splitCsv(String value) {
+        if (value == null || value.isBlank()) return List.of();
+        return Arrays.asList(value.split("\\s*,\\s*"));
+    }
 }

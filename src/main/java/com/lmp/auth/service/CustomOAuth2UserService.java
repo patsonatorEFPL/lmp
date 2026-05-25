@@ -71,6 +71,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException("Email non disponible depuis " + registrationId);
         }
 
+        // SECURITY (H2) : le provider doit avoir confirmé l'email avant qu'on l'accepte
+        // comme identité. Sans ça, un IdP malveillant ou un tenant multi-tenant peut
+        // émettre un email arbitraire dans le token.
+        if (!isEmailVerifiedByProvider(registrationId, attributes)) {
+            logger.warn("OAuth2: email_verified=false depuis {} pour {} — login refusé", registrationId, email);
+            throw new OAuth2AuthenticationException(
+                    "Votre adresse email n'est pas vérifiée chez le fournisseur (" + registrationId
+                    + "). Vérifiez votre compte côté provider puis réessayez.");
+        }
+
         logger.info("OAuth2 login - Provider: {}, Email: {}, Name: {} {}", registrationId, email, firstName, lastName);
 
         // Chercher un utilisateur existant par email avec rôles (évite LazyInitializationException)
@@ -79,6 +89,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (existingUserOpt.isPresent()) {
             user = existingUserOpt.get();
+            // SECURITY (H1) : refuser le merge silencieux si compte local pré-existe
+            // avec emailVerified=false. Sinon attaquant qui pré-inscrit victim@gmail.com
+            // sans vérifier l'email peut conserver l'accès quand victime arrive via OAuth.
+            // Le user légitime doit d'abord prouver le contrôle de l'email
+            // (forgot-password OU lien de vérification).
+            if (user.getOauthProvider() == null && !Boolean.TRUE.equals(user.getEmailVerified())) {
+                logger.warn("OAuth2: merge refusé pour {} — compte local existe avec emailVerified=false ({} bloqué)",
+                        email, registrationId);
+                throw new OAuth2AuthenticationException(
+                        "Un compte local existe pour cet email mais n'a jamais été vérifié. "
+                        + "Veuillez d'abord cliquer sur le lien de vérification dans l'email "
+                        + "envoyé à l'inscription, ou utiliser \"Mot de passe oublié\".");
+            }
             // Mettre à jour les infos OAuth si pas encore liées
             if (user.getOauthProvider() == null) {
                 user.setOauthProvider(registrationId);
@@ -154,13 +177,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if ("google".equals(provider)) {
             return (String) attributes.get("email");
         } else if ("microsoft".equals(provider)) {
-            String email = (String) attributes.get("email");
-            if (email == null) {
-                email = (String) attributes.get("preferred_username");
-            }
-            return email;
+            // SECURITY (H2) : ne PAS fallback sur preferred_username — un tenant Azure AD
+            // multi-tenant peut émettre un preferred_username arbitraire non vérifié. Si
+            // le claim email est absent, refuser plutôt que d'accepter un email spoofable.
+            return (String) attributes.get("email");
         }
         return null;
+    }
+
+    /**
+     * SECURITY (H2) : exige que le provider OAuth ait confirmé le contrôle de l'email.
+     * Sans cette garantie, un attaquant possédant un compte sur un IdP self-issued
+     * peut prétendre détenir n'importe quel email et déclencher la création/merge.
+     */
+    private boolean isEmailVerifiedByProvider(String provider, Map<String, Object> attributes) {
+        Object claim = attributes.get("email_verified");
+        if (claim instanceof Boolean b) return b;
+        if (claim instanceof String s) return "true".equalsIgnoreCase(s);
+        // Microsoft Graph profile scope ne renvoie pas email_verified — pour les tenants
+        // sous notre contrôle on tolère, mais Google DOIT toujours renvoyer le claim.
+        return "microsoft".equals(provider);
     }
 
     private String extractFirstName(String provider, Map<String, Object> attributes) {
