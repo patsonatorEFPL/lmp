@@ -195,15 +195,14 @@ public class AuthorizationServerConfig {
                     .scope(OidcScopes.EMAIL)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
-                            // SECURITY (M10) : PKCE activé. OAuth 2.1 recommande PKCE pour
-                            // TOUS les clients y compris confidentiels. Protège contre auth code
-                            // interception (referer leak, log scraping, proxy intercept) même
-                            // si client_secret est connu de l'attaquant.
-                            // Frappe oauth2_client (>= v15) supporte PKCE natif via
-                            // request_kwargs={"code_challenge_method": "S256"}.
-                            // Si flow Frappe casse avec PKCE on : (a) downgrade requireProofKey(false)
-                            // ET (b) configure code_challenge côté Frappe avant de re-activer.
-                            .requireProofKey(true)
+                            // SECURITY (M10) : PKCE deferred — Frappe utilise rauth.OAuth2Service
+                            // (frappe/utils/oauth.py:120) qui n'envoie PAS code_challenge.
+                            // Enable PKCE ici casse SSO Frappe avec invalid_request. Pour ré-activer :
+                            //   1. patcher Frappe pour transmettre code_verifier (params= sur rauth),
+                            //      OU migrer Frappe vers authlib (PKCE natif S256)
+                            //   2. flip require-proof-key=true via SQL (V50 migration ou ad-hoc)
+                            // V48 a tenté l'enable, V49 a rollback. Voir commit log + V49 header.
+                            .requireProofKey(false)
                             .build())
                     .tokenSettings(TokenSettings.builder()
                             // SECURITY (M10) : access TTL réduit 4h → 1h. Token compromis
