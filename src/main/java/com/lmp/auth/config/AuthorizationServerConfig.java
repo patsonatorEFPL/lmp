@@ -202,14 +202,15 @@ public class AuthorizationServerConfig {
                     .scope(OidcScopes.EMAIL)
                     .clientSettings(ClientSettings.builder()
                             .requireAuthorizationConsent(false) // Staff SSO — pas de consent screen
-                            // SECURITY (M10) : PKCE deferred — Frappe utilise rauth.OAuth2Service
-                            // (frappe/utils/oauth.py:120) qui n'envoie PAS code_challenge.
-                            // Enable PKCE ici casse SSO Frappe avec invalid_request. Pour ré-activer :
-                            //   1. patcher Frappe pour transmettre code_verifier (params= sur rauth),
-                            //      OU migrer Frappe vers authlib (PKCE natif S256)
-                            //   2. flip require-proof-key=true via SQL (V50 migration ou ad-hoc)
-                            // V48 a tenté l'enable, V49 a rollback. Voir commit log + V49 header.
-                            .requireProofKey(false)
+                            // SECURITY (M10) : PKCE S256 enforced. Frappe app `lmp_branding`
+                            // patched (pkce_patch.py + sso.py) to emit code_challenge on
+                            // authorize URL and inject code_verifier on token exchange.
+                            // Spring AS validates SHA256(verifier) == challenge stored at
+                            // authorize time before issuing access_token. Defense-in-depth
+                            // contre code interception même si client_secret leaké.
+                            // E2E validated 2026-05-27 ; V51 migration flipped DB row.
+                            // Cf. lmp_branding/pkce_patch.py, V49→V51 migration history.
+                            .requireProofKey(true)
                             .build())
                     .tokenSettings(TokenSettings.builder()
                             // SECURITY (M10) : access TTL réduit 4h → 1h. Token compromis
