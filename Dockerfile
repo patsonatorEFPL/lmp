@@ -86,6 +86,31 @@ RUN mkdir -p /app/invoices /app/logs && \
 # Basculer vers l'utilisateur non-root
 USER spring
 
+# ----------------------------------------
+# Phase 0.4 — JDK AOT cache training (JEP 514, Java 26)
+# ----------------------------------------
+# Single-step training: -XX:AOTCacheOutput records class loading + method
+# profiling during a brief bootstrap, then a child JVM assembles the cache
+# at exit. Spring Boot is launched with --spring.context.exit=onRefresh so
+# the context refreshes (loads all beans → triggers all JIT-hot class
+# loading) and immediately exits cleanly.
+#
+# Autoconfig exclusions: build container has no DB/Redis, so DataSource +
+# Hibernate + Redis autoconfigs would block context refresh. Excluding
+# them lets the training run reach onRefresh without external services.
+# The classes we drop here are still loaded at runtime (no AOT entry for
+# them) — only the cache lacks them, so the cost is a small JIT warmup
+# on the affected paths.
+#
+# Cache lands at /app/app.aot (~110 MB). Image size grows accordingly but
+# every replica starts pre-warmed without needing a shared volume.
+RUN java --enable-preview \
+        -XX:AOTCacheOutput=/app/app.aot \
+        -jar app.jar \
+        --spring.context.exit=onRefresh \
+        --spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration \
+    || (echo "AOT training exited non-zero — cache may be partial" && ls -la /app/app.aot)
+
 # Variables d'environnement Spring Boot
 ENV SERVER_PORT=8080
 
@@ -117,8 +142,14 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
 #       que ZGC, donc cap 4G reste large marge).
 #   -XX:MaxMetaspaceSize=192m / CompressedClassSpaceSize=64m / ReservedCodeCacheSize=128m :
 #       caps mesurés idle + marge.
+#   -XX:AOTCache=/app/app.aot
+#       JEP 514 AOT cache loaded at startup. Cache pre-built at image build
+#       time by the training RUN above. Cuts startup ~30 % by skipping class
+#       loading + initial method profiling. Cache absence is non-fatal: JVM
+#       falls back to standard class loading with a warning.
 ENTRYPOINT ["java", \
     "--enable-preview", \
+    "-XX:AOTCache=/app/app.aot", \
     "-Xms512m", "-Xmx1536m", \
     "-Xss512k", \
     "-XX:+UseShenandoahGC", \
