@@ -104,7 +104,15 @@ USER spring
 #
 # Cache lands at /app/app.aot (~110 MB). Image size grows accordingly but
 # every replica starts pre-warmed without needing a shared volume.
+# Training must use the SAME perf flags as the runtime entrypoint — the AOT
+# cache embeds class layout assumptions tied to object header size (Compact
+# Object Headers) and GC barriers (Shenandoah). Mismatch → cache rejected at
+# load with "UseCompactObjectHeaders setting (disabled) does not equal the
+# current setting (enabled)" and JVM falls back to cold class loading.
 RUN java --enable-preview \
+        -XX:+UseShenandoahGC \
+        -XX:ShenandoahGCMode=generational \
+        -XX:+UseCompactObjectHeaders \
         -XX:AOTCacheOutput=/app/app.aot \
         -jar app.jar \
         --spring.context.exit=onRefresh \
