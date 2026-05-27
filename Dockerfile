@@ -109,10 +109,18 @@ USER spring
 # Object Headers) and GC barriers (Shenandoah). Mismatch → cache rejected at
 # load with "UseCompactObjectHeaders setting (disabled) does not equal the
 # current setting (enabled)" and JVM falls back to cold class loading.
+# -XX:-AOTClassLinking disables AOT pre-linking. With linking enabled the
+# cache embeds module-graph snapshots tied to the training-time set of
+# loaded modules; runtime then refuses with "AOT cache has aot-linked
+# classes. It cannot be used when archived full module graph is not used"
+# because the autoconfigure exclusions altered the module set vs runtime.
+# Disabling linking trades a little startup speed for portability — cache
+# still skips class loading + initial profiling, just not pre-linking.
 RUN java --enable-preview \
         -XX:+UseShenandoahGC \
         -XX:ShenandoahGCMode=generational \
         -XX:+UseCompactObjectHeaders \
+        -XX:-AOTClassLinking \
         -XX:AOTCacheOutput=/app/app.aot \
         -jar app.jar \
         --spring.context.exit=onRefresh \
