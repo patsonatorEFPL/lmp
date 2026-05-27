@@ -116,7 +116,15 @@ USER spring
 # because the autoconfigure exclusions altered the module set vs runtime.
 # Disabling linking trades a little startup speed for portability — cache
 # still skips class loading + initial profiling, just not pre-linking.
+# --add-modules jdk.jfr: runtime enables JFR via -XX:StartFlightRecording
+# which implicitly adds the jdk.jfr module. Training must add the same
+# module set or cache load fails with
+#   Mismatched values for property jdk.module.addmods: jdk.jfr specified
+#   during runtime but not during dump time
+# and falls back to standard class loading. Adding the module here costs
+# nothing — no recording is started, just the module is on the graph.
 RUN java --enable-preview \
+        --add-modules jdk.jfr \
         -XX:+UseShenandoahGC \
         -XX:ShenandoahGCMode=generational \
         -XX:+UseCompactObjectHeaders \
