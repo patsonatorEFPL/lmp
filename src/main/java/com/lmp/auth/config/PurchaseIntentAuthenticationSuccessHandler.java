@@ -116,6 +116,13 @@ public class PurchaseIntentAuthenticationSuccessHandler implements Authenticatio
         
         // Vérifier s'il y a une requête sauvegardée (ex: /oauth2/authorize en flow SSO)
         Object savedRequestObj = request.getSession().getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+        java.util.List<String> allAttrNames = java.util.Collections.list(request.getSession().getAttributeNames());
+        logger.info("[SAVED-REQ-DIAG] user={} session_id={} attr_class={} attr_present={} all_session_attrs={}",
+                userEmail,
+                request.getSession().getId(),
+                savedRequestObj != null ? savedRequestObj.getClass().getName() : "null",
+                savedRequestObj != null,
+                allAttrNames);
         if (savedRequestObj instanceof DefaultSavedRequest savedRequest) {
             String targetUrl = savedRequest.getRequestURL();
             if (savedRequest.getQueryString() != null) {
