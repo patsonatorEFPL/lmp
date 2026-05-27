@@ -4,6 +4,7 @@ import com.lmp.auth.domain.User;
 import com.lmp.auth.repository.UserRepository;
 import com.lmp.auth.dto.PurchaseIntent;
 import com.lmp.shared.web.ClientIpResolver;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,8 +12,9 @@ import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.DefaultSavedRequest;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,115 +22,126 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * Gestionnaire personnalisé de succès d'authentification qui vérifie
- * s'il y a une intention de paiement en session et redirige en conséquence.
- * 
- * Flux :
- * 1. Utilisateur anonyme sélectionne un service → intention stockée en session
- * 2. Utilisateur se connecte ou s'inscrit → ce handler est appelé
- * 3. Si intention trouvée → redirection vers dashboard avec paramètre
- * 4. Dashboard détecte le paramètre → redirection automatique vers Stripe
+ * Gestionnaire de succès d'authentification.
+ *
+ * Étend {@link SavedRequestAwareAuthenticationSuccessHandler} pour réutiliser
+ * la mécanique standard Spring Security :
+ *  - Lecture du saved request via {@link RequestCache} (abstraction stable, pas
+ *    de lecture brute de l'attribut session {@code SPRING_SECURITY_SAVED_REQUEST}).
+ *  - Support natif des replays POST, {@code targetUrlParameter},
+ *    {@code alwaysUseDefaultTargetUrl}, {@code useReferer}.
+ *  - Délégation à la {@code RedirectStrategy} configurée.
+ *
+ * Surcharges métier :
+ *  - Mise à jour de {@code lastLoginDate} et audit log.
+ *  - Court-circuit vers {@code /dashboard?processPurchase=true} si une
+ *    intention de paiement valide est en session ; le saved request éventuel
+ *    est purgé pour éviter un orphelin dans Redis.
+ *
+ * Cross-host : le default target URL est préfixé par {@code app.base.url}
+ * (form login fire sur {@code auth.*} ; user doit atterrir sur le site
+ * principal). Les saved requests stockent déjà l'URL absolue, donc rien à
+ * faire de notre côté pour ce cas.
  */
 @Component
-public class PurchaseIntentAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+public class PurchaseIntentAuthenticationSuccessHandler
+        extends SavedRequestAwareAuthenticationSuccessHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(PurchaseIntentAuthenticationSuccessHandler.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("AUDIT." + PurchaseIntentAuthenticationSuccessHandler.class.getName());
 
-        private final UserRepository userRepository;
+    private static final String PURCHASE_INTENT_SESSION_KEY = "pendingPurchaseIntent";
 
-    /** Base URL du site principal — utilisée pour redirects absolus cross-host
-     *  (form login fire sur auth.*, mais le user doit atterrir sur le site principal). */
+    private final UserRepository userRepository;
+    private final RequestCache requestCache = new HttpSessionRequestCache();
+
     @org.springframework.beans.factory.annotation.Value("${app.base.url:}")
     private String baseUrl;
 
-
     public PurchaseIntentAuthenticationSuccessHandler(UserRepository userRepository) {
         this.userRepository = userRepository;
+        setRequestCache(requestCache);
     }
 
-    /** Préfixe le path avec baseUrl pour cross-host redirect (form login sur auth.* → site sur baseUrl). */
+    @PostConstruct
+    void configureDefaultTarget() {
+        setDefaultTargetUrl(absoluteUrl("/dashboard"));
+    }
+
     private String absoluteUrl(String path) {
         if (baseUrl == null || baseUrl.isBlank()) return path;
         return baseUrl + path;
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, 
-                                      HttpServletResponse response,
-                                      Authentication authentication) throws IOException, ServletException {
-        
+    public void onAuthenticationSuccess(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        Authentication authentication) throws IOException, ServletException {
+
         String userEmail = authentication.getName();
         HttpSession session = request.getSession();
-        
-        logger.info("Authentication success for user: {}", userEmail);
-        auditLogger.info("User authenticated successfully - Email: {}, IP: {}", 
-                        userEmail, ClientIpResolver.resolve(request));
 
-        // Mettre à jour la date de dernière connexion
+        logger.info("Authentication success for user: {}", userEmail);
+        auditLogger.info("User authenticated successfully - Email: {}, IP: {}",
+                userEmail, ClientIpResolver.resolve(request));
+
+        updateLastLoginDate(userEmail);
+
+        if (handlePurchaseIntent(request, response, session, userEmail)) {
+            return;
+        }
+
+        super.onAuthenticationSuccess(request, response, authentication);
+    }
+
+    private void updateLastLoginDate(String userEmail) {
         try {
             Optional<User> userOpt = userRepository.findByEmail(userEmail);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 user.setLastLoginDate(LocalDateTime.now());
                 userRepository.save(user);
-                logger.info("Last login date updated for user: {}", userEmail);
             }
         } catch (Exception e) {
             logger.error("Error updating last login date for {}: {}", userEmail, e.getMessage());
         }
-        
-        try {
-            // Vérifier s'il y a une intention de paiement en session
-            PurchaseIntent purchaseIntent = (PurchaseIntent) session.getAttribute("pendingPurchaseIntent");
-            
-            if (purchaseIntent != null && purchaseIntent.isValid()) {
-                
-                logger.info("Purchase intent found for user {}: {} - Amount: {} {}", 
-                           userEmail, purchaseIntent.getServiceName(), 
-                           purchaseIntent.getAmount(), purchaseIntent.getCurrency());
-                
-                auditLogger.info("Purchase intent detected post-authentication - User: {}, Service: {}, Amount: {} {}", 
-                               userEmail, purchaseIntent.getServiceName(), 
-                               purchaseIntent.getAmount(), purchaseIntent.getCurrency());
-                
-                // Rediriger vers le dashboard avec un paramètre indiquant qu'il faut traiter le paiement
-                String redirectUrl = absoluteUrl("/dashboard?processPurchase=true");
+    }
 
-                logger.info("Redirecting user {} to {} for purchase processing", userEmail, redirectUrl);
-                response.sendRedirect(redirectUrl);
-                return;
-                
-            } else {
-                if (purchaseIntent != null && !purchaseIntent.isValid()) {
-                    // Nettoyer l'intention expirée
-                    session.removeAttribute("pendingPurchaseIntent");
-                    logger.info("Expired purchase intent removed for user: {}", userEmail);
-                }
-                
-                logger.info("No valid purchase intent found for user: {}", userEmail);
+    /**
+     * @return {@code true} si une intention de paiement a déclenché une redirect
+     *         (la response est alors committed et l'appelant doit return).
+     */
+    private boolean handlePurchaseIntent(HttpServletRequest request,
+                                         HttpServletResponse response,
+                                         HttpSession session,
+                                         String userEmail) throws IOException {
+        try {
+            PurchaseIntent intent = (PurchaseIntent) session.getAttribute(PURCHASE_INTENT_SESSION_KEY);
+            if (intent == null) {
+                return false;
             }
-            
+            if (!intent.isValid()) {
+                session.removeAttribute(PURCHASE_INTENT_SESSION_KEY);
+                logger.info("Expired purchase intent removed for user: {}", userEmail);
+                return false;
+            }
+
+            auditLogger.info("Purchase intent detected post-authentication - User: {}, Service: {}, Amount: {} {}",
+                    userEmail, intent.getServiceName(), intent.getAmount(), intent.getCurrency());
+
+            // Purge le saved request : on bypass volontairement le retour
+            // vers une URL pré-login (ex. /oauth2/authorize) au profit du flow
+            // achat. Sinon un saved request orphelin reste en session/Redis.
+            requestCache.removeRequest(request, response);
+
+            String redirectUrl = absoluteUrl("/dashboard?processPurchase=true");
+            logger.info("Redirecting user {} to {} for purchase processing", userEmail, redirectUrl);
+            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+            return true;
+
         } catch (Exception e) {
             logger.error("Error processing purchase intent for user {}: {}", userEmail, e.getMessage(), e);
-            // Continue avec la redirection normale même en cas d'erreur
+            return false;
         }
-        
-        // Vérifier s'il y a une requête sauvegardée (ex: /oauth2/authorize en flow SSO)
-        Object savedRequestObj = request.getSession().getAttribute("SPRING_SECURITY_SAVED_REQUEST");
-        if (savedRequestObj instanceof DefaultSavedRequest savedRequest) {
-            String targetUrl = savedRequest.getRequestURL();
-            if (savedRequest.getQueryString() != null) {
-                targetUrl += "?" + savedRequest.getQueryString();
-            }
-            logger.info("Redirecting user {} to saved request: {}", userEmail, targetUrl);
-            response.sendRedirect(targetUrl);
-            return;
-        }
-
-        // Redirection normale vers le dashboard sur le site principal (cross-host depuis auth.*).
-        String defaultRedirectUrl = absoluteUrl("/dashboard");
-        logger.info("Standard authentication redirect for user {} to {}", userEmail, defaultRedirectUrl);
-        response.sendRedirect(defaultRedirectUrl);
     }
 }
