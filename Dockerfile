@@ -123,6 +123,15 @@ USER spring
 #   during runtime but not during dump time
 # and falls back to standard class loading. Adding the module here costs
 # nothing — no recording is started, just the module is on the graph.
+# Spring Boot 4 wires JpaSharedEM via HibernateJpaConfiguration (not -Auto-),
+# so the autoconfigure.exclude on -Auto- classes is not enough. We let JPA
+# wire, but feed it the dialect explicitly and disable JDBC metadata lookup
+# so Hibernate boots without a live database. Flyway disabled so it does
+# not try to migrate against the fake datasource URL.
+#
+# Result: context refresh completes cleanly, training run exits with code 0,
+# AOT cache covers more classes (no early Hibernate failure cutoff).
+ENV LMP_AOT_DB_URL=jdbc:postgresql://localhost:1/aot-training
 RUN java --enable-preview \
         --add-modules jdk.jfr \
         -XX:+UseShenandoahGC \
@@ -132,8 +141,16 @@ RUN java --enable-preview \
         -XX:AOTCacheOutput=/app/app.aot \
         -jar app.jar \
         --spring.context.exit=onRefresh \
-        --spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration \
+        --spring.flyway.enabled=false \
+        --spring.datasource.url=${LMP_AOT_DB_URL} \
+        --spring.datasource.username=aot \
+        --spring.datasource.password=aot \
+        --spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect \
+        --spring.jpa.properties.hibernate.boot.allow_jdbc_metadata_access=false \
+        --spring.jpa.hibernate.ddl-auto=none \
+        --spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.data.redis.autoconfigure.RedisAutoConfiguration,org.springframework.boot.data.redis.autoconfigure.RedisRepositoriesAutoConfiguration \
     || (echo "AOT training exited non-zero — cache may be partial" && ls -la /app/app.aot)
+ENV LMP_AOT_DB_URL=
 
 # Variables d'environnement Spring Boot
 ENV SERVER_PORT=8080
