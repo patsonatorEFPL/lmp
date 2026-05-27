@@ -453,6 +453,15 @@ public class SecurityConfig {
 
                 // Sessions
                 .sessionManagement(session -> session
+                        // Spring Security default = changeSessionId (Servlet 3.1+) qui appelle
+                        // request.changeSessionId(). MAIS Spring Session 4.x Redis
+                        // implementation de changeSessionId() perd les attributs custom non-Security
+                        // (notamment SPRING_SECURITY_SAVED_REQUEST) lors de la rotation → après
+                        // login OAuth flow, le success handler ne retrouve plus l'URL
+                        // /oauth2/authorize originale et tombe sur le default /dashboard.
+                        // migrateSession crée explicitement nouvelle session + copie TOUS les
+                        // attributs via Enumeration → fixation-safe + preserve SAVED_REQUEST.
+                        .sessionFixation(sf -> sf.migrateSession())
                         .maximumSessions(MAX_CONCURRENT_SESSIONS_PER_USER)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?expired=true")
