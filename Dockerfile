@@ -25,11 +25,14 @@ RUN if [ -f ng-openapi-gen.json ]; then npx ng-openapi-gen --config ng-openapi-g
 RUN npx ng build --configuration=production --ssr=false
 
 # ----------------------------------------
-# Étape 1: Build Spring Boot Backend
+# Étape 1: Build Spring Boot Backend (Java 26 EA via mvnw wrapper)
 # ----------------------------------------
-FROM maven:3-eclipse-temurin-25-alpine AS maven-build
+FROM eclipse-temurin:26-jdk-alpine AS maven-build
 
 WORKDIR /app
+
+# bash requis par mvnw wrapper
+RUN apk add --no-cache bash
 
 # Copier les fichiers de configuration Maven
 COPY pom.xml .
@@ -51,9 +54,9 @@ COPY --from=angular-build /app/dist/lmp-frontend/browser/ ./src/main/resources/s
 RUN ./mvnw clean package -DskipTests -B
 
 # ----------------------------------------
-# Étape 2: Runtime optimisé avec Java 25
+# Étape 2: Runtime Java 26 (JDK full pour AOT cache + JFR remote attach)
 # ----------------------------------------
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:26-jdk-alpine
 
 # Installation des outils nécessaires
 RUN apk add --no-cache \
@@ -96,24 +99,31 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
     CMD curl -f -m 25 http://localhost:8080/actuator/health/liveness || exit 1
 
-# Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE (défaut: prod)
+# Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE.
 #
-# JVM tuning (bench 1500 VU / 2 min via Traefik, 13/05/2026) :
-#   -Xms512m -Xmx1536m  : container cap 4096M compose laisse large marge
-#                         (peak observé ~2 GiB total heap + shmem ZGC + non-heap).
-#   -XX:+UseZGC          : ZGC generational par défaut depuis JDK 24, plus
-#                         besoin de +ZGenerational (warning si présent).
-#                         p99 -71% vs G1.
-#   -XX:+EnableDynamicAgentLoading : autorise attach agent natif (async-profiler,
-#                         JFR remote control). JDK 24+ bloque par défaut.
-#                         Pour profiling prod sans rebuild.
-#   -XX:MaxMetaspaceSize=192m / -XX:CompressedClassSpaceSize=64m /
-#   -XX:ReservedCodeCacheSize=128m : caps mesurés idle + marge.
+# Phase 0 Java 26 baseline (Track Rust-discipline) :
+#   -XX:+UseShenandoahGC + -XX:ShenandoahGCMode=generational
+#       Generational Shenandoah GA en Java 26 (JEP 524). Low-pause alternative
+#       à ZGC avec footprint mémoire moindre — pas de pointer color shmem ×2.
+#   -XX:+UseCompactObjectHeaders
+#       Production en Java 26 (était experimental Java 25). Headers 12B → 8B,
+#       -10% heap, moins cache misses sur hot objects.
+#   --enable-preview
+#       Active preview JEPs (Stable Values, Scoped Values, primitive patterns,
+#       Module Import) — utilisés par track Phase 1+ incrémental.
+#   -XX:+EnableDynamicAgentLoading
+#       async-profiler / JFR remote attach. Required JDK 24+.
+#   -Xms512m -Xmx1536m : container cap 4096M (Shenandoah footprint plus serré
+#       que ZGC, donc cap 4G reste large marge).
+#   -XX:MaxMetaspaceSize=192m / CompressedClassSpaceSize=64m / ReservedCodeCacheSize=128m :
+#       caps mesurés idle + marge.
 ENTRYPOINT ["java", \
+    "--enable-preview", \
     "-Xms512m", "-Xmx1536m", \
     "-Xss512k", \
-    "-XX:+UseG1GC", \
-    "-XX:MaxGCPauseMillis=100", \
+    "-XX:+UseShenandoahGC", \
+    "-XX:ShenandoahGCMode=generational", \
+    "-XX:+UseCompactObjectHeaders", \
     "-XX:+EnableDynamicAgentLoading", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=64m", \
