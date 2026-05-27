@@ -142,8 +142,9 @@ public class AuthRestController {
                 String redirectUrl = savedRequest != null ? savedRequest.getRedirectUrl() : defaultLanding;
                 // SECURITY (M7) : ne renvoyer qu'une URL relative same-origin pour bloquer
                 // open-redirect. Toute saved request avec hôte externe OU URI non parsable
-                // est remplacée par la landing par défaut.
-                redirectUrl = sanitizeRedirect(redirectUrl, defaultLanding);
+                // est remplacée par la landing par défaut. Same-origin (lmp-services.ca)
+                // est accepté et converti en path+query.
+                redirectUrl = sanitizeRedirect(redirectUrl, defaultLanding, request.getServerName());
 
                 Map<String, Object> data = new HashMap<>();
                 data.put("user", UserResponse.from(user));
@@ -329,7 +330,19 @@ public class AuthRestController {
      * </ul>
      * Any other shape (external host, malformed URI, empty) falls back to {@code defaultLanding}.
      */
+    /** Convenience for callers that don't have a request — defaults to rejecting all absolute URLs. */
     static String sanitizeRedirect(String candidate, String defaultLanding) {
+        return sanitizeRedirect(candidate, defaultLanding, null);
+    }
+
+    /**
+     * @param sameOriginHost optional current request host (e.g. {@code lmp-services.ca}).
+     *                        If set, absolute URLs whose host equals this value are accepted
+     *                        and reduced to path+query. Required for the OAuth2 resume flow
+     *                        where Spring Security stores the full URL of {@code /oauth2/authorize}
+     *                        in the saved request.
+     */
+    static String sanitizeRedirect(String candidate, String defaultLanding, String sameOriginHost) {
         if (candidate == null || candidate.isBlank()) return defaultLanding;
         String trimmed = candidate.trim();
         // Scheme-relative / backslash tricks → always external.
@@ -341,10 +354,18 @@ public class AuthRestController {
         }
         try {
             java.net.URI uri = new java.net.URI(trimmed);
-            // Reject any absolute URL with a host — even if it points to our own domain,
-            // returning a relative path avoids origin-mismatch leaks.
-            if (uri.getHost() != null) {
-                return defaultLanding;
+            String host = uri.getHost();
+            if (host != null) {
+                // Only accept absolute URLs whose host matches the current request's server name.
+                // Different host → defaultLanding (open-redirect protection M7).
+                if (sameOriginHost == null || !host.equalsIgnoreCase(sameOriginHost)) {
+                    return defaultLanding;
+                }
+                String path = uri.getRawPath();
+                if (path == null || path.isBlank() || !path.startsWith("/")) {
+                    return defaultLanding;
+                }
+                return uri.getRawQuery() != null ? path + "?" + uri.getRawQuery() : path;
             }
             String path = uri.getRawPath();
             if (path == null || path.isBlank() || !path.startsWith("/")) {
