@@ -12,6 +12,8 @@ import org.springframework.scheduling.TaskScheduler;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,7 +27,9 @@ import static org.mockito.Mockito.verify;
 /**
  * Structural tests for {@link RedisListenerStarter}. The actual startup race is
  * timing-dependent (overlay network attach) and not reproducible in a unit test;
- * these verify the retry/give-up/observability behaviour instead.
+ * these verify the retry/give-up/observability behaviour instead. The starter now
+ * drives every {@link RedisMessageListenerContainer} bean (the app's own and Spring
+ * Session's), so the tests cover the multi-container fan-out too.
  */
 class RedisListenerStarterTest {
 
@@ -39,7 +43,7 @@ class RedisListenerStarterTest {
     void setUp() {
         container = mock(RedisMessageListenerContainer.class);
         scheduler = mock(TaskScheduler.class);
-        starter = new RedisListenerStarter(container, scheduler);
+        starter = new RedisListenerStarter(singleContainer(container), scheduler);
 
         logbackLogger = (Logger) LoggerFactory.getLogger(RedisListenerStarter.class);
         logs = new ListAppender<>();
@@ -50,6 +54,12 @@ class RedisListenerStarterTest {
     @AfterEach
     void tearDown() {
         logbackLogger.detachAppender(logs);
+    }
+
+    private static Map<String, RedisMessageListenerContainer> singleContainer(RedisMessageListenerContainer c) {
+        Map<String, RedisMessageListenerContainer> m = new LinkedHashMap<>();
+        m.put("redisMessageListenerContainer", c);
+        return m;
     }
 
     @Test
@@ -63,7 +73,7 @@ class RedisListenerStarterTest {
         assertThat(starter.attempts()).isEqualTo(1);
         // No retry scheduled on success.
         verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
-        assertThat(infoMessages()).anyMatch(m -> m.contains("Container started"));
+        assertThat(infoMessages()).anyMatch(m -> m.contains("started on attempt"));
     }
 
     @Test
@@ -77,7 +87,7 @@ class RedisListenerStarterTest {
         assertThat(starter.attempts()).isEqualTo(1);
         // One retry scheduled.
         verify(scheduler, times(1)).schedule(any(Runnable.class), any(Instant.class));
-        assertThat(warnMessages()).anyMatch(m -> m.contains("Start attempt 1"));
+        assertThat(warnMessages()).anyMatch(m -> m.contains("start attempt 1"));
     }
 
     @Test
@@ -113,6 +123,32 @@ class RedisListenerStarterTest {
         starter.onApplicationReady();
 
         verify(scheduler, times(1)).schedule(any(Runnable.class), any(Instant.class));
+    }
+
+    @Test
+    void retriesOnlyTheFailedContainerAfterPartialFailure() {
+        RedisMessageListenerContainer ok = mock(RedisMessageListenerContainer.class);
+        RedisMessageListenerContainer flaky = mock(RedisMessageListenerContainer.class);
+        doNothing().when(ok).start();
+        // Fails on the first attempt, succeeds on the second.
+        doThrow(new RuntimeException("Unable to connect to Redis")).doNothing().when(flaky).start();
+
+        Map<String, RedisMessageListenerContainer> two = new LinkedHashMap<>();
+        two.put("redisMessageListenerContainer", ok);
+        two.put("springSessionRedisMessageListenerContainer", flaky);
+        RedisListenerStarter multi = new RedisListenerStarter(two, scheduler);
+
+        multi.tryStart(); // attempt 1: ok starts, flaky throws → reschedule
+        assertThat(multi.isStarted()).isFalse();
+        verify(scheduler, times(1)).schedule(any(Runnable.class), any(Instant.class));
+
+        multi.tryStart(); // attempt 2: ok skipped (already started), flaky starts
+        assertThat(multi.isStarted()).isTrue();
+        assertThat(multi.attempts()).isEqualTo(2);
+
+        // ok started exactly once (not retried), flaky started twice (retried).
+        verify(ok, times(1)).start();
+        verify(flaky, times(2)).start();
     }
 
     private java.util.List<String> infoMessages() {

@@ -22,16 +22,12 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  * applicatif, le Spring Session = interne — donc on déclare le nôtre comme
  * primaire.</p>
  *
- * <p>{@code setAutoStartup(false)} : sans ça le container démarre comme bean
- * SmartLifecycle pendant {@code finishRefresh} et ouvre une connexion Lettuce
- * synchrone pour souscrire. Si cette première connexion échoue (race
- * d'attachement réseau overlay du container fraîchement démarré + timeout
- * Redis 2s, alors que redis-cache lui-même est stable), le refresh du
- * contexte est annulé et toute l'app meurt — puis Docker la redémarre. Le
- * pub/sub SSE/dispatcher n'est PAS critique : il ne doit pas pouvoir tuer
- * auth/billing. {@link RedisListenerStarter} démarre le container après
- * {@code ApplicationReadyEvent} avec retry, donc une indisponibilité Redis
- * transitoire au boot dégrade le SSE au lieu de crasher l'app.</p>
+ * <p>La souscription (start du SmartLifecycle) est différée hors de
+ * {@code finishRefresh} par {@link RedisListenerDeferralPostProcessor}
+ * ({@code autoStartup=false} sur tous les containers) puis lancée par
+ * {@link RedisListenerStarter} après {@code ApplicationReadyEvent} avec retry.
+ * Voir ces classes : sinon une indisponibilité Redis transitoire au boot
+ * (DNS pas prêt) annulerait le refresh et tuerait toute l'app.</p>
  */
 @Configuration
 public class RedisListenerConfig {
@@ -42,7 +38,6 @@ public class RedisListenerConfig {
             RedisConnectionFactory connectionFactory) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        container.setAutoStartup(false);
         return container;
     }
 }

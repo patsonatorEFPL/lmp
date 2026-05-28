@@ -16,31 +16,20 @@
 # Note: service renommé `backend → app` 2026-05-15 — reflète l'archi unifiée
 # (Spring sert API + Angular embed). Container = lmp-app-jftitz-app-N.
 #
-# Networks :
-#   - dokploy-network (overlay externe Dokploy) : ingress Traefik → app.
-#   - lmp-internal (bridge local compose)       : lien privé app ↔ redis-cache.
-#
-# redis-cache N'EST PAS sur dokploy-network. L'overlay a une propagation DNS
-# lente (~108s pour un container fraîchement créé sur cet hôte ARM) : au boot
-# `redis-cache` restait non résolu (`redis-cache/<unresolved>:6379`), ce qui
-# faisait crasher les beans SmartLifecycle Redis (le RedisMessageListenerContainer
-# app ET springSessionRedisMessageListenerContainer) pendant finishRefresh →
-# context abort → restart loop (~4 cycles avant que l'overlay se stabilise).
-# Un bridge local résout le service name instantanément, donc plus de race.
-# Bonus : redis hors de l'overlay partagé = plus de collision de service name
-# avec le Redis external framework, isolation structurelle (le requirepass
-# devient pure défense en profondeur).
+# Network : dokploy-network (overlay externe créé par Dokploy). Tous les services
+# se résolvent par leur service name (redis-cache, app) sur cette network.
+# App lit ainsi REDIS_HOST=redis-cache directement.
 # ============================================================================
 version: "3.8"
 
 services:
   redis-cache:
     image: redis:7-alpine
-    # requirepass : défense en profondeur. redis-cache vit sur le bridge privé
-    # lmp-internal (hors dokploy-network), donc la collision de service name avec
-    # le Redis external framework — qui résolvait jadis `redis-cache` vers CE
-    # container et polluait le keyspace LMP (vérifié 15/05/2026) — est désormais
-    # impossible structurellement. Le password reste comme garde-fou.
+    # requirepass : bloque clients non-autorisés sur dokploy-network. Sans ça,
+    # le Redis external framework (lmp-menkeps-crm-sli6ws) résout `redis-cache` vers CE
+    # container (collision de service name sur le même overlay) et pollue le
+    # keyspace LMP avec ses doctype_meta::* (vérifié 15/05/2026). Le password
+    # force AUTH → external framework rejeté, isolation effective.
     # REDIS_PASSWORD doit être défini dans Dokploy env (compose env vars) —
     # syntax `${VAR:?...}` fait échouer compose si non défini, pas de fallback
     # en git pour éviter fuite du secret.
@@ -60,7 +49,7 @@ services:
         reservations:
           memory: 64M
     networks:
-      - lmp-internal
+      - dokploy-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}", "--no-auth-warning", "ping"]
       interval: 30s
@@ -121,9 +110,7 @@ services:
       redis-cache:
         condition: service_healthy
     networks:
-      # dokploy-network : ingress Traefik. lmp-internal : DNS instantané vers redis-cache.
       - dokploy-network
-      - lmp-internal
     deploy:
       # Baseline = 1. Autoscaler (Oracle host /opt/lmp-autoscaler/)
       # scale 1..5 selon CPU via `docker compose --scale`. À chaque redeploy
@@ -155,7 +142,3 @@ services:
 networks:
   dokploy-network:
     external: true
-  # Bridge local compose : DNS résolu instantanément (pas la propagation lente
-  # de l'overlay). Porte le trafic privé app ↔ redis-cache hors de l'overlay partagé.
-  lmp-internal:
-    driver: bridge
