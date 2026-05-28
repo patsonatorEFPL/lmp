@@ -11,7 +11,7 @@
 # Note: `redis-queue` container retiré 2026-05-10 — async work durable
 # (email_queue, sync_event_log) tourne via Postgres claim atomique
 # (UPDATE...RETURNING + FOR UPDATE SKIP LOCKED). Plus de Redis queue nécessaire.
-# 320 MB RAM libérés pour app replicas.
+# 320 MB RAM libérés pour l'app.
 #
 # Note: service renommé `backend → app` 2026-05-15 — reflète l'archi unifiée
 # (Spring sert API + Angular embed). Container = lmp-app-jftitz-app-N.
@@ -112,15 +112,15 @@ services:
     networks:
       - dokploy-network
     deploy:
-      # Baseline = 1. Autoscaler (Oracle host /opt/lmp-autoscaler/)
-      # scale 1..5 selon CPU via `docker compose --scale`. À chaque redeploy
-      # Dokploy, baseline revient ici — autoscaler reprend ensuite si charge.
+      # Mono fixe. Autoscaler (Oracle host /opt/lmp-autoscaler/) décommissionné
+      # 2026-05-15 — cron + script renommés .deprecated, plus aucun scale CPU.
+      # Mono LMP suffit sur 4-core ARM ; replicas reste 1 en permanence.
       replicas: 1
       resources:
-        # 4 GiB cap nécessaire pour ZGC : -Xmx 1.5G + shmem multi-mapping ZGC
-        # (pointer color bits) peut atteindre ~2× Xmx. Cap 2 GiB déclenchait
-        # OOM killer kernel cgroup sous load (vérifié 5k VU bench 2026-05-15).
-        # Switch G1 → ZGC = perf p99 -71% mais memory overhead doublé.
+        # 4 GiB cap = large marge pour Shenandoah Generational (-Xmx 1.5G).
+        # Java 26 Phase 0 (de30a72) : G1 → Shenandoah Gen + Compact Headers.
+        # Shenandoah a un footprint plus serré que ZGC (pas de pointer-color
+        # shmem ×2), donc 4 GiB reste confortable. Flags JVM réels = Dockerfile.
         limits:
           memory: 4096M
         reservations:
