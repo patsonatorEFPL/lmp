@@ -82,6 +82,21 @@ public class SiteConfigManager {
         return value != null ? value : defaultValue;
     }
 
+    /**
+     * Lit un booléen de la config hiérarchique (env → file → DB → défaut).
+     * Fail-open : valeur absente OU erreur de lecture ⇒ defaultValue —
+     * une panne de config ne doit jamais couper silencieusement une intégration.
+     */
+    public boolean getBoolean(String key, boolean defaultValue) {
+        try {
+            String value = getString(key);
+            return value == null ? defaultValue : Boolean.parseBoolean(value.trim());
+        } catch (RuntimeException e) {
+            logger.warn("⚠️ [SITE-CONFIG] getBoolean({}) en échec — fallback {}", key, defaultValue, e);
+            return defaultValue;
+        }
+    }
+
     public String getBaseUrl() {
         return getString("app.base.url", siteUrl);
     }
