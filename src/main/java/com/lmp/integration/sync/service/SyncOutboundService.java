@@ -9,7 +9,9 @@ import com.lmp.integration.sync.verification.SyncVerificationService;
 import com.lmp.shared.config.site.SiteConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,6 +69,20 @@ public class SyncOutboundService {
     }
 
     /**
+     * Rappel visible au boot quand le toggle runtime est OFF : tous les
+     * événements sortants seront perdus (pas mis en file) tant qu'un admin ne
+     * réactive pas {@code lmp.sync.runtime-enabled}. Sans ce WARN, un toggle
+     * oublié ne laisse aucune trace au démarrage.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void warnIfRuntimeDisabledAtBoot() {
+        if (!siteConfigManager.getBoolean(RUNTIME_ENABLED_KEY, true)) {
+            log.warn("[SYNC] Runtime toggle OFF au boot — les événements ERP sortants seront PERDUS (non rejoués) jusqu'à réactivation via admin settings ({})",
+                    RUNTIME_ENABLED_KEY);
+        }
+    }
+
+    /**
      * Enqueue une entité pour synchronisation vers le système externe (FIFO).
      * L'événement est inséré avec statut QUEUED et sera traité par le SyncQueueProcessor.
      *
@@ -80,11 +96,15 @@ public class SyncOutboundService {
     public void enqueue(SyncEntityType entityType, String eventType, UUID localEntityId,
                         String externalId, Map<String, Object> data) {
         if (!syncProperties.isEnabled()) {
-            log.debug("🔇 [SYNC] Synchronisation désactivée — événement {} {} ignoré", entityType, eventType);
+            log.debug("[SYNC] Synchronisation désactivée — événement {} {} ignoré", entityType, eventType);
             return;
         }
         if (!siteConfigManager.getBoolean(RUNTIME_ENABLED_KEY, true)) {
-            log.debug("🔇 [SYNC] Toggle runtime OFF — événement {} {} ignoré", entityType, eventType);
+            // INFO, pas DEBUG : l'événement est PERDU (pas différé). Un drop
+            // invisible à toggle oublié = clients/commandes jamais synchés sans
+            // trace. Volume faible (événements business), grep-able.
+            log.info("[SYNC] Toggle runtime OFF — événement {} {} ignoré (perdu, non rejoué au réenclenchement)",
+                    entityType, eventType);
             return;
         }
 
@@ -101,7 +121,7 @@ public class SyncOutboundService {
         syncEvent.setScheduledAt(LocalDateTime.now());
 
         syncEventRepository.save(syncEvent);
-        log.info("📥 [SYNC QUEUE] Enqueued {} {} for entity {} — queueId={}",
+        log.info("[SYNC QUEUE] Enqueued {} {} for entity {} — queueId={}",
                 entityType, eventType, localEntityId, syncEvent.getId());
     }
 
@@ -126,7 +146,7 @@ public class SyncOutboundService {
         // claimNextBatch). Re-load pour rattacher à la tx courante.
         SyncEvent event = syncEventRepository.findById(syncEvent.getId()).orElse(null);
         if (event == null || event.getStatus() != SyncStatus.PROCESSING) {
-            log.debug("⏭️ [SYNC] Event {} not in PROCESSING (status={}) — skipping",
+            log.debug("[SYNC] Event {} not in PROCESSING (status={}) — skipping",
                     syncEvent.getId(), event == null ? "null" : event.getStatus());
             return;
         }
@@ -156,7 +176,7 @@ public class SyncOutboundService {
     public void retryEvent(SyncEvent syncEvent) {
         SyncEvent event = syncEventRepository.findById(syncEvent.getId()).orElse(null);
         if (event == null) {
-            log.debug("⏭️ [SYNC] Retry event {} not found — skipping", syncEvent.getId());
+            log.debug("[SYNC] Retry event {} not found — skipping", syncEvent.getId());
             return;
         }
 
@@ -186,20 +206,20 @@ public class SyncOutboundService {
             case "CREATED" -> externalClient.createEntity(entityType, data);
             case "UPDATED" -> {
                 if (externalId == null || externalId.isBlank()) {
-                    log.warn("⚠️ [SYNC] Cannot update {} without externalId — skipping", entityType);
+                    log.warn("[SYNC] Cannot update {} without externalId — skipping", entityType);
                     yield ExternalResponse.failure("Missing externalId for update", 400);
                 }
                 yield externalClient.updateEntity(entityType, externalId, data);
             }
             case "DELETED" -> {
                 if (externalId == null || externalId.isBlank()) {
-                    log.warn("⚠️ [SYNC] Cannot delete {} without externalId — skipping", entityType);
+                    log.warn("[SYNC] Cannot delete {} without externalId — skipping", entityType);
                     yield ExternalResponse.failure("Missing externalId for delete", 400);
                 }
                 yield externalClient.deleteEntity(entityType, externalId);
             }
             default -> {
-                log.warn("⚠️ [SYNC] Unhandled event type: {}", eventType);
+                log.warn("[SYNC] Unhandled event type: {}", eventType);
                 yield ExternalResponse.failure("Unknown event type: " + eventType, 400);
             }
         };
@@ -211,7 +231,7 @@ public class SyncOutboundService {
             metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.SUCCESS);
             syncEvent.setExternalEntityId(response.externalId());
             syncEvent.setProcessedAt(LocalDateTime.now());
-            log.info("✅ [SYNC OUT] {} {} → externalId={}",
+            log.info("[SYNC OUT] {} {} -> externalId={}",
                     syncEvent.getEntityType(), syncEvent.getEventType(), response.externalId());
 
             // Callback — mettre à jour ou nettoyer l'entité locale
@@ -227,7 +247,7 @@ public class SyncOutboundService {
                                 response.externalId(), response.data());
                     }
                 } catch (Exception e) {
-                    log.warn("⚠️ [SYNC OUT] Callback failed for {} {}: {}",
+                    log.warn("[SYNC OUT] Callback failed for {} {}: {}",
                             syncEvent.getEntityType(), syncEvent.getLocalEntityId(), e.getMessage());
                 }
             }
@@ -236,7 +256,7 @@ public class SyncOutboundService {
             try {
                 verificationService.verifyAfterSync(syncEvent);
             } catch (Exception e) {
-                log.warn("⚠️ [SYNC OUT] Post-sync verification failed for {} {}: {}",
+                log.warn("[SYNC OUT] Post-sync verification failed for {} {}: {}",
                         syncEvent.getEntityType(), syncEvent.getExternalEntityId(), e.getMessage());
             }
         } else {
@@ -255,10 +275,10 @@ public class SyncOutboundService {
                 metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.DEAD);
                 metricsService.recordEventDead(syncEvent.getEntityType());
                 if (permanent) {
-                    log.error("💀 [SYNC OUT] {} {} — permanent error (no retry) — DEAD: {}",
+                    log.error("[SYNC OUT] {} {} — permanent error (no retry) — DEAD: {}",
                             syncEvent.getEntityType(), syncEvent.getEventType(), response.errorMessage());
                 } else {
-                    log.error("💀 [SYNC OUT] {} {} — max retries reached ({}) — marking DEAD",
+                    log.error("[SYNC OUT] {} {} — max retries reached ({}) — marking DEAD",
                             syncEvent.getEntityType(), syncEvent.getEventType(), syncEvent.getMaxRetries());
                 }
             } else {
@@ -267,7 +287,7 @@ public class SyncOutboundService {
                 long backoffSeconds = syncProperties.getRetry().getDelaySeconds()
                         * (long) Math.pow(2, syncEvent.getRetryCount() - 1);
                 syncEvent.setScheduledAt(LocalDateTime.now().plusSeconds(backoffSeconds));
-                log.warn("⚠️ [SYNC OUT] {} {} failed (retry {}/{}) — next retry in {}s",
+                log.warn("[SYNC OUT] {} {} failed (retry {}/{}) — next retry in {}s",
                         syncEvent.getEntityType(), syncEvent.getEventType(),
                         syncEvent.getRetryCount(), syncEvent.getMaxRetries(), backoffSeconds);
             }
@@ -283,7 +303,7 @@ public class SyncOutboundService {
             syncEvent.setStatus(SyncStatus.DEAD);
             metricsService.recordEventProcessed(syncEvent.getEntityType(), SyncStatus.DEAD);
             metricsService.recordEventDead(syncEvent.getEntityType());
-            log.error("💀 [SYNC OUT] Exception during {} {} — max retries — DEAD: {}",
+            log.error("[SYNC OUT] Exception during {} {} — max retries — DEAD: {}",
                     syncEvent.getEntityType(), syncEvent.getEventType(), e.getMessage(), e);
         } else {
             syncEvent.setStatus(SyncStatus.FAILED);
@@ -291,7 +311,7 @@ public class SyncOutboundService {
             long backoffSeconds = syncProperties.getRetry().getDelaySeconds()
                     * (long) Math.pow(2, syncEvent.getRetryCount() - 1);
             syncEvent.setScheduledAt(LocalDateTime.now().plusSeconds(backoffSeconds));
-            log.error("❌ [SYNC OUT] Exception during {} {} (retry {}/{}) — next in {}s: {}",
+            log.error("[SYNC OUT] Exception during {} {} (retry {}/{}) — next in {}s: {}",
                     syncEvent.getEntityType(), syncEvent.getEventType(),
                     syncEvent.getRetryCount(), syncEvent.getMaxRetries(), backoffSeconds, e.getMessage(), e);
         }
@@ -314,14 +334,14 @@ public class SyncOutboundService {
                 Sentry.captureException(e);
             });
         } catch (Exception sentryEx) {
-            log.debug("🔇 [SYNC OUT] Sentry capture failed: {}", sentryEx.getMessage());
+            log.debug("[SYNC OUT] Sentry capture failed: {}", sentryEx.getMessage());
         }
 
         // Classification de l'erreur pour détection de drift
         try {
             errorClassifier.classify(syncEvent.getErrorMessage(), syncEvent.getId());
         } catch (Exception ex) {
-            log.debug("🔇 [SYNC OUT] Error classification failed: {}", ex.getMessage());
+            log.debug("[SYNC OUT] Error classification failed: {}", ex.getMessage());
         }
     }
 
