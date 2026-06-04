@@ -6,6 +6,7 @@ import com.lmp.integration.sync.*;
 import com.lmp.integration.sync.domain.SyncEvent;
 import com.lmp.integration.sync.repository.SyncEventRepository;
 import com.lmp.integration.sync.verification.SyncVerificationService;
+import com.lmp.shared.config.site.SiteConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -31,6 +32,9 @@ public class SyncOutboundService {
 
     private static final Logger log = LoggerFactory.getLogger(SyncOutboundService.class);
 
+    /** Clé site_config du toggle runtime — défaut true (fail-open). Spec 2026-05-29. */
+    public static final String RUNTIME_ENABLED_KEY = "lmp.sync.runtime-enabled";
+
     private final ExternalSystemClient externalClient;
     private final SyncEventRepository syncEventRepository;
     private final SyncProperties syncProperties;
@@ -40,6 +44,7 @@ public class SyncOutboundService {
 
     private final com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier;
     private final com.lmp.integration.sync.monitoring.SyncMetricsService metricsService;
+    private final SiteConfigManager siteConfigManager;
 
     public SyncOutboundService(ExternalSystemClient externalClient,
                                SyncEventRepository syncEventRepository,
@@ -48,7 +53,8 @@ public class SyncOutboundService {
                                @Lazy SyncVerificationService verificationService,
                                ObjectMapper objectMapper,
                                com.lmp.integration.sync.monitoring.SyncErrorClassifier errorClassifier,
-                               com.lmp.integration.sync.monitoring.SyncMetricsService metricsService) {
+                               com.lmp.integration.sync.monitoring.SyncMetricsService metricsService,
+                               SiteConfigManager siteConfigManager) {
         this.externalClient = externalClient;
         this.syncEventRepository = syncEventRepository;
         this.syncProperties = syncProperties;
@@ -57,6 +63,7 @@ public class SyncOutboundService {
         this.objectMapper = objectMapper;
         this.errorClassifier = errorClassifier;
         this.metricsService = metricsService;
+        this.siteConfigManager = siteConfigManager;
     }
 
     /**
@@ -74,6 +81,10 @@ public class SyncOutboundService {
                         String externalId, Map<String, Object> data) {
         if (!syncProperties.isEnabled()) {
             log.debug("🔇 [SYNC] Synchronisation désactivée — événement {} {} ignoré", entityType, eventType);
+            return;
+        }
+        if (!siteConfigManager.getBoolean(RUNTIME_ENABLED_KEY, true)) {
+            log.debug("🔇 [SYNC] Toggle runtime OFF — événement {} {} ignoré", entityType, eventType);
             return;
         }
 
