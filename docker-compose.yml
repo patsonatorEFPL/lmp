@@ -16,9 +16,25 @@
 # Note: service renommé `backend → app` 2026-05-15 — reflète l'archi unifiée
 # (Spring sert API + Angular embed). Container = lmp-app-jftitz-app-N.
 #
-# Network : dokploy-network (overlay externe créé par Dokploy). Tous les services
-# se résolvent par leur service name (redis-cache, app) sur cette network.
-# App lit ainsi REDIS_HOST=redis-cache directement.
+# Network : dokploy-network (overlay externe créé par Dokploy), partagé par
+# TOUS les stacks Dokploy (staging lmp-app-jftitz, prod lmp-prod-stack, …).
+#
+# ⚠ Collision de service name (root cause crash-loops boot, diagnostiquée
+# 2026-06-04) : staging ET prod déclarent un service `redis-cache` sur ce même
+# overlay. Le DNS embedded Docker retourne alors l'une OU l'autre IP pour
+# `redis-cache` → une app peut se connecter au Redis de L'AUTRE environnement.
+# AUTH (requirepass, passwords distincts par env) bloque la pollution de
+# données, mais la connexion échoue ("Unable to connect") : crash des beans
+# SmartLifecycle au boot (avant le deferral fix) et shared connection Lettuce
+# morte à chaud (sessions/rate-limit/SSE) selon la loterie DNS.
+#
+# Fix : chaque stack publie un alias réseau UNIQUE pour son redis via
+# REDIS_SERVICE_ALIAS (env Dokploy, fail-fast si absent) et l'app ne résout
+# QUE cet alias (REDIS_HOST=${REDIS_SERVICE_ALIAS}). Le service name
+# `redis-cache` reste pour le wiring interne compose (depends_on), mais plus
+# aucune app ne l'utilise pour se connecter.
+#   staging : REDIS_SERVICE_ALIAS=lmp-redis-staging
+#   prod    : REDIS_SERVICE_ALIAS=lmp-redis-prod (à définir AVANT deploy main)
 # ============================================================================
 version: "3.8"
 
@@ -49,7 +65,11 @@ services:
         reservations:
           memory: 64M
     networks:
-      - dokploy-network
+      dokploy-network:
+        # Alias unique par stack sur l'overlay partagé — voir header. L'app se
+        # connecte à CET alias, jamais au service name ambigu `redis-cache`.
+        aliases:
+          - ${REDIS_SERVICE_ALIAS:?REDIS_SERVICE_ALIAS required - unique per stack, e.g. lmp-redis-staging}
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}", "--no-auth-warning", "ping"]
       interval: 30s
@@ -66,9 +86,10 @@ services:
     env_file:
       - .env
     environment:
-      # Redis : utilise les service names compose (résolus via dokploy-network)
-      # Override l'éventuelle valeur dans .env pour pointer redis-cache.
-      REDIS_HOST: redis-cache
+      # Redis : résout l'alias réseau UNIQUE de ce stack (voir header) — jamais
+      # le service name `redis-cache`, ambigu sur l'overlay partagé (collision
+      # staging/prod). Override l'éventuelle valeur dans .env.
+      REDIS_HOST: ${REDIS_SERVICE_ALIAS:?REDIS_SERVICE_ALIAS required - unique per stack, e.g. lmp-redis-staging}
       REDIS_PORT: "6379"
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required - set in Dokploy env}
