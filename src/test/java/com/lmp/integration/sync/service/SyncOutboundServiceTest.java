@@ -18,8 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.util.Map;
 import java.util.UUID;
@@ -32,7 +30,6 @@ import static org.mockito.Mockito.*;
  * Spec : docs/superpowers/specs/2026-05-29-erp-sync-toggle-design.md
  */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class SyncOutboundServiceTest {
 
     @Mock private ExternalSystemClient externalClient;
