@@ -230,18 +230,6 @@
 		<artifactId>micrometer-registry-prometheus</artifactId>
 	</dependency>
 
-	<!-- Bucket4j — Rate limiting avec Caffeine backend -->
-	<dependency>
-		<groupId>com.bucket4j</groupId>
-		<artifactId>bucket4j-core</artifactId>
-		<version>8.10.1</version>
-	</dependency>
-	<dependency>
-		<groupId>com.bucket4j</groupId>
-		<artifactId>bucket4j-caffeine</artifactId>
-		<version>8.10.1</version>
-	</dependency>
-
 		<!-- OpenPDF pour génération de factures PDF -->
 		<dependency>
 			<groupId>com.github.librepdf</groupId>
@@ -296,12 +284,6 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>test</scope>
-		</dependency>
-
-		<!-- Thymeleaf Spring Security Integration (back-office admin) -->
-		<dependency>
-			<groupId>org.thymeleaf.extras</groupId>
-			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
 		</dependency>
 
 		<!-- Spring Session : remplacé par spring-session-data-redis ci-dessus.

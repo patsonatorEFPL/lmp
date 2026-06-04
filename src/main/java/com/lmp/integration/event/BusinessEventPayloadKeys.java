@@ -27,14 +27,6 @@ public final class BusinessEventPayloadKeys {
     public static final String EMAIL = "email";
     public static final String CLIENT_NAME = "clientName";
     public static final String SUBJECT = "subject";
-    /**
-     * @deprecated Plus lu par {@code SseNotificationService}. Pour une commande en attente de paiement,
-     *             utiliser {@link #NOTIFY_USER}, {@link #IN_APP_NOTIFICATION_TYPE} (ex. {@code NEW_PENDING_ORDER})
-     *             et {@link #USER_IN_APP_MESSAGE} sur l’événement {@code ORDER_CREATED}.
-     */
-    @Deprecated(forRemoval = false)
-    public static final String PENDING_PAYMENT_NOTIFY = "pendingPaymentNotify";
-
     /** Si {@code true}, persistance in-app + SSE utilisateur (types {@link #IN_APP_NOTIFICATION_TYPE}). */
     public static final String NOTIFY_USER = "notifyUser";
 

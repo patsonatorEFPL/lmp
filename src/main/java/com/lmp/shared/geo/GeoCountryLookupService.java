@@ -184,13 +184,4 @@ public class GeoCountryLookupService {
         return Optional.empty();
     }
 
-    /**
-     * Rétrocompatibilité : retourne uniquement le code pays.
-     *
-     * @deprecated Préférer {@link #resolve(HttpServletRequest)} qui fournit aussi la devise.
-     */
-    @Deprecated(forRemoval = true)
-    public Optional<String> lookupCountryCode(HttpServletRequest request) {
-        return resolve(request).map(GeoResolution::countryCode);
-    }
 }
