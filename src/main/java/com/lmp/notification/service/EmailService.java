@@ -68,7 +68,7 @@ public class EmailService {
                 .bodyText(text)
                 .priority(MailQueueService.PRIORITY_NORMAL)
                 .build());
-        logger.info("📥 Email simple enqueued to={} (Reply-To: noreply)", to);
+        logger.info("Email simple enqueued to={} (Reply-To: noreply)", to);
     }
 
     /**
@@ -89,7 +89,7 @@ public class EmailService {
                 .bodyHtml(htmlContent)
                 .priority(MailQueueService.PRIORITY_NORMAL)
                 .build());
-        logger.info("📥 Email HTML enqueued to={} template={}", to, templateName);
+        logger.info("Email HTML enqueued to={} template={}", to, templateName);
     }
 
     /**
@@ -155,7 +155,7 @@ public class EmailService {
                 .bodyText(body)
                 .priority(MailQueueService.PRIORITY_NORMAL)
                 .build());
-        logger.info("📥 Email multi-recipients enqueued — primary={} cc={}", primary, cc);
+        logger.info("Email multi-recipients enqueued — primary={} cc={}", primary, cc);
     }
 
     /**
@@ -198,7 +198,7 @@ public class EmailService {
                 .bodyText(body)
                 .priority(MailQueueService.PRIORITY_TRANSACTIONAL)
                 .build());
-        logger.info("📥 Email support enqueued to={} (Reply-To: support)", to);
+        logger.info("Email support enqueued to={} (Reply-To: support)", to);
     }
 
     /**
@@ -206,7 +206,7 @@ public class EmailService {
      * Utilise TOUJOURS noreply@domaine.com comme expéditeur ET Reply-To
      */
     public void sendWelcomeEmail(String to, String firstName) {
-        logger.info("📞 Email de bienvenue - De: {} vers: {} (Prénom: {})", 
+        logger.info("Email de bienvenue - De: {} vers: {} (Prénom: {})", 
                    mailAddressConfig.getNoreply(), to, firstName);
         
         Map<String, Object> variables = new HashMap<>();
@@ -224,13 +224,13 @@ public class EmailService {
         
         try {
             sendHtmlEmail(to, subject, "emails/welcome-minimal-clean", variables);
-            logger.info("✅ Email de bienvenue HTML envoyé avec succès (Reply-To: noreply)");
+            logger.info("Email de bienvenue HTML envoyé avec succès (Reply-To: noreply)");
         } catch (Exception e) {
             logger.error("Erreur template, tentative avec email simple: {}", e.getMessage());
             // Fallback vers email simple si template échoue
             String body = "Bienvenue " + firstName + " !\n\nVotre compte a été créé avec succès chez " + appName + ".\n\nCordialement,\nL'équipe " + appName;
             sendSimpleEmail(to, subject, body);
-            logger.info("✅ Email de bienvenue simple envoyé avec succès (Reply-To: noreply)");
+            logger.info("Email de bienvenue simple envoyé avec succès (Reply-To: noreply)");
         }
     }
 

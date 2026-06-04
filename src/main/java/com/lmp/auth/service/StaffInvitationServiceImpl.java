@@ -101,7 +101,7 @@ public class StaffInvitationServiceImpl implements StaffInvitationService {
         inv.setExpiresAt(LocalDateTime.now().plusDays(expiryDays));
 
         StaffInvitation saved = invitationRepository.save(inv);
-        logger.info("📧 [STAFF-INVITE] Invitation créée pour {} (expire {})", email, saved.getExpiresAt());
+        logger.info("[STAFF-INVITE] Invitation créée pour {} (expire {})", email, saved.getExpiresAt());
 
         mailer.sendInvitationEmail(saved);
 
@@ -173,7 +173,7 @@ public class StaffInvitationServiceImpl implements StaffInvitationService {
         inv.setAcceptedUser(saved.getId());
         invitationRepository.save(inv);
 
-        logger.info("✅ [STAFF-INVITE] Invitation acceptée par {} (userId={})", saved.getEmail(), saved.getId());
+        logger.info("[STAFF-INVITE] Invitation acceptée par {} (userId={})", saved.getEmail(), saved.getId());
 
         // Provisioning externalErp User → routé via ErpEventListener (User.isStaff() == true)
         Map<String, Object> payload = new HashMap<>();
@@ -197,7 +197,7 @@ public class StaffInvitationServiceImpl implements StaffInvitationService {
         inv.setStatus(StaffInvitationStatus.REVOKED);
         inv.setRevokedAt(LocalDateTime.now());
         invitationRepository.save(inv);
-        logger.info("🚫 [STAFF-INVITE] Invitation {} révoquée par {}", invitationId, actorId);
+        logger.info("[STAFF-INVITE] Invitation {} révoquée par {}", invitationId, actorId);
     }
 
     @Override
@@ -213,7 +213,7 @@ public class StaffInvitationServiceImpl implements StaffInvitationService {
         inv.setExpiresAt(LocalDateTime.now().plusDays(expiryDays));
         invitationRepository.save(inv);
         mailer.sendInvitationEmail(inv);
-        logger.info("📧 [STAFF-INVITE] Invitation {} renvoyée par {}", invitationId, actorId);
+        logger.info("[STAFF-INVITE] Invitation {} renvoyée par {}", invitationId, actorId);
     }
 
     @Override
@@ -226,7 +226,7 @@ public class StaffInvitationServiceImpl implements StaffInvitationService {
         }
         if (!stale.isEmpty()) {
             invitationRepository.saveAll(stale);
-            logger.info("🧹 [STAFF-INVITE] {} invitation(s) marquée(s) EXPIRED", stale.size());
+            logger.info("[STAFF-INVITE] {} invitation(s) marquée(s) EXPIRED", stale.size());
         }
         return stale.size();
     }

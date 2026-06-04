@@ -35,20 +35,20 @@ public class DatabaseFixController {
     @PostMapping("/fix-hard-delete")
     public ResponseEntity<?> fixHardDeleteConstraints() {
         try {
-            logger.warn("🔧 [DB-FIX] Début application des correctifs hard delete");
+            logger.warn("[DB-FIX] Début application des correctifs hard delete");
             
             try (Connection connection = dataSource.getConnection();
                  Statement statement = connection.createStatement()) {
                 
                 // Vérifier et modifier orders.user_id
-                logger.info("🔄 [DB-FIX] Modification de orders.user_id");
+                logger.info("[DB-FIX] Modification de orders.user_id");
                 statement.executeUpdate("ALTER TABLE orders MODIFY COLUMN user_id BIGINT NULL");
-                logger.info("✅ [DB-FIX] orders.user_id modifié avec succès");
+                logger.info("[DB-FIX] orders.user_id modifié avec succès");
                 
                 // Vérifier et modifier reviews.user_id
-                logger.info("🔄 [DB-FIX] Modification de reviews.user_id");
+                logger.info("[DB-FIX] Modification de reviews.user_id");
                 statement.executeUpdate("ALTER TABLE reviews MODIFY COLUMN user_id BIGINT NULL");
-                logger.info("✅ [DB-FIX] reviews.user_id modifié avec succès");
+                logger.info("[DB-FIX] reviews.user_id modifié avec succès");
                 
                 // Vérifier les changements
                 var resultSet = statement.executeQuery(
@@ -67,14 +67,14 @@ public class DatabaseFixController {
                           .append("\\n");
                 }
                 
-                logger.warn("✅ [DB-FIX] Tous les correctifs appliqués avec succès");
+                logger.warn("[DB-FIX] Tous les correctifs appliqués avec succès");
                 
                 return ResponseEntity.ok().body("{\"success\": true, \"message\": \"" + 
                     result.toString().replace("\"", "\\\"") + "\"}");
                 
             }
         } catch (Exception e) {
-            logger.error("❌ [DB-FIX] Erreur lors de l'application des correctifs: {}", e.getMessage(), e);
+            logger.error("[DB-FIX] Erreur lors de l'application des correctifs: {}", e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
         }

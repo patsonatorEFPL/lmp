@@ -44,7 +44,7 @@ public class SessionSecurityService {
      * @return Le nombre de sessions invalidées
      */
     public int invalidateAllUserSessions(User user) {
-        logger.warn("🔒 SESSION SECURITY - Tentative d'invalidation de toutes les sessions pour l'utilisateur: {}", user.getEmail());
+        logger.warn("SESSION SECURITY - Tentative d'invalidation de toutes les sessions pour l'utilisateur: {}", user.getEmail());
         
         try {
             // Charger les détails de l'utilisateur pour la recherche de session
@@ -53,7 +53,7 @@ public class SessionSecurityService {
             // Récupérer toutes les sessions actives pour cet utilisateur
             List<SessionInformation> activeSessions = sessionRegistry.getAllSessions(userDetails, false);
             
-            logger.info("🔍 SESSION SECURITY - Trouvé {} session(s) active(s) pour l'utilisateur: {}", 
+            logger.info("SESSION SECURITY - Trouvé {} session(s) active(s) pour l'utilisateur: {}", 
                        activeSessions.size(), user.getEmail());
             
             int invalidatedCount = 0;
@@ -61,19 +61,19 @@ public class SessionSecurityService {
             // Invalider chaque session active
             for (SessionInformation sessionInfo : activeSessions) {
                 if (!sessionInfo.isExpired()) {
-                    logger.warn("❌ SESSION SECURITY - Invalidation de la session {} pour l'utilisateur: {}", 
+                    logger.warn("SESSION SECURITY - Invalidation de la session {} pour l'utilisateur: {}", 
                                sessionInfo.getSessionId(), user.getEmail());
                     
                     sessionInfo.expireNow();
                     invalidatedCount++;
                     
-                    logger.info("✅ SESSION SECURITY - Session {} invalidée avec succès", sessionInfo.getSessionId());
+                    logger.info("SESSION SECURITY - Session {} invalidée avec succès", sessionInfo.getSessionId());
                 } else {
-                    logger.debug("⏰ SESSION SECURITY - Session {} déjà expirée", sessionInfo.getSessionId());
+                    logger.debug("SESSION SECURITY - Session {} déjà expirée", sessionInfo.getSessionId());
                 }
             }
             
-            logger.warn("🎯 SESSION SECURITY - RÉSULTAT: {} session(s) invalidée(s) pour l'utilisateur: {}", 
+            logger.warn("SESSION SECURITY - RÉSULTAT: {} session(s) invalidée(s) pour l'utilisateur: {}", 
                        invalidatedCount, user.getEmail());
             
             return invalidatedCount;
@@ -91,7 +91,7 @@ public class SessionSecurityService {
             // que la sécurité avait pris effet alors qu'aucune session n'avait été
             // touchée. On log error + capture Sentry pour alerter ; le caller voit
             // toujours 0 mais l'évènement est visible côté ops.
-            logger.error("💥 SESSION SECURITY - ERREUR INATTENDUE invalidation sessions pour {} : {}",
+            logger.error("SESSION SECURITY - ERREUR INATTENDUE invalidation sessions pour {} : {}",
                         user.getEmail(), e.getMessage(), e);
             if (Sentry.isEnabled()) Sentry.captureException(e);
             return 0;
@@ -105,7 +105,7 @@ public class SessionSecurityService {
      * @return Le nombre de sessions invalidées
      */
     public int invalidateAllUserSessionsByEmail(String userEmail) {
-        logger.warn("🔒 SESSION SECURITY - Tentative d'invalidation par email: {}", userEmail);
+        logger.warn("SESSION SECURITY - Tentative d'invalidation par email: {}", userEmail);
         
         try {
             // Charger les détails de l'utilisateur
@@ -114,7 +114,7 @@ public class SessionSecurityService {
             // Récupérer toutes les sessions actives
             List<SessionInformation> activeSessions = sessionRegistry.getAllSessions(userDetails, false);
             
-            logger.info("🔍 SESSION SECURITY - Trouvé {} session(s) active(s) pour l'email: {}", 
+            logger.info("SESSION SECURITY - Trouvé {} session(s) active(s) pour l'email: {}", 
                        activeSessions.size(), userEmail);
             
             int invalidatedCount = 0;
@@ -122,17 +122,17 @@ public class SessionSecurityService {
             // Invalider chaque session active
             for (SessionInformation sessionInfo : activeSessions) {
                 if (!sessionInfo.isExpired()) {
-                    logger.warn("❌ SESSION SECURITY - Invalidation de la session {} pour l'email: {}", 
+                    logger.warn("SESSION SECURITY - Invalidation de la session {} pour l'email: {}", 
                                sessionInfo.getSessionId(), userEmail);
                     
                     sessionInfo.expireNow();
                     invalidatedCount++;
                 } else {
-                    logger.debug("⏰ SESSION SECURITY - Session {} déjà expirée", sessionInfo.getSessionId());
+                    logger.debug("SESSION SECURITY - Session {} déjà expirée", sessionInfo.getSessionId());
                 }
             }
             
-            logger.warn("🎯 SESSION SECURITY - RÉSULTAT: {} session(s) invalidée(s) pour l'email: {}", 
+            logger.warn("SESSION SECURITY - RÉSULTAT: {} session(s) invalidée(s) pour l'email: {}", 
                        invalidatedCount, userEmail);
             
             return invalidatedCount;
@@ -144,7 +144,7 @@ public class SessionSecurityService {
         } catch (Exception e) {
             // Voir invalidateAllUserSessions(User) : swallow silencieux historique
             // → maintenant log error + Sentry pour alerte ops.
-            logger.error("💥 SESSION SECURITY - ERREUR INATTENDUE invalidation sessions pour email {} : {}",
+            logger.error("SESSION SECURITY - ERREUR INATTENDUE invalidation sessions pour email {} : {}",
                         userEmail, e.getMessage(), e);
             if (Sentry.isEnabled()) Sentry.captureException(e);
             return 0;
@@ -166,7 +166,7 @@ public class SessionSecurityService {
                     .filter(session -> !session.isExpired())
                     .count();
             
-            logger.debug("📊 SESSION SECURITY - Utilisateur {} a {} session(s) active(s)", 
+            logger.debug("SESSION SECURITY - Utilisateur {} a {} session(s) active(s)", 
                         userEmail, activeCount);
             
             return (int) activeCount;
@@ -175,7 +175,7 @@ public class SessionSecurityService {
             logger.debug("SESSION SECURITY - Email {} introuvable pour count sessions", userEmail);
             return 0;
         } catch (Exception e) {
-            logger.error("💥 SESSION SECURITY - ERREUR INATTENDUE count sessions pour {} : {}",
+            logger.error("SESSION SECURITY - ERREUR INATTENDUE count sessions pour {} : {}",
                         userEmail, e.getMessage(), e);
             if (Sentry.isEnabled()) Sentry.captureException(e);
             return 0;

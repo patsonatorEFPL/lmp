@@ -84,7 +84,7 @@ public class SubmittableDocVerifier implements SyncVerifier {
             };
 
         } catch (Exception e) {
-            log.warn("⚠️ [VERIFY] Exception verifying {} {}: {}", entityType, externalId, e.getMessage());
+            log.warn("[VERIFY] Exception verifying {} {}: {}", entityType, externalId, e.getMessage());
             return VerificationResult.unreachable(e.getMessage());
         }
     }

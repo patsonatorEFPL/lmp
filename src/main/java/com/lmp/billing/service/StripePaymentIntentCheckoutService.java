@@ -165,7 +165,7 @@ public class StripePaymentIntentCheckoutService {
                     .setAmount(amountCents)
                     .build();
             PaymentIntent updated = stripeClient.paymentIntents().update(paymentIntentId, params);
-            logger.info("PaymentIntent {} montant mis à jour → {} cents ({})",
+            logger.info("PaymentIntent {} montant mis à jour -> {} cents ({})",
                     paymentIntentId, amountCents, currency);
         } catch (StripeException e) {
             logger.error("Stripe PaymentIntent update error: {}", e.getMessage());

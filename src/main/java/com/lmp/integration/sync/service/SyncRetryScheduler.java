@@ -55,7 +55,7 @@ public class SyncRetryScheduler {
             return;
         }
 
-        log.info("🔁 [SYNC RETRY] Found {} failed events to process", failedEvents.size());
+        log.info("[SYNC RETRY] Found {} failed events to process", failedEvents.size());
 
         int requeued = 0;
         int dead = 0;
@@ -68,7 +68,7 @@ public class SyncRetryScheduler {
                 syncEventRepository.save(event);
                 dead++;
                 metricsService.recordEventDead(event.getEntityType());
-                log.error("💀 [SYNC RETRY] Event {} ({} {}) — max retries ({}) reached — DEAD",
+                log.error("[SYNC RETRY] Event {} ({} {}) — max retries ({}) reached — DEAD",
                         event.getId(), event.getEntityType(), event.getEventType(), event.getMaxRetries());
             } else {
                 // Requeue avec backoff exponentiel
@@ -80,13 +80,13 @@ public class SyncRetryScheduler {
                 syncEventRepository.save(event);
                 requeued++;
                 metricsService.recordEventRetried(event.getEntityType());
-                log.info("🔁 [SYNC RETRY] Requeued event {} ({} {}) — retry {}/{} — next in {}s",
+                log.info("[SYNC RETRY] Requeued event {} ({} {}) — retry {}/{} — next in {}s",
                         event.getId(), event.getEntityType(), event.getEventType(),
                         event.getRetryCount() + 1, event.getMaxRetries(), backoffSeconds);
             }
         }
 
-        log.info("🔁 [SYNC RETRY] Batch complete — {} requeued, {} dead", requeued, dead);
+        log.info("[SYNC RETRY] Batch complete — {} requeued, {} dead", requeued, dead);
     }
 
     /**
@@ -107,7 +107,7 @@ public class SyncRetryScheduler {
         LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(5);
         int recovered = syncEventRepository.recoverStaleProcessing(staleBefore);
         if (recovered > 0) {
-            log.warn("⚕️ [SYNC RECOVERY] Reset {} stale PROCESSING events back to QUEUED", recovered);
+            log.warn("[SYNC RECOVERY] Reset {} stale PROCESSING events back to QUEUED", recovered);
         }
     }
 }

@@ -95,7 +95,7 @@ public class AdminRateLimitFilter extends OncePerRequestFilter {
         }
 
         if (current > LIMIT_PER_MINUTE) {
-            log.warn("⛔ [RATE-LIMIT] Admin endpoint blocked for {} ({} requests/min)", key, current);
+            log.warn("[RATE-LIMIT] Admin endpoint blocked for {} ({} requests/min)", key, current);
             response.setStatus(429);
             response.setContentType("application/json");
             response.setHeader("Retry-After", "60");
@@ -104,7 +104,7 @@ public class AdminRateLimitFilter extends OncePerRequestFilter {
         }
 
         if (current == BURST + 1) {
-            log.warn("⚠️ [RATE-LIMIT] Admin endpoint burst threshold reached for {} ({} req/min)", key, current);
+            log.warn("[RATE-LIMIT] Admin endpoint burst threshold reached for {} ({} req/min)", key, current);
         }
 
         filterChain.doFilter(request, response);

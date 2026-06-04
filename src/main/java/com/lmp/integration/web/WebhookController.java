@@ -44,9 +44,9 @@ public class WebhookController {
             HttpServletRequest request,
             @RequestBody String payload) {
         
-        logger.info("🔍 DEBUG WEBHOOK CONTROLLER - Received Stripe webhook");
-        logger.info("🔍 DEBUG WEBHOOK CONTROLLER - Payload length: {}", payload != null ? payload.length() : 0);
-        logger.info("🔍 DEBUG WEBHOOK CONTROLLER - Request headers: User-Agent={}, Content-Type={}",
+        logger.info("DEBUG WEBHOOK CONTROLLER - Received Stripe webhook");
+        logger.info("DEBUG WEBHOOK CONTROLLER - Payload length: {}", payload != null ? payload.length() : 0);
+        logger.info("DEBUG WEBHOOK CONTROLLER - Request headers: User-Agent={}, Content-Type={}",
                    request.getHeader("User-Agent"), request.getHeader("Content-Type"));
         
         try {
@@ -55,17 +55,17 @@ public class WebhookController {
             
             if (signature == null || signature.trim().isEmpty()) {
                 securityLogger.warn("Stripe webhook received without signature");
-                logger.error("🔍 DEBUG WEBHOOK CONTROLLER - Missing signature header");
+                logger.error("DEBUG WEBHOOK CONTROLLER - Missing signature header");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(createErrorResponse("MISSING_SIGNATURE", "Signature manquante"));
             }
             
-            logger.info("🔍 DEBUG WEBHOOK CONTROLLER - Signature present, processing webhook");
+            logger.info("DEBUG WEBHOOK CONTROLLER - Signature present, processing webhook");
             
             // Traiter le webhook
             WebhookEventDto webhookEvent = paymentService.processWebhook("stripe", payload, signature);
             
-            logger.info("🔍 DEBUG WEBHOOK CONTROLLER - Webhook processed successfully: {}", webhookEvent.getEventType());
+            logger.info("DEBUG WEBHOOK CONTROLLER - Webhook processed successfully: {}", webhookEvent.getEventType());
             
             // Logger les détails de sécurité
             securityLogger.info("Stripe webhook processed - Event: {}, Type: {}, Status: {}", 
@@ -93,7 +93,7 @@ public class WebhookController {
             return ResponseEntity.ok(response);
             
         } catch (PaymentProcessingException e) {
-            logger.error("🔍 DEBUG WEBHOOK CONTROLLER - Stripe webhook processing failed: {}", e.getMessage());
+            logger.error("DEBUG WEBHOOK CONTROLLER - Stripe webhook processing failed: {}", e.getMessage());
             securityLogger.error("Stripe webhook processing failed - Error: {}, Code: {}",
                                 e.getMessage(), e.getErrorCode());
             
@@ -106,7 +106,7 @@ public class WebhookController {
                 .body(createErrorResponse("PROCESSING_ERROR", e.getMessage()));
             
         } catch (Exception e) {
-            logger.error("🔍 DEBUG WEBHOOK CONTROLLER - Unexpected error processing Stripe webhook: {}", e.getMessage(), e);
+            logger.error("DEBUG WEBHOOK CONTROLLER - Unexpected error processing Stripe webhook: {}", e.getMessage(), e);
             securityLogger.error("Unexpected Stripe webhook error: {}", e.getMessage());
             
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

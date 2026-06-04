@@ -97,11 +97,11 @@ public class SentryHealthController {
             long latency = System.currentTimeMillis() - t0;
             recorder.record("Sentry", latency, true, null);
             lastHeartbeat.set(Instant.now());
-            log.debug("💓 [SENTRY] Heartbeat sent");
+            log.debug("[SENTRY] Heartbeat sent");
         } catch (Exception e) {
             long latency = System.currentTimeMillis() - t0;
             recorder.record("Sentry", latency, false, e.getMessage());
-            log.warn("❌ [SENTRY] Heartbeat failed: {}", e.getMessage());
+            log.warn("[SENTRY] Heartbeat failed: {}", e.getMessage());
         }
     }
 }

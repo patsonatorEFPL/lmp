@@ -51,7 +51,7 @@ public class MailQueueProcessor {
             return;
         }
 
-        log.info("📤 [MAIL QUEUE] Processing batch of {} emails", batch.size());
+        log.info("[MAIL QUEUE] Processing batch of {} emails", batch.size());
 
         int sent = 0;
         int failed = 0;
@@ -65,14 +65,14 @@ public class MailQueueProcessor {
             }
         }
 
-        log.info("📤 [MAIL QUEUE] Batch complete — {} sent, {} failed", sent, failed);
+        log.info("[MAIL QUEUE] Batch complete — {} sent, {} failed", sent, failed);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void sendOne(EmailQueueEvent event) throws Exception {
         EmailQueueEvent fresh = repository.findById(event.getId()).orElse(null);
         if (fresh == null || fresh.getStatus() != EmailQueueStatus.SENDING) {
-            log.debug("⏭️ [MAIL QUEUE] {} not in SENDING — skipping", event.getId());
+            log.debug("[MAIL QUEUE] {} not in SENDING — skipping", event.getId());
             return;
         }
 
@@ -82,7 +82,7 @@ public class MailQueueProcessor {
         fresh.setSentAt(LocalDateTime.now());
         fresh.setLastError(null);
         repository.save(fresh);
-        log.info("✅ [MAIL QUEUE] Sent to={} subj=\"{}\" id={}",
+        log.info("[MAIL QUEUE] Sent to={} subj=\"{}\" id={}",
                 fresh.getRecipient(),
                 truncate(fresh.getSubject(), 60),
                 fresh.getId());
@@ -99,14 +99,14 @@ public class MailQueueProcessor {
 
         if (newRetry >= fresh.getMaxRetries()) {
             fresh.setStatus(EmailQueueStatus.ERROR);
-            log.error("💀 [MAIL QUEUE] {} -> ERROR after {} retries: {}",
+            log.error("[MAIL QUEUE] {} -> ERROR after {} retries: {}",
                     fresh.getId(), newRetry, safeMessage(cause));
         } else {
             // Exponential backoff : base × 2^(retry-1).
             long backoff = retryBaseDelaySeconds * (long) Math.pow(2, newRetry - 1);
             fresh.setSendAfter(LocalDateTime.now().plusSeconds(backoff));
             fresh.setStatus(EmailQueueStatus.NOT_SENT);
-            log.warn("⚠️ [MAIL QUEUE] {} retry {}/{} in {}s — {}",
+            log.warn("[MAIL QUEUE] {} retry {}/{} in {}s — {}",
                     fresh.getId(), newRetry, fresh.getMaxRetries(), backoff, safeMessage(cause));
         }
         repository.save(fresh);

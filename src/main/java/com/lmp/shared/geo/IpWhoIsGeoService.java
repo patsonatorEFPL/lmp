@@ -86,7 +86,7 @@ public class IpWhoIsGeoService {
                         response.countryCode.trim().toUpperCase(), currency);
                 Optional<GeoResolution> opt = Optional.of(result);
                 cache.put(ip, new CachedResult(opt));
-                logger.debug("[GeoIP] ipwho.is resolved {} → country={} currency={}",
+                logger.debug("[GeoIP] ipwho.is resolved {} -> country={} currency={}",
                         ip, result.countryCode(), result.currencyCode());
                 return opt;
             }

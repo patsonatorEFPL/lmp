@@ -691,7 +691,7 @@ public class AppointmentService {
      * Envoie un email de confirmation de rendez-vous
      */
     private void sendConfirmationEmail(Appointment appointment) {
-        logger.info("📧 DÉBUT - Envoi email confirmation pour RDV ID: {}", appointment.getId());
+        logger.info("DÉBUT - Envoi email confirmation pour RDV ID: {}", appointment.getId());
         
         // Vérifier si on a un email valide
         String clientEmail = appointment.getEffectiveClientEmail();
@@ -700,7 +700,7 @@ public class AppointmentService {
             return;
         }
         
-        logger.info("📫 Destinataire: {}", clientEmail);
+        logger.info("Destinataire: {}", clientEmail);
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -709,7 +709,7 @@ public class AppointmentService {
             message.setTo(clientEmail);
             message.setSubject("Confirmation de votre demande de rendez-vous - LMP");
             
-            logger.info("📧 Message préparé, tentative d'envoi...");
+            logger.info("Message préparé, tentative d'envoi...");
             
             // Récupérer le nom du client (utilisateur ou anonyme)
             String clientName = appointment.getEffectiveClientName();
@@ -735,15 +735,15 @@ public class AppointmentService {
             
             message.setText(body);
             
-            logger.info("🚀 Envoi via mailSender.send()...");
+            logger.info("Envoi via mailSender.send()...");
             mailSender.send(message);
-            logger.info("✅ mailSender.send() exécuté avec succès !");
+            logger.info("mailSender.send() exécuté avec succès !");
             
             // Marquer comme envoyé
             appointment.setConfirmationSent(true);
             appointment.setConfirmationSentAt(LocalDateTime.now());
             
-            logger.info("🎉 Email de confirmation envoyé pour le rendez-vous ID: {}", appointment.getId());
+            logger.info("Email de confirmation envoyé pour le rendez-vous ID: {}", appointment.getId());
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de l'email de confirmation pour le rendez-vous ID: {}", 
@@ -958,7 +958,7 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("📧 Notification équipe envoyée pour nouveau RDV ID: {}", appointment.getId());
+            logger.info("Notification équipe envoyée pour nouveau RDV ID: {}", appointment.getId());
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de la notification équipe pour nouveau RDV ID: {}", 
@@ -1009,7 +1009,7 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("📧 Notification équipe envoyée pour changement statut RDV ID: {} ({} -> {})", 
+            logger.info("Notification équipe envoyée pour changement statut RDV ID: {} ({} -> {})", 
                     appointment.getId(), oldStatus, newStatus);
             
         } catch (MailException e) {
@@ -1057,7 +1057,7 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("📧 Notification équipe envoyée pour annulation RDV ID: {}", appointment.getId());
+            logger.info("Notification équipe envoyée pour annulation RDV ID: {}", appointment.getId());
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de la notification équipe pour annulation RDV ID: {}", 
@@ -1106,7 +1106,7 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("📧 Notification équipe envoyée pour suppression définitive RDV ID: {}", appointment.getId());
+            logger.info("Notification équipe envoyée pour suppression définitive RDV ID: {}", appointment.getId());
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de la notification équipe pour suppression définitive RDV ID: {}", 
@@ -1146,7 +1146,7 @@ public class AppointmentService {
             logger.info("Email de modification envoyé pour le rendez-vous ID: {}", appointment.getId());
             
         } catch (MailException e) {
-            logger.error("❌ Erreur lors de l'envoi de l'email de confirmation pour le rendez-vous ID: {}", 
+            logger.error("Erreur lors de l'envoi de l'email de confirmation pour le rendez-vous ID: {}", 
                     appointment.getId(), e);
         }
     }
@@ -1155,7 +1155,7 @@ public class AppointmentService {
      * Envoie une notification à l'équipe pour un nouveau rendez-vous
      */
     private void sendTeamNotificationEmail(Appointment appointment) {
-        logger.info("📧 Envoi notification équipe pour nouveau RDV ID: {}", appointment.getId());
+        logger.info("Envoi notification équipe pour nouveau RDV ID: {}", appointment.getId());
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -1194,10 +1194,10 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("🎉 Notification équipe envoyée avec succès pour RDV ID: {}", appointment.getId());
+            logger.info("Notification équipe envoyée avec succès pour RDV ID: {}", appointment.getId());
             
         } catch (MailException e) {
-            logger.error("❌ Erreur lors de l'envoi de la notification équipe pour le rendez-vous ID: {}", 
+            logger.error("Erreur lors de l'envoi de la notification équipe pour le rendez-vous ID: {}", 
                     appointment.getId(), e);
         }
     }
@@ -1351,13 +1351,13 @@ public class AppointmentService {
         if (!date.equals(LocalDate.now())) {
             CachedSlots cached = slotsCache.get(cacheKey);
             if (cached != null && !cached.isExpired()) {
-                logger.info("📦 Créneaux récupérés depuis le cache pour le {} ({} créneaux)", 
+                logger.info("Créneaux récupérés depuis le cache pour le {} ({} créneaux)", 
                     date, cached.slots.size());
                 return new ArrayList<>(cached.slots);
             }
         }
         
-        logger.info("🔍 Recherche des créneaux disponibles pour le {} (BD)", date);
+        logger.info("Recherche des créneaux disponibles pour le {} (BD)", date);
         
         List<LocalDateTime> availableSlots = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
@@ -1372,14 +1372,14 @@ public class AppointmentService {
             // Si c'est aujourd'hui, ignorer les créneaux passés
             if (date.equals(LocalDate.now())) {
                 if (slotStart.isBefore(now) || slotStart.equals(now)) {
-                    logger.debug("⏭️ Créneau passé ou en cours ignoré : {}h (heure actuelle: {})", 
+                    logger.debug("Créneau passé ou en cours ignoré : {}h (heure actuelle: {})", 
                         hour, now.format(DateTimeFormatter.ofPattern("HH:mm")));
                     continue;
                 }
                 
                 // Pour aujourd'hui, vérifier aussi qu'on a au moins 1h d'avance
                 if (slotStart.isBefore(now.plusHours(1))) {
-                    logger.debug("⏭️ Créneau trop proche ignoré (moins d'1h d'avance) : {}h", hour);
+                    logger.debug("Créneau trop proche ignoré (moins d'1h d'avance) : {}h", hour);
                     continue;
                 }
             }
@@ -1389,24 +1389,24 @@ public class AppointmentService {
             
             if (conflicts.isEmpty()) {
                 availableSlots.add(slotStart);
-                logger.debug("✅ Créneau disponible : {}h", hour);
+                logger.debug("Créneau disponible : {}h", hour);
             } else {
-                logger.debug("❌ Créneau occupé : {}h (conflit avec {} rendez-vous)", hour, conflicts.size());
+                logger.debug("Créneau occupé : {}h (conflit avec {} rendez-vous)", hour, conflicts.size());
                 for (Appointment conflict : conflicts) {
-                    logger.trace("  → Conflit avec RDV ID {} : {} à {}", 
+                    logger.trace("-> Conflit avec RDV ID {} : {} à {}", 
                         conflict.getId(), conflict.getSubject(), 
                         conflict.getAppointmentDate().format(DateTimeFormatter.ofPattern("HH:mm")));
                 }
             }
         }
         
-        logger.info("📊 Résultat : {} créneaux disponibles sur {} possibles pour le {}", 
+        logger.info("Résultat : {} créneaux disponibles sur {} possibles pour le {}", 
             availableSlots.size(), availableHours.length, date);
         
         // Mettre en cache (sauf pour aujourd'hui)
         if (!date.equals(LocalDate.now())) {
             slotsCache.put(cacheKey, new CachedSlots(availableSlots));
-            logger.debug("💾 Créneaux mis en cache pour le {}", date);
+            logger.debug("Créneaux mis en cache pour le {}", date);
         }
         
         return availableSlots;
@@ -1502,8 +1502,8 @@ public class AppointmentService {
      * Crée un rendez-vous anonyme (sans compte utilisateur)
      */
     public Appointment createAnonymousAppointment(AppointmentRequest request) {
-        logger.info("🔄 DÉBUT createAnonymousAppointment pour: {}", request.getEmail());
-        logger.info("📋 Détails: nom={}, service={}, date={}", request.getName(), request.getService(), request.getAppointmentDateTime());
+        logger.info("DÉBUT createAnonymousAppointment pour: {}", request.getEmail());
+        logger.info("Détails: nom={}, service={}, date={}", request.getName(), request.getService(), request.getAppointmentDateTime());
 
         // Conversion vers AppointmentForm pour validation
         AppointmentForm form = request.toAppointmentForm();
@@ -1550,7 +1550,7 @@ public class AppointmentService {
     private void invalidateCacheForDate(LocalDate date) {
         String cacheKey = date.toString();
         if (slotsCache.remove(cacheKey) != null) {
-            logger.debug("🗑️ Cache invalidé pour la date {}", date);
+            logger.debug("Cache invalidé pour la date {}", date);
         }
     }
     
@@ -1559,17 +1559,17 @@ public class AppointmentService {
      */
     public void clearSlotsCache() {
         slotsCache.clear();
-        logger.info("🗑️ Cache des créneaux vidé complètement");
+        logger.info("Cache des créneaux vidé complètement");
     }
     
     /**
      * Envoie un email de confirmation pour un rendez-vous anonyme
      */
     private void sendAnonymousConfirmationEmail(Appointment appointment) {
-        logger.info("📧 DÉBUT - Envoi email confirmation anonyme pour RDV ID: {}", appointment.getId());
-        logger.info("📫 Destinataire: {}", appointment.getEffectiveClientEmail());
-        logger.info("📧 DEBUG - mailAddressConfig.getNoreply(): {}", mailAddressConfig.getNoreply());
-        logger.info("📧 DEBUG - mailAddressConfig.getReplyToSupport(): {}", mailAddressConfig.getReplyToSupport());
+        logger.info("DÉBUT - Envoi email confirmation anonyme pour RDV ID: {}", appointment.getId());
+        logger.info("Destinataire: {}", appointment.getEffectiveClientEmail());
+        logger.info("DEBUG - mailAddressConfig.getNoreply(): {}", mailAddressConfig.getNoreply());
+        logger.info("DEBUG - mailAddressConfig.getReplyToSupport(): {}", mailAddressConfig.getReplyToSupport());
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -1577,8 +1577,8 @@ public class AppointmentService {
             message.setReplyTo(mailAddressConfig.getNoreply()); // Reply-To cohérent avec From
             message.setTo(appointment.getEffectiveClientEmail());
             
-            logger.info("📧 DEBUG - Final message.getFrom(): {}", message.getFrom());
-            logger.info("📧 DEBUG - Final message.getReplyTo(): {}", message.getReplyTo());
+            logger.info("DEBUG - Final message.getFrom(): {}", message.getFrom());
+            logger.info("DEBUG - Final message.getReplyTo(): {}", message.getReplyTo());
             message.setSubject("Confirmation de votre demande de rendez-vous - LMP");
             
             String body = String.format(
@@ -1604,7 +1604,7 @@ public class AppointmentService {
             appointment.setConfirmationSent(true);
             appointment.setConfirmationSentAt(LocalDateTime.now());
             
-            logger.info("🎉 Email de confirmation anonyme envoyé pour le rendez-vous ID: {}", appointment.getId());
+            logger.info("Email de confirmation anonyme envoyé pour le rendez-vous ID: {}", appointment.getId());
             
         } catch (MailException e) {
             logger.error("Erreur lors de l'envoi de l'email de confirmation anonyme pour le rendez-vous ID: {}", 
@@ -1616,7 +1616,7 @@ public class AppointmentService {
      * Envoie une notification à l'équipe pour un nouveau rendez-vous anonyme
      */
     private void sendAnonymousTeamNotificationEmail(Appointment appointment) {
-        logger.info("📧 Envoi notification équipe pour nouveau RDV anonyme ID: {}", appointment.getId());
+        logger.info("Envoi notification équipe pour nouveau RDV anonyme ID: {}", appointment.getId());
         
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -1654,10 +1654,10 @@ public class AppointmentService {
             message.setText(body);
             mailSender.send(message);
             
-            logger.info("🎉 Notification équipe envoyée avec succès pour RDV anonyme ID: {}", appointment.getId());
+            logger.info("Notification équipe envoyée avec succès pour RDV anonyme ID: {}", appointment.getId());
             
         } catch (MailException e) {
-            logger.error("❌ Erreur lors de l'envoi de la notification équipe pour le rendez-vous anonyme ID: {}", 
+            logger.error("Erreur lors de l'envoi de la notification équipe pour le rendez-vous anonyme ID: {}", 
                     appointment.getId(), e);
         }
     }

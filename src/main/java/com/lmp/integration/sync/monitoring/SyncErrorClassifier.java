@@ -85,7 +85,7 @@ public class SyncErrorClassifier {
             pattern.setLastSeenAt(LocalDateTime.now());
             pattern.setLastSyncEventId(syncEventId);
             patternRepository.save(pattern);
-            log.debug("🔍 [SYNC CLASSIFIER] Matched existing pattern '{}' → {}",
+            log.debug("[SYNC CLASSIFIER] Matched existing pattern '{}' -> {}",
                     pattern.getPattern(), pattern.getCategory());
             return pattern.getCategory();
         }
@@ -108,7 +108,7 @@ public class SyncErrorClassifier {
             pattern.setLastSeenAt(LocalDateTime.now());
             pattern.setLastSyncEventId(syncEventId);
             patternRepository.save(pattern);
-            log.debug("🔍 [SYNC CLASSIFIER] Matched existing pattern by exact phrase '{}' → {}",
+            log.debug("[SYNC CLASSIFIER] Matched existing pattern by exact phrase '{}' -> {}",
                     pattern.getPattern(), pattern.getCategory());
             return pattern.getCategory();
         }
@@ -121,10 +121,10 @@ public class SyncErrorClassifier {
         patternRepository.save(newPattern);
 
         if (category == SyncErrorPattern.Category.UNKNOWN) {
-            log.warn("🚨 [SYNC CLASSIFIER] NEW UNKNOWN pattern detected: '{}' — potential ERP drift!",
+            log.warn("[SYNC CLASSIFIER] NEW UNKNOWN pattern detected: '{}' — potential ERP drift!",
                     truncate(newPattern.getPattern(), 200));
         } else {
-            log.info("📋 [SYNC CLASSIFIER] New pattern persisted: '{}' → {}",
+            log.info("[SYNC CLASSIFIER] New pattern persisted: '{}' -> {}",
                     newPattern.getPattern(), category);
         }
 

@@ -50,7 +50,7 @@ public class ErpSyncAdminController {
         boolean previous = siteConfigManager.getBoolean(SyncOutboundService.RUNTIME_ENABLED_KEY, true);
         siteConfigManager.update(SyncOutboundService.RUNTIME_ENABLED_KEY,
                 String.valueOf(request.enabled()), "ERP sync runtime toggle");
-        log.info("🔁 [ERP-SYNC] Toggle runtime {} → {} par {}", previous, request.enabled(),
+        log.info("[ERP-SYNC] Toggle runtime {} -> {} par {}", previous, request.enabled(),
                 authentication != null ? authentication.getName() : "inconnu");
         return ResponseEntity.ok(ApiResponse.ok(currentStatus()));
     }

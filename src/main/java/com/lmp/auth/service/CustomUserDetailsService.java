@@ -74,7 +74,7 @@ public class CustomUserDetailsService implements UserDetailsService, UserDetails
                         && !user.getPassword().startsWith("$2a$")
                         && !user.getPassword().startsWith("$2b$")
                         && !user.getPassword().startsWith("$2y$"))) {
-            logger.warn("⚠️ Mot de passe non reconnu (ni Argon2id ni BCrypt) pour user {}", user.getEmail());
+            logger.warn("Mot de passe non reconnu (ni Argon2id ni BCrypt) pour user {}", user.getEmail());
         }
         
         return createUserPrincipal(user);
@@ -87,7 +87,7 @@ public class CustomUserDetailsService implements UserDetailsService, UserDetails
      * @return UserDetails pour Spring Security
      */
     private UserDetails createUserPrincipal(User user) {
-        logger.info("🔍 [SESSION-SECURITY] Création UserPrincipal pour: {} (Statut: {})", user.getEmail(), user.getStatus());
+        logger.info("[SESSION-SECURITY] Création UserPrincipal pour: {} (Statut: {})", user.getEmail(), user.getStatus());
 
         // Note: Les utilisateurs supprimés sont maintenant physiquement effacés de la base (hard delete)
         // Cette vérification n'est plus nécessaire
@@ -110,20 +110,20 @@ public class CustomUserDetailsService implements UserDetailsService, UserDetails
         boolean isAccountNonLocked = !Boolean.TRUE.equals(user.getAccountLocked());
 
         if (!isAccountNonLocked) {
-            logger.warn("🔒 [SESSION-SECURITY] Compte verrouillé pour {} — LockedException sera levée par DaoAuthenticationProvider",
+            logger.warn("[SESSION-SECURITY] Compte verrouillé pour {} — LockedException sera levée par DaoAuthenticationProvider",
                     user.getEmail());
         }
         if (statusAllows && !emailVerifiedOk) {
-            logger.warn("🔒 [SESSION-SECURITY] BLOCAGE login non-vérifié pour {} (require-email-verified actif)",
+            logger.warn("[SESSION-SECURITY] BLOCAGE login non-vérifié pour {} (require-email-verified actif)",
                     user.getEmail());
         }
 
         // SECURITY (L1) : hash bcrypt prefix retiré du log debug aussi.
-        logger.debug("🔐 Statut utilisateur - Actif: {}, Non verrouillé: {}",
+        logger.debug("Statut utilisateur - Actif: {}, Non verrouillé: {}",
                     isEnabled, isAccountNonLocked);
-        logger.debug("🎭 Autorités utilisateur: {}", authorities);
+        logger.debug("Autorités utilisateur: {}", authorities);
 
-        logger.info("✅ [SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {}, Locked: {})",
+        logger.info("[SESSION-SECURITY] UserPrincipal créé avec succès pour: {} (Statut: {}, Locked: {})",
                     user.getEmail(), user.getStatus(), !isAccountNonLocked);
 
         String principal = user.getUsername() != null ? user.getUsername() : user.getEmail();
@@ -182,7 +182,7 @@ public class CustomUserDetailsService implements UserDetailsService, UserDetails
         user.setPassword(newEncodedPassword);
         userRepository.save(user);
 
-        logger.info("🔄 [PASSWORD-UPGRADE] Hash {} → argon2id pour {}",
+        logger.info("[PASSWORD-UPGRADE] Hash {} -> argon2id pour {}",
                 previousPrefix, user.getEmail());
 
         // Rebuild UserDetails avec le nouveau hash (l'instance reçue est immutable).

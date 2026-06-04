@@ -47,7 +47,7 @@ public class SyncReconciliationScheduler {
         this.currentIntervalSeconds = new AtomicInteger(initialInterval);
         this.nextRunAt = new AtomicReference<>(Instant.now().plusSeconds(initialInterval));
 
-        log.info("🔍 [RECONCILIATION] Scheduler initialized — initial interval={}s, max={}s, increment={}s",
+        log.info("[RECONCILIATION] Scheduler initialized — initial interval={}s, max={}s, increment={}s",
                 initialInterval,
                 syncProperties.getReconciliation().getMaxIntervalSeconds(),
                 syncProperties.getReconciliation().getIncrementSeconds());
@@ -64,7 +64,7 @@ public class SyncReconciliationScheduler {
         }
 
         int currentInterval = currentIntervalSeconds.get();
-        log.info("🔍 [RECONCILIATION] Running cycle — current interval={}s", currentInterval);
+        log.info("[RECONCILIATION] Running cycle — current interval={}s", currentInterval);
 
         try {
             int gaps = reconciliationService.reconcile();
@@ -73,7 +73,7 @@ public class SyncReconciliationScheduler {
                 // Écart détecté → reset à l'intervalle initial
                 int initialInterval = syncProperties.getReconciliation().getInitialIntervalSeconds();
                 currentIntervalSeconds.set(initialInterval);
-                log.info("🔍 [RECONCILIATION] {} gaps found — resetting interval to {}s", gaps, initialInterval);
+                log.info("[RECONCILIATION] {} gaps found — resetting interval to {}s", gaps, initialInterval);
             } else {
                 // Aucun écart → incrémenter l'intervalle
                 int increment = syncProperties.getReconciliation().getIncrementSeconds();
@@ -82,11 +82,11 @@ public class SyncReconciliationScheduler {
                 currentIntervalSeconds.set(newInterval);
 
                 if (newInterval != currentInterval) {
-                    log.info("🔍 [RECONCILIATION] No gaps — increasing interval to {}s", newInterval);
+                    log.info("[RECONCILIATION] No gaps — increasing interval to {}s", newInterval);
                 }
             }
         } catch (Exception e) {
-            log.error("❌ [RECONCILIATION] Cycle failed: {}", e.getMessage(), e);
+            log.error("[RECONCILIATION] Cycle failed: {}", e.getMessage(), e);
         }
 
         // Planifier le prochain cycle
@@ -107,6 +107,6 @@ public class SyncReconciliationScheduler {
         int initialInterval = syncProperties.getReconciliation().getInitialIntervalSeconds();
         currentIntervalSeconds.set(initialInterval);
         nextRunAt.set(Instant.now());
-        log.info("🔍 [RECONCILIATION] Interval manually reset to {}s", initialInterval);
+        log.info("[RECONCILIATION] Interval manually reset to {}s", initialInterval);
     }
 }

@@ -60,7 +60,7 @@ public class ItemPriceSyncMapper {
         String priceList = syncProperties.getExternal().getPriceList();
 
         if (itemCode == null || itemCode.isBlank()) {
-            log.warn("⚠️ [SYNC] Service {} has no externalItemCode — skipping ItemPrice sync", service.getId());
+            log.warn("[SYNC] Service {} has no externalItemCode — skipping ItemPrice sync", service.getId());
             return null;
         }
 
@@ -72,10 +72,10 @@ public class ItemPriceSyncMapper {
 
         if (existing.isPresent()) {
             String existingId = existing.get().get("name").toString();
-            log.info("🔁 [SYNC] ItemPrice exists for {} / {} → updating {}", itemCode, priceList, existingId);
+            log.info("[SYNC] ItemPrice exists for {} / {} -> updating {}", itemCode, priceList, existingId);
             return externalClient.updateEntity(SyncEntityType.ITEM_PRICE, existingId, payload);
         } else {
-            log.info("📤 [SYNC] ItemPrice not found for {} / {} → creating", itemCode, priceList);
+            log.info("[SYNC] ItemPrice not found for {} / {} -> creating", itemCode, priceList);
             return externalClient.createEntity(SyncEntityType.ITEM_PRICE, payload);
         }
     }

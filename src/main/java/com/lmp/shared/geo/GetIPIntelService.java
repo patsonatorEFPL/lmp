@@ -72,14 +72,14 @@ public class GetIPIntelService {
 
         CachedResult cached = cache.get(ip);
         if (cached != null && !cached.isExpired()) {
-            logger.debug("[FRAUD-DEBUG] GetIPIntel cache hit for {} → score={}", ip, cached.value.orElse(null));
+            logger.debug("[FRAUD-DEBUG] GetIPIntel cache hit for {} -> score={}", ip, cached.value.orElse(null));
             return cached.value;
         }
 
         long t0 = System.currentTimeMillis();
         try {
             String url = String.format(API_URL, ip, contactEmail);
-            logger.debug("[FRAUD-DEBUG] GetIPIntel → calling for IP {}", ip);
+            logger.debug("[FRAUD-DEBUG] GetIPIntel -> calling for IP {}", ip);
 
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
@@ -93,7 +93,7 @@ public class GetIPIntelService {
                         healthRecorder.record("GetIPIntel", latency, true, null);
                         Optional<Double> opt = Optional.of(score);
                         cache.put(ip, new CachedResult(opt));
-                        logger.debug("[FRAUD-DEBUG] GetIPIntel resolved {} → score={}", ip, score);
+                        logger.debug("[FRAUD-DEBUG] GetIPIntel resolved {} -> score={}", ip, score);
                         return opt;
                     } else {
                         // Negative values are error codes

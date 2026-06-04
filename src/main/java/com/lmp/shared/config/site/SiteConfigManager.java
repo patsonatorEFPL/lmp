@@ -94,7 +94,7 @@ public class SiteConfigManager {
             String value = getString(key);
             return value == null ? defaultValue : Boolean.parseBoolean(value.trim());
         } catch (RuntimeException e) {
-            logger.warn("⚠️ [SITE-CONFIG] getBoolean({}) en échec — fallback {}", key, defaultValue, e);
+            logger.warn("[SITE-CONFIG] getBoolean({}) en échec — fallback {}", key, defaultValue, e);
             return defaultValue;
         }
     }
@@ -154,7 +154,7 @@ public class SiteConfigManager {
         cache.remove(key);
         eventPublisher.publishEvent(new SiteConfigChangedEvent(this, key, value));
 
-        logger.info("SiteConfig mise à jour — {} : {} → {}", key, oldValue, value);
+        logger.info("SiteConfig mise à jour — {} : {} -> {}", key, oldValue, value);
     }
 
     /**

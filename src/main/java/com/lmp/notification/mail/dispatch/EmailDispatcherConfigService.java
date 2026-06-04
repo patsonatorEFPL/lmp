@@ -68,13 +68,13 @@ public class EmailDispatcherConfigService {
             String payload = new String(message.getBody());
             try {
                 activeStrategy.set(normalize(payload));
-                log.info("📧 [DISPATCHER] Cache refreshed from pub/sub : {}", payload);
+                log.info("[DISPATCHER] Cache refreshed from pub/sub : {}", payload);
             } catch (IllegalArgumentException e) {
-                log.warn("📧 [DISPATCHER] Ignored invalid pub/sub payload '{}'", payload);
+                log.warn("[DISPATCHER] Ignored invalid pub/sub payload '{}'", payload);
             }
         };
         listenerContainer.addMessageListener(listener, new ChannelTopic(CHANNEL));
-        log.info("📧 [DISPATCHER] Subscribed to {} for cross-pod sync", CHANNEL);
+        log.info("[DISPATCHER] Subscribed to {} for cross-pod sync", CHANNEL);
     }
 
     public String getActiveStrategy() {
@@ -98,7 +98,7 @@ public class EmailDispatcherConfigService {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String actor = auth != null ? auth.getName() : "anonymous";
-        log.info("📧 [DISPATCHER] Strategy switched {} -> {} by user={} (persisted + broadcast)",
+        log.info("[DISPATCHER] Strategy switched {} -> {} by user={} (persisted + broadcast)",
                 previous, normalized, actor);
     }
 
@@ -117,7 +117,7 @@ public class EmailDispatcherConfigService {
             normalized = STRATEGY_SMTP;
         }
         activeStrategy.set(normalized);
-        log.info("📧 [DISPATCHER] Strategy loaded from {} : {}",
+        log.info("[DISPATCHER] Strategy loaded from {} : {}",
                 dbValue != null ? "DB" : "env", normalized);
     }
 

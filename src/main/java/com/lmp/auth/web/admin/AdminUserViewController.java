@@ -58,9 +58,9 @@ public class AdminUserViewController {
     @PostMapping("/{id}/activate")
     @ResponseBody
     public ResponseEntity<?> activateUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
-        logger.info("🔍 ADMIN DEBUG - Tentative activation utilisateur ID: {}", id);
-        logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
-        logger.info("🔍 ADMIN DEBUG - Headers: {}",
+        logger.info("ADMIN DEBUG - Tentative activation utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
+        logger.info("ADMIN DEBUG - Headers: {}",
                    java.util.Collections.list(request.getHeaderNames()).stream()
                    .collect(java.util.stream.Collectors.toMap(h -> h, request::getHeader)));
         
@@ -73,12 +73,12 @@ public class AdminUserViewController {
             userService.save(user);
             
             auditLogger.info("User activated - ID: {}, Email: {}", id, user.getEmail());
-            logger.info("✅ ADMIN DEBUG - Activation utilisateur réussie: {}", id);
+            logger.info("ADMIN DEBUG - Activation utilisateur réussie: {}", id);
             
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur activé avec succès\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur activation utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur activation utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
@@ -90,8 +90,8 @@ public class AdminUserViewController {
     @PostMapping("/{id}/deactivate")
     @ResponseBody
     public ResponseEntity<?> deactivateUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
-        logger.info("🔍 ADMIN DEBUG - Tentative désactivation utilisateur ID: {}", id);
-        logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
+        logger.info("ADMIN DEBUG - Tentative désactivation utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
         try {
             User user = userService.findById(id)
@@ -101,12 +101,12 @@ public class AdminUserViewController {
             userService.save(user);
             
             auditLogger.info("User deactivated - ID: {}, Email: {}", id, user.getEmail());
-            logger.info("✅ ADMIN DEBUG - Désactivation utilisateur réussie: {}", id);
+            logger.info("ADMIN DEBUG - Désactivation utilisateur réussie: {}", id);
             
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur désactivé avec succès\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur désactivation utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur désactivation utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
@@ -118,8 +118,8 @@ public class AdminUserViewController {
     @PostMapping("/{id}/lock")
     @ResponseBody
     public ResponseEntity<?> lockUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
-        logger.info("🔍 ADMIN DEBUG - Tentative verrouillage utilisateur ID: {}", id);
-        logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
+        logger.info("ADMIN DEBUG - Tentative verrouillage utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
         try {
             User user = userService.findById(id)
@@ -129,12 +129,12 @@ public class AdminUserViewController {
             userService.save(user);
             
             auditLogger.info("User account locked - ID: {}, Email: {}", id, user.getEmail());
-            logger.info("✅ ADMIN DEBUG - Verrouillage utilisateur réussi: {}", id);
+            logger.info("ADMIN DEBUG - Verrouillage utilisateur réussi: {}", id);
             
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Compte verrouillé avec succès\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur verrouillage utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur verrouillage utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
@@ -146,8 +146,8 @@ public class AdminUserViewController {
     @PostMapping("/{id}/unlock")
     @ResponseBody
     public ResponseEntity<?> unlockUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
-        logger.info("🔍 ADMIN DEBUG - Tentative déverrouillage utilisateur ID: {}", id);
-        logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
+        logger.info("ADMIN DEBUG - Tentative déverrouillage utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
         try {
             User user = userService.findById(id)
@@ -157,12 +157,12 @@ public class AdminUserViewController {
             userService.save(user);
             
             auditLogger.info("User account unlocked - ID: {}, Email: {}", id, user.getEmail());
-            logger.info("✅ ADMIN DEBUG - Déverrouillage utilisateur réussi: {}", id);
+            logger.info("ADMIN DEBUG - Déverrouillage utilisateur réussi: {}", id);
             
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Compte déverrouillé avec succès\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur déverrouillage utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur déverrouillage utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
@@ -176,58 +176,58 @@ public class AdminUserViewController {
     public ResponseEntity<?> changeUserPassword(@PathVariable java.util.UUID id,
                                                @RequestBody ChangePasswordRequest request,
                                                Authentication authentication) {
-        logger.info("🔐 DEBUG ADMIN PASSWORD - Début changement mot de passe admin pour user ID: {}", id);
+        logger.info("DEBUG ADMIN PASSWORD - Début changement mot de passe admin pour user ID: {}", id);
         
         try {
             // Log de l'authentification
             if (authentication == null || !authentication.isAuthenticated()) {
-                logger.warn("🔐 DEBUG ADMIN PASSWORD - Admin non authentifié: auth={}", authentication);
+                logger.warn("DEBUG ADMIN PASSWORD - Admin non authentifié: auth={}", authentication);
                 return ResponseEntity.status(401)
                     .body("{\"success\": false, \"message\": \"Administrateur non authentifié\"}");
             }
             
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Admin authentifié: {}", authentication.getName());
+            logger.info("DEBUG ADMIN PASSWORD - Admin authentifié: {}", authentication.getName());
             
             // Log de la validation request
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Request: newPassword={}, confirmPassword={}, passwordMatching={}",
+            logger.info("DEBUG ADMIN PASSWORD - Request: newPassword={}, confirmPassword={}, passwordMatching={}",
                        request.getNewPassword() != null ? "présent" : "absent",
                        request.getConfirmPassword() != null ? "présent" : "absent",
                        request.isPasswordMatching());
             
             // Validation basique
             if (request.getNewPassword() == null || request.getNewPassword().trim().isEmpty()) {
-                logger.warn("🔐 DEBUG ADMIN PASSWORD - Nouveau mot de passe vide");
+                logger.warn("DEBUG ADMIN PASSWORD - Nouveau mot de passe vide");
                 return ResponseEntity.badRequest()
                     .body("{\"success\": false, \"message\": \"Le nouveau mot de passe ne peut pas être vide\"}");
             }
             
             if (!request.isPasswordMatching()) {
-                logger.warn("🔐 DEBUG ADMIN PASSWORD - Mots de passe ne correspondent pas");
+                logger.warn("DEBUG ADMIN PASSWORD - Mots de passe ne correspondent pas");
                 return ResponseEntity.badRequest()
                     .body("{\"success\": false, \"message\": \"Les mots de passe ne correspondent pas\"}");
             }
 
             // Récupérer l'admin actuel
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Recherche admin par email: {}", authentication.getName());
+            logger.info("DEBUG ADMIN PASSWORD - Recherche admin par email: {}", authentication.getName());
             User admin = userService.findByLogin(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Administrateur non trouvé"));
             
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Admin trouvé: ID={}, Email={}", admin.getId(), admin.getEmail());
+            logger.info("DEBUG ADMIN PASSWORD - Admin trouvé: ID={}, Email={}", admin.getId(), admin.getEmail());
             
             // Récupérer l'utilisateur cible
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Recherche utilisateur cible ID: {}", id);
+            logger.info("DEBUG ADMIN PASSWORD - Recherche utilisateur cible ID: {}", id);
             User targetUser = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Utilisateur cible trouvé: ID={}, Email={}",
+            logger.info("DEBUG ADMIN PASSWORD - Utilisateur cible trouvé: ID={}, Email={}",
                        targetUser.getId(), targetUser.getEmail());
             
             // Changer le mot de passe via l'admin
-            logger.info("🔐 DEBUG ADMIN PASSWORD - Appel changePasswordByAdmin: userId={}, adminId={}",
+            logger.info("DEBUG ADMIN PASSWORD - Appel changePasswordByAdmin: userId={}, adminId={}",
                        id, admin.getId());
             userService.changePasswordByAdmin(id, request.getNewPassword(), admin.getId());
             
-            logger.info("✅ DEBUG ADMIN PASSWORD - Mot de passe changé avec succès par admin {} pour user {}",
+            logger.info("DEBUG ADMIN PASSWORD - Mot de passe changé avec succès par admin {} pour user {}",
                        admin.getEmail(), targetUser.getEmail());
             auditLogger.info("Admin password change - Admin: {} changed password for User: {} (ID: {})",
                            admin.getEmail(), targetUser.getEmail(), id);
@@ -235,7 +235,7 @@ public class AdminUserViewController {
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Mot de passe changé avec succès\"}");
             
         } catch (Exception e) {
-            logger.error("❌ DEBUG ADMIN PASSWORD - Erreur changement mot de passe user {}: {}", id, e.getMessage(), e);
+            logger.error("DEBUG ADMIN PASSWORD - Erreur changement mot de passe user {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }
@@ -248,26 +248,26 @@ public class AdminUserViewController {
     @PostMapping("/{id}/delete")
     @ResponseBody
     public ResponseEntity<?> deleteUser(@PathVariable java.util.UUID id, HttpServletRequest request) {
-        logger.error("🚨 ADMIN DEBUG - Tentative suppression DÉFINITIVE utilisateur ID: {}", id);
-        logger.info("🔍 ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
+        logger.error("ADMIN DEBUG - Tentative suppression DÉFINITIVE utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Request method: {}, URI: {}", request.getMethod(), request.getRequestURI());
         
         try {
             // Vérifier que l'utilisateur existe avant suppression
             User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             
-            logger.error("⚠️ ADMIN DEBUG - Utilisateur à supprimer DÉFINITIVEMENT: ID={}, Email={}", id, user.getEmail());
+            logger.error("ADMIN DEBUG - Utilisateur à supprimer DÉFINITIVEMENT: ID={}, Email={}", id, user.getEmail());
             
             // Utiliser la méthode deleteUser du service qui fait maintenant du HARD DELETE
             userService.deleteUser(id);
             
             auditLogger.error("User HARD DELETED (PERMANENT) - ID: {}, Email: {}", id, user.getEmail());
-            logger.error("🗑️ ADMIN DEBUG - Suppression DÉFINITIVE utilisateur terminée: {}", id);
+            logger.error("ADMIN DEBUG - Suppression DÉFINITIVE utilisateur terminée: {}", id);
             
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur supprimé définitivement (irréversible)\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur suppression DÉFINITIVE utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur suppression DÉFINITIVE utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
         }
@@ -330,10 +330,10 @@ public class AdminUserViewController {
     @ResponseBody
     public ResponseEntity<?> testAuth() {
         try {
-            logger.info("🧪 TEST AUTH - Endpoint accessible");
+            logger.info("TEST AUTH - Endpoint accessible");
             return ResponseEntity.ok().body("\"{\\\"success\\\": true, \\\"message\\\": \\\"Authentification OK\\\"}\"");
         } catch (Exception e) {
-            logger.error("❌ TEST AUTH - Erreur: {}", e.getMessage(), e);
+            logger.error("TEST AUTH - Erreur: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body("\"{\\\"success\\\": false, \\\"message\\\": \\\"" + e.getMessage() + "\\\"}\"");
         }
     }
@@ -421,12 +421,12 @@ public class AdminUserViewController {
     @PostMapping("/{id}/update")
     @ResponseBody
     public ResponseEntity<?> updateUser(@PathVariable java.util.UUID id, @RequestBody UserUpdateRequest request, Authentication authentication) {
-        logger.info("🔄 ADMIN DEBUG - Mise à jour utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Mise à jour utilisateur ID: {}", id);
         
         try {
             // Vérifier l'authentification
             if (authentication == null || !authentication.isAuthenticated()) {
-                logger.warn("🔄 ADMIN DEBUG - Admin non authentifié");
+                logger.warn("ADMIN DEBUG - Admin non authentifié");
                 return ResponseEntity.status(401)
                     .body("{\"success\": false, \"message\": \"Administrateur non authentifié\"}");
             }
@@ -436,17 +436,17 @@ public class AdminUserViewController {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
                 
             String originalEmail = user.getEmail();
-            logger.info("🔄 ADMIN DEBUG - Utilisateur à modifier: ID={}, Email={}", id, originalEmail);
+            logger.info("ADMIN DEBUG - Utilisateur à modifier: ID={}, Email={}", id, originalEmail);
             
             // Mettre à jour les champs si fournis
             if (request.getFirstName() != null && !request.getFirstName().trim().isEmpty()) {
                 user.setFirstName(request.getFirstName().trim());
-                logger.info("🔄 ADMIN DEBUG - Nouveau prénom: {}", request.getFirstName());
+                logger.info("ADMIN DEBUG - Nouveau prénom: {}", request.getFirstName());
             }
             
             if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
                 user.setLastName(request.getLastName().trim());
-                logger.info("🔄 ADMIN DEBUG - Nouveau nom: {}", request.getLastName());
+                logger.info("ADMIN DEBUG - Nouveau nom: {}", request.getLastName());
             }
             
             if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
@@ -458,17 +458,17 @@ public class AdminUserViewController {
                         .body("{\"success\": false, \"message\": \"Cet email est déjà utilisé par un autre utilisateur\"}");
                 }
                 user.setEmail(newEmail);
-                logger.info("🔄 ADMIN DEBUG - Nouvel email: {}", newEmail);
+                logger.info("ADMIN DEBUG - Nouvel email: {}", newEmail);
             }
             
             if (request.getPhone() != null) {
                 user.setPhone(request.getPhone().trim().isEmpty() ? null : request.getPhone().trim());
-                logger.info("🔄 ADMIN DEBUG - Nouveau téléphone: {}", user.getPhone());
+                logger.info("ADMIN DEBUG - Nouveau téléphone: {}", user.getPhone());
             }
             
             if (request.getCompanyName() != null) {
                 user.setCompanyName(request.getCompanyName().trim().isEmpty() ? null : request.getCompanyName().trim());
-                logger.info("🔄 ADMIN DEBUG - Nouvelle entreprise: {}", user.getCompanyName());
+                logger.info("ADMIN DEBUG - Nouvelle entreprise: {}", user.getCompanyName());
             }
             
             // Sauvegarder les modifications
@@ -476,12 +476,12 @@ public class AdminUserViewController {
             
             auditLogger.info("User updated by admin - ID: {}, Original Email: {}, New Email: {}, Admin: {}", 
                            id, originalEmail, user.getEmail(), authentication.getName());
-            logger.info("✅ ADMIN DEBUG - Utilisateur mis à jour avec succès: {}", id);
+            logger.info("ADMIN DEBUG - Utilisateur mis à jour avec succès: {}", id);
             
             return ResponseEntity.ok().body("{\"success\": true, \"message\": \"Utilisateur mis à jour avec succès\"}");
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur mise à jour utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur mise à jour utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
         }
@@ -493,14 +493,14 @@ public class AdminUserViewController {
     @GetMapping("/{id}/appointments")
     @ResponseBody
     public ResponseEntity<?> getUserAppointments(@PathVariable java.util.UUID id) {
-        logger.info("📅 ADMIN DEBUG - Récupération rendez-vous utilisateur ID: {}", id);
+        logger.info("ADMIN DEBUG - Récupération rendez-vous utilisateur ID: {}", id);
         
         try {
             User user = userService.findById(id)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             
             List<Appointment> appointments = appointmentRepository.findByUserOrderByAppointmentDateDesc(user);
-            logger.info("📅 ADMIN DEBUG - Trouvé {} rendez-vous pour l'utilisateur {}", appointments.size(), user.getEmail());
+            logger.info("ADMIN DEBUG - Trouvé {} rendez-vous pour l'utilisateur {}", appointments.size(), user.getEmail());
             
             // Convertir en DTO pour l'affichage
             List<AppointmentDto> appointmentDtos = appointments.stream()
@@ -510,7 +510,7 @@ public class AdminUserViewController {
             return ResponseEntity.ok(appointmentDtos);
             
         } catch (Exception e) {
-            logger.error("❌ ADMIN DEBUG - Erreur récupération rendez-vous utilisateur {}: {}", id, e.getMessage(), e);
+            logger.error("ADMIN DEBUG - Erreur récupération rendez-vous utilisateur {}: {}", id, e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage().replace("\"", "\\\"") + "\"}");
         }

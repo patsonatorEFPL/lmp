@@ -34,7 +34,7 @@ public class ErpAggregateCacheService {
     @Cacheable(value = "erp-aggregates", key = "#type.name() + ':' + #sumField + ':' + #dateField + ':' + #startDate + ':' + #endDate")
     public BigDecimal fetchAggregatedTotal(SyncEntityType type, String sumField,
                                             String dateField, String startDate, String endDate) {
-        log.debug("📊 [ERP-CACHE] Fetching aggregate for {}.{} ({} → {})", type, sumField, startDate, endDate);
+        log.debug("[ERP-CACHE] Fetching aggregate for {}.{} ({} -> {})", type, sumField, startDate, endDate);
         return externalClient.fetchAggregatedTotal(type, sumField, dateField, startDate, endDate);
     }
 
@@ -44,6 +44,6 @@ public class ErpAggregateCacheService {
      */
     @CacheEvict(value = "erp-aggregates", allEntries = true)
     public void evictAll() {
-        log.info("📊 [ERP-CACHE] All entries evicted");
+        log.info("[ERP-CACHE] All entries evicted");
     }
 }

@@ -81,7 +81,7 @@ public class PaymentReconciliationService {
      */
     @Scheduled(fixedDelayString = "${lmp.reconciliation.interval.ms:300000}")
     public void reconcileStaleOrders() {
-        logger.info("🔄 RÉCONCILIATION - Début de la réconciliation des paiements");
+        logger.info("RÉCONCILIATION - Début de la réconciliation des paiements");
 
         int reconciledCount = 0;
         int recoveredCount = 0;
@@ -95,11 +95,11 @@ public class PaymentReconciliationService {
             recoveredCount = recoverCancelledPaidOrders();
 
         } catch (Exception e) {
-            logger.error("❌ RÉCONCILIATION - Erreur critique : {}", e.getMessage(), e);
+            logger.error("RÉCONCILIATION - Erreur critique : {}", e.getMessage(), e);
             errorCount++;
         }
 
-        logger.info("✅ RÉCONCILIATION - Terminée : {} réconciliées, {} récupérées, {} erreurs",
+        logger.info("RÉCONCILIATION - Terminée : {} réconciliées, {} récupérées, {} erreurs",
                 reconciledCount, recoveredCount, errorCount);
     }
 
@@ -118,7 +118,7 @@ public class PaymentReconciliationService {
             return 0;
         }
 
-        logger.info("🔍 RÉCONCILIATION - {} commandes (session) + {} (PaymentIntent seul) PAYMENT_PENDING à vérifier",
+        logger.info("RÉCONCILIATION - {} commandes (session) + {} (PaymentIntent seul) PAYMENT_PENDING à vérifier",
                 staleOrders.size(), piOnly.size());
 
         int reconciledCount = 0;
@@ -130,7 +130,7 @@ public class PaymentReconciliationService {
                     reconciledCount++;
                 }
             } catch (Exception e) {
-                logger.error("❌ RÉCONCILIATION - Erreur pour la commande {} : {}",
+                logger.error("RÉCONCILIATION - Erreur pour la commande {} : {}",
                         order.getId(), e.getMessage());
             }
         }
@@ -141,7 +141,7 @@ public class PaymentReconciliationService {
                     reconciledCount++;
                 }
             } catch (Exception e) {
-                logger.error("❌ RÉCONCILIATION - Erreur pour la commande {} : {}",
+                logger.error("RÉCONCILIATION - Erreur pour la commande {} : {}",
                         order.getId(), e.getMessage());
             }
         }
@@ -161,7 +161,7 @@ public class PaymentReconciliationService {
             return 0;
         }
 
-        logger.info("🔍 RÉCONCILIATION - {} commandes CANCELLED récentes à vérifier auprès de Stripe",
+        logger.info("RÉCONCILIATION - {} commandes CANCELLED récentes à vérifier auprès de Stripe",
                 cancelledOrders.size());
 
         int recoveredCount = 0;
@@ -175,7 +175,7 @@ public class PaymentReconciliationService {
                             order.getId());
                 }
             } catch (Exception e) {
-                logger.error("❌ RÉCONCILIATION - Erreur de récupération pour la commande {} : {}",
+                logger.error("RÉCONCILIATION - Erreur de récupération pour la commande {} : {}",
                         order.getId(), e.getMessage());
             }
         }
@@ -224,7 +224,7 @@ public class PaymentReconciliationService {
             Session session = stripeClient.checkout().sessions().retrieve(sessionId);
             String paymentStatus = session.getPaymentStatus();
 
-            logger.info("🔍 RÉCONCILIATION - Commande {} (status={}), Stripe session {} → payment_status='{}'",
+            logger.info("RÉCONCILIATION - Commande {} (status={}), Stripe session {} -> payment_status='{}'",
                     order.getId(), order.getStatus(), sessionId, paymentStatus);
 
             if ("paid".equals(paymentStatus)) {
@@ -244,7 +244,7 @@ public class PaymentReconciliationService {
                         orderRepository.save(order);
                         orderRealtimeEventPublisher.publishOrderUpdated(order, previous, OrderStatus.CANCELLED);
 
-                        logger.info("⏰ RÉCONCILIATION - Commande {} annulée : session Stripe expirée",
+                        logger.info("RÉCONCILIATION - Commande {} annulée : session Stripe expirée",
                                 order.getId());
                         return true;
                     }
@@ -255,11 +255,11 @@ public class PaymentReconciliationService {
 
         } catch (com.stripe.exception.InvalidRequestException e) {
             // Session introuvable chez Stripe (supprimée, invalide, etc.)
-            logger.warn("⚠️ RÉCONCILIATION - Session Stripe introuvable pour commande {} : {}",
+            logger.warn("RÉCONCILIATION - Session Stripe introuvable pour commande {} : {}",
                     order.getId(), e.getMessage());
             return false;
         } catch (Exception e) {
-            logger.error("❌ RÉCONCILIATION - Erreur Stripe pour commande {} : {}",
+            logger.error("RÉCONCILIATION - Erreur Stripe pour commande {} : {}",
                     order.getId(), e.getMessage());
             return false;
         }
@@ -270,7 +270,7 @@ public class PaymentReconciliationService {
             PaymentIntent pi = stripeClient.paymentIntents().retrieve(paymentIntentId);
             String status = pi.getStatus();
 
-            logger.info("🔍 RÉCONCILIATION - Commande {} (status={}), Stripe PI {} → status='{}'",
+            logger.info("RÉCONCILIATION - Commande {} (status={}), Stripe PI {} -> status='{}'",
                     order.getId(), order.getStatus(), paymentIntentId, status);
 
             if ("succeeded".equals(status)) {
@@ -285,11 +285,11 @@ public class PaymentReconciliationService {
 
             return false;
         } catch (com.stripe.exception.InvalidRequestException e) {
-            logger.warn("⚠️ RÉCONCILIATION - PaymentIntent Stripe introuvable pour commande {} : {}",
+            logger.warn("RÉCONCILIATION - PaymentIntent Stripe introuvable pour commande {} : {}",
                     order.getId(), e.getMessage());
             return false;
         } catch (Exception e) {
-            logger.error("❌ RÉCONCILIATION - Erreur PaymentIntent pour commande {} : {}",
+            logger.error("RÉCONCILIATION - Erreur PaymentIntent pour commande {} : {}",
                     order.getId(), e.getMessage());
             return false;
         }
@@ -333,7 +333,7 @@ public class PaymentReconciliationService {
 
         orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previousStatus, OrderStatus.CONFIRMED);
 
-        logger.info("✅ RÉCONCILIATION - Commande {} confirmée ({} → CONFIRMED) via PaymentIntent",
+        logger.info("RÉCONCILIATION - Commande {} confirmée ({} -> CONFIRMED) via PaymentIntent",
                 order.getId(), previousStatus);
 
         auditLogger.info("RECONCILIATION - Order {} status updated: {} → CONFIRMED, PaymentIntent: {}",
@@ -407,7 +407,7 @@ public class PaymentReconciliationService {
 
         orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previousStatus, OrderStatus.CONFIRMED);
 
-        logger.info("✅ RÉCONCILIATION - Commande {} confirmée ({} → CONFIRMED) via vérification Stripe",
+        logger.info("RÉCONCILIATION - Commande {} confirmée ({} -> CONFIRMED) via vérification Stripe",
                 order.getId(), previousStatus);
 
         auditLogger.info("RECONCILIATION - Order {} status updated: {} → CONFIRMED, Stripe session: {}",
@@ -428,7 +428,7 @@ public class PaymentReconciliationService {
         try {
             byte[] pdfData = invoicePdfService.generateInvoicePdf(order, order.getUser());
             if (pdfData == null || pdfData.length == 0) {
-                logger.warn("⚠️ RÉCONCILIATION - Échec de génération du PDF pour la commande {}", order.getId());
+                logger.warn("RÉCONCILIATION - Échec de génération du PDF pour la commande {}", order.getId());
                 return;
             }
 
@@ -446,10 +446,10 @@ public class PaymentReconciliationService {
                     pdfData,
                     "application/pdf");
 
-            logger.info("📧 RÉCONCILIATION - Facture {} envoyée à {}", invoiceNumber, order.getUser().getEmail());
+            logger.info("RÉCONCILIATION - Facture {} envoyée à {}", invoiceNumber, order.getUser().getEmail());
 
         } catch (Exception e) {
-            logger.error("❌ RÉCONCILIATION - Erreur d'envoi de facture pour commande {} : {}",
+            logger.error("RÉCONCILIATION - Erreur d'envoi de facture pour commande {} : {}",
                     order.getId(), e.getMessage());
         }
     }

@@ -127,8 +127,8 @@ public class StripeWebhookHandler {
      */
     @Transactional
     public WebhookEventDto processWebhook(String payload, String sigHeader) throws PaymentProcessingException {
-        logger.info("🔍 DEBUG WEBHOOK - Processing Stripe webhook event");
-        logger.info("🔍 DEBUG WEBHOOK - Payload length: {}, Signature present: {}",
+        logger.info("DEBUG WEBHOOK - Processing Stripe webhook event");
+        logger.info("DEBUG WEBHOOK - Payload length: {}, Signature present: {}",
                 payload != null ? payload.length() : 0, sigHeader != null);
 
         try {
@@ -144,7 +144,7 @@ public class StripeWebhookHandler {
                 String existingStatus = existingLog.get().getStatus();
                 // Autoriser le retraitement des webhooks en échec (retry Stripe)
                 if ("processed".equals(existingStatus)) {
-                    logger.info("⏭️ IDEMPOTENCE - Événement déjà traité avec succès, ignoré: {} ({})",
+                    logger.info("IDEMPOTENCE - Événement déjà traité avec succès, ignoré: {} ({})",
                             event.getId(), event.getType());
                     WebhookEventDto duplicate = new WebhookEventDto(event.getId(), event.getType(), "stripe");
                     duplicate.setProcessed(true);
@@ -152,7 +152,7 @@ public class StripeWebhookHandler {
                     return duplicate;
                 }
                 // Supprimer le log en échec pour permettre le retraitement
-                logger.info("🔄 RETRY - Événement précédemment en échec, retraitement autorisé: {} ({})",
+                logger.info("RETRY - Événement précédemment en échec, retraitement autorisé: {} ({})",
                         event.getId(), event.getType());
                 webhookEventLogRepository.delete(existingLog.get());
             }
@@ -229,7 +229,7 @@ public class StripeWebhookHandler {
             return;
         }
 
-        logger.info("🔍 DEBUG WEBHOOK - Processing event type: {} ({})", eventType, eventType.getDescription());
+        logger.info("DEBUG WEBHOOK - Processing event type: {} ({})", eventType, eventType.getDescription());
 
         switch (eventType) {
             case PAYMENT_INTENT_SUCCEEDED:
@@ -298,24 +298,24 @@ public class StripeWebhookHandler {
         }
 
         if (paymentIntent != null) {
-            logger.info("🔍 DEBUG WEBHOOK - handlePaymentIntentSucceeded called for PaymentIntent: {}",
+            logger.info("DEBUG WEBHOOK - handlePaymentIntentSucceeded called for PaymentIntent: {}",
                     paymentIntent.getId());
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
-            logger.info("🔍 DEBUG WEBHOOK - PaymentIntent status: {}, amount: {}, currency: {}",
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - PaymentIntent status: {}, amount: {}, currency: {}",
                     paymentIntent.getStatus(), paymentIntent.getAmount(), paymentIntent.getCurrency());
-            logger.info("🔍 DEBUG WEBHOOK - PaymentIntent metadata: {}", paymentIntent.getMetadata());
+            logger.info("DEBUG WEBHOOK - PaymentIntent metadata: {}", paymentIntent.getMetadata());
 
             // 🆕 DIAGNOSTIC AVANCÉ - Vérification des liens Order
-            logger.info("🔍 DIAGNOSTIC LINKS - Searching for order by PaymentIntent ID: {}", paymentIntent.getId());
+            logger.info("DIAGNOSTIC LINKS - Searching for order by PaymentIntent ID: {}", paymentIntent.getId());
             Optional<Order> orderByPI = orderRepository.findByStripePaymentIntentId(paymentIntent.getId());
-            logger.info("🔍 DIAGNOSTIC LINKS - Order found by PaymentIntent: {}", orderByPI.isPresent());
+            logger.info("DIAGNOSTIC LINKS - Order found by PaymentIntent: {}", orderByPI.isPresent());
 
             if (orderByPI.isEmpty() && paymentIntent.getMetadata() != null) {
                 String sessionId = paymentIntent.getMetadata().get("session_id");
-                logger.info("🔍 DIAGNOSTIC LINKS - Trying fallback search by session_id: {}", sessionId);
+                logger.info("DIAGNOSTIC LINKS - Trying fallback search by session_id: {}", sessionId);
                 if (sessionId != null) {
                     Optional<Order> orderBySession = orderRepository.findByStripeSessionId(sessionId);
-                    logger.info("🔍 DIAGNOSTIC LINKS - Order found by session_id: {}", orderBySession.isPresent());
+                    logger.info("DIAGNOSTIC LINKS - Order found by session_id: {}", orderBySession.isPresent());
                     if (orderBySession.isPresent()) {
                         Order order = orderBySession.get();
                         logger.info(
@@ -347,10 +347,10 @@ public class StripeWebhookHandler {
             eventData.put("metadata", paymentIntent.getMetadata());
             webhookEvent.setEventData(eventData);
 
-            logger.info("✅ Payment succeeded - PaymentIntent: {}, Amount: {} {}",
+            logger.info("Payment succeeded - PaymentIntent: {}, Amount: {} {}",
                     paymentIntent.getId(), paymentIntent.getAmount(), paymentIntent.getCurrency());
         } else {
-            logger.warn("❌ PaymentIntent is null in handlePaymentIntentSucceeded");
+            logger.warn("PaymentIntent is null in handlePaymentIntentSucceeded");
         }
     }
 
@@ -368,7 +368,7 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
             webhookEvent.setStatus("failed");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
             // Utiliser les statuts définis dans l'enum
             if (eventType.shouldUpdatePaymentStatus()) {
@@ -405,7 +405,7 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(paymentIntent.getId());
             webhookEvent.setStatus("requires_action");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
             // Utiliser les statuts définis dans l'enum
             if (eventType.shouldUpdatePaymentStatus()) {
@@ -449,7 +449,7 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(stripeRefund.getPaymentIntent());
             webhookEvent.setStatus("refund_created");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
             // 🆕 PERSIST REFUND: Save the refund entity linked to the order
             persistRefundFromStripe(stripeRefund);
@@ -476,7 +476,7 @@ public class StripeWebhookHandler {
             // Check idempotency — avoid duplicates
             Optional<com.lmp.billing.domain.Refund> existing = refundRepository.findByStripeRefundId(stripeRefund.getId());
             if (existing.isPresent()) {
-                logger.info("⏭️ Refund already persisted: {}", stripeRefund.getId());
+                logger.info("Refund already persisted: {}", stripeRefund.getId());
                 return;
             }
 
@@ -487,7 +487,7 @@ public class StripeWebhookHandler {
             }
 
             if (orderOpt.isEmpty()) {
-                logger.warn("❌ REFUND PERSIST - Commande non trouvée pour PaymentIntent: {}", stripeRefund.getPaymentIntent());
+                logger.warn("REFUND PERSIST - Commande non trouvée pour PaymentIntent: {}", stripeRefund.getPaymentIntent());
                 return;
             }
 
@@ -518,7 +518,7 @@ public class StripeWebhookHandler {
                     order.getId()));
             eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.REFUND_PROCESSED, "billing", order.getId(), rpl));
 
-            logger.info("✅ REFUND PERSISTED - ID: {}, Stripe: {}, Montant: {} {}, Commande: {}",
+            logger.info("REFUND PERSISTED - ID: {}, Stripe: {}, Montant: {} {}, Commande: {}",
                     refundEntity.getId(), stripeRefund.getId(),
                     refundEntity.getAmount(), refundEntity.getCurrency(), order.getId());
 
@@ -530,11 +530,11 @@ public class StripeWebhookHandler {
                 OrderProgressSync.applyMinimumForStatus(order);
                 orderRepository.save(order);
                 orderRealtimeEventPublisher.publishOrderUpdated(order, statusBeforeRefund, OrderStatus.REFUNDED);
-                logger.info("🔄 REFUND - Commande {} marquée comme REFUNDED (remboursement total)", order.getId());
+                logger.info("REFUND - Commande {} marquée comme REFUNDED (remboursement total)", order.getId());
             }
 
         } catch (Exception e) {
-            logger.error("❌ REFUND PERSIST ERROR - Erreur lors de la persistance du remboursement {}: {}",
+            logger.error("REFUND PERSIST ERROR - Erreur lors de la persistance du remboursement {}: {}",
                     stripeRefund.getId(), e.getMessage(), e);
         }
     }
@@ -549,7 +549,7 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(stripeRefund.getPaymentIntent());
             webhookEvent.setStatus("refund_updated");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
             // Update persisted refund status
             Optional<com.lmp.billing.domain.Refund> refundOpt = refundRepository.findByStripeRefundId(stripeRefund.getId());
@@ -563,7 +563,7 @@ public class StripeWebhookHandler {
                             ? stripeRefund.getFailureReason().toString() : "Unknown");
                 }
                 refundRepository.save(refundEntity);
-                logger.info("✅ REFUND UPDATED - Stripe: {}, Status: {}", stripeRefund.getId(), stripeRefund.getStatus());
+                logger.info("REFUND UPDATED - Stripe: {}, Status: {}", stripeRefund.getId(), stripeRefund.getStatus());
 
                 Map<String, Object> upl = new HashMap<>();
                 upl.put("stripeRefundId", stripeRefund.getId());
@@ -609,32 +609,32 @@ public class StripeWebhookHandler {
             Optional<com.stripe.model.StripeObject> objectOpt = event.getDataObjectDeserializer().getObject();
             if (objectOpt.isPresent() && objectOpt.get() instanceof Session) {
                 session = (Session) objectOpt.get();
-                logger.info("✅ DÉSÉRIALISATION STANDARD - Session extraite avec succès: {}", session.getId());
+                logger.info("DÉSÉRIALISATION STANDARD - Session extraite avec succès: {}", session.getId());
             }
         } catch (Exception e) {
-            logger.warn("⚠️ DÉSÉRIALISATION STANDARD ÉCHOUÉE - {}", e.getMessage());
+            logger.warn("DÉSÉRIALISATION STANDARD ÉCHOUÉE - {}", e.getMessage());
         }
 
         // 2. Si échec, désérialisation manuelle du JSON
         if (session == null) {
-            logger.info("🔧 DÉSÉRIALISATION MANUELLE - Tentative de parsing JSON direct");
+            logger.info("DÉSÉRIALISATION MANUELLE - Tentative de parsing JSON direct");
             session = parseSessionFromJson(event);
         }
 
         if (session != null) {
             // 🔍 DIAGNOSTIC - Analyser les métadonnées
-            logger.info("🔍 DIAGNOSTIC - Session ID: {}", session.getId());
-            logger.info("🔍 DIAGNOSTIC - Session metadata: {}", session.getMetadata());
-            logger.info("🔍 DIAGNOSTIC - Session customer_email: {}", session.getCustomerEmail());
-            logger.info("🔍 DIAGNOSTIC - Session amount_total: {}", session.getAmountTotal());
-            logger.info("🔍 DIAGNOSTIC - Session currency: {}", session.getCurrency());
-            logger.info("🔍 DIAGNOSTIC - Session payment_intent: {}", session.getPaymentIntent());
-            logger.info("🔍 DIAGNOSTIC - Session payment_status: {}", session.getPaymentStatus());
+            logger.info("DIAGNOSTIC - Session ID: {}", session.getId());
+            logger.info("DIAGNOSTIC - Session metadata: {}", session.getMetadata());
+            logger.info("DIAGNOSTIC - Session customer_email: {}", session.getCustomerEmail());
+            logger.info("DIAGNOSTIC - Session amount_total: {}", session.getAmountTotal());
+            logger.info("DIAGNOSTIC - Session currency: {}", session.getCurrency());
+            logger.info("DIAGNOSTIC - Session payment_intent: {}", session.getPaymentIntent());
+            logger.info("DIAGNOSTIC - Session payment_status: {}", session.getPaymentStatus());
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("completed");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
-            logger.info("🔍 DEBUG WEBHOOK - Checkout completed for session: {}", session.getId());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Checkout completed for session: {}", session.getId());
 
             // 🔧 AMÉLIORATION : Utiliser la logique pour trouver et mettre à jour l'ordre
             // existant
@@ -643,7 +643,7 @@ public class StripeWebhookHandler {
 
             if (orderOpt.isPresent()) {
                 Order order = orderOpt.get();
-                logger.info("📝 MISE À JOUR EXISTANTE - Commande trouvée: {} pour la session {}, mise à jour du statut",
+                logger.info("MISE À JOUR EXISTANTE - Commande trouvée: {} pour la session {}, mise à jour du statut",
                         order.getId(), session.getId());
 
                 // Mettre à jour l'ordre existant avec les informations de la session
@@ -670,7 +670,7 @@ public class StripeWebhookHandler {
                         session.getId());
                 Order newOrder = createOrderFromCheckoutSession(session);
                 if (newOrder != null) {
-                    logger.info("✅ CRÉATION RÉUSSIE - Commande {} créée via fonction de secours pour session {}",
+                    logger.info("CRÉATION RÉUSSIE - Commande {} créée via fonction de secours pour session {}",
                             newOrder.getId(), session.getId());
                 } else {
                     logger.error(
@@ -695,7 +695,7 @@ public class StripeWebhookHandler {
             securityLogger.info("Checkout session completed - Session: {}, Customer: {}",
                     session.getId(), session.getCustomerEmail());
         } else {
-            logger.error("❌ Session Stripe null dans handleCheckoutSessionCompleted");
+            logger.error("Session Stripe null dans handleCheckoutSessionCompleted");
         }
     }
 
@@ -710,7 +710,7 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("expired");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
             // Utiliser les statuts définis dans l'enum
             if (eventType.shouldUpdatePaymentStatus()) {
@@ -748,8 +748,8 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("async_payment_succeeded");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
-            logger.info("🔍 DEBUG WEBHOOK - Async payment succeeded, updating order status for session: {}",
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Async payment succeeded, updating order status for session: {}",
                     session.getId());
 
             // Utiliser les statuts définis dans l'enum
@@ -789,7 +789,7 @@ public class StripeWebhookHandler {
             webhookEvent.setProviderTransactionId(session.getId());
             webhookEvent.setStatus("async_payment_failed");
 
-            logger.info("🔍 DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
+            logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
             // Utiliser les statuts définis dans l'enum
             if (eventType.shouldUpdatePaymentStatus()) {
@@ -857,14 +857,14 @@ public class StripeWebhookHandler {
      */
     private void updateOrderStatusByStripeSessionId(String stripeSessionId, OrderStatus newStatus) {
         try {
-            logger.info("🔍 DEBUG WEBHOOK - Searching for order with stripeSessionId: {}", stripeSessionId);
+            logger.info("DEBUG WEBHOOK - Searching for order with stripeSessionId: {}", stripeSessionId);
             Optional<Order> orderOpt = orderRepository.findByStripeSessionId(stripeSessionId);
 
             if (orderOpt.isPresent()) {
                 Order order = orderOpt.get();
                 OrderStatus oldStatus = order.getStatus();
 
-                logger.info("🔍 DEBUG WEBHOOK - Found order: {}, current status: {}, requested status: {}",
+                logger.info("DEBUG WEBHOOK - Found order: {}, current status: {}, requested status: {}",
                         order.getId(), oldStatus, newStatus);
 
                 // Mettre à jour le statut seulement si c'est un changement logique
@@ -888,7 +888,7 @@ public class StripeWebhookHandler {
 
                     orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
 
-                    logger.info("✅ Order status updated via webhook - Order: {}, Stripe Session: {}, Status: {} -> {}",
+                    logger.info("Order status updated via webhook - Order: {}, Stripe Session: {}, Status: {} -> {}",
                             order.getId(), stripeSessionId, oldStatus, newStatus);
 
                     securityLogger.info("Order status updated via Stripe webhook - Order: {}, Session: {}",
@@ -899,18 +899,18 @@ public class StripeWebhookHandler {
                             order.getId(), oldStatus, newStatus);
                 }
             } else {
-                logger.error("❌ Order not found for Stripe session update - Session: {}", stripeSessionId);
+                logger.error("Order not found for Stripe session update - Session: {}", stripeSessionId);
 
                 // Log toutes les commandes existantes pour debug
                 List<Order> allOrders = orderRepository.findAll();
-                logger.info("🔍 DEBUG WEBHOOK - Total orders in database: {}", allOrders.size());
+                logger.info("DEBUG WEBHOOK - Total orders in database: {}", allOrders.size());
                 for (Order o : allOrders) {
-                    logger.info("🔍 DEBUG WEBHOOK - Order {}: stripeSessionId={}, status={}",
+                    logger.info("DEBUG WEBHOOK - Order {}: stripeSessionId={}, status={}",
                             o.getId(), o.getStripeSessionId(), o.getStatus());
                 }
             }
         } catch (Exception e) {
-            logger.error("❌ Error updating order status via webhook - Session: {}, Error: {}",
+            logger.error("Error updating order status via webhook - Session: {}, Error: {}",
                     stripeSessionId, e.getMessage(), e);
         }
     }
@@ -923,14 +923,14 @@ public class StripeWebhookHandler {
     private void updateOrderStatusByPaymentIntentId(String paymentIntentId, OrderStatus newStatus,
             PaymentIntent paymentIntent) {
         try {
-            logger.info("🔍 DEBUG WEBHOOK - Searching for order with PaymentIntent ID: {}", paymentIntentId);
+            logger.info("DEBUG WEBHOOK - Searching for order with PaymentIntent ID: {}", paymentIntentId);
             Optional<Order> orderOpt = orderRepository.findByStripePaymentIntentId(paymentIntentId);
 
             if (orderOpt.isPresent()) {
                 Order order = orderOpt.get();
                 OrderStatus oldStatus = order.getStatus();
 
-                logger.info("🔍 DEBUG WEBHOOK - Found order: {}, current status: {}, requested status: {}",
+                logger.info("DEBUG WEBHOOK - Found order: {}, current status: {}, requested status: {}",
                         order.getId(), oldStatus, newStatus);
 
                 // Mettre à jour le statut seulement si c'est un changement logique
@@ -978,21 +978,21 @@ public class StripeWebhookHandler {
                             order.getId(), oldStatus, newStatus);
                 }
             } else {
-                logger.warn("❌ Order not found for PaymentIntent ID: {}", paymentIntentId);
+                logger.warn("Order not found for PaymentIntent ID: {}", paymentIntentId);
 
                 // Tentative de recherche par metadata session_id
                 if (paymentIntent.getMetadata() != null && paymentIntent.getMetadata().containsKey("session_id")) {
                     String sessionId = paymentIntent.getMetadata().get("session_id");
-                    logger.info("🔍 DEBUG WEBHOOK - Trying alternative search by session_id from metadata: {}",
+                    logger.info("DEBUG WEBHOOK - Trying alternative search by session_id from metadata: {}",
                             sessionId);
                     updateOrderStatusByStripeSessionId(sessionId, newStatus);
                 } else {
-                    logger.error("❌ No session_id in PaymentIntent metadata, cannot find order - PaymentIntent: {}",
+                    logger.error("No session_id in PaymentIntent metadata, cannot find order - PaymentIntent: {}",
                             paymentIntentId);
 
                     // Log toutes les commandes existantes pour debug
                     List<Order> allOrders = orderRepository.findAll();
-                    logger.info("🔍 DEBUG WEBHOOK - Total orders in database: {}", allOrders.size());
+                    logger.info("DEBUG WEBHOOK - Total orders in database: {}", allOrders.size());
                     for (Order o : allOrders) {
                         logger.info(
                                 "🔍 DEBUG WEBHOOK - Order {}: stripePaymentIntentId={}, stripeSessionId={}, status={}",
@@ -1001,7 +1001,7 @@ public class StripeWebhookHandler {
                 }
             }
         } catch (Exception e) {
-            logger.error("❌ Error updating order status via PaymentIntent webhook - PaymentIntent: {}, Error: {}",
+            logger.error("Error updating order status via PaymentIntent webhook - PaymentIntent: {}, Error: {}",
                     paymentIntentId, e.getMessage(), e);
         }
     }
@@ -1011,11 +1011,11 @@ public class StripeWebhookHandler {
      * Évite les mises à jour inappropriées et maintient la cohérence des données
      */
     private boolean shouldUpdateOrderStatus(OrderStatus currentStatus, OrderStatus newStatus) {
-        logger.info("🔍 DEBUG WEBHOOK - Checking status transition: {} -> {}", currentStatus, newStatus);
+        logger.info("DEBUG WEBHOOK - Checking status transition: {} -> {}", currentStatus, newStatus);
 
         // 🆕 DIAGNOSTIC DÉTAILLÉ - Analyser toutes les transitions possibles
         if (currentStatus == newStatus) {
-            logger.info("🔍 DIAGNOSTIC STATUS - Status unchanged: {}, skipping update", currentStatus);
+            logger.info("DIAGNOSTIC STATUS - Status unchanged: {}, skipping update", currentStatus);
             return false;
         }
 
@@ -1023,16 +1023,16 @@ public class StripeWebhookHandler {
         if (currentStatus == OrderStatus.PAYMENT_PENDING) {
             boolean allowed = newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.PENDING
                     || newStatus == OrderStatus.CANCELLED;
-            logger.info("🔍 DIAGNOSTIC STATUS - From PAYMENT_PENDING to {}: {}", newStatus, allowed);
+            logger.info("DIAGNOSTIC STATUS - From PAYMENT_PENDING to {}: {}", newStatus, allowed);
             if (!allowed) {
-                logger.warn("🔍 DIAGNOSTIC STATUS - BLOCKED: Invalid transition from PAYMENT_PENDING to {}", newStatus);
+                logger.warn("DIAGNOSTIC STATUS - BLOCKED: Invalid transition from PAYMENT_PENDING to {}", newStatus);
             }
             return allowed;
         }
 
         // Permettre la récupération d'une commande annulée si le paiement est confirmé par Stripe
         if (currentStatus == OrderStatus.CANCELLED && newStatus == OrderStatus.CONFIRMED) {
-            logger.info("🔄 RÉCUPÉRATION - Commande annulée récupérée car paiement confirmé par Stripe");
+            logger.info("RÉCUPÉRATION - Commande annulée récupérée car paiement confirmé par Stripe");
             return true;
         }
 
@@ -1040,23 +1040,23 @@ public class StripeWebhookHandler {
         if (currentStatus == OrderStatus.PENDING) {
             boolean allowed = newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.CANCELLED ||
                     newStatus == OrderStatus.PROCESSING || newStatus == OrderStatus.SHIPPED;
-            logger.info("🔍 DIAGNOSTIC STATUS - From PENDING to {}: {}", newStatus, allowed);
+            logger.info("DIAGNOSTIC STATUS - From PENDING to {}: {}", newStatus, allowed);
             return allowed;
         }
 
         // Permettre l'annulation depuis la plupart des statuts (sauf COMPLETED)
         if (newStatus == OrderStatus.CANCELLED) {
             boolean allowed = currentStatus != OrderStatus.COMPLETED && currentStatus != OrderStatus.CANCELLED;
-            logger.info("🔍 DIAGNOSTIC STATUS - Cancellation from {}: {}", currentStatus, allowed);
+            logger.info("DIAGNOSTIC STATUS - Cancellation from {}: {}", currentStatus, allowed);
             if (!allowed) {
-                logger.warn("🔍 DIAGNOSTIC STATUS - BLOCKED: Cannot cancel order with status {}", currentStatus);
+                logger.warn("DIAGNOSTIC STATUS - BLOCKED: Cannot cancel order with status {}", currentStatus);
             }
             return allowed;
         }
 
         // Empêcher les retours en arrière inappropriés
         if (currentStatus == OrderStatus.COMPLETED) {
-            logger.warn("🔍 DIAGNOSTIC STATUS - BLOCKED: Cannot modify completed order");
+            logger.warn("DIAGNOSTIC STATUS - BLOCKED: Cannot modify completed order");
             return false; // Ne pas modifier les commandes déjà complétées
         }
 
@@ -1064,12 +1064,12 @@ public class StripeWebhookHandler {
         if (newStatus == OrderStatus.CONFIRMED) {
             boolean allowed = currentStatus == OrderStatus.PAYMENT_PENDING || currentStatus == OrderStatus.PENDING ||
                     currentStatus == OrderStatus.PROCESSING;
-            logger.info("🔍 DIAGNOSTIC STATUS - To CONFIRMED from {}: {}", currentStatus, allowed);
+            logger.info("DIAGNOSTIC STATUS - To CONFIRMED from {}: {}", currentStatus, allowed);
             return allowed;
         }
 
         // Permettre les progressions normales
-        logger.info("🔍 DIAGNOSTIC STATUS - Normal progression allowed: {} -> {}", currentStatus, newStatus);
+        logger.info("DIAGNOSTIC STATUS - Normal progression allowed: {} -> {}", currentStatus, newStatus);
         return true;
     }
 
@@ -1080,12 +1080,12 @@ public class StripeWebhookHandler {
      */
     private Order createOrderFromCheckoutSession(Session session) {
         try {
-            logger.info("🆕 CRÉATION COMMANDE - Début création pour session: {}", session.getId());
+            logger.info("CRÉATION COMMANDE - Début création pour session: {}", session.getId());
 
             // 1. Extraire les métadonnées requises
             Map<String, String> metadata = session.getMetadata();
             if (metadata == null || metadata.isEmpty()) {
-                logger.error("❌ MÉTADONNÉES MANQUANTES - Session {} sans métadonnées", session.getId());
+                logger.error("MÉTADONNÉES MANQUANTES - Session {} sans métadonnées", session.getId());
                 return null;
             }
 
@@ -1095,17 +1095,17 @@ public class StripeWebhookHandler {
             String currency = metadata.get("currency");
             String userIdStr = metadata.get("userId");
 
-            logger.info("🔍 MÉTADONNÉES EXTRAITES - Service: {}, Amount: {}, Currency: {}, UserId: {}",
+            logger.info("MÉTADONNÉES EXTRAITES - Service: {}, Amount: {}, Currency: {}, UserId: {}",
                     serviceName, amountStr, currency, userIdStr);
 
             // 3. Valider les données essentielles
             if (serviceName == null || serviceName.trim().isEmpty()) {
-                logger.error("❌ SERVICE MANQUANT - serviceName requis dans métadonnées");
+                logger.error("SERVICE MANQUANT - serviceName requis dans métadonnées");
                 return null;
             }
 
             if (amountStr == null || amountStr.trim().isEmpty()) {
-                logger.error("❌ MONTANT MANQUANT - amount requis dans métadonnées");
+                logger.error("MONTANT MANQUANT - amount requis dans métadonnées");
                 return null;
             }
 
@@ -1116,7 +1116,7 @@ public class StripeWebhookHandler {
                 Long amountCents = Long.parseLong(amountStr);
                 amount = BigDecimal.valueOf(amountCents).divide(BigDecimal.valueOf(100));
             } catch (NumberFormatException e) {
-                logger.error("❌ MONTANT INVALIDE - Impossible de parser amount: {}", amountStr, e);
+                logger.error("MONTANT INVALIDE - Impossible de parser amount: {}", amountStr, e);
                 return null;
             }
 
@@ -1128,12 +1128,12 @@ public class StripeWebhookHandler {
                     Optional<User> userOpt = userRepository.findById(userId);
                     if (userOpt.isPresent()) {
                         user = userOpt.get();
-                        logger.info("✅ UTILISATEUR TROUVÉ - ID: {}, Email: {}", userId, user.getEmail());
+                        logger.info("UTILISATEUR TROUVÉ - ID: {}, Email: {}", userId, user.getEmail());
                     } else {
-                        logger.warn("⚠️ UTILISATEUR NON TROUVÉ - ID: {}", userId);
+                        logger.warn("UTILISATEUR NON TROUVÉ - ID: {}", userId);
                     }
                 } catch (NumberFormatException e) {
-                    logger.error("❌ USER_ID INVALIDE - Impossible de parser userId: {}", userIdStr, e);
+                    logger.error("USER_ID INVALIDE - Impossible de parser userId: {}", userIdStr, e);
                 }
             }
 
@@ -1142,9 +1142,9 @@ public class StripeWebhookHandler {
                 Optional<User> userOpt = userRepository.findByEmail(session.getCustomerEmail());
                 if (userOpt.isPresent()) {
                     user = userOpt.get();
-                    logger.info("✅ UTILISATEUR TROUVÉ PAR EMAIL - Email: {}", session.getCustomerEmail());
+                    logger.info("UTILISATEUR TROUVÉ PAR EMAIL - Email: {}", session.getCustomerEmail());
                 } else {
-                    logger.warn("⚠️ UTILISATEUR NON TROUVÉ PAR EMAIL - Email: {}", session.getCustomerEmail());
+                    logger.warn("UTILISATEUR NON TROUVÉ PAR EMAIL - Email: {}", session.getCustomerEmail());
                 }
             }
 
@@ -1189,7 +1189,7 @@ public class StripeWebhookHandler {
             // 7. Sauvegarder la commande
             Order savedOrder = orderRepository.save(newOrder);
 
-            logger.info("✅ COMMANDE CRÉÉE - ID: {}, Session: {}, Service: {}, Montant: {} {}",
+            logger.info("COMMANDE CRÉÉE - ID: {}, Session: {}, Service: {}, Montant: {} {}",
                     savedOrder.getId(), session.getId(), serviceName, amount, currency);
 
             securityLogger.info("Order created via Stripe webhook - Order: {}, Session: {}, Amount: {} {}",
@@ -1200,7 +1200,7 @@ public class StripeWebhookHandler {
             return savedOrder;
 
         } catch (Exception e) {
-            logger.error("❌ ERREUR CRÉATION COMMANDE - Session: {}, Erreur: {}", session.getId(), e.getMessage(), e);
+            logger.error("ERREUR CRÉATION COMMANDE - Session: {}, Erreur: {}", session.getId(), e.getMessage(), e);
             securityLogger.error("Order creation failed via webhook - Session: {}, Error: {}", session.getId(),
                     e.getMessage());
             return null;
@@ -1215,22 +1215,22 @@ public class StripeWebhookHandler {
      */
     private Session parseSessionFromJson(Event event) {
         try {
-            logger.info("🔧 PARSING JSON - Début de la désérialisation manuelle");
+            logger.info("PARSING JSON - Début de la désérialisation manuelle");
 
             // 1. Extraire le JSON brut de l'événement
             JsonNode eventData = objectMapper.readTree(event.getData().toJson());
             JsonNode sessionJson = eventData.get("object");
 
             if (sessionJson == null) {
-                logger.error("❌ JSON PARSING - Pas d'objet 'object' dans les données");
+                logger.error("JSON PARSING - Pas d'objet 'object' dans les données");
                 return null;
             }
 
-            logger.info("🔧 JSON STRUCTURE - Object type: {}", sessionJson.get("object").asText());
+            logger.info("JSON STRUCTURE - Object type: {}", sessionJson.get("object").asText());
 
             // 2. Vérifier que c'est bien une session checkout
             if (!"checkout.session".equals(sessionJson.get("object").asText())) {
-                logger.error("❌ JSON PARSING - L'objet n'est pas une checkout.session: {}",
+                logger.error("JSON PARSING - L'objet n'est pas une checkout.session: {}",
                         sessionJson.get("object").asText());
                 return null;
             }
@@ -1241,20 +1241,20 @@ public class StripeWebhookHandler {
             // ID de session
             if (sessionJson.has("id")) {
                 manualSession.setId(sessionJson.get("id").asText());
-                logger.info("✅ JSON PARSED - Session ID: {}", manualSession.getId());
+                logger.info("JSON PARSED - Session ID: {}", manualSession.getId());
             }
 
             // PaymentIntent
             if (sessionJson.has("payment_intent")) {
                 String paymentIntentId = sessionJson.get("payment_intent").asText();
                 manualSession.setPaymentIntent(paymentIntentId);
-                logger.info("✅ JSON PARSED - Payment Intent: {}", paymentIntentId);
+                logger.info("JSON PARSED - Payment Intent: {}", paymentIntentId);
             }
 
             // Customer email
             if (sessionJson.has("customer_email") && !sessionJson.get("customer_email").isNull()) {
                 manualSession.setCustomerEmail(sessionJson.get("customer_email").asText());
-                logger.info("✅ JSON PARSED - Customer Email: {}", manualSession.getCustomerEmail());
+                logger.info("JSON PARSED - Customer Email: {}", manualSession.getCustomerEmail());
             }
 
             // Customer details - email alternatif
@@ -1264,7 +1264,7 @@ public class StripeWebhookHandler {
                     String email = customerDetails.get("email").asText();
                     if (manualSession.getCustomerEmail() == null) {
                         manualSession.setCustomerEmail(email);
-                        logger.info("✅ JSON PARSED - Customer Email (from details): {}", email);
+                        logger.info("JSON PARSED - Customer Email (from details): {}", email);
                     }
                 }
             }
@@ -1273,25 +1273,25 @@ public class StripeWebhookHandler {
             if (sessionJson.has("amount_total")) {
                 Long amountTotal = sessionJson.get("amount_total").asLong();
                 manualSession.setAmountTotal(amountTotal);
-                logger.info("✅ JSON PARSED - Amount Total: {}", amountTotal);
+                logger.info("JSON PARSED - Amount Total: {}", amountTotal);
             }
 
             // Devise
             if (sessionJson.has("currency")) {
                 manualSession.setCurrency(sessionJson.get("currency").asText());
-                logger.info("✅ JSON PARSED - Currency: {}", manualSession.getCurrency());
+                logger.info("JSON PARSED - Currency: {}", manualSession.getCurrency());
             }
 
             // Statut de paiement
             if (sessionJson.has("payment_status")) {
                 manualSession.setPaymentStatus(sessionJson.get("payment_status").asText());
-                logger.info("✅ JSON PARSED - Payment Status: {}", manualSession.getPaymentStatus());
+                logger.info("JSON PARSED - Payment Status: {}", manualSession.getPaymentStatus());
             }
 
             // Customer ID
             if (sessionJson.has("customer") && !sessionJson.get("customer").isNull()) {
                 manualSession.setCustomer(sessionJson.get("customer").asText());
-                logger.info("✅ JSON PARSED - Customer ID: {}", manualSession.getCustomer());
+                logger.info("JSON PARSED - Customer ID: {}", manualSession.getCustomer());
             }
 
             // Métadonnées (crucial pour la création de commandes)
@@ -1304,14 +1304,14 @@ public class StripeWebhookHandler {
                 });
 
                 manualSession.setMetadata(metadata);
-                logger.info("✅ JSON PARSED - Metadata: {}", metadata);
+                logger.info("JSON PARSED - Metadata: {}", metadata);
             }
 
-            logger.info("✅ DÉSÉRIALISATION MANUELLE RÉUSSIE - Session: {}", manualSession.getId());
+            logger.info("DÉSÉRIALISATION MANUELLE RÉUSSIE - Session: {}", manualSession.getId());
             return manualSession;
 
         } catch (Exception e) {
-            logger.error("❌ ÉCHEC DÉSÉRIALISATION MANUELLE - Erreur: {}", e.getMessage(), e);
+            logger.error("ÉCHEC DÉSÉRIALISATION MANUELLE - Erreur: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -1327,12 +1327,12 @@ public class StripeWebhookHandler {
             JsonNode piJson = eventData.get("object");
 
             if (piJson == null || piJson.isNull()) {
-                logger.error("❌ JSON PARSING PI - Pas d'objet 'object' dans les données");
+                logger.error("JSON PARSING PI - Pas d'objet 'object' dans les données");
                 return null;
             }
 
             if (!piJson.has("object") || !"payment_intent".equals(piJson.get("object").asText())) {
-                logger.error("❌ JSON PARSING PI - Type inattendu: {}",
+                logger.error("JSON PARSING PI - Type inattendu: {}",
                         piJson.has("object") ? piJson.get("object").asText() : "(absent)");
                 return null;
             }
@@ -1369,15 +1369,15 @@ public class StripeWebhookHandler {
             }
 
             if (manual.getId() == null) {
-                logger.error("❌ JSON PARSING PI - ID manquant");
+                logger.error("JSON PARSING PI - ID manquant");
                 return null;
             }
 
-            logger.info("✅ DÉSÉRIALISATION MANUELLE PI réussie - PaymentIntent: {}", manual.getId());
+            logger.info("DÉSÉRIALISATION MANUELLE PI réussie - PaymentIntent: {}", manual.getId());
             return manual;
 
         } catch (Exception e) {
-            logger.error("❌ ÉCHEC DÉSÉRIALISATION MANUELLE PI - {}", e.getMessage(), e);
+            logger.error("ÉCHEC DÉSÉRIALISATION MANUELLE PI - {}", e.getMessage(), e);
             return null;
         }
     }
@@ -1387,13 +1387,13 @@ public class StripeWebhookHandler {
      * Priorité : 1) PaymentIntent ID, 2) Session ID, 3) Metadata order_id
      */
     private Optional<Order> findOrderBySession(Session session) {
-        logger.info("🔍 RECHERCHE COMMANDE - Recherche d'une commande existante pour la session: {}", session.getId());
+        logger.info("RECHERCHE COMMANDE - Recherche d'une commande existante pour la session: {}", session.getId());
 
         // 1. Recherche par PaymentIntent ID (le plus fiable)
         if (session.getPaymentIntent() != null) {
             Optional<Order> orderByPI = orderRepository.findByStripePaymentIntentId(session.getPaymentIntent());
             if (orderByPI.isPresent()) {
-                logger.info("✅ TROUVÉ PAR PAYMENT_INTENT - Commande {} trouvée pour PaymentIntent: {}",
+                logger.info("TROUVÉ PAR PAYMENT_INTENT - Commande {} trouvée pour PaymentIntent: {}",
                         orderByPI.get().getId(), session.getPaymentIntent());
                 return orderByPI;
             }
@@ -1402,7 +1402,7 @@ public class StripeWebhookHandler {
         // 2. Recherche par Session ID
         Optional<Order> orderBySession = orderRepository.findByStripeSessionId(session.getId());
         if (orderBySession.isPresent()) {
-            logger.info("✅ TROUVÉ PAR SESSION_ID - Commande {} trouvée pour Session: {}",
+            logger.info("TROUVÉ PAR SESSION_ID - Commande {} trouvée pour Session: {}",
                     orderBySession.get().getId(), session.getId());
             return orderBySession;
         }
@@ -1414,16 +1414,16 @@ public class StripeWebhookHandler {
                 java.util.UUID orderId = java.util.UUID.fromString(orderIdStr);
                 Optional<Order> orderByMetadata = orderRepository.findById(orderId);
                 if (orderByMetadata.isPresent()) {
-                    logger.info("✅ TROUVÉ PAR METADATA - Commande {} trouvée via metadata order_id: {}",
+                    logger.info("TROUVÉ PAR METADATA - Commande {} trouvée via metadata order_id: {}",
                             orderByMetadata.get().getId(), orderId);
                     return orderByMetadata;
                 }
             } catch (NumberFormatException e) {
-                logger.warn("⚠️ METADATA ORDER_ID INVALIDE - Impossible de parser order_id: {}", orderIdStr);
+                logger.warn("METADATA ORDER_ID INVALIDE - Impossible de parser order_id: {}", orderIdStr);
             }
         }
 
-        logger.warn("❌ AUCUNE COMMANDE TROUVÉE - Aucune commande existante trouvée pour la session: {}",
+        logger.warn("AUCUNE COMMANDE TROUVÉE - Aucune commande existante trouvée pour la session: {}",
                 session.getId());
         return Optional.empty();
     }
@@ -1433,7 +1433,7 @@ public class StripeWebhookHandler {
      * session Stripe
      */
     private void updateOrderWithSessionData(Order order, Session session) {
-        logger.info("🔄 MISE À JOUR COMMANDE - Mise à jour de la commande {} avec les données de la session {}",
+        logger.info("MISE À JOUR COMMANDE - Mise à jour de la commande {} avec les données de la session {}",
                 order.getId(), session.getId());
 
         // Mise à jour des informations de paiement
@@ -1470,7 +1470,7 @@ public class StripeWebhookHandler {
                 Optional<User> userOpt = userRepository.findByEmail(session.getCustomerEmail());
                 if (userOpt.isPresent()) {
                     order.setUser(userOpt.get());
-                    logger.info("👤 UTILISATEUR ASSOCIÉ - Utilisateur {} associé via email: {}",
+                    logger.info("UTILISATEUR ASSOCIÉ - Utilisateur {} associé via email: {}",
                             userOpt.get().getId(), session.getCustomerEmail());
                 }
             }
@@ -1487,7 +1487,7 @@ public class StripeWebhookHandler {
         // Sauvegarde des modifications
         orderRepository.save(order);
 
-        logger.info("✅ MISE À JOUR COMMANDE TERMINÉE - Commande {} mise à jour avec succès", order.getId());
+        logger.info("MISE À JOUR COMMANDE TERMINÉE - Commande {} mise à jour avec succès", order.getId());
     }
 
     /**
@@ -1496,7 +1496,7 @@ public class StripeWebhookHandler {
      */
     private void updateOrderStatus(Order order, OrderStatus newStatus, Session session) {
         OrderStatus oldStatus = order.getStatus();
-        logger.info("🔄 MISE À JOUR STATUT - Commande {}: {} -> {}", order.getId(), oldStatus, newStatus);
+        logger.info("MISE À JOUR STATUT - Commande {}: {} -> {}", order.getId(), oldStatus, newStatus);
 
         if (shouldUpdateOrderStatus(oldStatus, newStatus)) {
             order.setStatus(newStatus);
@@ -1516,7 +1516,7 @@ public class StripeWebhookHandler {
 
             orderRepository.save(order);
 
-            logger.info("✅ STATUT MISE À JOUR - Commande {} mis à jour: {} -> {}",
+            logger.info("STATUT MISE À JOUR - Commande {} mis à jour: {} -> {}",
                     order.getId(), oldStatus, newStatus);
 
             orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
@@ -1526,7 +1526,7 @@ public class StripeWebhookHandler {
                 sendInvoiceByEmail(order, order.getUser());
             }
         } else {
-            logger.warn("❌ TRANSITION INVALIDE - Mise à jour de statut bloquée pour commande {}: {} -> {}",
+            logger.warn("TRANSITION INVALIDE - Mise à jour de statut bloquée pour commande {}: {} -> {}",
                     order.getId(), oldStatus, newStatus);
         }
     }
@@ -1540,12 +1540,12 @@ public class StripeWebhookHandler {
             if (!Boolean.TRUE.equals(user.getEmailVerified())) {
                 user.setEmailVerified(true);
                 userRepository.save(user);
-                logger.info("✅ AUTO-VERIFY - Email vérifié automatiquement pour l'utilisateur {} suite au paiement",
+                logger.info("AUTO-VERIFY - Email vérifié automatiquement pour l'utilisateur {} suite au paiement",
                         user.getEmail());
                 securityLogger.info("User email auto-verified on payment - User: {}", user.getEmail());
             }
         } catch (Exception e) {
-            logger.error("❌ AUTO-VERIFY - Erreur lors de la vérification automatique pour {}: {}",
+            logger.error("AUTO-VERIFY - Erreur lors de la vérification automatique pour {}: {}",
                     user.getEmail(), e.getMessage());
         }
     }
@@ -1556,14 +1556,14 @@ public class StripeWebhookHandler {
      */
     private void sendInvoiceByEmail(Order order, User user) {
         try {
-            logger.info("📧 ENVOI FACTURE - Génération et envoi de la facture pour la commande {} à {}",
+            logger.info("ENVOI FACTURE - Génération et envoi de la facture pour la commande {} à {}",
                     order.getId(), user.getEmail());
 
             // Générer le PDF de la facture
             byte[] pdfData = invoicePdfService.generateInvoicePdf(order, user);
 
             if (pdfData == null || pdfData.length == 0) {
-                logger.error("❌ ENVOI FACTURE - Échec de génération du PDF pour la commande {}", order.getId());
+                logger.error("ENVOI FACTURE - Échec de génération du PDF pour la commande {}", order.getId());
                 return;
             }
 
@@ -1584,7 +1584,7 @@ public class StripeWebhookHandler {
                     pdfData,
                     "application/pdf");
 
-            logger.info("✅ ENVOI FACTURE - Facture {} envoyée avec succès à {}",
+            logger.info("ENVOI FACTURE - Facture {} envoyée avec succès à {}",
                     invoiceNumber, user.getEmail());
 
             securityLogger.info("Invoice sent via email - Order: {}, Invoice: {}, Email: {}",
@@ -1604,7 +1604,7 @@ public class StripeWebhookHandler {
             eventPublisher.publishEvent(LmpBusinessEvent.of(EventType.INVOICE_GENERATED, "billing", order.getId(), inv));
 
         } catch (Exception e) {
-            logger.error("❌ ENVOI FACTURE - Erreur lors de l'envoi de la facture pour la commande {}: {}",
+            logger.error("ENVOI FACTURE - Erreur lors de l'envoi de la facture pour la commande {}: {}",
                     order.getId(), e.getMessage(), e);
             // Ne pas propager l'exception pour ne pas bloquer le traitement du webhook
         }

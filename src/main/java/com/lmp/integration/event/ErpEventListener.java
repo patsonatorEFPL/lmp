@@ -155,7 +155,7 @@ public class ErpEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void handleBusinessEvent(LmpBusinessEvent event) {
-        logger.info("📡 [EVENT BUS] {} — module={}, entityId={}, eventId={}",
+        logger.info("[EVENT BUS] {} — module={}, entityId={}, eventId={}",
                 event.type(), event.sourceModule(), event.entityId(), event.eventId());
 
         switch (event.type()) {
@@ -312,7 +312,7 @@ public class ErpEventListener {
                 handleTicketDeleted(event);
             }
 
-            default -> logger.debug("📡 [EVENT BUS] Événement non routé : {}", event.type());
+            default -> logger.debug("[EVENT BUS] Événement non routé : {}", event.type());
         }
     }
 
@@ -326,7 +326,7 @@ public class ErpEventListener {
     private void handleUserProvisioning(LmpBusinessEvent event) {
         Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
         if (userOpt.isEmpty()) {
-            logger.warn("⚠️ [SYNC] User {} not found for provisioning", event.entityId());
+            logger.warn("[SYNC] User {} not found for provisioning", event.entityId());
             return;
         }
 
@@ -341,7 +341,7 @@ public class ErpEventListener {
 
     private void provisionCustomer(User user) {
         if (!syncProperties.getFeatures().isUserProvisioning()) {
-            logger.debug("🔇 [SYNC] Customer provisioning disabled — skipping");
+            logger.debug("[SYNC] Customer provisioning disabled — skipping");
             return;
         }
         Map<String, Object> customerPayload = customerSyncMapper.toCreatePayload(user);
@@ -356,7 +356,7 @@ public class ErpEventListener {
 
     private void provisionErpUser(User user) {
         if (!syncProperties.getFeatures().isStaffProvisioning()) {
-            logger.debug("🔇 [SYNC] Staff provisioning disabled — skipping");
+            logger.debug("[SYNC] Staff provisioning disabled — skipping");
             return;
         }
         Map<String, Object> userPayload = erpUserSyncMapper.toCreatePayload(user);
@@ -375,7 +375,7 @@ public class ErpEventListener {
     private void handleUserUpdate(LmpBusinessEvent event) {
         Optional<User> userOpt = userRepository.findByIdWithRoles(event.entityId());
         if (userOpt.isEmpty()) {
-            logger.warn("⚠️ [SYNC] User {} not found for update", event.entityId());
+            logger.warn("[SYNC] User {} not found for update", event.entityId());
             return;
         }
 
@@ -438,7 +438,7 @@ public class ErpEventListener {
             return;
         }
         if (user.getExternalCustomerId() == null) {
-            logger.debug("📋 [SYNC] User {} has no externalCustomerId — skipping address sync", user.getId());
+            logger.debug("[SYNC] User {} has no externalCustomerId — skipping address sync", user.getId());
             return;
         }
 
@@ -449,10 +449,10 @@ public class ErpEventListener {
                 ExternalResponse response = externalClient.updateEntity(
                         SyncEntityType.ADDRESS, user.getExternalAddressId(), payload);
                 if (response.success()) {
-                    logger.info("✅ [SYNC] Updated Address {} for User {}",
+                    logger.info("[SYNC] Updated Address {} for User {}",
                             user.getExternalAddressId(), user.getId());
                 } else {
-                    logger.warn("⚠️ [SYNC] Failed to update Address for User {}: {}",
+                    logger.warn("[SYNC] Failed to update Address for User {}: {}",
                             user.getId(), response.errorMessage());
                 }
             } else {
@@ -462,15 +462,15 @@ public class ErpEventListener {
                 if (response.success() && response.externalId() != null) {
                     user.setExternalAddressId(response.externalId());
                     userRepository.save(user);
-                    logger.info("🔗 [SYNC] Created Address {} for User {}",
+                    logger.info("[SYNC] Created Address {} for User {}",
                             response.externalId(), user.getId());
                 } else {
-                    logger.warn("⚠️ [SYNC] Failed to create Address for User {}: {}",
+                    logger.warn("[SYNC] Failed to create Address for User {}: {}",
                             user.getId(), response.errorMessage());
                 }
             }
         } catch (Exception e) {
-            logger.error("❌ [SYNC] Error syncing Address for User {}: {}", user.getId(), e.getMessage());
+            logger.error("[SYNC] Error syncing Address for User {}: {}", user.getId(), e.getMessage());
         }
     }
 
@@ -486,14 +486,14 @@ public class ErpEventListener {
      */
     private void handleOrderCreated(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isOrderSync()) {
-            logger.debug("🔇 [SYNC] Order sync disabled — skipping");
+            logger.debug("[SYNC] Order sync disabled — skipping");
             return;
         }
 
         try {
             Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(event.entityId());
             if (orderOpt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Order {} not found for sync", event.entityId());
+                logger.warn("[SYNC] Order {} not found for sync", event.entityId());
                 return;
             }
 
@@ -501,7 +501,7 @@ public class ErpEventListener {
 
             // Skip si déjà synchronisée (évite les doublons lors des re-publications)
             if (order.getExternalOrderId() != null) {
-                logger.debug("📋 [SYNC] Order {} already has externalOrderId {} — skipping creation",
+                logger.debug("[SYNC] Order {} already has externalOrderId {} — skipping creation",
                         order.getId(), order.getExternalOrderId());
                 return;
             }
@@ -517,9 +517,9 @@ public class ErpEventListener {
                     order.getId(), null, soPayload
             );
 
-            logger.info("📤 [SYNC] Order {} enqueued for SO (SINV will chain via callback)", order.getId());
+            logger.info("[SYNC] Order {} enqueued for SO (SINV will chain via callback)", order.getId());
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleOrderCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleOrderCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -532,14 +532,14 @@ public class ErpEventListener {
      */
     private void handlePaymentReceived(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isOrderSync()) {
-            logger.debug("🔇 [SYNC] Order sync disabled — skipping");
+            logger.debug("[SYNC] Order sync disabled — skipping");
             return;
         }
 
         try {
             Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(event.entityId());
             if (orderOpt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Order {} not found for payment sync", event.entityId());
+                logger.warn("[SYNC] Order {} not found for payment sync", event.entityId());
                 return;
             }
 
@@ -547,7 +547,7 @@ public class ErpEventListener {
 
             // Skip si un Payment Entry existe déjà
             if (order.getExternalPaymentId() != null) {
-                logger.debug("📋 [SYNC] Order {} already has Payment Entry {} — skipping",
+                logger.debug("[SYNC] Order {} already has Payment Entry {} — skipping",
                         order.getId(), order.getExternalPaymentId());
                 return;
             }
@@ -563,7 +563,7 @@ public class ErpEventListener {
                         SyncEntityType.PAYMENT, "CREATED",
                         order.getId(), null, paymentPayload
                 );
-                logger.info("💳 [SYNC] Payment Entry enqueued for Order {} → SINV {} (erpTotal={})",
+                logger.info("[SYNC] Payment Entry enqueued for Order {} -> SINV {} (erpTotal={})",
                         order.getId(), order.getExternalInvoiceId(), erpTotal);
                 return;
             }
@@ -574,7 +574,7 @@ public class ErpEventListener {
 
             if (order.getExternalOrderId() != null) {
                 // SO existe déjà mais pas de SINV → créer SINV directement
-                logger.info("📤 [SYNC] Order {} has SO {} but no SINV — creating SINV",
+                logger.info("[SYNC] Order {} has SO {} but no SINV — creating SINV",
                         order.getId(), order.getExternalOrderId());
                 Map<String, Object> siPayload = orderSyncMapper.toSalesInvoicePayload(order);
                 syncOutboundService.syncEntity(
@@ -583,7 +583,7 @@ public class ErpEventListener {
                 );
             } else {
                 // Ni SO ni SINV → créer le SO, la chaîne fera le reste
-                logger.info("📤 [SYNC] Order {} has no SO/SINV — creating SO (chain: SO→SINV→PE)",
+                logger.info("[SYNC] Order {} has no SO/SINV — creating SO (chain: SO->SINV->PE)",
                         order.getId());
                 ensureItemsProvisioned(order);
                 Map<String, Object> soPayload = orderSyncMapper.toSalesOrderPayload(order);
@@ -594,7 +594,7 @@ public class ErpEventListener {
             }
             // SINV + Payment Entry seront créés par les callbacks chaînés
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handlePaymentReceived failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handlePaymentReceived failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -618,13 +618,13 @@ public class ErpEventListener {
                 Object grandTotal = dataMap.get("grand_total");
                 if (grandTotal != null) {
                     java.math.BigDecimal total = new java.math.BigDecimal(grandTotal.toString());
-                    logger.info("📋 [SYNC] Fetched ERP grand_total={} for {}", total, salesInvoiceId);
+                    logger.info("[SYNC] Fetched ERP grand_total={} for {}", total, salesInvoiceId);
                     return total;
                 }
             }
-            logger.warn("⚠️ [SYNC] Could not fetch grand_total for {} — using LMP fallback", salesInvoiceId);
+            logger.warn("[SYNC] Could not fetch grand_total for {} — using LMP fallback", salesInvoiceId);
         } catch (Exception e) {
-            logger.warn("⚠️ [SYNC] Error fetching grand_total for {}: {}", salesInvoiceId, e.getMessage());
+            logger.warn("[SYNC] Error fetching grand_total for {}: {}", salesInvoiceId, e.getMessage());
         }
         return null;
     }
@@ -667,7 +667,7 @@ public class ErpEventListener {
             if (response.success() && response.externalId() != null) {
                 service.setExternalItemCode(response.externalId());
                 serviceRepository.save(service);
-                logger.info("🔧 [SYNC] Auto-provisioned Item '{}' for Service '{}'",
+                logger.info("[SYNC] Auto-provisioned Item '{}' for Service '{}'",
                         response.externalId(), service.getTitle());
             } else if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
                 // L'Item existe déjà — chercher son ID exact dans l'ERP et le lier
@@ -675,17 +675,17 @@ public class ErpEventListener {
                 if (existingId != null) {
                     service.setExternalItemCode(existingId);
                     serviceRepository.save(service);
-                    logger.info("🔗 [SYNC] Linked existing Item '{}' to Service '{}'",
+                    logger.info("[SYNC] Linked existing Item '{}' to Service '{}'",
                             existingId, service.getTitle());
                 } else {
-                    logger.debug("📋 [SYNC] Item '{}' already exists — OK", service.getTitle());
+                    logger.debug("[SYNC] Item '{}' already exists — OK", service.getTitle());
                 }
             } else {
-                logger.warn("⚠️ [SYNC] Failed to auto-provision Item for Service '{}': {}",
+                logger.warn("[SYNC] Failed to auto-provision Item for Service '{}': {}",
                         service.getTitle(), response.errorMessage());
             }
         } catch (Exception e) {
-            logger.error("❌ [SYNC] Error auto-provisioning Item for Service '{}': {}",
+            logger.error("[SYNC] Error auto-provisioning Item for Service '{}': {}",
                     service.getTitle(), e.getMessage());
         }
     }
@@ -707,7 +707,7 @@ public class ErpEventListener {
                 return name != null ? name.toString() : null;
             }
         } catch (Exception e) {
-            logger.debug("🔍 [SYNC] Could not find existing Item '{}': {}", itemCode, e.getMessage());
+            logger.debug("[SYNC] Could not find existing Item '{}': {}", itemCode, e.getMessage());
         }
         return null;
     }
@@ -730,14 +730,14 @@ public class ErpEventListener {
             ExternalResponse response = externalClient.createEntity(SyncEntityType.ITEM, itemPayload);
 
             if (response.success()) {
-                logger.info("🔧 [SYNC] Auto-provisioned generic Item '{}'", itemName);
+                logger.info("[SYNC] Auto-provisioned generic Item '{}'", itemName);
             } else if (response.errorMessage() != null && response.errorMessage().contains("DuplicateEntryError")) {
-                logger.debug("📋 [SYNC] Item '{}' already exists — OK", itemName);
+                logger.debug("[SYNC] Item '{}' already exists — OK", itemName);
             } else {
-                logger.warn("⚠️ [SYNC] Failed to auto-provision Item '{}': {}", itemName, response.errorMessage());
+                logger.warn("[SYNC] Failed to auto-provision Item '{}': {}", itemName, response.errorMessage());
             }
         } catch (Exception e) {
-            logger.error("❌ [SYNC] Error auto-provisioning Item '{}': {}", itemName, e.getMessage());
+            logger.error("[SYNC] Error auto-provisioning Item '{}': {}", itemName, e.getMessage());
         }
     }
 
@@ -755,7 +755,7 @@ public class ErpEventListener {
         try {
             Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(event.entityId());
             if (orderOpt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Order {} not found for update", event.entityId());
+                logger.warn("[SYNC] Order {} not found for update", event.entityId());
                 return;
             }
 
@@ -774,7 +774,7 @@ public class ErpEventListener {
 
             // Mise à jour simple (notes, remarques)
             if (order.getExternalOrderId() == null) {
-                logger.debug("⚠️ [SYNC] Order {} has no externalOrderId — skipping update", order.getId());
+                logger.debug("[SYNC] Order {} has no externalOrderId — skipping update", order.getId());
                 return;
             }
 
@@ -784,7 +784,7 @@ public class ErpEventListener {
                     order.getId(), order.getExternalOrderId(), payload
             );
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleOrderUpdate failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleOrderUpdate failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -794,7 +794,7 @@ public class ErpEventListener {
      * Les callbacks de suppression nettoient les external IDs sur l'Order local.
      */
     private void handleOrderCancellation(Order order) {
-        logger.info("🗑️ [SYNC] Cancelling ERP documents for Order {}", order.getId());
+        logger.info("[SYNC] Cancelling ERP documents for Order {}", order.getId());
 
         // 1. Payment Entry (doit être supprimé avant la facture)
         if (order.getExternalPaymentId() != null && !order.getExternalPaymentId().isBlank()) {
@@ -837,7 +837,7 @@ public class ErpEventListener {
 
             Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(orderId);
             if (orderOpt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Order {} not found for invoice sync", orderId);
+                logger.warn("[SYNC] Order {} not found for invoice sync", orderId);
                 return;
             }
 
@@ -845,7 +845,7 @@ public class ErpEventListener {
 
             // Skip si déjà liée à une facture externe
             if (order.getExternalInvoiceId() != null) {
-                logger.debug("📋 [SYNC] Order {} already has externalInvoiceId — skipping", order.getId());
+                logger.debug("[SYNC] Order {} already has externalInvoiceId — skipping", order.getId());
                 return;
             }
 
@@ -855,7 +855,7 @@ public class ErpEventListener {
                     order.getId(), null, siPayload
             );
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleInvoiceGenerated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleInvoiceGenerated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -874,7 +874,7 @@ public class ErpEventListener {
         // Cas collaborateur : supprimer le User externalErp s'il existe
         if (externalErpUserId != null && !externalErpUserId.isBlank()
                 && syncProperties.getFeatures().isStaffProvisioning()) {
-            logger.info("🗑️ [SYNC] Deleting externalErp User '{}' for User {}",
+            logger.info("[SYNC] Deleting externalErp User '{}' for User {}",
                     externalErpUserId, event.entityId());
             syncOutboundService.enqueue(
                     SyncEntityType.ERP_USER, "DELETED",
@@ -885,12 +885,12 @@ public class ErpEventListener {
         if (!syncProperties.getFeatures().isUserProvisioning()) return;
 
         if (externalCustomerId == null || externalCustomerId.isBlank()) {
-            logger.debug("📋 [SYNC] User {} has no externalCustomerId — nothing to delete externally",
+            logger.debug("[SYNC] User {} has no externalCustomerId — nothing to delete externally",
                     event.entityId());
             return;
         }
 
-        logger.info("🗑️ [SYNC CASCADE] Deleting Customer '{}' and linked docs for User {}",
+        logger.info("[SYNC CASCADE] Deleting Customer '{}' and linked docs for User {}",
                 externalCustomerId, event.entityId());
 
         // Ordre de suppression : enfants d'abord, parent ensuite
@@ -961,10 +961,10 @@ public class ErpEventListener {
             List<String> linkedIds = externalClient.listLinkedEntityIds(childType, parentField, parentId);
             for (String linkedId : linkedIds) {
                 syncOutboundService.enqueue(childType, "DELETED", localEntityId, linkedId, Map.of());
-                logger.info("🗑️ [SYNC CASCADE] Enqueued delete {} '{}'", childType, linkedId);
+                logger.info("[SYNC CASCADE] Enqueued delete {} '{}'", childType, linkedId);
             }
         } catch (Exception e) {
-            logger.warn("⚠️ [SYNC CASCADE] Failed to list linked {} for {}={}: {}",
+            logger.warn("[SYNC CASCADE] Failed to list linked {} for {}={}: {}",
                     childType, parentField, parentId, e.getMessage());
         }
     }
@@ -993,21 +993,21 @@ public class ErpEventListener {
      */
     private void handleQuotationCreated(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isQuotationSync()) {
-            logger.debug("🔇 [SYNC] Quotation sync disabled — skipping");
+            logger.debug("[SYNC] Quotation sync disabled — skipping");
             return;
         }
 
         try {
             Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
             if (quotationOpt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Quotation {} not found for sync", event.entityId());
+                logger.warn("[SYNC] Quotation {} not found for sync", event.entityId());
                 return;
             }
 
             Quotation quotation = quotationOpt.get();
 
             if (quotation.getExternalQuotationId() != null) {
-                logger.debug("📋 [SYNC] Quotation {} already has externalId {} — skipping",
+                logger.debug("[SYNC] Quotation {} already has externalId {} — skipping",
                         quotation.getId(), quotation.getExternalQuotationId());
                 return;
             }
@@ -1021,9 +1021,9 @@ public class ErpEventListener {
                     quotation.getId(), null, payload
             );
 
-            logger.info("📤 [SYNC] Quotation {} enqueued for external creation", quotation.getId());
+            logger.info("[SYNC] Quotation {} enqueued for external creation", quotation.getId());
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleQuotationCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleQuotationCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1038,7 +1038,7 @@ public class ErpEventListener {
         try {
             Optional<Quotation> quotationOpt = quotationRepository.findByIdWithUserAndItems(event.entityId());
             if (quotationOpt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Quotation {} not found for acceptance", event.entityId());
+                logger.warn("[SYNC] Quotation {} not found for acceptance", event.entityId());
                 return;
             }
 
@@ -1046,7 +1046,7 @@ public class ErpEventListener {
             String externalQuotationId = quotation.getExternalQuotationId();
 
             if (externalQuotationId == null) {
-                logger.warn("⚠️ [SYNC] Quotation {} has no externalId — cannot call make_sales_order",
+                logger.warn("[SYNC] Quotation {} has no externalId — cannot call make_sales_order",
                         quotation.getId());
                 return;
             }
@@ -1060,12 +1060,12 @@ public class ErpEventListener {
             // 2. Récupérer l'Order depuis l'event (évite LazyInitializationException sur convertedOrder)
             String orderIdStr = event.payload() != null ? (String) event.payload().get("orderId") : null;
             if (orderIdStr == null) {
-                logger.error("❌ [SYNC] QUOTATION_ACCEPTED event missing orderId metadata");
+                logger.error("[SYNC] QUOTATION_ACCEPTED event missing orderId metadata");
                 return;
             }
             Optional<Order> orderOpt = orderRepository.findByIdWithUserAndItems(UUID.fromString(orderIdStr));
             if (orderOpt.isEmpty()) {
-                logger.error("❌ [SYNC] Order {} not found for Quotation {}", orderIdStr, quotation.getId());
+                logger.error("[SYNC] Order {} not found for Quotation {}", orderIdStr, quotation.getId());
                 return;
             }
             Order order = orderOpt.get();
@@ -1080,18 +1080,18 @@ public class ErpEventListener {
 
             if (createResponse.success() && createResponse.externalId() != null) {
                 String soExternalId = createResponse.externalId();
-                logger.info("✅ [SYNC] Quotation {} → SO {} created", quotation.getId(), soExternalId);
+                logger.info("[SYNC] Quotation {} -> SO {} created", quotation.getId(), soExternalId);
 
                 order.setExternalOrderId(soExternalId);
                 orderRepository.save(order);
-                logger.info("🔗 [SYNC] Order {} linked to SO {} (from Quotation conversion)",
+                logger.info("[SYNC] Order {} linked to SO {} (from Quotation conversion)",
                         order.getId(), soExternalId);
             } else {
-                logger.error("❌ [SYNC] Failed to create SO from Quotation {}: {}",
+                logger.error("[SYNC] Failed to create SO from Quotation {}: {}",
                         quotation.getId(), createResponse.errorMessage());
             }
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleQuotationAccepted failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleQuotationAccepted failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1117,15 +1117,15 @@ public class ErpEventListener {
                     ExternalResponse submitResponse = externalClient.callMethod("frappe.client.submit",
                             Map.of("doc", data));
                     if (submitResponse.success()) {
-                        logger.info("📋 [SYNC] Submitted Quotation '{}' before make_sales_order", externalQuotationId);
+                        logger.info("[SYNC] Submitted Quotation '{}' before make_sales_order", externalQuotationId);
                     } else {
-                        logger.warn("⚠️ [SYNC] Failed to submit Quotation '{}': {} — proceeding anyway",
+                        logger.warn("[SYNC] Failed to submit Quotation '{}': {} — proceeding anyway",
                                 externalQuotationId, submitResponse.errorMessage());
                     }
                 }
             }
         } catch (Exception e) {
-            logger.warn("⚠️ [SYNC] Could not submit Quotation '{}': {} — proceeding with make_sales_order anyway",
+            logger.warn("[SYNC] Could not submit Quotation '{}': {} — proceeding with make_sales_order anyway",
                     externalQuotationId, e.getMessage());
         }
     }
@@ -1142,7 +1142,7 @@ public class ErpEventListener {
 
             Quotation quotation = quotationOpt.get();
             if (quotation.getExternalQuotationId() == null) {
-                logger.debug("📋 [SYNC] Quotation {} has no externalId — skipping reject", quotation.getId());
+                logger.debug("[SYNC] Quotation {} has no externalId — skipping reject", quotation.getId());
                 return;
             }
 
@@ -1156,9 +1156,9 @@ public class ErpEventListener {
                     )
             );
 
-            logger.info("📋 [SYNC] Quotation {} declared as Lost externally", quotation.getId());
+            logger.info("[SYNC] Quotation {} declared as Lost externally", quotation.getId());
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleQuotationRejected failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleQuotationRejected failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1174,7 +1174,7 @@ public class ErpEventListener {
 
             Quotation quotation = quotationOpt.get();
             if (quotation.getExternalQuotationId() == null) {
-                logger.debug("📋 [SYNC] Quotation {} has no externalId — skipping update", quotation.getId());
+                logger.debug("[SYNC] Quotation {} has no externalId — skipping update", quotation.getId());
                 return;
             }
 
@@ -1184,7 +1184,7 @@ public class ErpEventListener {
                     quotation.getId(), quotation.getExternalQuotationId(), payload
             );
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleQuotationUpdate failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleQuotationUpdate failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1209,13 +1209,13 @@ public class ErpEventListener {
 
     private void handleServiceCreated(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isCatalogSync()) {
-            logger.debug("🔇 [SYNC] Catalog sync disabled — skipping");
+            logger.debug("[SYNC] Catalog sync disabled — skipping");
             return;
         }
         try {
             Optional<Service> opt = serviceRepository.findByIdWithOffers(event.entityId());
             if (opt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Service {} not found for sync", event.entityId());
+                logger.warn("[SYNC] Service {} not found for sync", event.entityId());
                 return;
             }
             Service service = opt.get();
@@ -1232,10 +1232,10 @@ public class ErpEventListener {
                     }
                 }
             }
-            logger.info("📤 [SYNC] Service {} enqueued with {} offers", service.getId(),
+            logger.info("[SYNC] Service {} enqueued with {} offers", service.getId(),
                     service.getOffers() != null ? service.getOffers().size() : 0);
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleServiceCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleServiceCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1248,7 +1248,7 @@ public class ErpEventListener {
 
             String externalItemCode = service.getExternalItemCode();
             if (externalItemCode == null || externalItemCode.isBlank()) {
-                logger.debug("📋 [SYNC] Service {} has no externalItemCode — skipping update", service.getId());
+                logger.debug("[SYNC] Service {} has no externalItemCode — skipping update", service.getId());
                 return;
             }
 
@@ -1265,7 +1265,7 @@ public class ErpEventListener {
                 }
             }
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleServiceUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleServiceUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1282,26 +1282,26 @@ public class ErpEventListener {
 
     private void handleProjectCreated(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isProjectSync()) {
-            logger.debug("🔇 [SYNC] Project sync disabled — skipping");
+            logger.debug("[SYNC] Project sync disabled — skipping");
             return;
         }
         try {
             Optional<Project> opt = projectRepository.findById(event.entityId());
             if (opt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Project {} not found for sync", event.entityId());
+                logger.warn("[SYNC] Project {} not found for sync", event.entityId());
                 return;
             }
             Project project = opt.get();
             if (project.getExternalProjectId() != null) {
-                logger.debug("📋 [SYNC] Project {} already has externalProjectId {} — skipping",
+                logger.debug("[SYNC] Project {} already has externalProjectId {} — skipping",
                         project.getId(), project.getExternalProjectId());
                 return;
             }
             Map<String, Object> payload = projectSyncMapper.toOutboundPayload(project);
             syncOutboundService.syncEntity(SyncEntityType.PROJECT, "CREATED", project.getId(), null, payload);
-            logger.info("📤 [SYNC] Project {} enqueued for external creation", project.getId());
+            logger.info("[SYNC] Project {} enqueued for external creation", project.getId());
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleProjectCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleProjectCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1312,14 +1312,14 @@ public class ErpEventListener {
             if (opt.isEmpty()) return;
             Project project = opt.get();
             if (project.getExternalProjectId() == null) {
-                logger.debug("📋 [SYNC] Project {} has no externalProjectId — skipping update", project.getId());
+                logger.debug("[SYNC] Project {} has no externalProjectId — skipping update", project.getId());
                 return;
             }
             Map<String, Object> payload = projectSyncMapper.toOutboundPayload(project);
             syncOutboundService.syncEntity(SyncEntityType.PROJECT, "UPDATED",
                     project.getId(), project.getExternalProjectId(), payload);
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleProjectUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleProjectUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1336,31 +1336,31 @@ public class ErpEventListener {
 
     private void handleTaskCreated(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isProjectSync()) {
-            logger.debug("🔇 [SYNC] Project sync disabled — skipping task sync");
+            logger.debug("[SYNC] Project sync disabled — skipping task sync");
             return;
         }
         try {
             Optional<ProjectTask> opt = projectTaskRepository.findByIdWithProject(event.entityId());
             if (opt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Task {} not found for sync", event.entityId());
+                logger.warn("[SYNC] Task {} not found for sync", event.entityId());
                 return;
             }
             ProjectTask task = opt.get();
             if (task.getExternalTaskId() != null) {
-                logger.debug("📋 [SYNC] Task {} already has externalTaskId {} — skipping",
+                logger.debug("[SYNC] Task {} already has externalTaskId {} — skipping",
                         task.getId(), task.getExternalTaskId());
                 return;
             }
             String externalProjectId = task.getProject() != null ? task.getProject().getExternalProjectId() : null;
             if (externalProjectId == null) {
-                logger.warn("⚠️ [SYNC] Task {} parent project has no externalProjectId — skipping", task.getId());
+                logger.warn("[SYNC] Task {} parent project has no externalProjectId — skipping", task.getId());
                 return;
             }
             Map<String, Object> payload = taskSyncMapper.toOutboundPayload(task, externalProjectId);
             syncOutboundService.syncEntity(SyncEntityType.TASK, "CREATED", task.getId(), null, payload);
-            logger.info("📤 [SYNC] Task {} enqueued for external creation", task.getId());
+            logger.info("[SYNC] Task {} enqueued for external creation", task.getId());
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleTaskCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleTaskCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1371,7 +1371,7 @@ public class ErpEventListener {
             if (opt.isEmpty()) return;
             ProjectTask task = opt.get();
             if (task.getExternalTaskId() == null) {
-                logger.debug("📋 [SYNC] Task {} has no externalTaskId — skipping update", task.getId());
+                logger.debug("[SYNC] Task {} has no externalTaskId — skipping update", task.getId());
                 return;
             }
             String externalProjectId = task.getProject() != null ? task.getProject().getExternalProjectId() : null;
@@ -1379,7 +1379,7 @@ public class ErpEventListener {
             syncOutboundService.syncEntity(SyncEntityType.TASK, "UPDATED",
                     task.getId(), task.getExternalTaskId(), payload);
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleTaskUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleTaskUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1396,27 +1396,27 @@ public class ErpEventListener {
 
     private void handleTicketCreated(LmpBusinessEvent event) {
         if (!syncProperties.getFeatures().isTicketSync()) {
-            logger.debug("🔇 [SYNC] Ticket sync disabled — skipping");
+            logger.debug("[SYNC] Ticket sync disabled — skipping");
             return;
         }
         try {
             Optional<Ticket> opt = ticketRepository.findByIdWithCustomer(event.entityId());
             if (opt.isEmpty()) {
-                logger.warn("⚠️ [SYNC] Ticket {} not found for sync", event.entityId());
+                logger.warn("[SYNC] Ticket {} not found for sync", event.entityId());
                 return;
             }
             Ticket ticket = opt.get();
             if (ticket.getExternalIssueId() != null) {
-                logger.debug("📋 [SYNC] Ticket {} already has externalIssueId {} — skipping",
+                logger.debug("[SYNC] Ticket {} already has externalIssueId {} — skipping",
                         ticket.getId(), ticket.getExternalIssueId());
                 return;
             }
             String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
             Map<String, Object> payload = ticketSyncMapper.toOutboundPayload(ticket, externalCustomerId);
             syncOutboundService.syncEntity(SyncEntityType.ISSUE, "CREATED", ticket.getId(), null, payload);
-            logger.info("📤 [SYNC] Ticket {} enqueued for external creation", ticket.getId());
+            logger.info("[SYNC] Ticket {} enqueued for external creation", ticket.getId());
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleTicketCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleTicketCreated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1427,7 +1427,7 @@ public class ErpEventListener {
             if (opt.isEmpty()) return;
             Ticket ticket = opt.get();
             if (ticket.getExternalIssueId() == null) {
-                logger.debug("📋 [SYNC] Ticket {} has no externalIssueId — skipping update", ticket.getId());
+                logger.debug("[SYNC] Ticket {} has no externalIssueId — skipping update", ticket.getId());
                 return;
             }
             String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
@@ -1435,7 +1435,7 @@ public class ErpEventListener {
             syncOutboundService.syncEntity(SyncEntityType.ISSUE, "UPDATED",
                     ticket.getId(), ticket.getExternalIssueId(), payload);
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleTicketUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleTicketUpdated failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1446,7 +1446,7 @@ public class ErpEventListener {
             if (opt.isEmpty()) return;
             Ticket ticket = opt.get();
             if (ticket.getExternalIssueId() == null) {
-                logger.debug("📋 [SYNC] Ticket {} has no externalIssueId — skipping resolve", ticket.getId());
+                logger.debug("[SYNC] Ticket {} has no externalIssueId — skipping resolve", ticket.getId());
                 return;
             }
             String externalCustomerId = ticket.getCustomer() != null ? ticket.getCustomer().getExternalCustomerId() : null;
@@ -1454,7 +1454,7 @@ public class ErpEventListener {
             syncOutboundService.syncEntity(SyncEntityType.ISSUE, "UPDATED",
                     ticket.getId(), ticket.getExternalIssueId(), payload);
         } catch (Exception e) {
-            logger.error("❌ [SYNC] handleTicketResolved failed for {}: {}", event.entityId(), e.getMessage(), e);
+            logger.error("[SYNC] handleTicketResolved failed for {}: {}", event.entityId(), e.getMessage(), e);
         }
     }
 
@@ -1489,7 +1489,7 @@ public class ErpEventListener {
     }
 
     private void logEvent(String description, LmpBusinessEvent event) {
-        logger.info("📡 [ERP SYNC] {} | type={} | entityId={}",
+        logger.info("[ERP SYNC] {} | type={} | entityId={}",
                 description, event.type(), event.entityId());
     }
 }

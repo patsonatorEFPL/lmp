@@ -111,7 +111,7 @@ public class SyncCallbackService {
             case QUOTATION -> clearQuotationExternalId(localEntityId);
             case ADDRESS -> clearUserExternalAddressId(localEntityId);
             case ERP_USER -> clearUserExternalErpUserId(localEntityId);
-            default -> log.debug("📋 [CALLBACK] No cleanup needed for {}", entityType);
+            default -> log.debug("[CALLBACK] No cleanup needed for {}", entityType);
         }
     }
 
@@ -136,7 +136,7 @@ public class SyncCallbackService {
             case TASK -> updateTaskExternalId(localEntityId, externalId);
             case ISSUE -> updateTicketExternalId(localEntityId, externalId);
             case QUOTATION -> updateQuotationExternalId(localEntityId, externalId);
-            default -> log.debug("📋 [CALLBACK] No local update needed for {}", entityType);
+            default -> log.debug("[CALLBACK] No local update needed for {}", entityType);
         }
     }
 
@@ -145,14 +145,14 @@ public class SyncCallbackService {
                 user -> {
                     user.setExternalCustomerId(externalId);
                     userRepository.save(user);
-                    log.info("🔗 [CALLBACK] User {} linked to external Customer {}", userId, externalId);
+                    log.info("[CALLBACK] User {} linked to external Customer {}", userId, externalId);
 
                     // Enchaîner la création de l'Address si le user a une adresse
                     if (addressSyncMapper.hasAddressData(user)) {
                         createAddressForUser(user, externalId);
                     }
                 },
-                () -> log.warn("⚠️ [CALLBACK] User {} not found for customer link", userId)
+                () -> log.warn("[CALLBACK] User {} not found for customer link", userId)
         );
     }
 
@@ -163,13 +163,13 @@ public class SyncCallbackService {
             if (response.success() && response.externalId() != null) {
                 user.setExternalAddressId(response.externalId());
                 userRepository.save(user);
-                log.info("🔗 [CALLBACK] User {} linked to external Address {}", user.getId(), response.externalId());
+                log.info("[CALLBACK] User {} linked to external Address {}", user.getId(), response.externalId());
             } else {
-                log.warn("⚠️ [CALLBACK] Failed to create Address for User {}: {}",
+                log.warn("[CALLBACK] Failed to create Address for User {}: {}",
                         user.getId(), response.errorMessage());
             }
         } catch (Exception e) {
-            log.error("❌ [CALLBACK] Error creating Address for User {}: {}", user.getId(), e.getMessage());
+            log.error("[CALLBACK] Error creating Address for User {}: {}", user.getId(), e.getMessage());
         }
     }
 
@@ -178,9 +178,9 @@ public class SyncCallbackService {
                 user -> {
                     user.setExternalContactId(externalId);
                     userRepository.save(user);
-                    log.info("🔗 [CALLBACK] User {} linked to external Contact {}", userId, externalId);
+                    log.info("[CALLBACK] User {} linked to external Contact {}", userId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] User {} not found for contact link", userId)
+                () -> log.warn("[CALLBACK] User {} not found for contact link", userId)
         );
     }
 
@@ -194,9 +194,9 @@ public class SyncCallbackService {
                 user -> {
                     user.setExternalErpUserId(externalId);
                     userRepository.save(user);
-                    log.info("🔗 [CALLBACK] User {} linked to external externalErp User {}", userId, externalId);
+                    log.info("[CALLBACK] User {} linked to external externalErp User {}", userId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] User {} not found for externalErp User link", userId)
+                () -> log.warn("[CALLBACK] User {} not found for externalErp User link", userId)
         );
     }
 
@@ -205,13 +205,13 @@ public class SyncCallbackService {
                 order -> {
                     order.setExternalOrderId(externalId);
                     orderRepository.save(order);
-                    log.info("🔗 [CALLBACK] Order {} linked to external Order {}", orderId, externalId);
+                    log.info("[CALLBACK] Order {} linked to external Order {}", orderId, externalId);
 
                     // Chaîne SO → SINV : maintenant qu'on a l'externalOrderId,
                     // on peut créer la SINV avec le bon lien sales_order sur les items
                     enqueueInvoiceIfNeeded(order);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Order {} not found for order link", orderId)
+                () -> log.warn("[CALLBACK] Order {} not found for order link", orderId)
         );
     }
 
@@ -223,7 +223,7 @@ public class SyncCallbackService {
     @SuppressWarnings("unchecked")
     private void enqueueInvoiceIfNeeded(Order order) {
         if (order.getExternalInvoiceId() != null) {
-            log.debug("📋 [CALLBACK] Order {} already has SINV — skipping", order.getId());
+            log.debug("[CALLBACK] Order {} already has SINV — skipping", order.getId());
             return;
         }
 
@@ -238,9 +238,9 @@ public class SyncCallbackService {
                     SyncEntityType.SALES_INVOICE, "CREATED",
                     order.getId(), null, siPayload
             );
-            log.info("📤 [CALLBACK] Enqueued SINV for Order {} → SO {}", order.getId(), order.getExternalOrderId());
+            log.info("[CALLBACK] Enqueued SINV for Order {} -> SO {}", order.getId(), order.getExternalOrderId());
         } catch (Exception e) {
-            log.error("❌ [CALLBACK] Failed to enqueue SINV for Order {}: {}",
+            log.error("[CALLBACK] Failed to enqueue SINV for Order {}: {}",
                     order.getId(), e.getMessage(), e);
         }
     }
@@ -255,7 +255,7 @@ public class SyncCallbackService {
         try {
             ExternalResponse soResponse = externalClient.getEntity(SyncEntityType.SALES_ORDER, salesOrderId);
             if (!soResponse.success() || soResponse.data() == null) {
-                log.warn("⚠️ [CALLBACK] Could not fetch SO {} for so_detail", salesOrderId);
+                log.warn("[CALLBACK] Could not fetch SO {} for so_detail", salesOrderId);
                 return;
             }
             Map<String, Object> soData = soResponse.data();
@@ -284,11 +284,11 @@ public class SyncCallbackService {
                 String itemCode = sinvItem.get("item_code") != null ? sinvItem.get("item_code").toString() : null;
                 if (itemCode != null && itemCodeToRowName.containsKey(itemCode)) {
                     sinvItem.put("so_detail", itemCodeToRowName.get(itemCode));
-                    log.debug("📋 [CALLBACK] Set so_detail={} for item {}", itemCodeToRowName.get(itemCode), itemCode);
+                    log.debug("[CALLBACK] Set so_detail={} for item {}", itemCodeToRowName.get(itemCode), itemCode);
                 }
             }
         } catch (Exception e) {
-            log.warn("⚠️ [CALLBACK] Error fetching SO items for so_detail: {}", e.getMessage());
+            log.warn("[CALLBACK] Error fetching SO items for so_detail: {}", e.getMessage());
         }
     }
 
@@ -298,7 +298,7 @@ public class SyncCallbackService {
                 order -> {
                     order.setExternalInvoiceId(externalId);
                     orderRepository.save(order);
-                    log.info("🔗 [CALLBACK] Order {} linked to external Invoice {}", orderId, externalId);
+                    log.info("[CALLBACK] Order {} linked to external Invoice {}", orderId, externalId);
 
                     // Extraire le grand_total réel de l'ERP (peut différer de LMP à cause des arrondis TVA)
                     java.math.BigDecimal erpTotal = extractErpGrandTotal(responseData);
@@ -306,7 +306,7 @@ public class SyncCallbackService {
                     // Enqueue Payment Entry maintenant qu'on a le nom de la facture
                     enqueuePaymentEntryIfPaid(order, externalId, erpTotal);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Order {} not found for invoice link", orderId)
+                () -> log.warn("[CALLBACK] Order {} not found for invoice link", orderId)
         );
     }
 
@@ -326,10 +326,10 @@ public class SyncCallbackService {
         if (grandTotal == null) return null;
         try {
             java.math.BigDecimal total = new java.math.BigDecimal(grandTotal.toString());
-            log.info("📋 [CALLBACK] Extracted ERP grand_total={}", total);
+            log.info("[CALLBACK] Extracted ERP grand_total={}", total);
             return total;
         } catch (NumberFormatException e) {
-            log.warn("⚠️ [CALLBACK] Cannot parse grand_total '{}': {}", grandTotal, e.getMessage());
+            log.warn("[CALLBACK] Cannot parse grand_total '{}': {}", grandTotal, e.getMessage());
             return null;
         }
     }
@@ -357,11 +357,11 @@ public class SyncCallbackService {
 
         // Cas paiement unique (existant)
         if (order.getExternalPaymentId() != null) {
-            log.debug("📋 [CALLBACK] Order {} already has Payment Entry — skipping", order.getId());
+            log.debug("[CALLBACK] Order {} already has Payment Entry — skipping", order.getId());
             return;
         }
         if (order.getPaidAt() == null) {
-            log.debug("📋 [CALLBACK] Order {} not paid — skipping Payment Entry", order.getId());
+            log.debug("[CALLBACK] Order {} not paid — skipping Payment Entry", order.getId());
             return;
         }
 
@@ -371,9 +371,9 @@ public class SyncCallbackService {
                     SyncEntityType.PAYMENT, "CREATED",
                     order.getId(), null, paymentPayload
             );
-            log.info("💳 [CALLBACK] Enqueued Payment Entry for Order {} → SINV {}", order.getId(), salesInvoiceId);
+            log.info("[CALLBACK] Enqueued Payment Entry for Order {} -> SINV {}", order.getId(), salesInvoiceId);
         } catch (Exception e) {
-            log.error("❌ [CALLBACK] Failed to enqueue Payment Entry for Order {}: {}",
+            log.error("[CALLBACK] Failed to enqueue Payment Entry for Order {}: {}",
                     order.getId(), e.getMessage(), e);
         }
     }
@@ -390,7 +390,7 @@ public class SyncCallbackService {
                 .findByOrderIdOrderByInstallmentNumberAsc(order.getId());
 
         if (installments.isEmpty()) {
-            log.warn("⚠️ [CALLBACK] Installment order {} has no installments — skipping PE", order.getId());
+            log.warn("[CALLBACK] Installment order {} has no installments — skipping PE", order.getId());
             return;
         }
 
@@ -399,12 +399,12 @@ public class SyncCallbackService {
 
         for (OrderInstallment inst : installments) {
             if (inst.getStatus() != InstallmentStatus.PAID) {
-                log.debug("📋 [CALLBACK] Installment {}/{} not yet paid — skipping",
+                log.debug("[CALLBACK] Installment {}/{} not yet paid — skipping",
                         inst.getInstallmentNumber(), order.getInstallmentCount());
                 continue;
             }
             if (inst.getExternalPaymentId() != null) {
-                log.debug("📋 [CALLBACK] Installment {}/{} already has PE {} — skipping",
+                log.debug("[CALLBACK] Installment {}/{} already has PE {} — skipping",
                         inst.getInstallmentNumber(), order.getInstallmentCount(), inst.getExternalPaymentId());
                 continue;
             }
@@ -418,11 +418,11 @@ public class SyncCallbackService {
                         SyncEntityType.PAYMENT, "CREATED",
                         order.getId(), null, pePayload
                 );
-                log.info("💳 [CALLBACK] Enqueued PE for installment {}/{} → SINV {} (term={}, erpAmount={})",
+                log.info("[CALLBACK] Enqueued PE for installment {}/{} -> SINV {} (term={}, erpAmount={})",
                         inst.getInstallmentNumber(), order.getInstallmentCount(),
                         salesInvoiceId, inst.getPaymentTerm(), erpAmount);
             } catch (Exception e) {
-                log.error("❌ [CALLBACK] Failed to enqueue PE for installment {}/{}: {}",
+                log.error("[CALLBACK] Failed to enqueue PE for installment {}/{}: {}",
                         inst.getInstallmentNumber(), order.getInstallmentCount(), e.getMessage(), e);
             }
         }
@@ -455,11 +455,11 @@ public class SyncCallbackService {
                 Object amountObj = row.get("payment_amount");
                 if (term != null && amountObj != null) {
                     result.put(term, new java.math.BigDecimal(amountObj.toString()));
-                    log.debug("📋 [CALLBACK] ERP payment_schedule: term={}, amount={}", term, amountObj);
+                    log.debug("[CALLBACK] ERP payment_schedule: term={}, amount={}", term, amountObj);
                 }
             }
         } catch (Exception e) {
-            log.warn("⚠️ [CALLBACK] Error fetching payment_schedule for {}: {}", salesInvoiceId, e.getMessage());
+            log.warn("[CALLBACK] Error fetching payment_schedule for {}: {}", salesInvoiceId, e.getMessage());
         }
         return result;
     }
@@ -475,9 +475,9 @@ public class SyncCallbackService {
                         order.setExternalPaymentId(externalId);
                         orderRepository.save(order);
                     }
-                    log.info("🔗 [CALLBACK] Order {} linked to external Payment {}", orderId, externalId);
+                    log.info("[CALLBACK] Order {} linked to external Payment {}", orderId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Order {} not found for payment link", orderId)
+                () -> log.warn("[CALLBACK] Order {} not found for payment link", orderId)
         );
     }
 
@@ -493,7 +493,7 @@ public class SyncCallbackService {
             if (inst.getStatus() == InstallmentStatus.PAID && inst.getExternalPaymentId() == null) {
                 inst.setExternalPaymentId(externalPaymentId);
                 installmentRepository.save(inst);
-                log.info("🔗 [CALLBACK] Installment {}/{} linked to PE {}",
+                log.info("[CALLBACK] Installment {}/{} linked to PE {}",
                         inst.getInstallmentNumber(), order.getInstallmentCount(), externalPaymentId);
 
                 // Vérifier si toutes les échéances sont payées ET synchronisées
@@ -504,12 +504,12 @@ public class SyncCallbackService {
                     // Toutes les échéances payées sont synchronisées — marquer l'order aussi
                     order.setExternalPaymentId(externalPaymentId + " (installments)");
                     orderRepository.save(order);
-                    log.info("✅ [CALLBACK] All installments synced for Order {}", order.getId());
+                    log.info("[CALLBACK] All installments synced for Order {}", order.getId());
                 }
                 return;
             }
         }
-        log.warn("⚠️ [CALLBACK] No unpaid installment found for PE {} on Order {}",
+        log.warn("[CALLBACK] No unpaid installment found for PE {} on Order {}",
                 externalPaymentId, order.getId());
     }
 
@@ -518,9 +518,9 @@ public class SyncCallbackService {
                 service -> {
                     service.setExternalItemCode(externalId);
                     serviceRepository.save(service);
-                    log.info("🔗 [CALLBACK] Service {} linked to external Item {}", serviceId, externalId);
+                    log.info("[CALLBACK] Service {} linked to external Item {}", serviceId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Service {} not found for item link", serviceId)
+                () -> log.warn("[CALLBACK] Service {} not found for item link", serviceId)
         );
     }
 
@@ -529,9 +529,9 @@ public class SyncCallbackService {
                 category -> {
                     category.setExternalGroupId(externalId);
                     serviceCategoryRepository.save(category);
-                    log.info("🔗 [CALLBACK] Category {} linked to external Group {}", categoryId, externalId);
+                    log.info("[CALLBACK] Category {} linked to external Group {}", categoryId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Category {} not found for group link", categoryId)
+                () -> log.warn("[CALLBACK] Category {} not found for group link", categoryId)
         );
     }
 
@@ -540,9 +540,9 @@ public class SyncCallbackService {
                 project -> {
                     project.setExternalProjectId(externalId);
                     projectRepository.save(project);
-                    log.info("🔗 [CALLBACK] Project {} linked to external Project {}", projectId, externalId);
+                    log.info("[CALLBACK] Project {} linked to external Project {}", projectId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Project {} not found for project link", projectId)
+                () -> log.warn("[CALLBACK] Project {} not found for project link", projectId)
         );
     }
 
@@ -551,9 +551,9 @@ public class SyncCallbackService {
                 task -> {
                     task.setExternalTaskId(externalId);
                     projectTaskRepository.save(task);
-                    log.info("🔗 [CALLBACK] Task {} linked to external Task {}", taskId, externalId);
+                    log.info("[CALLBACK] Task {} linked to external Task {}", taskId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Task {} not found for task link", taskId)
+                () -> log.warn("[CALLBACK] Task {} not found for task link", taskId)
         );
     }
 
@@ -562,9 +562,9 @@ public class SyncCallbackService {
                 ticket -> {
                     ticket.setExternalIssueId(externalId);
                     ticketRepository.save(ticket);
-                    log.info("🔗 [CALLBACK] Ticket {} linked to external Issue {}", ticketId, externalId);
+                    log.info("[CALLBACK] Ticket {} linked to external Issue {}", ticketId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Ticket {} not found for issue link", ticketId)
+                () -> log.warn("[CALLBACK] Ticket {} not found for issue link", ticketId)
         );
     }
 
@@ -574,7 +574,7 @@ public class SyncCallbackService {
         userRepository.findById(userId).ifPresent(user -> {
             user.setExternalCustomerId(null);
             userRepository.save(user);
-            log.info("🧹 [CALLBACK] Cleared external Customer ID on User {}", userId);
+            log.info("[CALLBACK] Cleared external Customer ID on User {}", userId);
         });
     }
 
@@ -582,7 +582,7 @@ public class SyncCallbackService {
         userRepository.findById(userId).ifPresent(user -> {
             user.setExternalContactId(null);
             userRepository.save(user);
-            log.info("🧹 [CALLBACK] Cleared external Contact ID on User {}", userId);
+            log.info("[CALLBACK] Cleared external Contact ID on User {}", userId);
         });
     }
 
@@ -590,7 +590,7 @@ public class SyncCallbackService {
         userRepository.findById(userId).ifPresent(user -> {
             user.setExternalAddressId(null);
             userRepository.save(user);
-            log.info("🧹 [CALLBACK] Cleared external Address ID on User {}", userId);
+            log.info("[CALLBACK] Cleared external Address ID on User {}", userId);
         });
     }
 
@@ -598,7 +598,7 @@ public class SyncCallbackService {
         userRepository.findById(userId).ifPresent(user -> {
             user.setExternalErpUserId(null);
             userRepository.save(user);
-            log.info("🧹 [CALLBACK] Cleared external externalErp User ID on User {}", userId);
+            log.info("[CALLBACK] Cleared external externalErp User ID on User {}", userId);
         });
     }
 
@@ -612,7 +612,7 @@ public class SyncCallbackService {
         orderOpt.ifPresent(order -> {
             order.setExternalOrderId(null);
             orderRepository.save(order);
-            log.info("🧹 [CALLBACK] Cleared external Order ID '{}' on Order {}", externalOrderId, order.getId());
+            log.info("[CALLBACK] Cleared external Order ID '{}' on Order {}", externalOrderId, order.getId());
         });
     }
 
@@ -626,7 +626,7 @@ public class SyncCallbackService {
         orderOpt.ifPresent(order -> {
             order.setExternalInvoiceId(null);
             orderRepository.save(order);
-            log.info("🧹 [CALLBACK] Cleared external Invoice ID '{}' on Order {}", externalInvoiceId, order.getId());
+            log.info("[CALLBACK] Cleared external Invoice ID '{}' on Order {}", externalInvoiceId, order.getId());
         });
     }
 
@@ -638,7 +638,7 @@ public class SyncCallbackService {
         orderOpt.ifPresent(order -> {
             order.setExternalPaymentId(null);
             orderRepository.save(order);
-            log.info("🧹 [CALLBACK] Cleared external Payment ID '{}' on Order {}", externalPaymentId, order.getId());
+            log.info("[CALLBACK] Cleared external Payment ID '{}' on Order {}", externalPaymentId, order.getId());
         });
     }
 
@@ -646,7 +646,7 @@ public class SyncCallbackService {
         serviceRepository.findById(serviceId).ifPresent(service -> {
             service.setExternalItemCode(null);
             serviceRepository.save(service);
-            log.info("🧹 [CALLBACK] Cleared external Item Code on Service {}", serviceId);
+            log.info("[CALLBACK] Cleared external Item Code on Service {}", serviceId);
         });
     }
 
@@ -654,7 +654,7 @@ public class SyncCallbackService {
         serviceCategoryRepository.findById(categoryId).ifPresent(category -> {
             category.setExternalGroupId(null);
             serviceCategoryRepository.save(category);
-            log.info("🧹 [CALLBACK] Cleared external Group ID on Category {}", categoryId);
+            log.info("[CALLBACK] Cleared external Group ID on Category {}", categoryId);
         });
     }
 
@@ -662,7 +662,7 @@ public class SyncCallbackService {
         projectRepository.findById(projectId).ifPresent(project -> {
             project.setExternalProjectId(null);
             projectRepository.save(project);
-            log.info("🧹 [CALLBACK] Cleared external Project ID on Project {}", projectId);
+            log.info("[CALLBACK] Cleared external Project ID on Project {}", projectId);
         });
     }
 
@@ -670,7 +670,7 @@ public class SyncCallbackService {
         projectTaskRepository.findById(taskId).ifPresent(task -> {
             task.setExternalTaskId(null);
             projectTaskRepository.save(task);
-            log.info("🧹 [CALLBACK] Cleared external Task ID on Task {}", taskId);
+            log.info("[CALLBACK] Cleared external Task ID on Task {}", taskId);
         });
     }
 
@@ -678,7 +678,7 @@ public class SyncCallbackService {
         ticketRepository.findById(ticketId).ifPresent(ticket -> {
             ticket.setExternalIssueId(null);
             ticketRepository.save(ticket);
-            log.info("🧹 [CALLBACK] Cleared external Issue ID on Ticket {}", ticketId);
+            log.info("[CALLBACK] Cleared external Issue ID on Ticket {}", ticketId);
         });
     }
 
@@ -689,9 +689,9 @@ public class SyncCallbackService {
                 quotation -> {
                     quotation.setExternalQuotationId(externalId);
                     quotationRepository.save(quotation);
-                    log.info("🔗 [CALLBACK] Quotation {} linked to external Quotation {}", quotationId, externalId);
+                    log.info("[CALLBACK] Quotation {} linked to external Quotation {}", quotationId, externalId);
                 },
-                () -> log.warn("⚠️ [CALLBACK] Quotation {} not found for quotation link", quotationId)
+                () -> log.warn("[CALLBACK] Quotation {} not found for quotation link", quotationId)
         );
     }
 
@@ -699,7 +699,7 @@ public class SyncCallbackService {
         quotationRepository.findById(quotationId).ifPresent(quotation -> {
             quotation.setExternalQuotationId(null);
             quotationRepository.save(quotation);
-            log.info("🧹 [CALLBACK] Cleared external Quotation ID on Quotation {}", quotationId);
+            log.info("[CALLBACK] Cleared external Quotation ID on Quotation {}", quotationId);
         });
     }
 }
