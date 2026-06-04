@@ -86,6 +86,8 @@ public class SiteConfigManager {
      * Lit un booléen de la config hiérarchique (env → file → DB → défaut).
      * Fail-open : valeur absente OU erreur de lecture ⇒ defaultValue —
      * une panne de config ne doit jamais couper silencieusement une intégration.
+     * Toute valeur non nulle autre que {@code "true"} (insensible à la casse)
+     * est traitée comme {@code false}.
      */
     public boolean getBoolean(String key, boolean defaultValue) {
         try {

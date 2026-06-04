@@ -3,8 +3,6 @@ package com.lmp.shared.config.site;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -14,7 +12,6 @@ import static org.mockito.Mockito.*;
  * Partial mock : on stubbe getString, getBoolean appelle la vraie méthode.
  */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class SiteConfigManagerBooleanTest {
 
     private SiteConfigManager partialMock() {
@@ -57,5 +54,12 @@ class SiteConfigManagerBooleanTest {
         SiteConfigManager mgr = partialMock();
         when(mgr.getString("k")).thenReturn("  TRUE ");
         assertTrue(mgr.getBoolean("k", false));
+    }
+
+    @Test
+    void getBoolean_garbageValue_returnsFalse() {
+        SiteConfigManager mgr = partialMock();
+        when(mgr.getString("k")).thenReturn("yes");
+        assertFalse(mgr.getBoolean("k", true));
     }
 }
