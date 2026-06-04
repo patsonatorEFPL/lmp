@@ -30,6 +30,8 @@ type DispatcherStrategy = 'smtp' | 'erpnext';
 type HealthStatus = 'UP' | 'DOWN';
 interface ErpHealth { status: HealthStatus; latencyMs: number; lastError: string; message: string; }
 interface ApiAck { success: boolean; message: string; }
+/** source : 'config' = valeur présente (env/file/DB), 'default' = clé absente ⇒ fail-open ON. */
+interface ErpSyncStatus { enabled: boolean; staticEnabled: boolean; source: 'config' | 'default'; }
 
 @Component({
   selector: 'lmp-admin-settings',
@@ -231,6 +233,56 @@ interface ApiAck { success: boolean; message: string; }
               }
             </div>
           </div>
+
+          <!-- Toggle runtime sync ERP -->
+          <div class="mt-4 rounded-sm border border-(--border) px-4 py-3" data-testid="erp-sync-toggle">
+            <p class="text-sm font-medium text-(--foreground)">Synchronisation ERP</p>
+            <p class="mb-2 text-xs text-(--muted-foreground)">Création des Customers/Contacts Frappe à l'inscription</p>
+            @if (erpSyncEnabled() !== null) {
+              <div class="flex items-center gap-2">
+                <button
+                  class="rounded-sm px-3 py-1.5 text-xs font-medium transition-colors"
+                  [class.bg-(--primary)]="erpSyncEnabled() === true"
+                  [class.text-(--primary-foreground)]="erpSyncEnabled() === true"
+                  [class.bg-(--muted)]="erpSyncEnabled() !== true"
+                  [class.text-(--muted-foreground)]="erpSyncEnabled() !== true"
+                  (click)="setErpSync(true)"
+                  [disabled]="changingErpSync()"
+                >
+                  Activée
+                </button>
+                <button
+                  class="rounded-sm px-3 py-1.5 text-xs font-medium transition-colors"
+                  [class.bg-(--primary)]="erpSyncEnabled() === false"
+                  [class.text-(--primary-foreground)]="erpSyncEnabled() === false"
+                  [class.bg-(--muted)]="erpSyncEnabled() !== false"
+                  [class.text-(--muted-foreground)]="erpSyncEnabled() !== false"
+                  (click)="setErpSync(false)"
+                  [disabled]="changingErpSync()"
+                >
+                  Désactivée
+                </button>
+              </div>
+            } @else {
+              <div class="flex items-center gap-2 text-sm text-(--muted-foreground)">
+                <lucide-icon [img]="Loader2Icon" [size]="16" class="animate-spin"></lucide-icon>
+                Chargement…
+              </div>
+            }
+            @if (erpSyncEnabled() === false) {
+              <p
+                class="mt-2 rounded-sm border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-100"
+                role="status"
+              >
+                Sync ERP coupée : les inscriptions ne créent plus de Customer Frappe.
+              </p>
+            }
+            @if (!erpSyncStaticEnabled()) {
+              <p class="mt-2 text-[11px] text-(--muted-foreground)">
+                Subsystem sync désactivé au niveau env (SYNC_ENABLED=false) : ce toggle est sans effet.
+              </p>
+            }
+          </div>
         </div>
       </div>
 
@@ -403,6 +455,10 @@ export class AdminSettingsComponent implements OnInit {
   dispatcherStrategy = signal<DispatcherStrategy>('smtp');
   changingDispatcher = signal(false);
   dispatcherTestResult = signal<string | null>(null);
+  // Toggle runtime sync ERP — null = chargement en cours
+  erpSyncEnabled = signal<boolean | null>(null);
+  erpSyncStaticEnabled = signal<boolean>(true);
+  changingErpSync = signal(false);
   private healthInflight = false;
 
   private readonly adminService = inject(AdminService);
@@ -448,6 +504,7 @@ export class AdminSettingsComponent implements OnInit {
   ngOnInit(): void {
     this.loadErpnextHealth();
     this.loadDispatcher();
+    this.loadErpSyncStatus();
     this.visiblePoll.subscribeWhileVisible(this.destroyRef, 10000, () => this.loadErpnextHealth());
 
     this.adminService.getCompanyAddress().subscribe({
@@ -503,6 +560,36 @@ export class AdminSettingsComponent implements OnInit {
             this.cdr.detectChanges();
           });
         },
+      });
+  }
+
+  loadErpSyncStatus(): void {
+    this.http.get<{ data: ErpSyncStatus }>('/admin/integrations/erp-sync')
+      .subscribe({
+        next: (res) => this.ngZone.run(() => {
+          this.erpSyncEnabled.set(res.data.enabled);
+          this.erpSyncStaticEnabled.set(res.data.staticEnabled);
+          this.cdr.detectChanges();
+        }),
+        error: () => this.erpSyncEnabled.set(true), // fail-open affichage
+      });
+  }
+
+  setErpSync(enabled: boolean): void {
+    if (this.changingErpSync()) return;
+    this.changingErpSync.set(true);
+    this.http.put<{ data: ErpSyncStatus }>('/admin/integrations/erp-sync', { enabled })
+      .subscribe({
+        next: (res) => this.ngZone.run(() => {
+          this.erpSyncEnabled.set(res.data.enabled);
+          this.erpSyncStaticEnabled.set(res.data.staticEnabled);
+          this.changingErpSync.set(false);
+          this.cdr.detectChanges();
+        }),
+        error: () => this.ngZone.run(() => {
+          this.changingErpSync.set(false);
+          this.cdr.detectChanges();
+        }),
       });
   }
 
