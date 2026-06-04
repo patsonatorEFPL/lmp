@@ -62,5 +62,7 @@ class ErpSyncAdminControllerTest {
 
         assertEquals(400, response.getStatusCode().value());
         verify(siteConfigManager, never()).update(any(), any(), any());
+        assertNotNull(response.getBody());
+        assertFalse(response.getBody().success());
     }
 }

@@ -32,6 +32,7 @@ public class ErpSyncAdminController {
         this.syncProperties = syncProperties;
     }
 
+    /** source : "config" = valeur présente (env/file/DB), "default" = clé absente ⇒ fail-open true. */
     public record ErpSyncStatus(boolean enabled, boolean staticEnabled, String source) {}
     public record UpdateErpSyncRequest(Boolean enabled) {}
 
@@ -43,12 +44,13 @@ public class ErpSyncAdminController {
     @PutMapping
     public ResponseEntity<ApiResponse<ErpSyncStatus>> update(
             @RequestBody UpdateErpSyncRequest request, Authentication authentication) {
-        if (request == null || request.enabled() == null) {
-            return ResponseEntity.badRequest().build();
+        if (request.enabled() == null) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Le champ 'enabled' est obligatoire"));
         }
+        boolean previous = siteConfigManager.getBoolean(SyncOutboundService.RUNTIME_ENABLED_KEY, true);
         siteConfigManager.update(SyncOutboundService.RUNTIME_ENABLED_KEY,
                 String.valueOf(request.enabled()), "ERP sync runtime toggle");
-        log.info("🔁 [ERP-SYNC] Toggle runtime → {} par {}", request.enabled(),
+        log.info("🔁 [ERP-SYNC] Toggle runtime {} → {} par {}", previous, request.enabled(),
                 authentication != null ? authentication.getName() : "inconnu");
         return ResponseEntity.ok(ApiResponse.ok(currentStatus()));
     }
