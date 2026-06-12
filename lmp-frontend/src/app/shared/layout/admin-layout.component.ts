@@ -28,6 +28,7 @@ import {
   Mail,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { AdminService } from '../../core/services/admin.service';
 import { AdminSseService } from '../../core/services/admin-sse.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -223,7 +224,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="PackageIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Services</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">14</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.services) }}</span>}
             }
           </a>
           <a
@@ -242,7 +243,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="UsersIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Utilisateurs</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">1.2k</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.users) }}</span>}
             }
             @if (adminSse.badgeUsers() > 0) {
               <span
@@ -285,7 +286,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="OrdersIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Commandes</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">238</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.orders) }}</span>}
             }
             @if (adminSse.badgeOrders() > 0) {
               <span
@@ -311,7 +312,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
             <lucide-icon [img]="CalendarIcon" [size]="16" class="inline-flex shrink-0"></lucide-icon>
             @if (!sidebarCollapsed()) {
               <span class="truncate">Rendez-vous</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">62</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.appointments) }}</span>}
             }
             @if (adminSse.badgeAppointments() > 0) {
               <span
@@ -579,14 +580,14 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               (click)="mobileMenuOpen.set(false)">
               <lucide-icon [img]="PackageIcon" [size]="16"></lucide-icon>
               <span class="truncate">Services</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">14</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.services) }}</span>}
             </a>
             <a routerLink="/admin/users" [routerLinkActive]="sidebarLinkActive"
               class="relative mx-0.5 my-[1.5px] flex min-h-[30px] cursor-pointer items-center gap-2 rounded px-2 py-[7px] text-sm text-zinc-700 transition-colors hover:bg-zinc-200/60 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
               (click)="mobileMenuOpen.set(false); adminSse.badgeUsers.set(0)">
               <lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon>
               <span class="truncate">Utilisateurs</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">1.2k</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.users) }}</span>}
               @if (adminSse.badgeUsers() > 0) {
                 <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeUsers() > 9 ? '9+' : adminSse.badgeUsers() }}</span>
               }
@@ -602,7 +603,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               (click)="mobileMenuOpen.set(false); adminSse.badgeOrders.set(0)">
               <lucide-icon [img]="OrdersIcon" [size]="16"></lucide-icon>
               <span class="truncate">Commandes</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">238</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.orders) }}</span>}
               @if (adminSse.badgeOrders() > 0) {
                 <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeOrders() > 9 ? '9+' : adminSse.badgeOrders() }}</span>
               }
@@ -612,7 +613,7 @@ import { ShellAccountMenuComponent } from './shell-account-menu.component';
               (click)="mobileMenuOpen.set(false); adminSse.badgeAppointments.set(0)">
               <lucide-icon [img]="CalendarIcon" [size]="16"></lucide-icon>
               <span class="truncate">Rendez-vous</span>
-              <span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">62</span>
+              @if (navCounts(); as nc) {<span class="ml-auto text-[11px] font-medium rounded-full bg-zinc-200/70 px-1.5 text-zinc-500 dark:bg-zinc-700/50 dark:text-zinc-400">{{ formatNavCount(nc.appointments) }}</span>}
               @if (adminSse.badgeAppointments() > 0) {
                 <span class="absolute right-2 top-1.5 flex h-4 min-w-4 items-center justify-center rounded bg-red-500 px-1 text-[10px] font-bold text-white">{{ adminSse.badgeAppointments() > 9 ? '9+' : adminSse.badgeAppointments() }}</span>
               }
@@ -771,6 +772,15 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
   readonly authService = inject(AuthService);
   readonly adminSse = inject(AdminSseService);
   readonly notificationService = inject(NotificationService);
+  private readonly adminService = inject(AdminService);
+
+  /** Totaux réels pour les badges de navigation (null tant que non chargés). */
+  readonly navCounts = signal<{
+    services: number;
+    users: number;
+    orders: number;
+    appointments: number;
+  } | null>(null);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
 
@@ -866,7 +876,47 @@ export class AdminLayoutComponent implements OnInit, OnDestroy {
       } catch {
         /* private mode */
       }
+      this.loadNavCounts();
     }
+  }
+
+  /** Badges sidebar : totaux réels (remplace les valeurs autrefois codées en dur). */
+  private loadNavCounts(): void {
+    this.adminService.getDashboardStats().subscribe({
+      next: (stats) => {
+        this.navCounts.update((c) => ({
+          services: c?.services ?? 0,
+          users: stats.totalUsers,
+          orders: stats.totalOrders,
+          appointments: stats.totalAppointments,
+        }));
+      },
+      error: () => {
+        /* badge masqué si stats indisponibles */
+      },
+    });
+    this.adminService.getCatalogStats().subscribe({
+      next: (stats) => {
+        this.navCounts.update((c) => ({
+          services: stats.totalServices,
+          users: c?.users ?? 0,
+          orders: c?.orders ?? 0,
+          appointments: c?.appointments ?? 0,
+        }));
+      },
+      error: () => {
+        /* badge masqué si stats indisponibles */
+      },
+    });
+  }
+
+  /** Format compact des compteurs (1234 → « 1.2k »). */
+  formatNavCount(n: number): string {
+    if (n >= 1000) {
+      const k = n / 1000;
+      return `${k >= 10 ? Math.round(k) : Math.round(k * 10) / 10}k`;
+    }
+    return String(n);
   }
 
   toggleSidebarCollapsed(): void {
