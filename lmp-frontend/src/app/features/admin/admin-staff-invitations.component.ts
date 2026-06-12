@@ -21,6 +21,7 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { environment } from '../../../environments/environment';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
+import { ApiResponse } from '../../shared/models/api.models';
 
 interface InvitationItem {
   id: string;
@@ -41,12 +42,6 @@ interface PageResponse {
   size: number;
   totalElements: number;
   totalPages: number;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
 }
 
 @Component({

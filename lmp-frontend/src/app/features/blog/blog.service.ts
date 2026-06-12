@@ -3,14 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BlogPost } from './blog.model';
 import { environment } from '../../../environments/environment';
-
-interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-}
+import { PageResponse } from '../../shared/models/api.models';
 
 interface ApiResponse<T> {
   data: T;

@@ -20,6 +20,7 @@ import { updateOffer } from '../../../app/generated/fn/admin-services/update-off
 import { deleteOffer } from '../../../app/generated/fn/admin-services/delete-offer';
 
 import { ServiceItem } from './catalog.service';
+import { ApiResponse } from '../../shared/models/api.models';
 
 export interface CategoryItem {
   id: string;
@@ -90,12 +91,6 @@ export interface HealthServiceItem {
 }
 
 const COMPANY_PROFILE_PATH = '/api/v1/admin/company-profile';
-
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-}
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {

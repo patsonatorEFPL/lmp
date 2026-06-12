@@ -12,6 +12,7 @@ import {
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
 import { paymentApiUrls } from '../../core/api/payment-api.paths';
+import { ApiResponse } from '../../shared/models/api.models';
 
 interface PaymentStatusResponse {
   orderId: string;
@@ -19,12 +20,6 @@ interface PaymentStatusResponse {
   paymentStatus: string;
   ready: boolean;
   paymentConfirmed: boolean;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
 }
 
 @Component({

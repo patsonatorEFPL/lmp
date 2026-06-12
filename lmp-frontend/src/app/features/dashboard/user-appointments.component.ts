@@ -15,6 +15,8 @@ import { environment } from '../../../environments/environment';
 import { NotificationService } from '../../core/services/notification.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
 import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
+import { formatRelativeTimeFr } from '../../core/utils/relative-time';
+import { ApiResponse } from '../../shared/models/api.models';
 
 interface Appointment {
   id: string;
@@ -24,11 +26,6 @@ interface Appointment {
   durationMinutes: number;
   location?: string;
   notes?: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
 }
 
 @Component({
@@ -273,22 +270,5 @@ export class UserAppointmentsComponent implements OnInit {
     }
   }
 
-  formatRelativeTimeFr(iso: string | null | undefined): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    const diffMs = d.getTime() - Date.now();
-    const abs = Math.abs(diffMs);
-    const sec = Math.floor(abs / 1000);
-    if (sec < 45) return 'À l\'instant';
-    const min = Math.floor(sec / 60);
-    const hours = Math.floor(min / 60);
-    const days = Math.floor(hours / 24);
-    const future = diffMs > 0;
-    const prefix = future ? 'Dans ' : 'Il y a ';
-    if (min < 60) return `${prefix}${min <= 1 ? '1 min' : min + ' min'}`;
-    if (hours < 24) return `${prefix}${hours <= 1 ? '1 h' : hours + ' h'}`;
-    if (days < 7) return `${prefix}${days === 1 ? '1 jour' : days + ' j'}`;
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-  }
+  readonly formatRelativeTimeFr = formatRelativeTimeFr;
 }

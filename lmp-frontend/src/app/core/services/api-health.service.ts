@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { ApiResponse } from '../../shared/models/api.models';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,12 +30,6 @@ export interface ApiHealthSnapshot {
   apis: ApiHealthEntry[];
   infra: InfraHealth;
   timestamp: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
 }
 
 // ── Report types ─────────────────────────────────────────────────────────────

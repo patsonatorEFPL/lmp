@@ -10,6 +10,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
+import { ApiResponse } from '../../shared/models/api.models';
 
 export interface AppNotification {
   id: string;
@@ -22,12 +23,6 @@ export interface AppNotification {
   read: boolean;
   /** Id métier pour dédoublonnage (égal à {@code eventId} SSE si fourni). */
   eventId?: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
 }
 
 /**
