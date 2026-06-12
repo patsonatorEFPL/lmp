@@ -351,6 +351,7 @@ public class SecurityConfig {
                                 "/reset-password",
                                 "/verify-email",
                                 "/resend-verification",
+                                "/accept-invitation",
                                 "/payment/guest",
                                 "/payment/success",
                                 "/payment/cancelled",
