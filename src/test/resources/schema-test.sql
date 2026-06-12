@@ -67,3 +67,12 @@ CREATE TABLE IF NOT EXISTS oauth2_authorization_consent (
 CREATE INDEX IF NOT EXISTS idx_oauth2_auth_client ON oauth2_authorization(registered_client_id);
 CREATE INDEX IF NOT EXISTS idx_oauth2_auth_principal ON oauth2_authorization(principal_name);
 CREATE INDEX IF NOT EXISTS idx_oauth2_client_client_id ON oauth2_registered_client(client_id);
+
+-- ShedLock (miroir de V39 — Flyway désactivé en test, Hibernate ne crée pas cette table)
+CREATE TABLE IF NOT EXISTS shedlock (
+    name VARCHAR(64) NOT NULL,
+    lock_until TIMESTAMP NOT NULL,
+    locked_at TIMESTAMP NOT NULL,
+    locked_by VARCHAR(255) NOT NULL,
+    PRIMARY KEY (name)
+);

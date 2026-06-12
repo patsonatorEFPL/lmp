@@ -145,18 +145,23 @@ public class UserAuthenticationTest {
     }
 
     /**
-     * Test avec un utilisateur verrouillé - doit lever une exception
+     * Test avec un utilisateur verrouillé — depuis le fix SECURITY (M1), le
+     * compte est chargé avec accountNonLocked=false (DaoAuthenticationProvider
+     * lèvera LockedException), au lieu d'un UsernameNotFoundException opaque.
      */
     @Test
-    void testLoadUserByUsername_LockedUser_ShouldThrowException() {
+    void testLoadUserByUsername_LockedUser_ShouldExposeLockedFlag() {
         // Arrange - Verrouiller l'utilisateur
         testUser.setAccountLocked(true);
         userRepository.save(testUser);
-        
-        // Act & Assert - Un compte verrouillé ne peut pas se connecter
-        assertThrows(UsernameNotFoundException.class, () -> {
-            customUserDetailsService.loadUserByUsername("testuser@example.com");
-        });
+
+        // Act
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername("testuser@example.com");
+
+        // Assert - le flag locked est exposé pour que la chaîne d'auth distingue
+        // "compte verrouillé" de "compte absent"
+        assertFalse(userDetails.isAccountNonLocked(),
+                "Un compte verrouillé doit exposer accountNonLocked=false");
     }
 
     /**

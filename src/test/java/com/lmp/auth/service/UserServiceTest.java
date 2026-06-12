@@ -143,14 +143,15 @@ class UserServiceTest {
 
     @Test
     void testFindByStatus() {
-        List<User> allUsers = Arrays.asList(testUser, adminUser);
-        when(userRepository.findAll()).thenReturn(allUsers);
+        List<User> activeOnly = Arrays.asList(testUser, adminUser);
+        when(userRepository.findByStatus(UserStatus.ACTIVE)).thenReturn(activeOnly);
 
         List<User> activeUsers = userService.findByStatus(UserStatus.ACTIVE);
 
         assertNotNull(activeUsers);
         assertEquals(2, activeUsers.size());
         activeUsers.forEach(user -> assertEquals(UserStatus.ACTIVE, user.getStatus()));
+        verify(userRepository).findByStatus(UserStatus.ACTIVE);
     }
 
     @Test
