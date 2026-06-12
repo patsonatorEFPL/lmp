@@ -124,12 +124,9 @@ public class SyncReconciliationService {
     private int reconcileCustomers(Instant since) {
         int gaps = 0;
 
-        // Détecter les Users locaux sans external ID
-        var usersWithoutExternal = userRepository.findAll().stream()
-                .filter(u -> u.getExternalCustomerId() == null)
-                .filter(u -> u.getRegistrationDate() != null &&
-                        u.getRegistrationDate().toInstant(ZoneOffset.UTC).isBefore(Instant.now().minusSeconds(300)))
-                .toList();
+        // Détecter les Users locaux sans external ID (grâce de 5 min post-inscription)
+        var usersWithoutExternal = userRepository.findByExternalCustomerIdIsNullAndRegistrationDateBefore(
+                LocalDateTime.ofInstant(Instant.now().minusSeconds(300), ZoneOffset.UTC));
 
         for (var user : usersWithoutExternal) {
             log.info("[RECONCILIATION] User {} has no externalCustomerId — enqueuing provision",
@@ -238,12 +235,9 @@ public class SyncReconciliationService {
      */
     private int reconcileOrders(Instant since) {
         int gaps = 0;
-        var ordersWithoutExternal = orderRepository.findAll().stream()
-                .filter(o -> o.getExternalOrderId() == null)
-                .filter(o -> "CONFIRMED".equals(o.getStatus().name()) || "PAID".equals(o.getStatus().name()))
-                .filter(o -> o.getCreatedAt() != null &&
-                        o.getCreatedAt().toInstant(ZoneOffset.UTC).isBefore(Instant.now().minusSeconds(300)))
-                .toList();
+        var ordersWithoutExternal = orderRepository.findByExternalOrderIdIsNullAndStatusInAndCreatedAtBefore(
+                List.of(com.lmp.billing.domain.OrderStatus.CONFIRMED),
+                LocalDateTime.ofInstant(Instant.now().minusSeconds(300), ZoneOffset.UTC));
 
         for (var order : ordersWithoutExternal) {
             log.info("[RECONCILIATION] Order {} (status={}) has no externalOrderId — enqueuing",

@@ -307,7 +307,7 @@ public class StripeCheckoutController {
                 auditLogger.info("Direct Stripe Checkout session created successfully - Service: {}, Session: {}",
                         serviceName, response.getProviderTransactionId());
 
-                // 🆕 SAUVEGARDER LE PAYMENT INTENT ET LA SESSION DANS L'ORDER
+                // SAUVEGARDER LE PAYMENT INTENT ET LA SESSION DANS L'ORDER
                 savedOrder.setStripeSessionId(response.getProviderTransactionId());
                 if (response.getPaymentIntentId() != null) {
                     savedOrder.setStripePaymentIntentId(response.getPaymentIntentId());

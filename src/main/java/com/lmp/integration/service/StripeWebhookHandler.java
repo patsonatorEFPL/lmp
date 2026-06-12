@@ -305,7 +305,7 @@ public class StripeWebhookHandler {
                     paymentIntent.getStatus(), paymentIntent.getAmount(), paymentIntent.getCurrency());
             logger.info("DEBUG WEBHOOK - PaymentIntent metadata: {}", paymentIntent.getMetadata());
 
-            // 🆕 DIAGNOSTIC AVANCÉ - Vérification des liens Order
+            // DIAGNOSTIC AVANCÉ - Vérification des liens Order
             logger.info("DIAGNOSTIC LINKS - Searching for order by PaymentIntent ID: {}", paymentIntent.getId());
             Optional<Order> orderByPI = orderRepository.findByStripePaymentIntentId(paymentIntent.getId());
             logger.info("DIAGNOSTIC LINKS - Order found by PaymentIntent: {}", orderByPI.isPresent());
@@ -451,7 +451,7 @@ public class StripeWebhookHandler {
 
             logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
 
-            // 🆕 PERSIST REFUND: Save the refund entity linked to the order
+            // PERSIST REFUND: Save the refund entity linked to the order
             persistRefundFromStripe(stripeRefund);
 
             // Ajouter les données de l'événement
@@ -468,7 +468,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Persiste un remboursement Stripe en base de données.
+     * Persiste un remboursement Stripe en base de données.
      * Recherche la commande associée et crée un enregistrement Refund.
      */
     private void persistRefundFromStripe(Refund stripeRefund) {
@@ -596,12 +596,12 @@ public class StripeWebhookHandler {
 
     /**
      * Gère la completion des sessions Checkout en utilisant l'enum
-     * 🆕 AMÉLIORÉ : Logique hybride pour mise à jour d'ordres existants au lieu de
+     * AMÉLIORÉ : Logique hybride pour mise à jour d'ordres existants au lieu de
      * créer de nouveaux
      */
     private void handleCheckoutSessionCompleted(Event event, WebhookEventDto webhookEvent,
             StripeWebhookEventType eventType) {
-        // 🔧 NOUVELLE APPROCHE : Désérialisation manuelle robuste
+        // NOUVELLE APPROCHE : Désérialisation manuelle robuste
         Session session = null;
 
         // 1. Tentative de désérialisation standard
@@ -622,7 +622,7 @@ public class StripeWebhookHandler {
         }
 
         if (session != null) {
-            // 🔍 DIAGNOSTIC - Analyser les métadonnées
+            // DIAGNOSTIC - Analyser les métadonnées
             logger.info("DIAGNOSTIC - Session ID: {}", session.getId());
             logger.info("DIAGNOSTIC - Session metadata: {}", session.getMetadata());
             logger.info("DIAGNOSTIC - Session customer_email: {}", session.getCustomerEmail());
@@ -636,7 +636,7 @@ public class StripeWebhookHandler {
             logger.info("DEBUG WEBHOOK - Event: {} ({})", eventType, eventType.getDescription());
             logger.info("DEBUG WEBHOOK - Checkout completed for session: {}", session.getId());
 
-            // 🔧 AMÉLIORATION : Utiliser la logique pour trouver et mettre à jour l'ordre
+            // AMÉLIORATION : Utiliser la logique pour trouver et mettre à jour l'ordre
             // existant
             // Priorité : 1) PaymentIntent ID, 2) Session ID, 3) Metadata order_id
             Optional<Order> orderOpt = findOrderBySession(session);
@@ -661,7 +661,7 @@ public class StripeWebhookHandler {
                 }
 
             } else {
-                // 🆕 CRÉATION : Si aucune commande existante n'est trouvée, créer une nouvelle
+                // CRÉATION : Si aucune commande existante n'est trouvée, créer une nouvelle
                 // commande
                 // Cela ne devrait se produire que dans les cas de fallback ou erreurs dans le
                 // workflow
@@ -851,7 +851,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Met à jour le statut d'une commande par son stripeSessionId
+     * Met à jour le statut d'une commande par son stripeSessionId
      * Cette méthode est cruciale pour résoudre le problème de persistance
      * prématurée des commandes
      */
@@ -900,14 +900,6 @@ public class StripeWebhookHandler {
                 }
             } else {
                 logger.error("Order not found for Stripe session update - Session: {}", stripeSessionId);
-
-                // Log toutes les commandes existantes pour debug
-                List<Order> allOrders = orderRepository.findAll();
-                logger.info("DEBUG WEBHOOK - Total orders in database: {}", allOrders.size());
-                for (Order o : allOrders) {
-                    logger.info("DEBUG WEBHOOK - Order {}: stripeSessionId={}, status={}",
-                            o.getId(), o.getStripeSessionId(), o.getStatus());
-                }
             }
         } catch (Exception e) {
             logger.error("Error updating order status via webhook - Session: {}, Error: {}",
@@ -916,7 +908,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Met à jour le statut d'une commande par son PaymentIntent ID
+     * Met à jour le statut d'une commande par son PaymentIntent ID
      * Cette méthode recherche la commande par PaymentIntent et met à jour son
      * statut
      */
@@ -989,15 +981,6 @@ public class StripeWebhookHandler {
                 } else {
                     logger.error("No session_id in PaymentIntent metadata, cannot find order - PaymentIntent: {}",
                             paymentIntentId);
-
-                    // Log toutes les commandes existantes pour debug
-                    List<Order> allOrders = orderRepository.findAll();
-                    logger.info("DEBUG WEBHOOK - Total orders in database: {}", allOrders.size());
-                    for (Order o : allOrders) {
-                        logger.info(
-                                "🔍 DEBUG WEBHOOK - Order {}: stripePaymentIntentId={}, stripeSessionId={}, status={}",
-                                o.getId(), o.getStripePaymentIntentId(), o.getStripeSessionId(), o.getStatus());
-                    }
                 }
             }
         } catch (Exception e) {
@@ -1007,13 +990,13 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Détermine si une mise à jour de statut d'Order est logique
+     * Détermine si une mise à jour de statut d'Order est logique
      * Évite les mises à jour inappropriées et maintient la cohérence des données
      */
     private boolean shouldUpdateOrderStatus(OrderStatus currentStatus, OrderStatus newStatus) {
         logger.info("DEBUG WEBHOOK - Checking status transition: {} -> {}", currentStatus, newStatus);
 
-        // 🆕 DIAGNOSTIC DÉTAILLÉ - Analyser toutes les transitions possibles
+        // DIAGNOSTIC DÉTAILLÉ - Analyser toutes les transitions possibles
         if (currentStatus == newStatus) {
             logger.info("DIAGNOSTIC STATUS - Status unchanged: {}, skipping update", currentStatus);
             return false;
@@ -1074,7 +1057,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 PHASE 1 : Crée une nouvelle commande depuis une session Stripe checkout
+     * PHASE 1 : Crée une nouvelle commande depuis une session Stripe checkout
      * Cette méthode extrait les métadonnées de la session et crée une commande
      * CONFIRMÉE
      */
@@ -1208,7 +1191,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🔧 NOUVELLE MÉTHODE : Désérialisation manuelle robuste du JSON Session
+     * NOUVELLE MÉTHODE : Désérialisation manuelle robuste du JSON Session
      * Cette méthode parse directement le JSON pour extraire les informations
      * nécessaires
      * Compatible avec toutes les versions d'API Stripe
@@ -1383,7 +1366,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Trouve une commande existante liée à la session Stripe
+     * Trouve une commande existante liée à la session Stripe
      * Priorité : 1) PaymentIntent ID, 2) Session ID, 3) Metadata order_id
      */
     private Optional<Order> findOrderBySession(Session session) {
@@ -1429,7 +1412,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Met à jour une commande existante avec les données de la
+     * Met à jour une commande existante avec les données de la
      * session Stripe
      */
     private void updateOrderWithSessionData(Order order, Session session) {
@@ -1491,7 +1474,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Met à jour le statut de la commande avec validation de
+     * Met à jour le statut de la commande avec validation de
      * transition logique
      */
     private void updateOrderStatus(Order order, OrderStatus newStatus, Session session) {
@@ -1507,7 +1490,7 @@ public class StripeWebhookHandler {
                 order.setPaymentStatus("succeeded");
                 order.setCheckoutToken(null);
 
-                // 🆕 AUTO-VERIFY: Mark user's email as verified upon confirmed payment
+                // AUTO-VERIFY: Mark user's email as verified upon confirmed payment
                 if (order.getUser() != null) {
                     autoVerifyUserOnPayment(order.getUser());
                 }
@@ -1521,7 +1504,7 @@ public class StripeWebhookHandler {
 
             orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, oldStatus, newStatus);
 
-            // 🆕 Envoi automatique de la facture par email après confirmation du paiement
+            // Envoi automatique de la facture par email après confirmation du paiement
             if (newStatus == OrderStatus.CONFIRMED && order.getUser() != null) {
                 sendInvoiceByEmail(order, order.getUser());
             }
@@ -1532,7 +1515,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Auto-vérifie l'email de l'utilisateur après un paiement confirmé.
+     * Auto-vérifie l'email de l'utilisateur après un paiement confirmé.
      * Si un utilisateur paie, on peut considérer que son email est valide.
      */
     private void autoVerifyUserOnPayment(User user) {
@@ -1551,7 +1534,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 NOUVEAUTÉ : Envoie la facture PDF par email au client après un paiement
+     * Envoie la facture PDF par email au client après un paiement
      * réussi
      */
     private void sendInvoiceByEmail(Order order, User user) {
@@ -1611,7 +1594,7 @@ public class StripeWebhookHandler {
     }
 
     /**
-     * 🆕 AMÉLIORÉ : Construit le corps HTML de l'email de facture via template Thymeleaf
+     * AMÉLIORÉ : Construit le corps HTML de l'email de facture via template Thymeleaf
      */
     private String buildInvoiceEmailBody(Order order, User user, String invoiceNumber) {
         java.time.format.DateTimeFormatter emailDateFormatter = java.time.format.DateTimeFormatter

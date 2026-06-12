@@ -18,6 +18,7 @@ import com.lmp.billing.domain.OrderStatusHistory;
 import com.lmp.billing.domain.OrderStatus;
 import com.lmp.billing.repository.OrderStatusHistoryRepository;
 import com.lmp.billing.dto.admin.OrderStatusHistoryDto;
+import com.lmp.shared.util.AuthenticatedActor;
 
 /**
  * Service pour la gestion de l'historique des changements de statut des commandes.
@@ -50,7 +51,7 @@ public class OrderStatusHistoryService {
         history.setToStatus(toStatus);
         history.setChangedAt(LocalDateTime.now());
         history.setNote(note);
-        history.setChangedBy("ADMIN"); // TODO: Récupérer l'utilisateur connecté
+        history.setChangedBy(AuthenticatedActor.nameOrSystem());
 
         return historyRepository.save(history);
     }

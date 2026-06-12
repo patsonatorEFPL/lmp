@@ -93,7 +93,7 @@ public class UserPasswordController {
             auditLogger.info("User password changed - User: {} (ID: {})",
                            currentUser.getEmail(), currentUser.getId());
 
-            // 🔐 SÉCURITÉ: Invalidation de la session pour forcer une nouvelle authentification
+            // SÉCURITÉ: Invalidation de la session pour forcer une nouvelle authentification
             logger.info("DEBUG PASSWORD - Invalidation de la session après changement de mot de passe");
             
             try {

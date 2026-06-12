@@ -200,7 +200,7 @@ public class DashboardController {
         Order order = new Order();
         order.setUser(user);
         order.setTotalAmount(intent.getAmount());
-        // 🆕 Utiliser PAYMENT_PENDING au lieu de PENDING
+        // Utiliser PAYMENT_PENDING au lieu de PENDING
         order.setStatus(OrderStatus.PAYMENT_PENDING);
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());

@@ -266,7 +266,7 @@ public class ReportsService {
 
     private void generateServiceStatistics(OrderReportDto report, LocalDateTime startDate, LocalDateTime endDate) {
         List<OrderReportDto.ServicePerformance> servicePerf = analyzeServicePerformance(startDate, endDate);
-        report.setServicePerformance(servicePerf);
+        report.setServicePerformances(servicePerf);
     }
 
     private void generateCustomerStatistics(OrderReportDto report, LocalDateTime startDate, LocalDateTime endDate) {

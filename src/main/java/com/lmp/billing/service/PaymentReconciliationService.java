@@ -171,7 +171,7 @@ public class PaymentReconciliationService {
                 boolean recovered = reconcileOrderWithStripe(order);
                 if (recovered) {
                     recoveredCount++;
-                    auditLogger.info("🔄 RÉCUPÉRATION - Commande {} récupérée de CANCELLED à CONFIRMED via réconciliation",
+                    auditLogger.info("RÉCUPÉRATION - Commande {} récupérée de CANCELLED à CONFIRMED via réconciliation",
                             order.getId());
                 }
             } catch (Exception e) {
