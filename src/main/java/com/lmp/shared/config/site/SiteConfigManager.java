@@ -204,10 +204,16 @@ public class SiteConfigManager {
             return fileConfig.get(key);
         }
 
-        // 3. Base de données
-        Optional<SiteConfigEntry> dbEntry = repository.findByKey(key);
-        if (dbEntry.isPresent() && dbEntry.get().getValue() != null) {
-            return dbEntry.get().getValue();
+        // 3. Base de données — fail-soft : DB pas prête au boot (ou blip réseau)
+        //    ne doit pas crasher le démarrage, on retombe sur le tier dérivé.
+        try {
+            Optional<SiteConfigEntry> dbEntry = repository.findByKey(key);
+            if (dbEntry.isPresent() && dbEntry.get().getValue() != null) {
+                return dbEntry.get().getValue();
+            }
+        } catch (RuntimeException e) {
+            logger.warn("[SITE-CONFIG] Lecture DB indisponible pour '{}' — fallback dérivé/env : {}",
+                    key, e.getMessage());
         }
 
         // 4. Valeurs dérivées de lmp.site.url

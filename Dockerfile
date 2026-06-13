@@ -89,48 +89,26 @@ USER spring
 # ----------------------------------------
 # Phase 0.4 — JDK AOT cache training (JEP 514, Java 26)
 # ----------------------------------------
-# Single-step training: -XX:AOTCacheOutput records class loading + method
-# profiling during a brief bootstrap, then a child JVM assembles the cache
-# at exit. Spring Boot is launched with --spring.context.exit=onRefresh so
-# the context refreshes (loads all beans → triggers all JIT-hot class
-# loading) and immediately exits cleanly.
+# -XX:AOTCacheOutput records loaded classes during a boot run; a child JVM
+# assembles the cache (~180 MB) at exit. The context refresh does NOT reach
+# onRefresh: the first boot-time DB read aborts it against the dummy localhost:1
+# DB. The cache is still assembled from everything loaded up to the abort
+# (framework + most of the app tier), so the `|| (echo …)` branch below fires on
+# EVERY build by design — the `ls -la` just confirms the file. Missing/tiny
+# app.aot = real failure; "AOT training exited non-zero" alone is expected.
 #
-# Autoconfig exclusions: build container has no DB/Redis, so DataSource +
-# Hibernate + Redis autoconfigs would block context refresh. Excluding
-# them lets the training run reach onRefresh without external services.
-# The classes we drop here are still loaded at runtime (no AOT entry for
-# them) — only the cache lacks them, so the cost is a small JIT warmup
-# on the affected paths.
-#
-# Cache lands at /app/app.aot (~110 MB). Image size grows accordingly but
-# every replica starts pre-warmed without needing a shared volume.
-# Training must use the SAME perf flags as the runtime entrypoint — the AOT
-# cache embeds class layout assumptions tied to object header size (Compact
-# Object Headers) and GC barriers (Shenandoah). Mismatch → cache rejected at
-# load with "UseCompactObjectHeaders setting (disabled) does not equal the
-# current setting (enabled)" and JVM falls back to cold class loading.
-# -XX:-AOTClassLinking disables AOT pre-linking. With linking enabled the
-# cache embeds module-graph snapshots tied to the training-time set of
-# loaded modules; runtime then refuses with "AOT cache has aot-linked
-# classes. It cannot be used when archived full module graph is not used"
-# because the autoconfigure exclusions altered the module set vs runtime.
-# Disabling linking trades a little startup speed for portability — cache
-# still skips class loading + initial profiling, just not pre-linking.
-# --add-modules jdk.jfr: runtime enables JFR via -XX:StartFlightRecording
-# which implicitly adds the jdk.jfr module. Training must add the same
-# module set or cache load fails with
-#   Mismatched values for property jdk.module.addmods: jdk.jfr specified
-#   during runtime but not during dump time
-# and falls back to standard class loading. Adding the module here costs
-# nothing — no recording is started, just the module is on the graph.
-# Spring Boot 4 wires JpaSharedEM via HibernateJpaConfiguration (not -Auto-),
-# so the autoconfigure.exclude on -Auto- classes is not enough. We let JPA
-# wire, but feed it the dialect explicitly and disable JDBC metadata lookup
-# so Hibernate boots without a live database. Flyway disabled so it does
-# not try to migrate against the fake datasource URL.
-#
-# Result: context refresh completes cleanly, training run exits with code 0,
-# AOT cache covers more classes (no early Hibernate failure cutoff).
+# Training flags MUST match the runtime ENTRYPOINT or the cache is silently
+# rejected at load (falls back to cold class loading):
+#   -XX:+UseCompactObjectHeaders / Shenandoah — object header size + GC barriers
+#     are baked into the cache; a mismatch is refused outright.
+#   --add-modules jdk.jfr — runtime adds it via -XX:StartFlightRecording; the
+#     module set must match dump time.
+#   -XX:-AOTClassLinking — pre-linking bakes the training module graph, which the
+#     autoconfigure exclusions below alter vs runtime; disabling it keeps the
+#     cache portable (skips class loading + profiling, not linking).
+# Redis autoconfig excluded and Flyway / JDBC-metadata disabled so JPA boots
+# without live services. Cache is per-image — every replica starts pre-warmed,
+# no shared volume.
 ENV LMP_AOT_DB_URL=jdbc:postgresql://localhost:1/aot-training
 RUN java --enable-preview \
         --add-modules jdk.jfr \

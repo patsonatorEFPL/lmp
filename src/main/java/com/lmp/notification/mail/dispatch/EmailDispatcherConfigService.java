@@ -103,10 +103,18 @@ public class EmailDispatcherConfigService {
     }
 
     private void loadFromSource() {
-        String dbValue = repository.findByKey(DB_KEY)
-                .map(SiteConfigEntry::getValue)
-                .filter(v -> v != null && !v.isBlank())
-                .orElse(null);
+        String dbValue;
+        try {
+            dbValue = repository.findByKey(DB_KEY)
+                    .map(SiteConfigEntry::getValue)
+                    .filter(v -> v != null && !v.isBlank())
+                    .orElse(null);
+        } catch (RuntimeException e) {
+            // Fail-soft : DB pas prête au boot ne doit pas crasher le démarrage.
+            log.warn("[DISPATCHER] Lecture DB indisponible — fallback env '{}' : {}",
+                    envDefaultStrategy, e.getMessage());
+            dbValue = null;
+        }
 
         String initial = dbValue != null ? dbValue : envDefaultStrategy;
         String normalized;
