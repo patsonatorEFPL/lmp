@@ -396,16 +396,6 @@
 					     + auto-config Spring chargée au boot, inutile en prod/staging). -->
 					<excludeDevtools>true</excludeDevtools>
 				</configuration>
-				<executions>
-					<!-- Spring Boot 4 AOT processing : génère bean definitions +
-					     reflection metadata au build → boot ~30% faster runtime. -->
-					<execution>
-						<id>process-aot</id>
-						<goals>
-							<goal>process-aot</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>
