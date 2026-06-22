@@ -87,7 +87,6 @@ python/
 
 ### Documentation locale, brouillons et scripts (non versionnés) ###
 docs/*
-!docs/superpowers/
 /plans/
 /notes/
 /scratch/
