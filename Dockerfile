@@ -53,6 +53,14 @@ COPY --from=angular-build /app/dist/lmp-frontend/browser/ ./src/main/resources/s
 # Compiler l'application avec le frontend embarqué
 RUN ./mvnw clean package -DskipTests -B
 
+# Éclater le jar en layers (jarmode tools, Spring Boot 3.3+/4) pour un cache Docker
+# optimal : dependencies (stable) séparé de application (volatil). Pas de --enable-preview
+# requis ici — l'outil extrait, il n'exécute pas le code applicatif.
+# Renommer en application.jar AVANT extract (pattern docs Spring) → nom de jar runtime
+# stable indépendant de la version, donc ENTRYPOINT fixe.
+RUN cp target/*.jar target/application.jar \
+    && java -Djarmode=tools -jar target/application.jar extract --layers --destination target/extracted
+
 # ----------------------------------------
 # Étape 2: Runtime Java 26 (JDK full pour JFR remote attach)
 # ----------------------------------------
@@ -76,8 +84,13 @@ RUN addgroup -g 1001 -S spring && \
 # Répertoire de travail
 WORKDIR /app
 
-# Copier le JAR depuis l'étape de build
-COPY --from=maven-build --chown=spring:spring /app/target/*.jar app.jar
+# Copier les layers extraits, du moins volatil au plus volatil (cache Docker).
+# dependencies + spring-boot-loader changent rarement → réutilisés ; seul application
+# (nos classes) est réécrit sur un changement de code.
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/dependencies/ ./
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/spring-boot-loader/ ./
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/snapshot-dependencies/ ./
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/application/ ./
 
 # Créer les répertoires nécessaires
 RUN mkdir -p /app/invoices /app/logs && \
@@ -134,4 +147,4 @@ ENTRYPOINT ["java", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
     "-XX:HeapDumpPath=/tmp/heapdump.hprof", \
     "-XX:StartFlightRecording=settings=profile,delay=180s,duration=120s,filename=/app/profile.jfr,dumponexit=true,name=bench", \
-    "-jar", "app.jar"]
+    "-jar", "application.jar"]
