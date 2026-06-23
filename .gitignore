@@ -227,8 +227,8 @@ infra/observability/prometheus/secrets/*
 
 ### Load test transient outputs ###
 tmp-loadtest/
-# k6 dev-only bench scripts (local utilities, not part of repo)
-tools/loadtest/k6-*.js
+# k6 dev-only bench scripts + loadtest utilities (local only, not part of repo)
+tools/loadtest/
 # Playwright E2E scratch dir (npm install playwright lives here)
 tmp-e2e/
 
