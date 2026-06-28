@@ -1,0 +1,13 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+
+# Rider / VS
+.idea/
+.vs/
+
+# Local secrets (use environment variables / user-secrets in production)
+appsettings.*.local.json

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Lmp.Api/Lmp.Api.csproj" />
+    <Project Path="src/Lmp.Application/Lmp.Application.csproj" />
+    <Project Path="src/Lmp.Domain/Lmp.Domain.csproj" />
+    <Project Path="src/Lmp.Infrastructure/Lmp.Infrastructure.csproj" />
+  </Folder>
+</Solution>

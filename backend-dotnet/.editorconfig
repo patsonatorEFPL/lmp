@@ -1,0 +1,15 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Static factory methods on generic types are idiomatic here (ApiResponse<T>.Ok/.Error).
+dotnet_diagnostic.CA1000.severity = none
+
+# File-scoped namespaces, var usage, etc. follow the default analyzer recommendations.
+csharp_style_namespace_declarations = file_scoped:warning
