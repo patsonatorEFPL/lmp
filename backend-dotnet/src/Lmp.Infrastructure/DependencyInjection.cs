@@ -1,8 +1,10 @@
 using Lmp.Application.Catalog;
 using Lmp.Application.Pricing;
+using Lmp.Application.SiteConfiguration;
 using Lmp.Infrastructure.Catalog;
 using Lmp.Infrastructure.Persistence;
 using Lmp.Infrastructure.Pricing;
+using Lmp.Infrastructure.SiteConfiguration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +34,13 @@ public static class DependencyInjection
         services.AddSingleton<IRegionalPricingService, RegionalPricingService>();
 
         services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
+
+        // Site configuration (hot-editable, hierarchical resolution).
+        services
+            .AddOptions<SiteConfigOptions>()
+            .Bind(configuration.GetSection(SiteConfigOptions.SectionName));
+        services.AddSingleton<ISiteConfigManager, SiteConfigManager>();
+        services.AddSingleton<IAuthHostResolver, AuthHostResolver>();
 
         return services;
     }

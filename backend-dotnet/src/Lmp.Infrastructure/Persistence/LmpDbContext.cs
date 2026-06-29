@@ -1,4 +1,5 @@
 using Lmp.Domain.Catalog;
+using Lmp.Domain.SiteConfiguration;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lmp.Infrastructure.Persistence;
@@ -17,6 +18,9 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
     public DbSet<ServiceBenefit> ServiceBenefits => Set<ServiceBenefit>();
     public DbSet<ServiceOffer> ServiceOffers => Set<ServiceOffer>();
     public DbSet<OfferBenefit> OfferBenefits => Set<OfferBenefit>();
+
+    // ── Shared / site configuration ──────────────────────────────────────────
+    public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

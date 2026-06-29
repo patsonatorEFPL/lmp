@@ -11,5 +11,10 @@ insert_final_newline = true
 # Static factory methods on generic types are idiomatic here (ApiResponse<T>.Ok/.Error).
 dotnet_diagnostic.CA1000.severity = none
 
+# High-performance logging source generators are overkill for boot/config-path
+# logging; keep classic ILogger calls. (Hot paths can opt in to LoggerMessage.)
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+
 # File-scoped namespaces, var usage, etc. follow the default analyzer recommendations.
 csharp_style_namespace_declarations = file_scoped:warning
