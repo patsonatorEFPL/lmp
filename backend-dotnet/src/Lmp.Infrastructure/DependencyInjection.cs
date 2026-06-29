@@ -46,7 +46,10 @@ public static class DependencyInjection
 
         // Auth.
         services.AddSingleton<IPasswordEncoder, DelegatingPasswordEncoder>();
+        services.AddSingleton<IDisposableEmailBlocklist, DisposableEmailBlocklist>();
+        services.AddSingleton<IAuthEmailService, NoOpAuthEmailService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

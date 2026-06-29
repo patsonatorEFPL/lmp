@@ -18,7 +18,9 @@ namespace Lmp.Api.Controllers.Auth;
 [Route("api/v1/auth")]
 public sealed class AuthController(
     IUserService userService,
-    IPasswordEncoder passwordEncoder) : ControllerBase
+    IPasswordEncoder passwordEncoder,
+    IAuthService authService,
+    IAuthEmailService emailService) : ControllerBase
 {
     public sealed record LoginData(UserResponse User, string RedirectUrl);
 
@@ -59,6 +61,73 @@ public sealed class AuthController(
         var redirectUrl = user.IsAdmin() ? "/admin" : "/dashboard";
         var data = new LoginData(UserResponse.From(user), redirectUrl);
         return Ok(ApiResponse<LoginData>.Ok("Login successful", data));
+    }
+
+    [HttpPost("register")]
+    public async Task<ActionResult<ApiResponse<object>>> Register([FromBody] RegisterDto dto, CancellationToken ct)
+    {
+        // Anti-enumeration: a generic 200 is returned both for a fresh email and
+        // for an already-registered one (mirrors AuthRestController.register).
+        var generic = new ApiResponse<object>(
+            true,
+            "Si cette adresse est valide et nouvelle, un email de confirmation a été envoyé.",
+            null);
+
+        if (!dto.IsPasswordMatching())
+        {
+            return BadRequest(ApiResponse<object>.Error("Passwords do not match"));
+        }
+
+        if (authService.IsDisposableEmail(dto.Email))
+        {
+            return BadRequest(ApiResponse<object>.Error("Disposable email addresses are not allowed"));
+        }
+
+        if (await authService.ExistsByEmailAsync(dto.Email, ct))
+        {
+            return Ok(generic);
+        }
+
+        try
+        {
+            authService.ValidateRegistrationData(dto);
+            var user = await authService.RegisterUserAsync(dto, ct);
+            await emailService.SendVerificationEmailAsync(user, ct);
+            await emailService.SendWelcomeEmailAsync(user, ct);
+            return Ok(generic);
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest(ApiResponse<object>.Error("Registration could not be completed"));
+        }
+        catch (InvalidOperationException)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                ApiResponse<object>.Error("Registration could not be completed"));
+        }
+    }
+
+    [HttpPost("verify-email")]
+    public async Task<ActionResult<ApiResponse<object>>> VerifyEmail([FromQuery] string token, CancellationToken ct)
+    {
+        var verified = await authService.VerifyEmailAsync(token, ct);
+        return verified
+            ? Ok(new ApiResponse<object>(true, "Email verified successfully", null))
+            : BadRequest(ApiResponse<object>.Error("Invalid or expired verification token"));
+    }
+
+    [HttpPost("resend-verification")]
+    public async Task<ActionResult<ApiResponse<object>>> ResendVerification([FromQuery] string email, CancellationToken ct)
+    {
+        try
+        {
+            await authService.ResendVerificationEmailAsync(email, ct);
+            return Ok(new ApiResponse<object>(true, "Verification email resent", null));
+        }
+        catch (InvalidOperationException e)
+        {
+            return BadRequest(ApiResponse<object>.Error(e.Message));
+        }
     }
 
     [HttpGet("me")]
