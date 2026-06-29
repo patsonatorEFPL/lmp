@@ -32,6 +32,7 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     // ── CRM ──────────────────────────────────────────────────────────────────
     public DbSet<Appointment> Appointments => Set<Appointment>();

@@ -3,6 +3,7 @@ using Lmp.Application.Billing;
 using Lmp.Application.Catalog;
 using Lmp.Application.Crm;
 using Lmp.Application.Notification;
+using Lmp.Application.Portal;
 using Lmp.Application.Pricing;
 using Lmp.Application.SiteConfiguration;
 using Lmp.Infrastructure.Auth;
@@ -66,6 +67,9 @@ public static class DependencyInjection
 
         // Notification.
         services.AddScoped<IInAppNotificationService, InAppNotificationService>();
+
+        // Portal.
+        services.AddScoped<IUserDashboardService, Portal.UserDashboardService>();
 
         return services;
     }

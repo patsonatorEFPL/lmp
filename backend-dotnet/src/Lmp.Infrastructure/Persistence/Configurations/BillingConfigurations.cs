@@ -45,6 +45,19 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     }
 }
 
+internal sealed class ReviewConfiguration : IEntityTypeConfiguration<Review>
+{
+    public void Configure(EntityTypeBuilder<Review> b)
+    {
+        b.ToTable("reviews");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+        b.Property(x => x.Rating).IsRequired();
+        b.Property(x => x.Comment).HasColumnType("text");
+        b.Property(x => x.AdminApproved).HasColumnName("admin_approved");
+    }
+}
+
 internal sealed class RefundConfiguration : IEntityTypeConfiguration<Refund>
 {
     public void Configure(EntityTypeBuilder<Refund> b)
