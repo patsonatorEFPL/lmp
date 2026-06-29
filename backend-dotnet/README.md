@@ -67,3 +67,68 @@ dotnet run --project src/Lmp.Api
 
 Configuration uses the standard ASP.NET Core providers; the database connection is
 `ConnectionStrings:LmpDb` (env: `ConnectionStrings__LmpDb`).
+
+## Test it yourself
+
+The API listens on **`:8080`** — the same port the Angular frontend proxies to —
+and maps onto the **existing Flyway-migrated schema** (it never runs migrations,
+so point it at a database the Java backend has already migrated, e.g. your dev
+or TEST database).
+
+### Option A — Docker (recommended)
+
+```bash
+cd backend-dotnet
+docker build -t lmp-dotnet .
+docker run --rm -p 8080:8080 \
+  -e ConnectionStrings__LmpDb="Host=<db-host>;Port=5432;Database=lmp_db;Username=<user>;Password=<pass>" \
+  lmp-dotnet
+```
+
+### Option B — dotnet CLI
+
+```bash
+cd backend-dotnet
+ConnectionStrings__LmpDb="Host=<db-host>;Port=5432;Database=lmp_db;Username=<user>;Password=<pass>" \
+  dotnet run --project src/Lmp.Api
+```
+
+### Smoke test
+
+```bash
+curl http://localhost:8080/api/v1/config
+curl http://localhost:8080/api/v1/services
+curl -i -X POST http://localhost:8080/api/v1/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"email":"Administrator","password":"Admin@LMP-ChangeMe2026!"}'
+```
+
+### Option C — Deploy to the VPS via Dokploy (no local machine needed)
+
+The repo branch ships a `backend-dotnet/Dockerfile`, so Dokploy can build it
+straight from Git:
+
+1. **Dokploy → Create Application** (own it on a throwaway/TEST scope, not prod).
+2. **Source**: this Git repo, branch `claude/vps-access-lhgroc`.
+3. **Build**: Dockerfile · Build context/path `backend-dotnet` · Dockerfile `Dockerfile`.
+4. **Environment**: `ConnectionStrings__LmpDb=Host=<db>;Port=5432;Database=lmp_db;Username=<u>;Password=<p>`
+   — point it at the **TEST** database (already Flyway-migrated) so prod is untouched.
+5. **Port**: container `8080`. Add a domain (e.g. `dotnet-test.lmp-services.ca`) with Let's Encrypt.
+6. **Deploy**, then smoke-test the domain with the curls above.
+
+> The image build is standard multi-stage; it has not been built inside this
+> sandbox (no Docker daemon), only the app itself was run via `dotnet run`.
+
+### Point the Angular frontend at it
+
+Run this backend on `:8080` instead of the Java one (stop the Java backend, or
+run this on a different host/port and update the frontend proxy). The frontend
+needs **no changes** — same routes, same `ApiResponse` envelope, same session
+cookie + `X-XSRF-TOKEN` model.
+
+> Implemented modules (verifiable now): catalog, config, SEO, auth (login/register/
+> verify), cart, orders read, appointments, notifications, dashboard, and the admin
+> surface (stats, users/orders lists, appointments/catalogue/orders/users management).
+> Not yet wired: Stripe checkout/webhooks, transactional email (contact, password
+> reset), invoice PDF, OAuth2 server + social login — these need external
+> credentials and are seamed but inactive.
