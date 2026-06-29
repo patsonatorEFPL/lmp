@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json;
 using Lmp.Application.Admin;
 using Lmp.Application.Auth;
@@ -21,7 +22,8 @@ namespace Lmp.Api.Controllers.Admin;
 public sealed class AdminController(
     IAdminQueryService admin,
     IAdminAppointmentService adminAppointments,
-    IAdminOrderService adminOrders) : ControllerBase
+    IAdminOrderService adminOrders,
+    IAdminUserService adminUsers) : ControllerBase
 {
     [HttpGet("stats")]
     public async Task<ActionResult<ApiResponse<IDictionary<string, object>>>> GetStats(CancellationToken ct)
@@ -61,6 +63,42 @@ public sealed class AdminController(
         catch (ArgumentException e)
         {
             return BadRequest(ApiResponse<PagedResponse<OrderResponse>>.Error(e.Message));
+        }
+    }
+
+    [HttpPut("users/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateUser(
+        Guid id,
+        [FromBody] Dictionary<string, JsonElement> data,
+        CancellationToken ct)
+    {
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var actorId))
+        {
+            return Unauthorized(ApiResponse<object>.Error("Session administrateur invalide"));
+        }
+
+        try
+        {
+            await adminUsers.UpdateUserAsync(id, data, actorId, ct);
+            return Ok(new ApiResponse<object>(true, "Utilisateur mis à jour", null));
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(ApiResponse<object>.Error(e.Message));
+        }
+    }
+
+    [HttpPut("users/{id:guid}/soft-delete")]
+    public async Task<ActionResult<ApiResponse<object>>> SoftDeleteUser(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var message = await adminUsers.SoftDeleteUserAsync(id, ct);
+            return Ok(new ApiResponse<object>(true, message, null));
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(ApiResponse<object>.Error(e.Message));
         }
     }
 

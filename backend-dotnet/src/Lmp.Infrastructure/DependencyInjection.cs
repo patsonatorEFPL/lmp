@@ -79,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<Application.Admin.IAdminAppointmentService, Admin.AdminAppointmentService>();
         services.AddScoped<Application.Admin.IAdminCatalogService, Admin.AdminCatalogService>();
         services.AddScoped<Application.Admin.IAdminOrderService, Admin.AdminOrderService>();
+        services.AddScoped<Application.Admin.IAdminUserService, Admin.AdminUserService>();
 
         return services;
     }
