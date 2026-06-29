@@ -1,8 +1,10 @@
 using Lmp.Application.Auth;
+using Lmp.Application.Billing;
 using Lmp.Application.Catalog;
 using Lmp.Application.Pricing;
 using Lmp.Application.SiteConfiguration;
 using Lmp.Infrastructure.Auth;
+using Lmp.Infrastructure.Billing;
 using Lmp.Infrastructure.Catalog;
 using Lmp.Infrastructure.Persistence;
 using Lmp.Infrastructure.Pricing;
@@ -50,6 +52,9 @@ public static class DependencyInjection
         services.AddSingleton<IAuthEmailService, NoOpAuthEmailService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
+
+        // Billing.
+        services.AddScoped<ICartService, CartService>();
 
         return services;
     }

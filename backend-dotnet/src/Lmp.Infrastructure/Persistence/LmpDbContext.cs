@@ -1,4 +1,5 @@
 using Lmp.Domain.Auth;
+using Lmp.Domain.Billing;
 using Lmp.Domain.Catalog;
 using Lmp.Domain.SiteConfiguration;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,10 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
     // ── Auth ─────────────────────────────────────────────────────────────────
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
+
+    // ── Billing ──────────────────────────────────────────────────────────────
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
 
     // ── Shared / site configuration ──────────────────────────────────────────
     public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();
