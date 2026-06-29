@@ -71,6 +71,9 @@ public static class DependencyInjection
         // Portal.
         services.AddScoped<IUserDashboardService, Portal.UserDashboardService>();
 
+        // SEO.
+        services.AddScoped<Application.Seo.ISeoService, Seo.SeoService>();
+
         return services;
     }
 }

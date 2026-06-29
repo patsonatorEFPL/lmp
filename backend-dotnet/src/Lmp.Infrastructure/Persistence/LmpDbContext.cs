@@ -1,6 +1,7 @@
 using Lmp.Domain.Auth;
 using Lmp.Domain.Billing;
 using Lmp.Domain.Catalog;
+using Lmp.Domain.Content;
 using Lmp.Domain.Crm;
 using Lmp.Domain.Notification;
 using Lmp.Domain.SiteConfiguration;
@@ -39,6 +40,9 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
 
     // ── Notification ─────────────────────────────────────────────────────────
     public DbSet<InAppNotification> InAppNotifications => Set<InAppNotification>();
+
+    // ── Content ──────────────────────────────────────────────────────────────
+    public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
 
     // ── Shared / site configuration ──────────────────────────────────────────
     public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();
