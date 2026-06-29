@@ -32,6 +32,13 @@ public static class DependencyInjection
                 .UseNpgsql(configuration.GetConnectionString("LmpDb"))
                 .UseSnakeCaseNamingConvention());
 
+        // Health checks. Liveness carries no dependency checks (just "is the
+        // process up"); readiness verifies DB connectivity via the existing EF
+        // context — mirrors the Spring Actuator liveness/readiness split.
+        services
+            .AddHealthChecks()
+            .AddDbContextCheck<LmpDbContext>("db", tags: ["ready"]);
+
         services
             .AddOptions<RegionalPricingProperties>()
             .Bind(configuration.GetSection(RegionalPricingProperties.SectionName))

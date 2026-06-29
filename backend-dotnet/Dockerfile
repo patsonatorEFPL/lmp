@@ -22,11 +22,23 @@ RUN dotnet publish src/Lmp.Api/Lmp.Api.csproj -c Release -o /app --no-restore
 # ---- runtime ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+
+# libgssapi-krb5-2: Npgsql probes the Kerberos/GSSAPI lib at connection time even
+# when the connection uses password auth; without it the runtime logs a noisy
+# "Cannot load library libgssapi_krb5.so.2" warning. curl: container HEALTHCHECK.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app ./
 
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080 \
     DOTNET_NOLOGO=1 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1
 EXPOSE 8080
+
+# Same liveness contract as the Java backend (curl -f against the liveness probe).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f -m 5 http://localhost:8080/actuator/health/liveness || exit 1
 
 ENTRYPOINT ["dotnet", "Lmp.Api.dll"]

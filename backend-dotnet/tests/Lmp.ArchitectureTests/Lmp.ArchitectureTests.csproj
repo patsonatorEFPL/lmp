@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Underscored test-method names are the xUnit convention. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Lmp.Domain\Lmp.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Lmp.Application\Lmp.Application.csproj" />
+    <ProjectReference Include="..\..\src\Lmp.Infrastructure\Lmp.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Lmp.Api\Lmp.Api.csproj" />
+  </ItemGroup>
+
+</Project>

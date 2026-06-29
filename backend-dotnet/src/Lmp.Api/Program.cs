@@ -2,6 +2,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Lmp.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 // The Flyway schema uses `timestamp without time zone` throughout (Java
 // LocalDateTime — no offset). Enable Npgsql's legacy timestamp behaviour so
@@ -38,6 +41,17 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Persist the DataProtection key ring so the LMP_SESSION auth cookie stays
+// valid across restarts (and can be shared by multiple replicas). In the
+// container the keys live on a mounted volume (DataProtection__KeyPath=/keys);
+// with no path configured (local dev) the default ephemeral key ring is used.
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("lmp-services");
+var dataProtectionKeyPath = builder.Configuration["DataProtection:KeyPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeyPath))
+{
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeyPath));
+}
+
 builder.Services
     .AddControllers()
     .AddJsonOptions(o =>
@@ -57,5 +71,27 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health probes — Spring Boot Actuator-compatible paths and response shape
+// ({"status":"UP"|"DOWN"}). Liveness runs no checks (process up); readiness
+// verifies the DB (checks tagged "ready"). Both are anonymous.
+Task WriteHealth(HttpContext ctx, HealthReport report)
+{
+    ctx.Response.ContentType = "application/json";
+    var status = report.Status == HealthStatus.Healthy ? "UP" : "DOWN";
+    return ctx.Response.WriteAsync(JsonSerializer.Serialize(new { status }));
+}
+
+app.MapHealthChecks("/actuator/health/liveness", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = WriteHealth,
+});
+app.MapHealthChecks("/actuator/health/readiness", new HealthCheckOptions
+{
+    Predicate = static check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteHealth,
+});
+app.MapHealthChecks("/actuator/health", new HealthCheckOptions { ResponseWriter = WriteHealth });
 
 app.Run();

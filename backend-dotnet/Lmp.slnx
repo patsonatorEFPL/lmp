@@ -5,4 +5,7 @@
     <Project Path="src/Lmp.Domain/Lmp.Domain.csproj" />
     <Project Path="src/Lmp.Infrastructure/Lmp.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Lmp.ArchitectureTests/Lmp.ArchitectureTests.csproj" />
+  </Folder>
 </Solution>
