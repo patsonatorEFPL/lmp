@@ -74,6 +74,9 @@ public static class DependencyInjection
         // SEO.
         services.AddScoped<Application.Seo.ISeoService, Seo.SeoService>();
 
+        // Admin.
+        services.AddScoped<Application.Admin.IAdminQueryService, Admin.AdminQueryService>();
+
         return services;
     }
 }
