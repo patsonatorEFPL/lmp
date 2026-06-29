@@ -1,0 +1,55 @@
+name: backend-dotnet CI
+
+# Builds the .NET 10 backend and runs the Spring-Modulith-style architecture
+# guardrails (ArchUnitNET). Any layering / module-boundary / cycle violation
+# fails the build — the architectural ratchet.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend-dotnet/**'
+      - '.github/workflows/backend-dotnet-ci.yml'
+  pull_request:
+    paths:
+      - 'backend-dotnet/**'
+      - '.github/workflows/backend-dotnet-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-dotnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guardrails:
+    name: Build + architecture guardrails
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-dotnet
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('backend-dotnet/Directory.Packages.props', 'backend-dotnet/**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore Lmp.slnx
+
+      - name: Build (Release)
+        run: dotnet build Lmp.slnx --configuration Release --no-restore
+
+      - name: Architecture guardrails (dotnet test)
+        run: dotnet test Lmp.slnx --configuration Release --no-build --verbosity normal
