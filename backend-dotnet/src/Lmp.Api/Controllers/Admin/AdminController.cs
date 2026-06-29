@@ -48,6 +48,25 @@ public sealed class AdminController(
         }
     }
 
+    [HttpGet("revenue-series")]
+    public async Task<ActionResult<ApiResponse<RevenueSeriesResponse>>> GetRevenueSeries(
+        [FromQuery] string period,
+        CancellationToken ct)
+    {
+        try
+        {
+            return Ok(ApiResponse<RevenueSeriesResponse>.Ok(await admin.GetRevenueSeriesAsync(period, ct)));
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(ApiResponse<RevenueSeriesResponse>.Error(e.Message));
+        }
+    }
+
+    [HttpGet("top-services")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<TopServiceResponse>>>> GetTopServices(CancellationToken ct)
+        => Ok(ApiResponse<IReadOnlyList<TopServiceResponse>>.Ok(await admin.GetTopServicesAsync(ct)));
+
     [HttpGet("orders")]
     public async Task<ActionResult<ApiResponse<PagedResponse<OrderResponse>>>> GetOrders(
         [FromQuery] int page = 0,

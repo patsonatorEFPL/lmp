@@ -68,6 +68,9 @@ public static class DependencyInjection
         // Notification.
         services.AddScoped<IInAppNotificationService, InAppNotificationService>();
 
+        // Real-time (Server-Sent Events) — shared registry of live streams.
+        services.AddSingleton<Application.RealTime.ISseEmitterManager, RealTime.SseEmitterManager>();
+
         // Portal.
         services.AddScoped<IUserDashboardService, Portal.UserDashboardService>();
 

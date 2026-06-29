@@ -1,3 +1,4 @@
+using System.Globalization;
 using Lmp.Application.Admin;
 using Lmp.Application.Auth;
 using Lmp.Application.Billing;
@@ -100,6 +101,167 @@ public sealed class AdminQueryService(LmpDbContext db, ISiteConfigManager siteCo
         var content = orders.Select(o => OrderResponse.ForAdmin(o, frontendUrl)).ToList();
         return PagedResponse<OrderResponse>.Of(content, total, page, size, sorted: true);
     }
+
+    // Abbreviated French month names. Hardcoded rather than culture-derived
+    // because the build runs with InvariantGlobalization, so fr-FR names are
+    // unavailable at runtime. Matches Java's TextStyle.SHORT / Locale.FRENCH.
+    private static readonly string[] FrenchMonthAbbrev =
+    {
+        "janv.", "févr.", "mars", "avr.", "mai", "juin",
+        "juil.", "août", "sept.", "oct.", "nov.", "déc.",
+    };
+
+    public async Task<RevenueSeriesResponse> GetRevenueSeriesAsync(string period, CancellationToken ct = default)
+    {
+        // Pull the candidate orders once (last ~2y3m, excluding cancelled/refunded),
+        // then bucket in memory exactly like the Java controller.
+        var startDate = DateTime.Now.AddYears(-2).AddMonths(-3);
+        var raw = await db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= startDate
+                && o.Status != OrderStatus.Cancelled
+                && o.Status != OrderStatus.Refunded)
+            .Select(o => new { o.CreatedAt, o.TotalAmount })
+            .ToListAsync(ct);
+        var points = raw.Select(x => new RevenuePoint(x.CreatedAt!.Value, x.TotalAmount)).ToList();
+
+        var current = new List<decimal>();
+        var previous = new List<decimal>();
+        var labels = new List<string>();
+        var today = DateTime.Today;
+
+        switch (period)
+        {
+            case "week":
+                for (var i = 15; i >= 0; i--)
+                {
+                    var weekDate = today.AddDays(-7 * i);
+                    var week = ISOWeek.GetWeekOfYear(weekDate);
+                    var year = ISOWeek.GetYear(weekDate);
+                    labels.Add("S" + week);
+                    current.Add(SumForWeek(points, year, week));
+                    previous.Add(SumForWeek(points, year - 1, week));
+                }
+
+                break;
+            case "month":
+                for (var i = 11; i >= 0; i--)
+                {
+                    var monthDate = today.AddMonths(-i);
+                    var month = monthDate.Month;
+                    var year = monthDate.Year;
+                    labels.Add(FrenchMonthAbbrev[month - 1]);
+                    current.Add(SumForMonth(points, year, month));
+                    previous.Add(SumForMonth(points, year - 1, month));
+                }
+
+                break;
+            case "quarter":
+                for (var i = 3; i >= 0; i--)
+                {
+                    var quarterDate = today.AddMonths(-i * 3);
+                    var quarter = (quarterDate.Month - 1) / 3 + 1;
+                    var year = quarterDate.Year;
+                    labels.Add("T" + quarter);
+                    current.Add(SumForQuarter(points, year, quarter));
+                    previous.Add(SumForQuarter(points, year - 1, quarter));
+                }
+
+                break;
+            default:
+                throw new ArgumentException("Invalid period: " + period);
+        }
+
+        return new RevenueSeriesResponse(current, previous, labels);
+    }
+
+    public async Task<IReadOnlyList<TopServiceResponse>> GetTopServicesAsync(CancellationToken ct = default)
+    {
+        var startCurrent = DateTime.Now.AddDays(-90);
+        // Faithful port: the comparison window is cumulative since 180 days ago
+        // (it overlaps the current 90-day window), mirroring Java's getTopServices.
+        var startPrevious = startCurrent.AddDays(-90);
+
+        var currentRows = await TopServicesByRevenueAsync(startCurrent, ct);
+        var previousRows = await TopServicesByRevenueAsync(startPrevious, ct);
+
+        var previousRevenue = previousRows.ToDictionary(r => r.Name, r => r.Revenue, StringComparer.Ordinal);
+
+        var result = new List<TopServiceResponse>(currentRows.Count);
+        foreach (var row in currentRows)
+        {
+            var prev = previousRevenue.GetValueOrDefault(row.Name, 0m);
+            var growthPercent = 0;
+            if (prev > 0m)
+            {
+                growthPercent = (int)Math.Round((row.Revenue - prev) * 100m / prev, MidpointRounding.AwayFromZero);
+            }
+
+            result.Add(new TopServiceResponse(row.Name, row.Orders, row.Revenue, growthPercent));
+        }
+
+        return result;
+    }
+
+    private async Task<List<ServiceRevenueRow>> TopServicesByRevenueAsync(DateTime since, CancellationToken ct)
+    {
+        var rows = await db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= since
+                && o.Status != OrderStatus.Cancelled
+                && o.Status != OrderStatus.Refunded)
+            .GroupBy(o => o.ServiceName)
+            .Select(g => new { Name = g.Key, Orders = g.LongCount(), Revenue = g.Sum(o => o.TotalAmount) })
+            .OrderByDescending(x => x.Revenue)
+            .Take(5)
+            .ToListAsync(ct);
+
+        return rows.Select(x => new ServiceRevenueRow(x.Name, x.Orders, x.Revenue)).ToList();
+    }
+
+    private static decimal SumForWeek(List<RevenuePoint> points, int year, int week)
+    {
+        var sum = 0m;
+        foreach (var p in points)
+        {
+            if (ISOWeek.GetYear(p.CreatedAt) == year && ISOWeek.GetWeekOfYear(p.CreatedAt) == week)
+            {
+                sum += p.Amount;
+            }
+        }
+
+        return sum;
+    }
+
+    private static decimal SumForMonth(List<RevenuePoint> points, int year, int month)
+    {
+        var sum = 0m;
+        foreach (var p in points)
+        {
+            if (p.CreatedAt.Year == year && p.CreatedAt.Month == month)
+            {
+                sum += p.Amount;
+            }
+        }
+
+        return sum;
+    }
+
+    private static decimal SumForQuarter(List<RevenuePoint> points, int year, int quarter)
+    {
+        var sum = 0m;
+        foreach (var p in points)
+        {
+            if (p.CreatedAt.Year == year && (p.CreatedAt.Month - 1) / 3 + 1 == quarter)
+            {
+                sum += p.Amount;
+            }
+        }
+
+        return sum;
+    }
+
+    private readonly record struct RevenuePoint(DateTime CreatedAt, decimal Amount);
+
+    private readonly record struct ServiceRevenueRow(string Name, long Orders, decimal Revenue);
 
     private async Task<(decimal Mrr, decimal Recurring, decimal OneTime)> ComputeRevenueAsync(CancellationToken ct)
     {
