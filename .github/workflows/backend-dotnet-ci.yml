@@ -6,7 +6,7 @@ name: backend-dotnet CI
 
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
     paths:
       - 'backend-dotnet/**'
       - '.github/workflows/backend-dotnet-ci.yml'
