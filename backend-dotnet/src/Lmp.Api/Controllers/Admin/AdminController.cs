@@ -20,7 +20,8 @@ namespace Lmp.Api.Controllers.Admin;
 [Authorize(Roles = "ADMIN")]
 public sealed class AdminController(
     IAdminQueryService admin,
-    IAdminAppointmentService adminAppointments) : ControllerBase
+    IAdminAppointmentService adminAppointments,
+    IAdminOrderService adminOrders) : ControllerBase
 {
     [HttpGet("stats")]
     public async Task<ActionResult<ApiResponse<IDictionary<string, object>>>> GetStats(CancellationToken ct)
@@ -61,6 +62,45 @@ public sealed class AdminController(
         {
             return BadRequest(ApiResponse<PagedResponse<OrderResponse>>.Error(e.Message));
         }
+    }
+
+    [HttpGet("orders/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<IDictionary<string, object?>>>> GetOrderDetail(Guid id, CancellationToken ct)
+    {
+        var detail = await adminOrders.GetDetailAsync(id, ct);
+        return detail is null ? NotFound() : Ok(ApiResponse<IDictionary<string, object?>>.Ok(detail));
+    }
+
+    [HttpPut("orders/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateOrder(
+        Guid id,
+        [FromBody] Dictionary<string, JsonElement> data,
+        CancellationToken ct)
+    {
+        try
+        {
+            await adminOrders.UpdateAsync(id, data, ct);
+            return Ok(new ApiResponse<object>(true, "Commande mise à jour", null));
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(ApiResponse<object>.Error(e.Message));
+        }
+    }
+
+    [HttpDelete("orders/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteOrder(Guid id, CancellationToken ct)
+    {
+        var result = await adminOrders.DeleteAsync(id, ct);
+        return result switch
+        {
+            DeleteOrderResult.Deleted => Ok(new ApiResponse<object>(true, "Commande supprimée", null)),
+            DeleteOrderResult.NotFound => NotFound(),
+            DeleteOrderResult.Paid => Conflict(ApiResponse<object>.Error("Impossible de supprimer une commande marquée comme payée.")),
+            DeleteOrderResult.InvalidStatus => Conflict(ApiResponse<object>.Error("Seules les commandes en attente de paiement ou annulées peuvent être supprimées.")),
+            DeleteOrderResult.HasRefunds => Conflict(ApiResponse<object>.Error("Impossible de supprimer une commande qui a des enregistrements de remboursement.")),
+            _ => Ok(new ApiResponse<object>(true, "Commande supprimée", null)),
+        };
     }
 
     [HttpGet("appointments")]

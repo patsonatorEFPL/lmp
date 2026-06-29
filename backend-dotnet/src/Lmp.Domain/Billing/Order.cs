@@ -27,7 +27,15 @@ public class Order
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? ShippedAt { get; set; }
+    public DateTime? DeliveredAt { get; set; }
+    public DateTime? CancelledAt { get; set; }
+    public DateTime? LastModifiedAt { get; set; }
 
+    public string? Notes { get; set; }
+    public string? AdminNotes { get; set; }
+    public string? CancellationReason { get; set; }
+    public int? Priority { get; set; }
     public int? ProgressPercentage { get; set; }
     public string? ProgressStatus { get; set; }
     public string? ProcessingNotes { get; set; }
