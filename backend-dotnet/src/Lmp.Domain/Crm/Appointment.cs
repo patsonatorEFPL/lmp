@@ -35,4 +35,11 @@ public class Appointment
     public DateTime? CancelledAt { get; set; }
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+
+    // Effective client details: the linked user's, else the anonymous client's.
+    // Faithful to the Java getters (uses raw first/last name for a linked user).
+    public string? EffectiveClientName => User is not null ? $"{User.FirstName} {User.LastName}" : ClientName;
+    public string? EffectiveClientEmail => User is not null ? User.Email : ClientEmail;
+    public string? EffectiveClientPhone => User is not null ? User.Phone : ClientPhone;
+    public bool IsAnonymous => User is null;
 }

@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Lmp.Application.Admin;
 using Lmp.Application.Auth;
 using Lmp.Application.Billing;
 using Lmp.Application.Common;
+using Lmp.Application.Crm;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +18,9 @@ namespace Lmp.Api.Controllers.Admin;
 [ApiController]
 [Route("api/v1/admin")]
 [Authorize(Roles = "ADMIN")]
-public sealed class AdminController(IAdminQueryService admin) : ControllerBase
+public sealed class AdminController(
+    IAdminQueryService admin,
+    IAdminAppointmentService adminAppointments) : ControllerBase
 {
     [HttpGet("stats")]
     public async Task<ActionResult<ApiResponse<IDictionary<string, object>>>> GetStats(CancellationToken ct)
@@ -57,5 +61,56 @@ public sealed class AdminController(IAdminQueryService admin) : ControllerBase
         {
             return BadRequest(ApiResponse<PagedResponse<OrderResponse>>.Error(e.Message));
         }
+    }
+
+    [HttpGet("appointments")]
+    public async Task<ActionResult<ApiResponse<PagedResponse<AppointmentResponse>>>> GetAppointments(
+        [FromQuery] int page = 0,
+        [FromQuery] int size = 20,
+        [FromQuery] string? status = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return Ok(ApiResponse<PagedResponse<AppointmentResponse>>.Ok(
+                await adminAppointments.ListAsync(page, size, status, ct)));
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(ApiResponse<PagedResponse<AppointmentResponse>>.Error(e.Message));
+        }
+    }
+
+    [HttpGet("appointments/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<IDictionary<string, object?>>>> GetAppointmentDetail(Guid id, CancellationToken ct)
+    {
+        var detail = await adminAppointments.GetDetailAsync(id, ct);
+        return detail is null
+            ? NotFound()
+            : Ok(ApiResponse<IDictionary<string, object?>>.Ok(detail));
+    }
+
+    [HttpPut("appointments/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> UpdateAppointment(
+        Guid id,
+        [FromBody] Dictionary<string, JsonElement> data,
+        CancellationToken ct)
+    {
+        try
+        {
+            await adminAppointments.UpdateAsync(id, data, ct);
+            return Ok(new ApiResponse<object>(true, "Rendez-vous mis à jour", null));
+        }
+        catch (ArgumentException e)
+        {
+            return BadRequest(ApiResponse<object>.Error(e.Message));
+        }
+    }
+
+    [HttpDelete("appointments/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteAppointment(Guid id, CancellationToken ct)
+    {
+        await adminAppointments.DeleteAsync(id, ct);
+        return Ok(new ApiResponse<object>(true, "Rendez-vous supprimé", null));
     }
 }
