@@ -2,6 +2,7 @@ using Lmp.Domain.Auth;
 using Lmp.Domain.Billing;
 using Lmp.Domain.Catalog;
 using Lmp.Domain.Crm;
+using Lmp.Domain.Notification;
 using Lmp.Domain.SiteConfiguration;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,9 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
 
     // ── CRM ──────────────────────────────────────────────────────────────────
     public DbSet<Appointment> Appointments => Set<Appointment>();
+
+    // ── Notification ─────────────────────────────────────────────────────────
+    public DbSet<InAppNotification> InAppNotifications => Set<InAppNotification>();
 
     // ── Shared / site configuration ──────────────────────────────────────────
     public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();
