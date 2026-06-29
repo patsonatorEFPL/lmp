@@ -1,6 +1,8 @@
+using Lmp.Application.Auth;
 using Lmp.Application.Catalog;
 using Lmp.Application.Pricing;
 using Lmp.Application.SiteConfiguration;
+using Lmp.Infrastructure.Auth;
 using Lmp.Infrastructure.Catalog;
 using Lmp.Infrastructure.Persistence;
 using Lmp.Infrastructure.Pricing;
@@ -41,6 +43,10 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(SiteConfigOptions.SectionName));
         services.AddSingleton<ISiteConfigManager, SiteConfigManager>();
         services.AddSingleton<IAuthHostResolver, AuthHostResolver>();
+
+        // Auth.
+        services.AddSingleton<IPasswordEncoder, DelegatingPasswordEncoder>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

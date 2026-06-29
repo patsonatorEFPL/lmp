@@ -1,3 +1,4 @@
+using Lmp.Domain.Auth;
 using Lmp.Domain.Catalog;
 using Lmp.Domain.SiteConfiguration;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,10 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
     public DbSet<ServiceBenefit> ServiceBenefits => Set<ServiceBenefit>();
     public DbSet<ServiceOffer> ServiceOffers => Set<ServiceOffer>();
     public DbSet<OfferBenefit> OfferBenefits => Set<OfferBenefit>();
+
+    // ── Auth ─────────────────────────────────────────────────────────────────
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
 
     // ── Shared / site configuration ──────────────────────────────────────────
     public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();
