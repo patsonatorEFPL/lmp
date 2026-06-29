@@ -1,19 +1,49 @@
+using System.Text.Json;
 using Lmp.Application.Catalog;
 
 namespace Lmp.Application.Admin;
 
-/// <summary>Admin catalogue reads. Port of the read methods of <c>AdminServiceRestController</c>.</summary>
+/// <summary>Admin catalogue management. Port of <c>AdminServiceRestController</c>.</summary>
 public interface IAdminCatalogService
 {
-    /// <summary>Catalogue KPIs (categories/services/offers/active/featured counts).</summary>
+    // ── Reads ────────────────────────────────────────────────────────────────
     Task<IDictionary<string, object>> GetStatsAsync(CancellationToken ct = default);
 
-    /// <summary>Categories ordered by display order, as flat maps.</summary>
     Task<IReadOnlyList<IDictionary<string, object?>>> GetCategoriesAsync(CancellationToken ct = default);
 
-    /// <summary>All services (including inactive), ordered by display order, EUR prices.</summary>
     Task<IReadOnlyList<ServiceResponse>> GetAllServicesAsync(CancellationToken ct = default);
 
-    /// <summary>Service detail (service + categoryId + offers[+benefits] + benefits), or null if missing.</summary>
     Task<IDictionary<string, object?>?> GetServiceDetailAsync(Guid id, CancellationToken ct = default);
+
+    // ── Category writes ──────────────────────────────────────────────────────
+    Task<IDictionary<string, object?>> CreateCategoryAsync(IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task UpdateCategoryAsync(Guid id, IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task DeleteCategoryAsync(Guid id, CancellationToken ct = default);
+
+    // ── Service writes ───────────────────────────────────────────────────────
+    Task<IDictionary<string, object?>> CreateServiceAsync(IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task UpdateServiceAsync(Guid id, IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task DeleteServiceAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Assign sequential display orders (1..n) to the given service ids. Throws <see cref="ArgumentException"/> if empty or an id is missing.</summary>
+    Task ReorderServicesAsync(IReadOnlyList<Guid> serviceIds, CancellationToken ct = default);
+
+    // ── Offer writes ─────────────────────────────────────────────────────────
+    Task<IDictionary<string, object?>> CreateOfferAsync(Guid serviceId, IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task UpdateOfferAsync(Guid id, IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task DeleteOfferAsync(Guid id, CancellationToken ct = default);
+
+    // ── Benefit writes ───────────────────────────────────────────────────────
+    Task<IDictionary<string, object?>> CreateBenefitAsync(Guid serviceId, IDictionary<string, JsonElement> data, CancellationToken ct = default);
+
+    Task DeleteBenefitAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>Replace a service's benefits with the provided list.</summary>
+    Task SyncBenefitsAsync(Guid serviceId, IDictionary<string, JsonElement> data, CancellationToken ct = default);
 }
