@@ -4,10 +4,9 @@ name: backend-dotnet CI
 # guardrails (ArchUnitNET). Any layering / module-boundary / cycle violation
 # fails the build — the architectural ratchet.
 #
-# NOTE: GitHub-hosted runners (ubuntu-latest) require Actions minutes/billing on
-# this private repo. If runs report `startup_failure` instantly, that's a repo
-# billing/minutes issue, not the workflow — either fix Actions billing or switch
-# `runs-on` to a self-hosted runner (e.g. on the Oracle VPS).
+# Runs on a self-hosted runner (label `dotnet`) deployed via Dokploy on the
+# Oracle VPS — the .NET 10 SDK is baked into the runner image, so no
+# actions/setup-dotnet is needed, and it consumes no GitHub-hosted minutes.
 
 on:
   push:
@@ -30,25 +29,12 @@ concurrency:
 jobs:
   guardrails:
     name: Build + architecture guardrails
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, dotnet]
     defaults:
       run:
         working-directory: backend-dotnet
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('backend-dotnet/Directory.Packages.props', 'backend-dotnet/**/*.csproj') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
 
       - name: Restore
         run: dotnet restore Lmp.slnx
