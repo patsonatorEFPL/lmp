@@ -1,11 +1,13 @@
 using Lmp.Application.Auth;
 using Lmp.Application.Billing;
 using Lmp.Application.Catalog;
+using Lmp.Application.Crm;
 using Lmp.Application.Pricing;
 using Lmp.Application.SiteConfiguration;
 using Lmp.Infrastructure.Auth;
 using Lmp.Infrastructure.Billing;
 using Lmp.Infrastructure.Catalog;
+using Lmp.Infrastructure.Crm;
 using Lmp.Infrastructure.Persistence;
 using Lmp.Infrastructure.Pricing;
 using Lmp.Infrastructure.SiteConfiguration;
@@ -56,6 +58,9 @@ public static class DependencyInjection
         // Billing.
         services.AddScoped<ICartService, CartService>();
         services.AddScoped<IOrderQueryService, OrderQueryService>();
+
+        // CRM.
+        services.AddScoped<IAppointmentService, AppointmentService>();
 
         return services;
     }

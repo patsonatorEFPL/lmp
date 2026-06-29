@@ -1,6 +1,7 @@
 using Lmp.Domain.Auth;
 using Lmp.Domain.Billing;
 using Lmp.Domain.Catalog;
+using Lmp.Domain.Crm;
 using Lmp.Domain.SiteConfiguration;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,9 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Refund> Refunds => Set<Refund>();
+
+    // ── CRM ──────────────────────────────────────────────────────────────────
+    public DbSet<Appointment> Appointments => Set<Appointment>();
 
     // ── Shared / site configuration ──────────────────────────────────────────
     public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();

@@ -3,6 +3,12 @@ using System.Text.Json.Serialization;
 using Lmp.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
+// The Flyway schema uses `timestamp without time zone` throughout (Java
+// LocalDateTime — no offset). Enable Npgsql's legacy timestamp behaviour so
+// DateTime maps to `timestamp without time zone` and tz-less values write
+// correctly. Must run before the data source is built.
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Cookie-based HTTP sessions (no JWT), matching the Spring backend's model: the
