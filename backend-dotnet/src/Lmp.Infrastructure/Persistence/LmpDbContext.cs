@@ -28,6 +28,8 @@ public class LmpDbContext(DbContextOptions<LmpDbContext> options) : DbContext(op
     // ── Billing ──────────────────────────────────────────────────────────────
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Refund> Refunds => Set<Refund>();
 
     // ── Shared / site configuration ──────────────────────────────────────────
     public DbSet<SiteConfigEntry> SiteConfig => Set<SiteConfigEntry>();

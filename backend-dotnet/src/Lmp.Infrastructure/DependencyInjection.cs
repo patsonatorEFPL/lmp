@@ -55,6 +55,7 @@ public static class DependencyInjection
 
         // Billing.
         services.AddScoped<ICartService, CartService>();
+        services.AddScoped<IOrderQueryService, OrderQueryService>();
 
         return services;
     }
