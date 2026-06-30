@@ -46,7 +46,7 @@ public class InboundWebhookController {
 
         // Validate HMAC signature
         if (!validateHmac(rawBody, signature)) {
-            log.warn("🔴 [WEBHOOK] Invalid HMAC signature from incoming webhook");
+            log.warn("[WEBHOOK] Invalid HMAC signature from incoming webhook");
             return ResponseEntity.status(401).body(Map.of("error", "Invalid signature"));
         }
 
@@ -55,11 +55,11 @@ public class InboundWebhookController {
         try {
             payload = objectMapper.readValue(rawBody, InboundSyncPayload.class);
         } catch (Exception e) {
-            log.warn("🔴 [WEBHOOK] Failed to parse payload: {}", e.getMessage());
+            log.warn("[WEBHOOK] Failed to parse payload: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid payload format"));
         }
 
-        log.info("📥 [WEBHOOK] Received: entityType={}, event={}, entityId={}",
+        log.info("[WEBHOOK] Received: entityType={}, event={}, entityId={}",
                 payload.entityType(), payload.event(), payload.entityId());
 
         syncInboundService.processInbound(payload);
@@ -72,7 +72,7 @@ public class InboundWebhookController {
 
         // Si pas de secret configuré, rejeter tout
         if (secret == null || secret.isBlank()) {
-            log.warn("🔴 [WEBHOOK] No HMAC secret configured — rejecting all webhooks");
+            log.warn("[WEBHOOK] No HMAC secret configured — rejecting all webhooks");
             return false;
         }
 
@@ -87,7 +87,7 @@ public class InboundWebhookController {
             String expected = HexFormat.of().formatHex(hash);
             return expected.equalsIgnoreCase(receivedSignature);
         } catch (Exception e) {
-            log.error("❌ [WEBHOOK] HMAC validation error: {}", e.getMessage());
+            log.error("[WEBHOOK] HMAC validation error: {}", e.getMessage());
             return false;
         }
     }

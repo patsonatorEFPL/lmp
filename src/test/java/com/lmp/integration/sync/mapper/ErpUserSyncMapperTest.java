@@ -62,15 +62,15 @@ class ErpUserSyncMapperTest {
     }
 
     @Test
-    void toCreatePayload_blankLastNameIsOmitted() {
+    void toCreatePayload_blankLastNameSentAsEmptyString() {
         User user = staffUser();
         user.setLastName("");
 
         Map<String, Object> payload = mapper.toCreatePayload(user);
 
-        // last_name is only emitted when non-blank — otherwise external ERP
-        // would clear an existing value with the empty string.
-        assertThat(payload).doesNotContainKey("last_name");
+        // Depuis bc30d65 : les champs nom sont toujours émis en chaîne vide,
+        // jamais omis — le serveur ERP appelle .strip() dessus et crashe sur None.
+        assertThat(payload).containsEntry("last_name", "");
     }
 
     @Test

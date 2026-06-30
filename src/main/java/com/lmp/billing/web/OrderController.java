@@ -490,7 +490,7 @@ public class OrderController {
             Map<String, Object> response = new HashMap<>();
             response.put("id", order.getId());
             response.put("status", order.getStatus().name());
-            response.put("serviceName", order.getServiceName()); // ✅ DONNÉE RÉELLE
+            response.put("serviceName", order.getServiceName()); // DONNÉE RÉELLE
             response.put("amount", order.getTotalAmount());
             response.put("currency", order.getCurrency());
             response.put("createdAt", order.getCreatedAt());
@@ -570,13 +570,13 @@ public class OrderController {
             // Informations de base
             response.put("orderId", order.getId().toString());
             response.put("orderNumber", "#" + order.getId());
-            response.put("serviceName", order.getServiceName()); // ✅ VRAIE DONNÉE vs "Consultation Premium"
+            response.put("serviceName", order.getServiceName()); // VRAIE DONNÉE vs "Consultation Premium"
             response.put("amount", order.getTotalAmount());
             response.put("currency", order.getCurrency());
             response.put("status", order.getStatus().name());
 
             // Dates formatées pour l'affichage
-            response.put("createdAt", order.getCreatedAt()); // ✅ VRAIE DONNÉE vs "01/01/2024 10:00"
+            response.put("createdAt", order.getCreatedAt()); // VRAIE DONNÉE vs "01/01/2024 10:00"
             response.put("updatedAt", order.getUpdatedAt());
             response.put("lastModifiedAt", order.getLastModifiedAt());
 
@@ -588,9 +588,9 @@ public class OrderController {
             // Détails de service (à adapter selon vos besoins métier)
             Map<String, Object> serviceDetails = new HashMap<>();
             serviceDetails.put("name", order.getServiceName());
-            serviceDetails.put("duration", "À déterminer"); // ✅ Remplace "2 heures" statique
-            serviceDetails.put("technician", "À assigner"); // ✅ Remplace "Jean Dupont" statique
-            serviceDetails.put("location", "À confirmer"); // ✅ Remplace "À domicile" statique
+            serviceDetails.put("duration", "À déterminer"); // Remplace "2 heures" statique
+            serviceDetails.put("technician", "À assigner"); // Remplace "Jean Dupont" statique
+            serviceDetails.put("location", "À confirmer"); // Remplace "À domicile" statique
             response.put("serviceDetails", serviceDetails);
 
             // Historique des statuts (simplifié)

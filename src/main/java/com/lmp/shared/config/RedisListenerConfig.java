@@ -21,6 +21,13 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
  * "expected single matching bean but found 2". Notre container = celui
  * applicatif, le Spring Session = interne — donc on déclare le nôtre comme
  * primaire.</p>
+ *
+ * <p>La souscription (start du SmartLifecycle) est différée hors de
+ * {@code finishRefresh} par {@link RedisListenerDeferralPostProcessor}
+ * ({@code autoStartup=false} sur tous les containers) puis lancée par
+ * {@link RedisListenerStarter} après {@code ApplicationReadyEvent} avec retry.
+ * Voir ces classes : sinon une indisponibilité Redis transitoire au boot
+ * (DNS pas prêt) annulerait le refresh et tuerait toute l'app.</p>
  */
 @Configuration
 public class RedisListenerConfig {

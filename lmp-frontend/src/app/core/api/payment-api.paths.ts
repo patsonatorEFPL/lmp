@@ -1,7 +1,7 @@
 import { environment } from '../../../environments/environment';
 
 /** Préfixe REST paiements (v1). */
-export const PAYMENTS_V1_BASE = '/api/v1/payments';
+const PAYMENTS_V1_BASE = '/api/v1/payments';
 
 const root = (): string => `${environment.apiUrl}${PAYMENTS_V1_BASE}`;
 

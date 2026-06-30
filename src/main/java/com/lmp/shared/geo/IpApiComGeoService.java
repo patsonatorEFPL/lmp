@@ -78,7 +78,7 @@ public class IpApiComGeoService {
                     ? String.format(FREE_URL, ip)
                     : String.format(PRO_URL, ip, apiKey);
 
-            logger.debug("[FRAUD-DEBUG] ip-api.com → calling {} for IP {}", url.replaceAll("key=[^&]+", "key=***"), ip);
+            logger.debug("[FRAUD-DEBUG] ip-api.com -> calling {} for IP {}", url.replaceAll("key=[^&]+", "key=***"), ip);
 
             IpApiResponse response = restTemplate.getForObject(url, IpApiResponse.class);
             long latency = System.currentTimeMillis() - t0;
@@ -98,7 +98,7 @@ public class IpApiComGeoService {
                         response.countryCode.trim().toUpperCase(), currency, vpnDetected);
                 Optional<GeoResolution> opt = Optional.of(result);
                 cache.put(ip, new CachedResult(opt));
-                logger.debug("[FRAUD-DEBUG] ip-api.com resolved {} → country={} currency={} proxy={} hosting={} vpn={}",
+                logger.debug("[FRAUD-DEBUG] ip-api.com resolved {} -> country={} currency={} proxy={} hosting={} vpn={}",
                         ip, result.countryCode(), result.currencyCode(), proxy, hosting, vpnDetected);
                 return opt;
             } else {

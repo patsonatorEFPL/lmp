@@ -65,17 +65,17 @@ public class SyncQueueProcessor {
             return;
         }
 
-        log.info("🔄 [SYNC QUEUE] Processing batch of {} events", batch.size());
+        log.info("[SYNC QUEUE] Processing batch of {} events", batch.size());
 
         for (SyncEvent event : batch) {
             try {
                 syncOutboundService.processEvent(event);
             } catch (Exception e) {
-                log.error("❌ [SYNC QUEUE] Unexpected error processing event {}: {}",
+                log.error("[SYNC QUEUE] Unexpected error processing event {}: {}",
                         event.getId(), e.getMessage(), e);
             }
         }
 
-        log.info("✅ [SYNC QUEUE] Batch complete — {} events processed", batch.size());
+        log.info("[SYNC QUEUE] Batch complete — {} events processed", batch.size());
     }
 }

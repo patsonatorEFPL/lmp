@@ -78,23 +78,23 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        logger.info("🚀 === DÉMARRAGE INITIALISATION DONNÉES LMP ===");
+        logger.info("=== DÉMARRAGE INITIALISATION DONNÉES LMP ===");
 
         initializeRoles();
         initializeDefaultUsers();
         initializeServices();
 
-        logger.info("📊 Nombre total de rôles: {}", roleRepository.count());
-        logger.info("👥 Nombre total d'utilisateurs: {}", userRepository.count());
-        logger.info("📦 Nombre total de catégories de services: {}", serviceCategoryRepository.count());
-        logger.info("🛒 Nombre total de services: {}", serviceRepository.count());
+        logger.info("Nombre total de rôles: {}", roleRepository.count());
+        logger.info("Nombre total d'utilisateurs: {}", userRepository.count());
+        logger.info("Nombre total de catégories de services: {}", serviceCategoryRepository.count());
+        logger.info("Nombre total de services: {}", serviceRepository.count());
 
         userRepository.findByUsernameWithRoles(ADMIN_USERNAME).ifPresentOrElse(
             admin -> logger.info("Compte administrateur configure: login={} email={}", ADMIN_USERNAME, admin.getEmail()),
             () -> logger.error("Erreur: compte Administrator introuvable en base!")
         );
 
-        logger.info("🏁 === Initialisation des données LMP terminée ===");
+        logger.info("=== Initialisation des données LMP terminée ===");
     }
 
     // -------------------------------------------------------------------------
@@ -109,7 +109,7 @@ public class DataInitializer implements CommandLineRunner {
     private void createRoleIfMissing(String name) {
         if (roleRepository.findByName(name).isEmpty()) {
             roleRepository.save(new Role(name));
-            logger.info("✅ Rôle créé : {}", name);
+            logger.info("Rôle créé : {}", name);
         }
     }
 
@@ -182,7 +182,7 @@ public class DataInitializer implements CommandLineRunner {
      * même si la base de données contient déjà d'autres services.
      */
     private void initializeServices() {
-        logger.info("🔧 Vérification et création des services manquants...");
+        logger.info("Vérification et création des services manquants...");
 
         ServiceCategory refLocal      = getOrCreateCategory("Référencement Local",    "referencement-local",    "📍", 1);
         ServiceCategory refPremium    = getOrCreateCategory("Référencement Premium",  "referencement-premium",  "⭐", 2);
@@ -282,7 +282,7 @@ public class DataInitializer implements CommandLineRunner {
                         "Mise à jour Google Maps"),
                 new BigDecimal("600.00"));
 
-        logger.info("✅ Vérification des services terminée — {} catégories, {} services en base.",
+        logger.info("Vérification des services terminée — {} catégories, {} services en base.",
                 serviceCategoryRepository.count(), serviceRepository.count());
     }
 
@@ -295,7 +295,7 @@ public class DataInitializer implements CommandLineRunner {
      */
     private ServiceCategory getOrCreateCategory(String name, String slug, String icon, int order) {
         return serviceCategoryRepository.findBySlug(slug).orElseGet(() -> {
-            logger.info("➕ Création catégorie : {}", name);
+            logger.info("Création catégorie : {}", name);
             return serviceCategoryRepository.save(new ServiceCategory(name, slug, "", icon, order));
         });
     }
@@ -309,11 +309,11 @@ public class DataInitializer implements CommandLineRunner {
             List<String> benefits, BigDecimal price) {
 
         if (serviceRepository.findBySlug(slug).isPresent()) {
-            logger.debug("⏭️  Service '{}' déjà présent, ignoré.", slug);
+            logger.debug("Service '{}' déjà présent, ignoré.", slug);
             return;
         }
 
-        logger.info("➕ Création service : {}", title);
+        logger.info("Création service : {}", title);
 
         Service service = new Service();
         service.setCategory(category);

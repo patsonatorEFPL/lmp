@@ -72,10 +72,10 @@ public class StaffInvitationMailer {
             helper.setText(html, true);
 
             mailSender.send(message);
-            logger.info("📨 [STAFF-INVITE] Email envoyé à {}", invitation.getEmail());
+            logger.info("[STAFF-INVITE] Email envoyé à {}", invitation.getEmail());
 
         } catch (Exception e) {
-            logger.error("❌ [STAFF-INVITE] Échec envoi email à {} : {}",
+            logger.error("[STAFF-INVITE] Échec envoi email à {} : {}",
                     invitation.getEmail(), e.getMessage(), e);
         }
     }

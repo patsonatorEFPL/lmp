@@ -66,7 +66,7 @@ public class VpnDetectionService {
      * @return résultat agrégé
      */
     public VpnCheckResult check(String ip) {
-        logger.debug("[FRAUD-DEBUG] VpnDetectionService.check() → IP={}", ip);
+        logger.debug("[FRAUD-DEBUG] VpnDetectionService.check() -> IP={}", ip);
 
         // ── Lancer les 3 sources en parallèle ────────────────────────────────
         CompletableFuture<Optional<Boolean>> ipApiFuture = CompletableFuture.supplyAsync(() -> {
@@ -125,7 +125,7 @@ public class VpnDetectionService {
             totalWeight += 0.25;
             weightedSum += score * 0.25;
             sourceParts.add("ip-api:" + proxy);
-            logger.debug("[FRAUD-DEBUG] ip-api.com contribution: proxy={} → score={} weight=0.25", proxy, score);
+            logger.debug("[FRAUD-DEBUG] ip-api.com contribution: proxy={} -> score={} weight=0.25", proxy, score);
         }
 
         // GetIPIntel (poids 0.40 — score probabiliste, le plus précis)
@@ -148,7 +148,7 @@ public class VpnDetectionService {
             totalWeight += 0.35;
             weightedSum += score * 0.35;
             sourceParts.add("iphub:" + block);
-            logger.debug("[FRAUD-DEBUG] IPHub contribution: block={} → score={} weight=0.35", block, score);
+            logger.debug("[FRAUD-DEBUG] IPHub contribution: block={} -> score={} weight=0.35", block, score);
         }
 
         // Score normalisé : si aucune source n'a répondu, score = 0
@@ -156,7 +156,7 @@ public class VpnDetectionService {
         boolean vpnDetected = normalizedScore > 0.6;
         String sources = String.join(",", sourceParts);
 
-        logger.info("[FRAUD-DEBUG] VPN check result for {} → normalizedScore={} vpnDetected={} sources={}",
+        logger.info("[FRAUD-DEBUG] VPN check result for {} -> normalizedScore={} vpnDetected={} sources={}",
                 ip, String.format("%.3f", normalizedScore), vpnDetected, sources);
 
         return new VpnCheckResult(normalizedScore, vpnDetected, sources);

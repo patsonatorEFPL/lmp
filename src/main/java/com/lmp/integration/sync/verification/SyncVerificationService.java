@@ -57,7 +57,7 @@ public class SyncVerificationService {
         if (verifier == null) {
             // Pas de verifier pour ce type → marquer comme vérifié par défaut
             syncEvent.setVerifiedAt(LocalDateTime.now());
-            log.debug("📋 [VERIFY] No verifier for {} — auto-verified", entityType);
+            log.debug("[VERIFY] No verifier for {} — auto-verified", entityType);
             return;
         }
 
@@ -67,15 +67,15 @@ public class SyncVerificationService {
             if (result.verified()) {
                 syncEvent.setVerifiedAt(LocalDateTime.now());
                 syncEvent.setVerificationError(null);
-                log.info("✅ [VERIFY] {} {} verified successfully", entityType, externalId);
+                log.info("[VERIFY] {} {} verified successfully", entityType, externalId);
             } else {
                 syncEvent.setVerificationError(result.errorMessage());
-                log.warn("⚠️ [VERIFY] {} {} verification failed: {}",
+                log.warn("[VERIFY] {} {} verification failed: {}",
                         entityType, externalId, result.errorMessage());
             }
         } catch (Exception e) {
             syncEvent.setVerificationError("Exception: " + e.getMessage());
-            log.warn("⚠️ [VERIFY] {} {} verification exception: {}",
+            log.warn("[VERIFY] {} {} verification exception: {}",
                     entityType, externalId, e.getMessage());
         }
     }
@@ -92,7 +92,7 @@ public class SyncVerificationService {
 
         if (unverified.isEmpty()) return 0;
 
-        log.info("🔍 [VERIFY] Retrying verification for {} unverified events", unverified.size());
+        log.info("[VERIFY] Retrying verification for {} unverified events", unverified.size());
         int verified = 0;
 
         for (SyncEvent event : unverified) {
@@ -110,11 +110,11 @@ public class SyncVerificationService {
                     event.setVerifiedAt(LocalDateTime.now());
                     event.setVerificationError(null);
                     verified++;
-                    log.info("✅ [VERIFY RETRY] {} {} now verified",
+                    log.info("[VERIFY RETRY] {} {} now verified",
                             event.getEntityType(), event.getExternalEntityId());
                 } else {
                     event.setVerificationError(result.errorMessage());
-                    log.warn("⚠️ [VERIFY RETRY] {} {} still failing: {}",
+                    log.warn("[VERIFY RETRY] {} {} still failing: {}",
                             event.getEntityType(), event.getExternalEntityId(), result.errorMessage());
                 }
             } catch (Exception e) {

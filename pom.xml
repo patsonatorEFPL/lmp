@@ -27,9 +27,10 @@
 		<url/>
 	</scm>
 	<properties>
-		<java.version>25</java.version>
-		<maven.compiler.source>25</maven.compiler.source>
-		<maven.compiler.target>25</maven.compiler.target>
+		<java.version>26</java.version>
+		<maven.compiler.source>26</maven.compiler.source>
+		<maven.compiler.target>26</maven.compiler.target>
+		<maven.compiler.release>26</maven.compiler.release>
 		<testcontainers.version>1.21.4</testcontainers.version>
 		<spring-modulith.version>2.0.6</spring-modulith.version>
 	</properties>
@@ -229,18 +230,6 @@
 		<artifactId>micrometer-registry-prometheus</artifactId>
 	</dependency>
 
-	<!-- Bucket4j — Rate limiting avec Caffeine backend -->
-	<dependency>
-		<groupId>com.bucket4j</groupId>
-		<artifactId>bucket4j-core</artifactId>
-		<version>8.10.1</version>
-	</dependency>
-	<dependency>
-		<groupId>com.bucket4j</groupId>
-		<artifactId>bucket4j-caffeine</artifactId>
-		<version>8.10.1</version>
-	</dependency>
-
 		<!-- OpenPDF pour génération de factures PDF -->
 		<dependency>
 			<groupId>com.github.librepdf</groupId>
@@ -295,12 +284,6 @@
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>test</scope>
-		</dependency>
-
-		<!-- Thymeleaf Spring Security Integration (back-office admin) -->
-		<dependency>
-			<groupId>org.thymeleaf.extras</groupId>
-			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
 		</dependency>
 
 		<!-- Spring Session : remplacé par spring-session-data-redis ci-dessus.
@@ -378,6 +361,31 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<!-- Java 26 preview JEPs (Stable Values, Scoped Values GA, primitive
+					     patterns, Module Imports). Required at compile + runtime. -->
+					<compilerArgs>
+						<arg>--enable-preview</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>--enable-preview</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<configuration>
+					<argLine>--enable-preview</argLine>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
@@ -388,16 +396,6 @@
 					     + auto-config Spring chargée au boot, inutile en prod/staging). -->
 					<excludeDevtools>true</excludeDevtools>
 				</configuration>
-				<executions>
-					<!-- Spring Boot 4 AOT processing : génère bean definitions +
-					     reflection metadata au build → boot ~30% faster runtime. -->
-					<execution>
-						<id>process-aot</id>
-						<goals>
-							<goal>process-aot</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>

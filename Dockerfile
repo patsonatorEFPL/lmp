@@ -25,11 +25,14 @@ RUN if [ -f ng-openapi-gen.json ]; then npx ng-openapi-gen --config ng-openapi-g
 RUN npx ng build --configuration=production --ssr=false
 
 # ----------------------------------------
-# Étape 1: Build Spring Boot Backend
+# Étape 1: Build Spring Boot Backend (Java 26 EA via mvnw wrapper)
 # ----------------------------------------
-FROM maven:3-eclipse-temurin-25-alpine AS maven-build
+FROM eclipse-temurin:26-jdk-alpine AS maven-build
 
 WORKDIR /app
+
+# bash requis par mvnw wrapper
+RUN apk add --no-cache bash
 
 # Copier les fichiers de configuration Maven
 COPY pom.xml .
@@ -50,10 +53,18 @@ COPY --from=angular-build /app/dist/lmp-frontend/browser/ ./src/main/resources/s
 # Compiler l'application avec le frontend embarqué
 RUN ./mvnw clean package -DskipTests -B
 
+# Éclater le jar en layers (jarmode tools, Spring Boot 3.3+/4) pour un cache Docker
+# optimal : dependencies (stable) séparé de application (volatil). Pas de --enable-preview
+# requis ici — l'outil extrait, il n'exécute pas le code applicatif.
+# Renommer en application.jar AVANT extract (pattern docs Spring) → nom de jar runtime
+# stable indépendant de la version, donc ENTRYPOINT fixe.
+RUN cp target/*.jar target/application.jar \
+    && java -Djarmode=tools -jar target/application.jar extract --layers --destination target/extracted
+
 # ----------------------------------------
-# Étape 2: Runtime optimisé avec Java 25
+# Étape 2: Runtime Java 26 (JDK full pour JFR remote attach)
 # ----------------------------------------
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:26-jdk-alpine
 
 # Installation des outils nécessaires
 RUN apk add --no-cache \
@@ -73,8 +84,13 @@ RUN addgroup -g 1001 -S spring && \
 # Répertoire de travail
 WORKDIR /app
 
-# Copier le JAR depuis l'étape de build
-COPY --from=maven-build --chown=spring:spring /app/target/*.jar app.jar
+# Copier les layers extraits, du moins volatil au plus volatil (cache Docker).
+# dependencies + spring-boot-loader changent rarement → réutilisés ; seul application
+# (nos classes) est réécrit sur un changement de code.
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/dependencies/ ./
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/spring-boot-loader/ ./
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/snapshot-dependencies/ ./
+COPY --from=maven-build --chown=spring:spring /app/target/extracted/application/ ./
 
 # Créer les répertoires nécessaires
 RUN mkdir -p /app/invoices /app/logs && \
@@ -82,6 +98,8 @@ RUN mkdir -p /app/invoices /app/logs && \
 
 # Basculer vers l'utilisateur non-root
 USER spring
+
+# JDK AOT cache training (JEP 514) retiré — AOT désactivé.
 
 # Variables d'environnement Spring Boot
 ENV SERVER_PORT=8080
@@ -96,24 +114,31 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=30s --start-period=90s --retries=5 \
     CMD curl -f -m 25 http://localhost:8080/actuator/health/liveness || exit 1
 
-# Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE (défaut: prod)
+# Point d'entrée — profil piloté par SPRING_PROFILES_ACTIVE.
 #
-# JVM tuning (bench 1500 VU / 2 min via Traefik, 13/05/2026) :
-#   -Xms512m -Xmx1536m  : container cap 4096M compose laisse large marge
-#                         (peak observé ~2 GiB total heap + shmem ZGC + non-heap).
-#   -XX:+UseZGC          : ZGC generational par défaut depuis JDK 24, plus
-#                         besoin de +ZGenerational (warning si présent).
-#                         p99 -71% vs G1.
-#   -XX:+EnableDynamicAgentLoading : autorise attach agent natif (async-profiler,
-#                         JFR remote control). JDK 24+ bloque par défaut.
-#                         Pour profiling prod sans rebuild.
-#   -XX:MaxMetaspaceSize=192m / -XX:CompressedClassSpaceSize=64m /
-#   -XX:ReservedCodeCacheSize=128m : caps mesurés idle + marge.
+# Phase 0 Java 26 baseline (Track Rust-discipline) :
+#   -XX:+UseShenandoahGC + -XX:ShenandoahGCMode=generational
+#       Generational Shenandoah GA en Java 26 (JEP 524). Low-pause alternative
+#       à ZGC avec footprint mémoire moindre — pas de pointer color shmem ×2.
+#   -XX:+UseCompactObjectHeaders
+#       Production en Java 26 (était experimental Java 25). Headers 12B → 8B,
+#       -10% heap, moins cache misses sur hot objects.
+#   --enable-preview
+#       Active preview JEPs (Stable Values, Scoped Values, primitive patterns,
+#       Module Import) — utilisés par track Phase 1+ incrémental.
+#   -XX:+EnableDynamicAgentLoading
+#       async-profiler / JFR remote attach. Required JDK 24+.
+#   -Xms512m -Xmx1536m : container cap 4096M (Shenandoah footprint plus serré
+#       que ZGC, donc cap 4G reste large marge).
+#   -XX:MaxMetaspaceSize=192m / CompressedClassSpaceSize=64m / ReservedCodeCacheSize=128m :
+#       caps mesurés idle + marge.
 ENTRYPOINT ["java", \
+    "--enable-preview", \
     "-Xms512m", "-Xmx1536m", \
     "-Xss512k", \
-    "-XX:+UseG1GC", \
-    "-XX:MaxGCPauseMillis=100", \
+    "-XX:+UseShenandoahGC", \
+    "-XX:ShenandoahGCMode=generational", \
+    "-XX:+UseCompactObjectHeaders", \
     "-XX:+EnableDynamicAgentLoading", \
     "-XX:MaxMetaspaceSize=192m", \
     "-XX:CompressedClassSpaceSize=64m", \
@@ -122,4 +147,4 @@ ENTRYPOINT ["java", \
     "-XX:+HeapDumpOnOutOfMemoryError", \
     "-XX:HeapDumpPath=/tmp/heapdump.hprof", \
     "-XX:StartFlightRecording=settings=profile,delay=180s,duration=120s,filename=/app/profile.jfr,dumponexit=true,name=bench", \
-    "-jar", "app.jar"]
+    "-jar", "application.jar"]

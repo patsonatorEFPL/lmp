@@ -1,19 +1,12 @@
 package com.lmp.billing.service.admin;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +19,9 @@ import com.lmp.billing.repository.RefundRepository;
 import com.lmp.billing.dto.admin.RefundDto;
 import com.lmp.billing.event.OrderRealtimeEventPublisher;
 import com.lmp.notification.service.NotificationService;
+import com.lmp.shared.util.AuthenticatedActor;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
-import com.stripe.model.PaymentIntent;
 
 /**
  * Service pour la gestion des remboursements avec intégration Stripe.
@@ -92,7 +85,7 @@ public class RefundService {
         refund.setStatus(stripeRefund.getStatus());
         refund.setCreatedAt(LocalDateTime.now());
         refund.setProcessedAt(LocalDateTime.now());
-        refund.setProcessedBy("ADMIN"); // TODO: Récupérer l'utilisateur connecté
+        refund.setProcessedBy(AuthenticatedActor.nameOrSystem());
 
         refund = refundRepository.save(refund);
 
@@ -115,21 +108,6 @@ public class RefundService {
     }
 
     /**
-     * Crée un remboursement partiel
-     */
-    public RefundDto createPartialRefund(java.util.UUID orderId, BigDecimal amount, String reason) throws StripeException {
-        logger.info("Création remboursement partiel pour commande {} - montant: {}", orderId, amount);
-
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
-
-        // Validation du remboursement partiel
-        validatePartialRefundRequest(order, amount);
-
-        return createRefund(orderId, amount, reason);
-    }
-
-    /**
      * Récupère tous les remboursements d'une commande
      */
     @Transactional(readOnly = true)
@@ -141,161 +119,11 @@ public class RefundService {
     }
 
     /**
-     * Récupère un remboursement par ID
-     */
-    @Transactional(readOnly = true)
-    public RefundDto getRefund(java.util.UUID refundId) {
-        Refund refund = refundRepository.findById(refundId)
-            .orElseThrow(() -> new RuntimeException("Remboursement non trouvé: " + refundId));
-        return convertToDto(refund);
-    }
-
-    /**
-     * Recherche avancée des remboursements
-     */
-    @Transactional(readOnly = true)
-    public Page<RefundDto> searchRefunds(String customerEmail, String status, 
-                                       LocalDateTime startDate, LocalDateTime endDate,
-                                       BigDecimal minAmount, BigDecimal maxAmount,
-                                       int page, int size, String sortBy, String sortDir) {
-        
-        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<Refund> refunds = refundRepository.searchRefundsAdvanced(
-            customerEmail, status, startDate, endDate, minAmount, maxAmount, pageable);
-
-        return refunds.map(this::convertToDto);
-    }
-
-    /**
-     * Synchronise un remboursement avec Stripe
-     */
-    public RefundDto syncWithStripe(java.util.UUID refundId) throws StripeException {
-        logger.info("Synchronisation Stripe pour remboursement {}", refundId);
-
-        Refund refund = refundRepository.findById(refundId)
-            .orElseThrow(() -> new RuntimeException("Remboursement non trouvé: " + refundId));
-
-        if (refund.getStripeRefundId() == null) {
-            throw new IllegalStateException("Aucun ID Stripe associé au remboursement");
-        }
-
-        // Récupération des informations Stripe
-        com.stripe.model.Refund stripeRefund = com.stripe.model.Refund.retrieve(refund.getStripeRefundId());
-        
-        // Mise à jour du statut
-        String oldStatus = refund.getStatus();
-        refund.setStatus(stripeRefund.getStatus());
-        refund.setFailureReason(stripeRefund.getFailureReason());
-        
-        // Mise à jour des métadonnées Stripe si disponibles
-        if (stripeRefund.getMetadata() != null) {
-            refund.setMetadata(stripeRefund.getMetadata().toString());
-        }
-
-        refund = refundRepository.save(refund);
-        
-        logger.info("Synchronisation Stripe réussie: {} -> {}", oldStatus, refund.getStatus());
-        return convertToDto(refund);
-    }
-
-    /**
-     * Annule un remboursement en attente
-     */
-    public RefundDto cancelRefund(java.util.UUID refundId, String reason) {
-        logger.info("Annulation remboursement {}", refundId);
-
-        Refund refund = refundRepository.findById(refundId)
-            .orElseThrow(() -> new RuntimeException("Remboursement non trouvé: " + refundId));
-
-        if (!"pending".equals(refund.getStatus())) {
-            throw new IllegalStateException("Seuls les remboursements en attente peuvent être annulés");
-        }
-
-        refund.setStatus("cancelled");
-        refund.setCancellationReason(reason);
-        refund.setCancelledAt(LocalDateTime.now());
-        refund.setCancelledBy("ADMIN"); // TODO: Récupérer l'utilisateur connecté
-
-        refund = refundRepository.save(refund);
-        
-        logger.info("Remboursement {} annulé", refundId);
-        return convertToDto(refund);
-    }
-
-    /**
-     * Statistiques des remboursements
-     */
-    @Transactional(readOnly = true)
-    public Map<String, Object> getRefundStatistics(LocalDateTime startDate, LocalDateTime endDate) {
-        Map<String, Object> stats = new HashMap<>();
-        
-        // Statistiques globales
-        Object[] globalStats = refundRepository.getRefundStatsSince(startDate);
-        stats.put("totalRefunds", globalStats[0]);
-        stats.put("totalRefundAmount", globalStats[1]);
-        stats.put("averageRefundAmount", globalStats[2]);
-        
-        // Statistiques par statut
-        List<Object[]> statusStats = refundRepository.getRefundStatsByStatus();
-        stats.put("refundsByStatus", statusStats);
-        
-        // Statistiques mensuelles
-        List<Object[]> monthlyStats = refundRepository.getMonthlyRefundStats(startDate);
-        stats.put("monthlyRefunds", monthlyStats);
-        
-        // Top des raisons de remboursement
-        List<Object[]> topReasons = refundRepository.getTopRefundReasons(
-            startDate, PageRequest.of(0, 10));
-        stats.put("topRefundReasons", topReasons);
-        
-        return stats;
-    }
-
-    /**
      * Calcule le montant total remboursé pour une commande
      */
     @Transactional(readOnly = true)
     public BigDecimal getTotalRefundedAmount(java.util.UUID orderId) {
-        return refundRepository.getTotalRefundedByOrder(orderId);
-    }
-
-    /**
-     * Vérifie si une commande peut être remboursée
-     */
-    @Transactional(readOnly = true)
-    public boolean canBeRefunded(java.util.UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
-        
-        // Vérifications de base
-        if (order.getStripePaymentIntentId() == null) {
-            return false;
-        }
-        
-        if (order.getStatus() == OrderStatus.PENDING || 
-            order.getStatus() == OrderStatus.PAYMENT_PENDING) {
-            return false;
-        }
-        
-        // Vérifier qu'il reste du montant à rembourser
-        BigDecimal totalRefunded = getTotalRefundedAmount(orderId);
-        return order.getTotalAmount().compareTo(totalRefunded) > 0;
-    }
-
-    /**
-     * Calcule le montant maximum remboursable
-     */
-    @Transactional(readOnly = true)
-    public BigDecimal getMaxRefundableAmount(java.util.UUID orderId) {
-        Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Commande non trouvée: " + orderId));
-        
-        BigDecimal totalRefunded = getTotalRefundedAmount(orderId);
-        BigDecimal maxRefundable = order.getTotalAmount().subtract(totalRefunded);
-        
-        return maxRefundable.max(BigDecimal.ZERO);
+        return refundRepository.getTotalRefundedAmountByOrderId(orderId);
     }
 
     // ========== Méthodes privées ==========
@@ -319,14 +147,6 @@ public class RefundService {
         
         if (amount.compareTo(maxRefundable) > 0) {
             throw new IllegalArgumentException("Le montant du remboursement dépasse le montant disponible");
-        }
-    }
-
-    private void validatePartialRefundRequest(Order order, BigDecimal amount) {
-        validateRefundRequest(order, amount);
-        
-        if (amount.compareTo(order.getTotalAmount()) >= 0) {
-            throw new IllegalArgumentException("Utilisez createRefund() pour un remboursement complet");
         }
     }
 

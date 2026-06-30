@@ -69,12 +69,12 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        logger.info("🔧 SchemaMaintenanceRunner — vérification du schéma...");
+        logger.info("SchemaMaintenanceRunner — vérification du schéma...");
 
         try {
             String dbName = jdbcTemplate.queryForObject("SELECT DATABASE()", String.class);
             if (dbName == null) {
-                logger.warn("⚠️  Impossible de déterminer le nom de la base (H2 / non-MySQL) — correctifs ignorés.");
+                logger.warn("Impossible de déterminer le nom de la base (H2 / non-MySQL) — correctifs ignorés.");
                 return;
             }
 
@@ -90,7 +90,7 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
             logger.debug("SchemaMaintenanceRunner ignoré (non-MySQL ?) : {}", e.getMessage());
         }
 
-        logger.info("✅ SchemaMaintenanceRunner — terminé.");
+        logger.info("SchemaMaintenanceRunner — terminé.");
     }
 
     // =========================================================================
@@ -128,9 +128,9 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
                         "ALTER TABLE `" + tableName + "` " +
                         "MODIFY COLUMN `" + columnName + "` " + columnType + " NULL DEFAULT NULL"
                     );
-                    logger.info("✅ Schema fix: {}.{} ({}) rendue nullable.", tableName, columnName, columnType);
+                    logger.info("Schema fix: {}.{} ({}) rendue nullable.", tableName, columnName, columnType);
                 } catch (Exception alterEx) {
-                    logger.warn("⚠️  Impossible de modifier {}.{} : {}", tableName, columnName, alterEx.getMessage());
+                    logger.warn("Impossible de modifier {}.{} : {}", tableName, columnName, alterEx.getMessage());
                 }
             }
 
@@ -176,10 +176,10 @@ public class SchemaMaintenanceRunner implements CommandLineRunner {
                     jdbcTemplate.execute(
                         "ALTER TABLE `" + tableName + "` DROP FOREIGN KEY `" + constraintName + "`"
                     );
-                    logger.info("✅ Schema fix: FK orpheline '{}' sur '{}' (→ '{}') supprimée.",
+                    logger.info("Schema fix: FK orpheline '{}' sur '{}' (-> '{}') supprimée.",
                             constraintName, tableName, referencedTable);
                 } catch (Exception dropEx) {
-                    logger.warn("⚠️  Impossible de supprimer FK '{}' sur '{}' : {}",
+                    logger.warn("Impossible de supprimer FK '{}' sur '{}' : {}",
                             constraintName, tableName, dropEx.getMessage());
                 }
             }

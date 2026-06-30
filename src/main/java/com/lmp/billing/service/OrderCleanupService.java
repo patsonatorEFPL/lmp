@@ -111,7 +111,7 @@ public class OrderCleanupService {
                         orderRealtimeEventPublisher.publishAutomatedStripeFlowTransition(order, previous,
                                 OrderStatus.CONFIRMED);
 
-                        logger.info("✅ Commande {} confirmée par vérification Stripe lors du nettoyage (créée le: {})",
+                        logger.info("Commande {} confirmée par vérification Stripe lors du nettoyage (créée le: {})",
                                    order.getId(), order.getCreatedAt());
                         continue; // Ne pas compter comme annulée
                     }
@@ -307,13 +307,13 @@ public class OrderCleanupService {
             boolean paid = "paid".equals(session.getPaymentStatus());
 
             if (paid) {
-                logger.info("🔍 VÉRIFICATION STRIPE - Commande {} : paiement confirmé (session {})",
+                logger.info("VÉRIFICATION STRIPE - Commande {} : paiement confirmé (session {})",
                            order.getId(), sessionId);
             }
 
             return paid;
         } catch (Exception e) {
-            logger.warn("⚠️ VÉRIFICATION STRIPE - Impossible de vérifier la commande {} (session {}) : {}",
+            logger.warn("VÉRIFICATION STRIPE - Impossible de vérifier la commande {} (session {}) : {}",
                        order.getId(), sessionId, e.getMessage());
             // En cas d'erreur Stripe, ne pas annuler la commande pour éviter de perdre un paiement
             // Retourner true par précaution — le service de réconciliation s'en chargera

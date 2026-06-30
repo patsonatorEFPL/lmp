@@ -87,7 +87,7 @@ public class RestExternalClient implements ExternalSystemClient {
                     .toBodilessEntity();
             return true;
         } catch (Exception e) {
-            log.warn("🔴 [SYNC] External system unavailable: {}", e.getMessage());
+            log.warn("[SYNC] External system unavailable: {}", e.getMessage());
             return false;
         }
     }
@@ -113,7 +113,7 @@ public class RestExternalClient implements ExternalSystemClient {
             Map<String, Object> response = postexternalCrmClientInsert(doc);
 
             String externalId = extractIdFromMethodResponse(response);
-            log.info("✅ [SYNC] Created {} → externalId={}", type, externalId);
+            log.info("[SYNC] Created {} -> externalId={}", type, externalId);
 
             // Auto-submit pour les documents soumissibles (Draft → Submitted)
             if (autoSubmit && SUBMITTABLE_TYPES.contains(type) && externalId != null) {
@@ -123,7 +123,7 @@ public class RestExternalClient implements ExternalSystemClient {
             return ExternalResponse.created(externalId, response);
         } catch (Exception e) {
             String errorMsg = extractErrorMessage(e);
-            log.error("❌ [SYNC] Failed to create {}: {}", type, errorMsg);
+            log.error("[SYNC] Failed to create {}: {}", type, errorMsg);
             return ExternalResponse.failure(errorMsg, extractHttpStatus(e));
         }
     }
@@ -151,7 +151,7 @@ public class RestExternalClient implements ExternalSystemClient {
                 List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("data");
                 if (results != null && !results.isEmpty()) {
                     String existingId = results.get(0).get("name").toString();
-                    log.info("🔁 [SYNC IDEMPOTENT] {} already exists with key {} → reusing {}",
+                    log.info("[SYNC IDEMPOTENT] {} already exists with key {} -> reusing {}",
                             type, idempotencyKey, existingId);
                     // Fetch full document for the response data
                     ExternalResponse fullDoc = getEntity(type, existingId);
@@ -162,7 +162,7 @@ public class RestExternalClient implements ExternalSystemClient {
             // Si la vérification échoue (ex: custom field pas encore créé),
             // on continue avec le POST normal — mieux vaut risquer un doublon
             // détectable que de bloquer le sync.
-            log.debug("⚠️ [SYNC IDEMPOTENT] Check failed for {} (key={}): {} — proceeding with create",
+            log.debug("[SYNC IDEMPOTENT] Check failed for {} (key={}): {} — proceeding with create",
                     type, idempotencyKey, e.getMessage());
         }
         return null;
@@ -180,11 +180,11 @@ public class RestExternalClient implements ExternalSystemClient {
 
             Map<String, Object> response = postexternalCrmClientSave(doc);
 
-            log.info("✅ [SYNC] Updated {} {}", type, externalId);
+            log.info("[SYNC] Updated {} {}", type, externalId);
             return ExternalResponse.success(externalId, response);
         } catch (Exception e) {
             String errorMsg = extractErrorMessage(e);
-            log.error("❌ [SYNC] Failed to update {} {}: {}", type, externalId, errorMsg);
+            log.error("[SYNC] Failed to update {} {}: {}", type, externalId, errorMsg);
             return ExternalResponse.failure(errorMsg, extractHttpStatus(e));
         }
     }
@@ -201,7 +201,7 @@ public class RestExternalClient implements ExternalSystemClient {
 
             return ExternalResponse.success(externalId, response);
         } catch (Exception e) {
-            log.error("❌ [SYNC] Failed to get {} {}: {}", type, externalId, e.getMessage());
+            log.error("[SYNC] Failed to get {} {}: {}", type, externalId, e.getMessage());
             return ExternalResponse.failure(e.getMessage(), 500);
         }
     }
@@ -225,7 +225,7 @@ public class RestExternalClient implements ExternalSystemClient {
             }
             return List.of();
         } catch (Exception e) {
-            log.error("❌ [SYNC] Failed to list {}: {}", type, e.getMessage());
+            log.error("[SYNC] Failed to list {}: {}", type, e.getMessage());
             return List.of();
         }
     }
@@ -255,10 +255,10 @@ public class RestExternalClient implements ExternalSystemClient {
                     .retrieve()
                     .toBodilessEntity();
 
-            log.info("🗑️ [SYNC] Deleted {} '{}'", type, externalId);
+            log.info("[SYNC] Deleted {} '{}'", type, externalId);
             return ExternalResponse.deleted(externalId);
         } catch (Exception e) {
-            log.error("❌ [SYNC] Failed to delete {} '{}': {}", type, externalId, e.getMessage());
+            log.error("[SYNC] Failed to delete {} '{}': {}", type, externalId, e.getMessage());
             return ExternalResponse.failure(e.getMessage(), 500);
         }
     }
@@ -285,12 +285,12 @@ public class RestExternalClient implements ExternalSystemClient {
                     Object name = entry.get("name");
                     if (name != null) ids.add(name.toString());
                 }
-                log.debug("🔍 [SYNC] Found {} linked {} for {}={}", ids.size(), type, parentField, parentId);
+                log.debug("[SYNC] Found {} linked {} for {}={}", ids.size(), type, parentField, parentId);
                 return ids;
             }
             return List.of();
         } catch (Exception e) {
-            log.error("❌ [SYNC] Failed to list linked {} for {}={}: {}", type, parentField, parentId, e.getMessage());
+            log.error("[SYNC] Failed to list linked {} for {}={}: {}", type, parentField, parentId, e.getMessage());
             return List.of();
         }
     }
@@ -311,14 +311,14 @@ public class RestExternalClient implements ExternalSystemClient {
                 doc = (Map<String, Object>) doc.get("data");
             }
             if (doc == null) {
-                log.warn("⚠️ [SYNC] Could not fetch {} '{}' for submit — document remains as Draft", docType, externalId);
+                log.warn("[SYNC] Could not fetch {} '{}' for submit — document remains as Draft", docType, externalId);
                 return;
             }
             doc.put("docstatus", 1);
             postexternalCrmClientMethod("frappe.client.submit", "doc", doc);
-            log.info("📋 [SYNC] Submitted {} '{}'", docType, externalId);
+            log.info("[SYNC] Submitted {} '{}'", docType, externalId);
         } catch (Exception e) {
-            log.warn("⚠️ [SYNC] Failed to submit {} '{}': {} — document remains as Draft",
+            log.warn("[SYNC] Failed to submit {} '{}': {} — document remains as Draft",
                     docType, externalId, extractErrorMessage(e));
         }
     }
@@ -350,11 +350,11 @@ public class RestExternalClient implements ExternalSystemClient {
                             .body(formData)
                             .retrieve()
                             .toBodilessEntity();
-                    log.info("↩️ [SYNC] Cancelled submitted {} '{}' before deletion", docType, externalId);
+                    log.info("↩ [SYNC] Cancelled submitted {} '{}' before deletion", docType, externalId);
                 }
             }
         } catch (Exception e) {
-            log.warn("⚠️ [SYNC] Could not check/cancel {} '{}': {} — proceeding with delete",
+            log.warn("[SYNC] Could not check/cancel {} '{}': {} — proceeding with delete",
                     docType, externalId, extractErrorMessage(e));
         }
     }
@@ -388,7 +388,7 @@ public class RestExternalClient implements ExternalSystemClient {
             }
             return java.math.BigDecimal.ZERO;
         } catch (Exception e) {
-            log.warn("⚠️ [SYNC] Failed to fetch aggregated {} for {}: {}", sumField, type, e.getMessage());
+            log.warn("[SYNC] Failed to fetch aggregated {} for {}: {}", sumField, type, e.getMessage());
             return null;
         }
     }
@@ -418,11 +418,11 @@ public class RestExternalClient implements ExternalSystemClient {
                     .body(Map.class);
 
             String externalId = extractIdFromMethodResponse(response);
-            log.info("✅ [SYNC] Called method {} → result={}", method, externalId);
+            log.info("[SYNC] Called method {} -> result={}", method, externalId);
             return ExternalResponse.success(externalId, response);
         } catch (Exception e) {
             String errorMsg = extractErrorMessage(e);
-            log.error("❌ [SYNC] Failed to call method {}: {}", method, errorMsg);
+            log.error("[SYNC] Failed to call method {}: {}", method, errorMsg);
             return ExternalResponse.failure(errorMsg, extractHttpStatus(e));
         }
     }
@@ -553,7 +553,7 @@ public class RestExternalClient implements ExternalSystemClient {
                 }
             }
         } catch (Exception e) {
-            log.debug("⚠️ [SYNC] findFirstByFilters failed for {} (filters={}): {}",
+            log.debug("[SYNC] findFirstByFilters failed for {} (filters={}): {}",
                     type, filterJson, e.getMessage());
         }
         return java.util.Optional.empty();
@@ -563,7 +563,7 @@ public class RestExternalClient implements ExternalSystemClient {
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            log.warn("⚠️ [SYNC] Failed to serialize to JSON: {}", e.getMessage());
+            log.warn("[SYNC] Failed to serialize to JSON: {}", e.getMessage());
             return "{}";
         }
     }

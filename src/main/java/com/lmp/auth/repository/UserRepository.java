@@ -62,4 +62,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByExternalCustomerId(String externalCustomerId);
 
     Optional<User> findByExternalErpUserId(String externalErpUserId);
+
+    List<User> findByExternalCustomerIdIsNullAndRegistrationDateBefore(LocalDateTime cutoff);
 }

@@ -62,7 +62,7 @@ public class AppointmentRestController {
             @RequestBody AppointmentRequest request,
             Authentication authentication) {
         try {
-            logger.info("📅 Demande de rendez-vous reçue - Nom: {}, Email: {}, Service: {}, Date: {} {}",
+            logger.info("Demande de rendez-vous reçue - Nom: {}, Email: {}, Service: {}, Date: {} {}",
                     request.getName(), request.getEmail(), request.getService(),
                     request.getDate(), request.getTime());
 
@@ -71,18 +71,18 @@ public class AppointmentRestController {
             Appointment appointment;
 
             if (existingUser.isPresent()) {
-                logger.info("✅ Utilisateur existant trouvé pour {}", request.getEmail());
+                logger.info("Utilisateur existant trouvé pour {}", request.getEmail());
                 appointment = appointmentService.createAppointment(
                         request.toAppointmentForm(), request.getEmail());
             } else {
-                logger.info("👤 Visiteur anonyme, création via AppointmentService");
+                logger.info("Visiteur anonyme, création via AppointmentService");
                 appointment = appointmentService.createAnonymousAppointment(request);
             }
 
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok("Rendez-vous créé avec succès", AppointmentResponse.from(appointment)));
         } catch (Exception e) {
-            logger.error("❌ Erreur création rendez-vous: {}", e.getMessage(), e);
+            logger.error("Erreur création rendez-vous: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }

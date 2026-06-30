@@ -210,14 +210,14 @@ class PricingDisplayScenarioTest {
         log.info("┌─ {} ─────────────────────────", label);
         log.info("│  Pays détecté  : {}", display.countryCode());
         log.info("│  Devise affichée : {} (source taux : {})", display.currency(), display.rateSource());
-        log.info("│  Taux EUR→{}  : {}", display.currency(), display.eurToTargetRate());
+        log.info("│ Taux EUR->{} : {}", display.currency(), display.eurToTargetRate());
         log.info("│  Prix catalogue : {} EUR", "49.99");
         log.info("│  Prix affiché   : {} {}", displayPrice, display.currency());
         log.info("│  ─── Paiement Stripe ────────────────");
         log.info("│  Devise paiement : {}", payment.currency());
         log.info("│  Montant Stripe  : {} {}", payPrice, payment.currency());
         if (!display.currency().equals(payment.currency())) {
-            log.info("│  ⚠ Devise affichée ≠ devise facturée (Stripe ne supporte pas {})",
+            log.info("│ Devise affichée ≠ devise facturée (Stripe ne supporte pas {})",
                     display.currency());
         }
         log.info("└─────────────────────────────────────");

@@ -71,12 +71,12 @@ public class SyncReconciliationService {
      */
     public int reconcile() {
         if (!externalClient.isAvailable()) {
-            log.debug("🔇 [RECONCILIATION] External system unavailable — skipping");
+            log.debug("[RECONCILIATION] External system unavailable — skipping");
             return 0;
         }
 
         Instant since = lastReconcileTimestamp.get();
-        log.info("🔍 [RECONCILIATION] Starting reconciliation since {}", since);
+        log.info("[RECONCILIATION] Starting reconciliation since {}", since);
 
         int totalGaps = 0;
 
@@ -84,14 +84,14 @@ public class SyncReconciliationService {
             // Re-vérifier les events SUCCESS sans verified_at
             int newlyVerified = verificationService.retryUnverifiedEvents();
             if (newlyVerified > 0) {
-                log.info("🔍 [RECONCILIATION] {} events newly verified", newlyVerified);
+                log.info("[RECONCILIATION] {} events newly verified", newlyVerified);
             }
 
             // Alerter sur les events non-vérifiés depuis plus d'1 heure
             long staleUnverified = verificationService.countStaleUnverifiedEvents(
                     LocalDateTime.now().minusHours(1));
             if (staleUnverified > 0) {
-                log.error("🚨 [RECONCILIATION] {} SUCCESS events unverified for > 1 hour — investigate!",
+                log.error("[RECONCILIATION] {} SUCCESS events unverified for > 1 hour — investigate!",
                         staleUnverified);
                 totalGaps += (int) staleUnverified;
             }
@@ -109,9 +109,9 @@ public class SyncReconciliationService {
             }
 
             lastReconcileTimestamp.set(Instant.now());
-            log.info("✅ [RECONCILIATION] Complete — {} gaps detected", totalGaps);
+            log.info("[RECONCILIATION] Complete — {} gaps detected", totalGaps);
         } catch (Exception e) {
-            log.error("❌ [RECONCILIATION] Failed: {}", e.getMessage(), e);
+            log.error("[RECONCILIATION] Failed: {}", e.getMessage(), e);
         }
 
         return totalGaps;
@@ -124,15 +124,12 @@ public class SyncReconciliationService {
     private int reconcileCustomers(Instant since) {
         int gaps = 0;
 
-        // Détecter les Users locaux sans external ID
-        var usersWithoutExternal = userRepository.findAll().stream()
-                .filter(u -> u.getExternalCustomerId() == null)
-                .filter(u -> u.getRegistrationDate() != null &&
-                        u.getRegistrationDate().toInstant(ZoneOffset.UTC).isBefore(Instant.now().minusSeconds(300)))
-                .toList();
+        // Détecter les Users locaux sans external ID (grâce de 5 min post-inscription)
+        var usersWithoutExternal = userRepository.findByExternalCustomerIdIsNullAndRegistrationDateBefore(
+                LocalDateTime.ofInstant(Instant.now().minusSeconds(300), ZoneOffset.UTC));
 
         for (var user : usersWithoutExternal) {
-            log.info("🔍 [RECONCILIATION] User {} has no externalCustomerId — enqueuing provision",
+            log.info("[RECONCILIATION] User {} has no externalCustomerId — enqueuing provision",
                     user.getId());
             syncOutboundService.enqueue(SyncEntityType.CUSTOMER, "CREATED",
                     user.getId(), null, Map.of(
@@ -145,7 +142,7 @@ public class SyncReconciliationService {
 
         // Vérifier les modifications côté externe
         List<Map<String, Object>> externalCustomers = externalClient.listEntities(SyncEntityType.CUSTOMER, since);
-        log.debug("🔍 [RECONCILIATION] {} Customers modified externally since {}", externalCustomers.size(), since);
+        log.debug("[RECONCILIATION] {} Customers modified externally since {}", externalCustomers.size(), since);
         gaps += externalCustomers.size();
 
         return gaps;
@@ -161,7 +158,7 @@ public class SyncReconciliationService {
         for (Map<String, Object> item : externalItems) {
             String itemCode = (String) item.get("name");
             if (itemCode != null && serviceRepository.findByExternalItemCode(itemCode).isEmpty()) {
-                log.info("🔍 [RECONCILIATION] External Item '{}' has no local Service — flagging", itemCode);
+                log.info("[RECONCILIATION] External Item '{}' has no local Service — flagging", itemCode);
                 gaps++;
             }
         }
@@ -178,7 +175,7 @@ public class SyncReconciliationService {
         for (Map<String, Object> group : externalGroups) {
             String groupName = (String) group.get("name");
             if (groupName != null && serviceCategoryRepository.findByExternalGroupId(groupName).isEmpty()) {
-                log.info("🔍 [RECONCILIATION] External ItemGroup '{}' has no local Category — flagging", groupName);
+                log.info("[RECONCILIATION] External ItemGroup '{}' has no local Category — flagging", groupName);
                 gaps++;
             }
         }
@@ -203,7 +200,7 @@ public class SyncReconciliationService {
                 SyncEntityType.SALES_INVOICE, "grand_total", "posting_date", startStr, endStr);
 
         if (erpTotal == null) {
-            log.debug("🔍 [RECONCILIATION] Could not fetch ERP totals — skipping comparison");
+            log.debug("[RECONCILIATION] Could not fetch ERP totals — skipping comparison");
             return 0;
         }
 
@@ -223,12 +220,12 @@ public class SyncReconciliationService {
 
         // Alerte si écart > 0.1% ET > 5€
         if (delta.compareTo(relativeThreshold) > 0 && delta.compareTo(absoluteThreshold) > 0) {
-            log.error("🚨 [RECONCILIATION] Revenue mismatch ({}→{}): ERP={} LMP={} Δ={}",
+            log.error("[RECONCILIATION] Revenue mismatch ({}->{}): ERP={} LMP={} Δ={}",
                     startStr, end, erpTotal, lmpTotal, delta);
             return 1;
         }
 
-        log.info("✅ [RECONCILIATION] Revenue match ({}→{}): ERP={} LMP={} Δ={}",
+        log.info("[RECONCILIATION] Revenue match ({}->{}): ERP={} LMP={} Δ={}",
                 startStr, end, erpTotal, lmpTotal, delta);
         return 0;
     }
@@ -238,15 +235,12 @@ public class SyncReconciliationService {
      */
     private int reconcileOrders(Instant since) {
         int gaps = 0;
-        var ordersWithoutExternal = orderRepository.findAll().stream()
-                .filter(o -> o.getExternalOrderId() == null)
-                .filter(o -> "CONFIRMED".equals(o.getStatus().name()) || "PAID".equals(o.getStatus().name()))
-                .filter(o -> o.getCreatedAt() != null &&
-                        o.getCreatedAt().toInstant(ZoneOffset.UTC).isBefore(Instant.now().minusSeconds(300)))
-                .toList();
+        var ordersWithoutExternal = orderRepository.findByExternalOrderIdIsNullAndStatusInAndCreatedAtBefore(
+                List.of(com.lmp.billing.domain.OrderStatus.CONFIRMED),
+                LocalDateTime.ofInstant(Instant.now().minusSeconds(300), ZoneOffset.UTC));
 
         for (var order : ordersWithoutExternal) {
-            log.info("🔍 [RECONCILIATION] Order {} (status={}) has no externalOrderId — enqueuing",
+            log.info("[RECONCILIATION] Order {} (status={}) has no externalOrderId — enqueuing",
                     order.getId(), order.getStatus());
             gaps++;
         }

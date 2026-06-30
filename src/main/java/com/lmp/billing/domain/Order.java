@@ -118,9 +118,6 @@ public class Order {
     private Set<PaymentTransaction> paymentTransactions;
     
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<Invoice> invoices;
-    
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Review> reviews;
     
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -238,8 +235,6 @@ public class Order {
     public void setItems(Set<OrderItem> items) { this.items = items; }
     public Set<PaymentTransaction> getPaymentTransactions() { return paymentTransactions; }
     public void setPaymentTransactions(Set<PaymentTransaction> paymentTransactions) { this.paymentTransactions = paymentTransactions; }
-    public Set<Invoice> getInvoices() { return invoices; }
-    public void setInvoices(Set<Invoice> invoices) { this.invoices = invoices; }
     public Set<Review> getReviews() { return reviews; }
     public void setReviews(Set<Review> reviews) { this.reviews = reviews; }
     public Set<OrderStatusHistory> getStatusHistories() { return statusHistories; }

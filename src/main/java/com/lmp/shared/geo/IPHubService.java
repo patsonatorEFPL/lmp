@@ -89,7 +89,7 @@ public class IPHubService {
 
         CachedResult cached = cache.get(ip);
         if (cached != null && !cached.isExpired()) {
-            logger.debug("[FRAUD-DEBUG] IPHub cache hit for {} → block={}", ip,
+            logger.debug("[FRAUD-DEBUG] IPHub cache hit for {} -> block={}", ip,
                     cached.value.map(r -> String.valueOf(r.block())).orElse("null"));
             return cached.value;
         }
@@ -100,7 +100,7 @@ public class IPHubService {
             HttpHeaders headers = new HttpHeaders();
             headers.set("X-Key", apiKey);
 
-            logger.debug("[FRAUD-DEBUG] IPHub → calling for IP {}", ip);
+            logger.debug("[FRAUD-DEBUG] IPHub -> calling for IP {}", ip);
 
             ResponseEntity<IPHubResponse> responseEntity = restTemplate.exchange(
                     url, HttpMethod.GET, new HttpEntity<>(headers), IPHubResponse.class);
@@ -120,7 +120,7 @@ public class IPHubService {
                         proxy, tor, hosting);
                 Optional<IPHubResult> opt = Optional.of(result);
                 cache.put(ip, new CachedResult(opt));
-                logger.debug("[FRAUD-DEBUG] IPHub resolved {} → block={} country={} isp={} proxy={} tor={} hosting={}",
+                logger.debug("[FRAUD-DEBUG] IPHub resolved {} -> block={} country={} isp={} proxy={} tor={} hosting={}",
                         ip, result.block(), result.countryCode(), result.isp(), proxy, tor, hosting);
                 return opt;
             } else {

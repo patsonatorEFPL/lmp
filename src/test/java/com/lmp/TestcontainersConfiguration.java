@@ -3,6 +3,7 @@ package com.lmp;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
@@ -29,5 +30,15 @@ public class TestcontainersConfiguration {
                 .withDatabaseName("lmp_db")
                 .withUsername("lmp_dev")
                 .withPassword(EPHEMERAL_PG_PASSWORD);
+    }
+
+    /**
+     * Redis éphémère — sessions Spring Session, caches et pub/sub email.
+     * Sans lui, les tests exigeaient un Redis local sur localhost:6379.
+     */
+    @Bean
+    @ServiceConnection(name = "redis")
+    GenericContainer<?> redisContainer() {
+        return new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
     }
 }

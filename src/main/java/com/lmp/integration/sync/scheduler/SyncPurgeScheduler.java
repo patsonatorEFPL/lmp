@@ -50,23 +50,23 @@ public class SyncPurgeScheduler {
     @Transactional
     public void purge() {
         LocalDateTime cutoff = LocalDateTime.now(ZoneId.systemDefault()).minusDays(retentionDays);
-        log.info("🧹 [SYNC-PURGE] Starting purge for data older than {} days (before {})", retentionDays, cutoff);
+        log.info("[SYNC-PURGE] Starting purge for data older than {} days (before {})", retentionDays, cutoff);
 
         int total = 0;
 
         for (SyncStatus status : new SyncStatus[]{SyncStatus.SUCCESS, SyncStatus.DEAD, SyncStatus.SKIPPED}) {
             int deleted = syncEventRepository.deleteByStatusAndCreatedAtBefore(status.name(), cutoff);
             total += deleted;
-            log.info("🧹 [SYNC-PURGE] Deleted {} {} events", deleted, status);
+            log.info("[SYNC-PURGE] Deleted {} {} events", deleted, status);
         }
 
         int snapshotsDeleted = healthSnapshotRepository.deleteByCreatedAtBefore(cutoff);
-        log.info("🧹 [SYNC-PURGE] Deleted {} health snapshots", snapshotsDeleted);
+        log.info("[SYNC-PURGE] Deleted {} health snapshots", snapshotsDeleted);
 
         Instant instantCutoff = cutoff.atZone(ZoneId.systemDefault()).toInstant();
         int patternsDeleted = errorPatternRepository.deleteStaleWithZeroOccurrences(instantCutoff);
-        log.info("🧹 [SYNC-PURGE] Deleted {} stale error patterns", patternsDeleted);
+        log.info("[SYNC-PURGE] Deleted {} stale error patterns", patternsDeleted);
 
-        log.info("🧹 [SYNC-PURGE] Completed. Total events deleted: {}", total);
+        log.info("[SYNC-PURGE] Completed. Total events deleted: {}", total);
     }
 }

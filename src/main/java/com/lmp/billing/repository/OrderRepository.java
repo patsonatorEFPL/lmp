@@ -145,6 +145,12 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByExternalPaymentId(String externalPaymentId);
 
     /**
+     * Commandes sans Sales Order externe (gap de synchronisation ERP).
+     */
+    List<Order> findByExternalOrderIdIsNullAndStatusInAndCreatedAtBefore(
+            List<OrderStatus> statuses, LocalDateTime cutoff);
+
+    /**
      * Commandes PAYMENT_PENDING avec PaymentIntent mais sans session Checkout (ex. Payment Element).
      */
     @Query("SELECT o FROM Order o WHERE o.status = :status AND (o.stripeSessionId IS NULL OR o.stripeSessionId = '') "

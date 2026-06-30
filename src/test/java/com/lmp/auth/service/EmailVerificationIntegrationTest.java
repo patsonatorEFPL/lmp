@@ -55,6 +55,15 @@ class EmailVerificationIntegrationTest {
 
     private Role userRole;
 
+    /**
+     * Cible réelle derrière le proxy AOP : contourne @SchedulerLock
+     * (lockAtLeastFor=PT5M skippe silencieusement les invocations répétées
+     * dans un même run de tests).
+     */
+    private EmailVerificationScheduler rawScheduler() {
+        return org.springframework.test.util.AopTestUtils.getTargetObject(scheduler);
+    }
+
     @BeforeEach
     void setUp() {
         userRole = roleRepository.findByName("USER")
@@ -176,7 +185,7 @@ class EmailVerificationIntegrationTest {
                 LocalDateTime.now().minusHours(25), UUID.randomUUID().toString());
 
         // Exécuter le scheduler manuellement
-        scheduler.suspendUnverifiedAccounts();
+        rawScheduler().suspendUnverifiedAccounts();
 
         // Vérifier que le compte a été suspendu
         User updated = userRepository.findByEmail("scheduler-test@test.com").orElseThrow();
@@ -191,7 +200,7 @@ class EmailVerificationIntegrationTest {
                 LocalDateTime.now().minusHours(1), UUID.randomUUID().toString());
 
         // Exécuter le scheduler
-        scheduler.suspendUnverifiedAccounts();
+        rawScheduler().suspendUnverifiedAccounts();
 
         // Le compte doit rester ACTIVE
         User updated = userRepository.findByEmail("recent-scheduler@test.com").orElseThrow();
@@ -205,7 +214,7 @@ class EmailVerificationIntegrationTest {
         createTestUser("verified-old@test.com", true, UserStatus.ACTIVE,
                 LocalDateTime.now().minusHours(48), null);
 
-        scheduler.suspendUnverifiedAccounts();
+        rawScheduler().suspendUnverifiedAccounts();
 
         User updated = userRepository.findByEmail("verified-old@test.com").orElseThrow();
         assertEquals(UserStatus.ACTIVE, updated.getStatus(),
@@ -222,7 +231,7 @@ class EmailVerificationIntegrationTest {
                 LocalDateTime.now().minusHours(25), token);
 
         // 2. Le scheduler le suspend
-        scheduler.suspendUnverifiedAccounts();
+        rawScheduler().suspendUnverifiedAccounts();
         User suspended = userRepository.findByEmail("fullflow@test.com").orElseThrow();
         assertEquals(UserStatus.INACTIVE, suspended.getStatus(), "Doit être suspendu");
 

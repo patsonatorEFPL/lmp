@@ -1,5 +1,6 @@
 package com.lmp.integration.sync;
 
+import com.lmp.TestcontainersConfiguration;
 import com.lmp.integration.sync.client.CircuitBreakerExternalClient;
 import com.lmp.integration.sync.domain.SyncEvent;
 import com.lmp.integration.sync.repository.SyncEventRepository;
@@ -7,9 +8,11 @@ import com.lmp.integration.sync.service.SyncOutboundService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,6 +29,7 @@ import static org.mockito.Mockito.when;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(TestcontainersConfiguration.class)
 class SyncPipelineIntegrationTest {
 
     @Autowired
@@ -64,7 +68,7 @@ class SyncPipelineIntegrationTest {
         SyncEvent queued = syncEventRepository.findByLocalEntityIdOrderByCreatedAtDesc(entityId).get(0);
         assertThat(queued.getStatus()).isEqualTo(SyncStatus.QUEUED);
 
-        syncOutboundService.processEvent(queued);
+        syncOutboundService.processEvent(claim(queued));
 
         SyncEvent processed = syncEventRepository.findById(queued.getId()).orElseThrow();
         assertThat(processed.getStatus()).isEqualTo(SyncStatus.SUCCESS);
@@ -82,11 +86,24 @@ class SyncPipelineIntegrationTest {
                 Map.of("customer_name", "Test Customer"));
 
         SyncEvent queued = syncEventRepository.findByLocalEntityIdOrderByCreatedAtDesc(entityId).get(0);
-        syncOutboundService.processEvent(queued);
+        syncOutboundService.processEvent(claim(queued));
 
         SyncEvent processed = syncEventRepository.findById(queued.getId()).orElseThrow();
         assertThat(processed.getStatus()).isEqualTo(SyncStatus.FAILED);
         assertThat(processed.getRetryCount()).isEqualTo(1);
         assertThat(processed.getErrorMessage()).contains("ERP timeout");
+    }
+
+    /**
+     * Claim atomique QUEUED→PROCESSING comme le ferait {@code SyncQueueProcessor} :
+     * depuis le redesign de la file, {@code processEvent} skippe tout événement
+     * qui n'est pas déjà en PROCESSING.
+     */
+    private SyncEvent claim(SyncEvent queued) {
+        List<SyncEvent> claimed = syncEventRepository.claimNextBatch(50);
+        return claimed.stream()
+                .filter(e -> e.getId().equals(queued.getId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Event " + queued.getId() + " non claimé"));
     }
 }

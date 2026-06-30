@@ -116,7 +116,7 @@ public class FraudScoringService {
      * @return résultat avec score, flags et indicateur d'alerte
      */
     public FraudResult score(FraudSignals signals) {
-        logger.debug("[FRAUD-DEBUG] FraudScoringService.score() → signals: ipCountry={}, vpnScore={}, " +
+        logger.debug("[FRAUD-DEBUG] FraudScoringService.score() -> signals: ipCountry={}, vpnScore={}," +
                         "tz={}, geoCountry={}, billingCountry={}, cardCountry={}, geoDenied={}",
                 signals.ipCountry(), signals.vpnScore(), signals.browserTimezone(),
                 signals.geoCountry(), signals.billingCountry(), signals.cardCountry(),

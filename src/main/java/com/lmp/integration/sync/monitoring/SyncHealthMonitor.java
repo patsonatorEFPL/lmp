@@ -74,7 +74,7 @@ public class SyncHealthMonitor {
         }
 
         Instant now = Instant.now();
-        log.debug("🔍 [SYNC MONITOR] Running health check...");
+        log.debug("[SYNC MONITOR] Running health check...");
 
         SyncHealthSnapshot snapshot = new SyncHealthSnapshot();
         snapshot.setRecordedAt(now);
@@ -125,7 +125,7 @@ public class SyncHealthMonitor {
         ));
 
         snapshotRepository.save(snapshot);
-        log.info("📊 [SYNC MONITOR] Snapshot saved: {} | queue={} dead={} failed_stale={} unverified={} new_patterns={}",
+        log.info("[SYNC MONITOR] Snapshot saved: {} | queue={} dead={} failed_stale={} unverified={} new_patterns={}",
                 snapshot.getOverallStatus(), queueDepth, deadCount, failedStale, unverified, newPatterns);
 
         // 10. Alerting

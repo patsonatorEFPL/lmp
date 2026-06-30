@@ -112,7 +112,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         }
 
         if (current > policy.max()) {
-            log.warn("⛔ [AUTH-RATE-LIMIT] {} blocked for IP {} ({} > {} per {})",
+            log.warn("[AUTH-RATE-LIMIT] {} blocked for IP {} ({} > {} per {})",
                     path, ip, current, policy.max(), policy.window());
             response.setStatus(429);
             response.setContentType("application/json");

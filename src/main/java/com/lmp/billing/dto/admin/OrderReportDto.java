@@ -684,8 +684,6 @@ public class OrderReportDto {
     public void setTrends(List<TrendData> trends) { this.trends = trends; }
     public List<ServicePerformance> getServicePerformances() { return servicePerformances; }
     public void setServicePerformances(List<ServicePerformance> servicePerformances) { this.servicePerformances = servicePerformances; }
-    public List<ServicePerformance> getServicePerformance() { return servicePerformances; }
-    public void setServicePerformance(List<ServicePerformance> servicePerformance) { this.servicePerformances = servicePerformance; }
     public CustomerStats getCustomerStats() { return customerStats; }
     public void setCustomerStats(CustomerStats customerStats) { this.customerStats = customerStats; }
     public PerformanceStats getPerformanceStats() { return performanceStats; }

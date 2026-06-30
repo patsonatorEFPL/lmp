@@ -40,61 +40,61 @@ public class UserPasswordController {
                                           Authentication authentication,
                                           HttpServletRequest httpRequest,
                                           HttpServletResponse httpResponse) {
-        logger.info("🔐 DEBUG PASSWORD - Début changement mot de passe utilisateur");
+        logger.info("DEBUG PASSWORD - Début changement mot de passe utilisateur");
         
         try {
             // Log de l'authentification
             if (authentication == null || !authentication.isAuthenticated()) {
-                logger.warn("🔐 DEBUG PASSWORD - Utilisateur non authentifié: auth={}", authentication);
+                logger.warn("DEBUG PASSWORD - Utilisateur non authentifié: auth={}", authentication);
                 return ResponseEntity.status(401)
                     .body("{\"success\": false, \"message\": \"Utilisateur non authentifié\"}");
             }
             
-            logger.info("🔐 DEBUG PASSWORD - Utilisateur authentifié: {}", authentication.getName());
+            logger.info("DEBUG PASSWORD - Utilisateur authentifié: {}", authentication.getName());
 
             // Log de la validation des données
-            logger.info("🔐 DEBUG PASSWORD - Validation request: isValid={}, isPasswordMatching={}",
+            logger.info("DEBUG PASSWORD - Validation request: isValid={}, isPasswordMatching={}",
                        request.isValid(), request.isPasswordMatching());
-            logger.info("🔐 DEBUG PASSWORD - Request fields: currentPassword={}, newPassword={}, confirmPassword={}",
+            logger.info("DEBUG PASSWORD - Request fields: currentPassword={}, newPassword={}, confirmPassword={}",
                        request.getCurrentPassword() != null ? "présent" : "absent",
                        request.getNewPassword() != null ? "présent" : "absent",
                        request.getConfirmPassword() != null ? "présent" : "absent");
 
             // Validation des données de la requête
             if (!request.isValid()) {
-                logger.warn("🔐 DEBUG PASSWORD - Données de requête invalides");
+                logger.warn("DEBUG PASSWORD - Données de requête invalides");
                 return ResponseEntity.badRequest()
                     .body("{\"success\": false, \"message\": \"Données de requête invalides\"}");
             }
 
             if (!request.isPasswordMatching()) {
-                logger.warn("🔐 DEBUG PASSWORD - Mots de passe ne correspondent pas");
+                logger.warn("DEBUG PASSWORD - Mots de passe ne correspondent pas");
                 return ResponseEntity.badRequest()
                     .body("{\"success\": false, \"message\": \"Les mots de passe ne correspondent pas\"}");
             }
 
             // Récupérer l'utilisateur actuel
-            logger.info("🔐 DEBUG PASSWORD - Recherche utilisateur par email: {}", authentication.getName());
+            logger.info("DEBUG PASSWORD - Recherche utilisateur par email: {}", authentication.getName());
             User currentUser = userService.findByLogin(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
             
-            logger.info("🔐 DEBUG PASSWORD - Utilisateur trouvé: ID={}, Email={}",
+            logger.info("DEBUG PASSWORD - Utilisateur trouvé: ID={}, Email={}",
                        currentUser.getId(), currentUser.getEmail());
 
             // Changer le mot de passe avec validation
-            logger.info("🔐 DEBUG PASSWORD - Appel changePasswordWithValidation pour user ID: {}", currentUser.getId());
+            logger.info("DEBUG PASSWORD - Appel changePasswordWithValidation pour user ID: {}", currentUser.getId());
             userService.changePasswordWithValidation(
                 currentUser.getId(),
                 request.getCurrentPassword(),
                 request.getNewPassword()
             );
 
-            logger.info("✅ DEBUG PASSWORD - Mot de passe changé avec succès pour user: {}", currentUser.getEmail());
+            logger.info("DEBUG PASSWORD - Mot de passe changé avec succès pour user: {}", currentUser.getEmail());
             auditLogger.info("User password changed - User: {} (ID: {})",
                            currentUser.getEmail(), currentUser.getId());
 
-            // 🔐 SÉCURITÉ: Invalidation de la session pour forcer une nouvelle authentification
-            logger.info("🔐 DEBUG PASSWORD - Invalidation de la session après changement de mot de passe");
+            // SÉCURITÉ: Invalidation de la session pour forcer une nouvelle authentification
+            logger.info("DEBUG PASSWORD - Invalidation de la session après changement de mot de passe");
             
             try {
                 // Invalidation de la session actuelle (sans redirection automatique)
@@ -103,12 +103,12 @@ public class UserPasswordController {
                 // Nettoyage du contexte de sécurité
                 SecurityContextHolder.clearContext();
                 
-                logger.info("✅ DEBUG PASSWORD - Session invalidée avec succès: {}", currentUser.getEmail());
+                logger.info("DEBUG PASSWORD - Session invalidée avec succès: {}", currentUser.getEmail());
                 auditLogger.info("Session invalidated after password change - User: {} (ID: {})",
                                currentUser.getEmail(), currentUser.getId());
                 
             } catch (Exception sessionException) {
-                logger.error("❌ DEBUG PASSWORD - Erreur lors de l'invalidation de session: {}", sessionException.getMessage(), sessionException);
+                logger.error("DEBUG PASSWORD - Erreur lors de l'invalidation de session: {}", sessionException.getMessage(), sessionException);
                 // Continuer malgré l'erreur pour ne pas affecter la réponse principale
             }
 
@@ -116,7 +116,7 @@ public class UserPasswordController {
                 .body("{\"success\": true, \"message\": \"Mot de passe changé avec succès. Vous allez être redirigé vers la page de connexion.\", \"requiresReauth\": true, \"redirectToLogin\": true}");
 
         } catch (Exception e) {
-            logger.error("❌ DEBUG PASSWORD - Erreur changement mot de passe: {}", e.getMessage(), e);
+            logger.error("DEBUG PASSWORD - Erreur changement mot de passe: {}", e.getMessage(), e);
             return ResponseEntity.badRequest()
                 .body("{\"success\": false, \"message\": \"" + e.getMessage() + "\"}");
         }

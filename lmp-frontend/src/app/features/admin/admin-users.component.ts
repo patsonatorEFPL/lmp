@@ -50,6 +50,8 @@ import { AdminService } from '../../core/services/admin.service';
 import { AuthService } from '../../core/services/auth.service';
 import { VisiblePollService } from '../../core/services/visible-poll.service';
 import { createListFetchLoading } from '../../core/utils/list-fetch-loading';
+import { formatRelativeTimeFr } from '../../core/utils/relative-time';
+import { ApiResponse, PageResponse } from '../../shared/models/api.models';
 
 interface UserItem {
   id: string;
@@ -69,20 +71,6 @@ interface UserItem {
   city?: string;
   country?: string;
   companyName?: string;
-}
-
-interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
 }
 
 @Component({
@@ -993,21 +981,7 @@ export class AdminUsersComponent implements OnInit {
     return parts.length ? parts.join(', ') : '—';
   }
 
-  formatRelativeTimeFr(iso: string | null | undefined): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    const diffMs = Date.now() - d.getTime();
-    const sec = Math.floor(diffMs / 1000);
-    if (sec < 45) return 'À l’instant';
-    const min = Math.floor(sec / 60);
-    const hours = Math.floor(min / 60);
-    const days = Math.floor(hours / 24);
-    if (min < 60) return min <= 1 ? 'Il y a 1 min' : `Il y a ${min} min`;
-    if (hours < 24) return hours <= 1 ? 'Il y a 1 h' : `Il y a ${hours} h`;
-    if (days < 7) return days === 1 ? 'Il y a 1 jour' : `Il y a ${days} j`;
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-  }
+  readonly formatRelativeTimeFr = formatRelativeTimeFr;
 
   getInitials(user: UserItem): string {
     const fromName = ((user.firstName?.[0] || '') + (user.lastName?.[0] || '')).toUpperCase();

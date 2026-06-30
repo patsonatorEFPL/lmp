@@ -216,9 +216,7 @@ public class SecurityConfig {
                         // Webhooks Stripe + sync externe (pas d'auth — validés par HMAC)
                         .requestMatchers(
                                 "/api/webhooks/**",
-                                "/api/v1/webhooks/**",
-                                "/api/payments/**",
-                                "/api/payment-status/**")
+                                "/api/v1/webhooks/**")
                         .permitAll()
 
                         // Sentry health check (monitoring externe)
@@ -353,6 +351,7 @@ public class SecurityConfig {
                                 "/reset-password",
                                 "/verify-email",
                                 "/resend-verification",
+                                "/accept-invitation",
                                 "/payment/guest",
                                 "/payment/success",
                                 "/payment/cancelled",

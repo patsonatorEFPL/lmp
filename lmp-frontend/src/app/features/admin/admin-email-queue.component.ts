@@ -17,6 +17,7 @@ import {
   Search,
 } from 'lucide-angular';
 import { HlmButton } from '@spartan-ng/helm/button';
+import { PageResponse } from '../../shared/models/api.models';
 
 type EmailQueueStatus = 'NOT_SENT' | 'SENDING' | 'SENT' | 'ERROR';
 type StatusFilter = EmailQueueStatus | '';
@@ -40,12 +41,6 @@ interface EmailQueueStats {
   sent: number;
   error: number;
   sending: number;
-}
-
-interface PageResponse<T> {
-  content: T[];
-  totalPages: number;
-  totalElements: number;
 }
 
 const STATUS_LABELS: Record<EmailQueueStatus, string> = {

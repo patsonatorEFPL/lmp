@@ -1,25 +1,28 @@
 package com.lmp.auth.web.session;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import com.lmp.TestcontainersConfiguration;
 import com.lmp.auth.domain.Role;
@@ -29,20 +32,25 @@ import com.lmp.auth.repository.RoleRepository;
 import com.lmp.auth.repository.UserRepository;
 
 /**
- * Vérifie que le login programmatique enregistre bien le principal dans le {@link SessionRegistry},
- * comme la chaîne filtre API avec {@code maximumSessions} (régression si la factory diverge).
+ * Vérifie que le login via POST /api/v1/auth/login (login programmatique +
+ * SessionRepositoryFilter Spring Session) enregistre bien le principal dans le
+ * {@link SessionRegistry} backé Redis — régression si la stratégie de session
+ * programmatique diverge de la chaîne filtre API.
+ * <p>
+ * Le login passe par MockMvc avec la chaîne de filtres complète : le
+ * SessionRegistry étant un {@code SpringSessionBackedSessionRegistry}, la
+ * session n'est indexée dans Redis qu'à la complétion de la requête HTTP —
+ * un appel direct à {@code ProgrammaticHttpSessionLogin#login} hors requête
+ * ne suffit pas.
  */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfiguration.class)
-@Transactional
 class ProgrammaticHttpSessionLoginIntegrationTest {
 
     @Autowired
-    private ProgrammaticHttpSessionLogin programmaticHttpSessionLogin;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private MockMvc mockMvc;
 
     @Autowired
     private SessionRegistry sessionRegistry;
@@ -61,6 +69,8 @@ class ProgrammaticHttpSessionLoginIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        userRepository.findByEmail(EMAIL).ifPresent(userRepository::delete);
+
         Role userRole = roleRepository.findByName("USER")
                 .orElseGet(() -> {
                     Role r = new Role();
@@ -83,18 +93,24 @@ class ProgrammaticHttpSessionLoginIntegrationTest {
         userRepository.save(user);
     }
 
+    @AfterEach
+    void tearDown() {
+        userRepository.findByEmail(EMAIL).ifPresent(userRepository::delete);
+    }
+
     @Test
-    void loginEnregistreLePrincipalDansLeSessionRegistry() {
-        var request = new MockHttpServletRequest();
-        var response = new MockHttpServletResponse();
+    void loginEnregistreLePrincipalDansLeSessionRegistry() throws Exception {
+        MvcResult started = mockMvc.perform(post("/api/v1/auth/login")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + EMAIL + "\",\"password\":\"" + PASSWORD + "\"}"))
+                .andReturn();
 
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(EMAIL, PASSWORD));
-
-        programmaticHttpSessionLogin.login(request, response, auth);
+        mockMvc.perform(asyncDispatch(started))
+                .andExpect(status().isOk());
 
         assertFalse(
-                sessionRegistry.getAllSessions(auth.getPrincipal(), false).isEmpty(),
+                sessionRegistry.getAllSessions(EMAIL, false).isEmpty(),
                 "SessionRegistry doit référencer la session après login programmatique (aligné chaîne API)");
     }
 }

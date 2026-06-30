@@ -359,7 +359,7 @@ public class PaymentServiceImpl implements PaymentService {
         logger.debug("Validating order for payment - ID: {}, Status: {}, Amount: {}",
                     order.getId(), order.getStatus(), order.getTotalAmount());
                     
-        // 🆕 Accepter les commandes PAYMENT_PENDING et PENDING
+        // Accepter les commandes PAYMENT_PENDING et PENDING
         if (order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PAYMENT_PENDING) {
             logger.warn("Order {} cannot be paid in current state: {}", order.getId(), order.getStatus());
             throw new PaymentValidationException("La commande ne peut pas être payée dans son état actuel: " + order.getStatus());

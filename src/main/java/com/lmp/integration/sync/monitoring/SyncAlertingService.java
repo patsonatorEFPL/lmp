@@ -149,7 +149,7 @@ public class SyncAlertingService {
         Instant lastAlert = lastAlertByType.get(alertType);
         Instant now = Instant.now();
         if (lastAlert != null && now.isBefore(lastAlert.plusSeconds(cooldownSeconds))) {
-            log.debug("🔕 [SYNC ALERT] Cooldown active for '{}' — skipping", alertType);
+            log.debug("[SYNC ALERT] Cooldown active for '{}' — skipping", alertType);
             return;
         }
 
@@ -158,18 +158,18 @@ public class SyncAlertingService {
         // 1. Email
         try {
             notificationService.sendAdminAlert(alertCfg.getAdminEmail(), subject, body);
-            log.info("📧 [SYNC ALERT] Email sent for '{}' to {}", alertType, alertCfg.getAdminEmail());
+            log.info("[SYNC ALERT] Email sent for '{}' to {}", alertType, alertCfg.getAdminEmail());
         } catch (Exception e) {
-            log.error("❌ [SYNC ALERT] Failed to send email: {}", e.getMessage());
+            log.error("[SYNC ALERT] Failed to send email: {}", e.getMessage());
         }
 
         // 2. Webhook
         if (!alertCfg.getWebhookUrl().isBlank()) {
             try {
                 sendWebhook(alertCfg.getWebhookUrl(), alertType, subject, body);
-                log.info("🌐 [SYNC ALERT] Webhook sent for '{}'", alertType);
+                log.info("[SYNC ALERT] Webhook sent for '{}'", alertType);
             } catch (Exception e) {
-                log.error("❌ [SYNC ALERT] Failed to send webhook: {}", e.getMessage());
+                log.error("[SYNC ALERT] Failed to send webhook: {}", e.getMessage());
             }
         }
 
@@ -177,9 +177,9 @@ public class SyncAlertingService {
         if (!alertCfg.getSentryDsn().isBlank()) {
             try {
                 sendToSentry(alertType, subject, body);
-                log.info("📡 [SYNC ALERT] Sentry event sent for '{}'", alertType);
+                log.info("[SYNC ALERT] Sentry event sent for '{}'", alertType);
             } catch (Exception e) {
-                log.error("❌ [SYNC ALERT] Failed to send to Sentry: {}", e.getMessage());
+                log.error("[SYNC ALERT] Failed to send to Sentry: {}", e.getMessage());
             }
         }
     }

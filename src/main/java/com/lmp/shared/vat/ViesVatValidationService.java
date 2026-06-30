@@ -87,7 +87,7 @@ public class ViesVatValidationService {
         // Cache lookup
         CachedResult cached = cache.get(normalized);
         if (cached != null && !cached.isExpired()) {
-            logger.debug("[VIES] Cache hit pour {} → valid={}", normalized,
+            logger.debug("[VIES] Cache hit pour {} -> valid={}", normalized,
                     cached.value.map(ViesResult::valid).orElse(null));
             return cached.value;
         }
@@ -123,7 +123,7 @@ public class ViesVatValidationService {
                 Optional<ViesResult> opt = Optional.of(result);
                 cache.put(normalized, new CachedResult(opt, CACHE_TTL_SECONDS));
 
-                logger.info("[VIES] {} → valid={} name=\"{}\"",
+                logger.info("[VIES] {} -> valid={} name=\"{}\"",
                         normalized, result.valid(), result.name());
                 return opt;
             }

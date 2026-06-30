@@ -80,7 +80,7 @@ public class MailQueueService {
         event.setCorrelationId(req.correlationId());
 
         EmailQueueEvent saved = repository.save(event);
-        log.info("📥 [MAIL QUEUE] Enqueued to={} subj=\"{}\" priority={} queueId={}",
+        log.info("[MAIL QUEUE] Enqueued to={} subj=\"{}\" priority={} queueId={}",
                 req.recipient(), truncate(req.subject(), 60), event.getPriority(), saved.getId());
         return saved.getId();
     }

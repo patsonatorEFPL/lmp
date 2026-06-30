@@ -81,6 +81,6 @@ public class ExternalCrmMailDispatcher implements MailDispatcher {
             throw new IllegalStateException("External framework email send failed: " + errorMsg);
         }
 
-        log.debug("📤 [MAIL EXT-CRM] dispatched id={} to={} via external framework", event.getId(), event.getRecipient());
+        log.debug("[MAIL EXT-CRM] dispatched id={} to={} via external framework", event.getId(), event.getRecipient());
     }
 }

@@ -38,7 +38,7 @@ public class MailQueueRecoveryScheduler {
         LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(staleAfterMinutes);
         int recovered = repository.recoverStaleSending(staleBefore);
         if (recovered > 0) {
-            log.warn("⚕️ [MAIL RECOVERY] Reset {} stale SENDING -> NOT_SENT (older than {} min)",
+            log.warn("[MAIL RECOVERY] Reset {} stale SENDING -> NOT_SENT (older than {} min)",
                     recovered, staleAfterMinutes);
         }
     }

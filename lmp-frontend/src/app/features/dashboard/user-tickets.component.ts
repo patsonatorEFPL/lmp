@@ -8,6 +8,7 @@ import {
 import { HlmButton } from '@spartan-ng/helm/button';
 import { PortalService } from '../../core/services/portal.service';
 import { Issue, IssueStatus, IssuePriority } from '../../shared/models/portal.models';
+import { formatRelativeTimeFr } from '../../core/utils/relative-time';
 
 @Component({
   selector: 'lmp-user-tickets',
@@ -270,19 +271,5 @@ export class UserTicketsComponent implements OnInit {
     }
   }
 
-  formatRelativeTimeFr(iso: string | null | undefined): string {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return '—';
-    const diffMs = Date.now() - d.getTime();
-    const sec = Math.floor(diffMs / 1000);
-    if (sec < 45) return 'À l\'instant';
-    const min = Math.floor(sec / 60);
-    const hours = Math.floor(min / 60);
-    const days = Math.floor(hours / 24);
-    if (min < 60) return min <= 1 ? 'Il y a 1 min' : `Il y a ${min} min`;
-    if (hours < 24) return hours <= 1 ? 'Il y a 1 h' : `Il y a ${hours} h`;
-    if (days < 7) return days === 1 ? 'Il y a 1 jour' : `Il y a ${days} j`;
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-  }
+  readonly formatRelativeTimeFr = formatRelativeTimeFr;
 }

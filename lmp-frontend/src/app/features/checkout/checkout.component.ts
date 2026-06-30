@@ -31,14 +31,9 @@ import { environment } from '../../../environments/environment';
 import { paymentApiUrls } from '../../core/api/payment-api.paths';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService } from '../../core/services/profile.service';
+import { ApiResponse } from '../../shared/models/api.models';
 
 // ── API types ──────────────────────────────────────────────
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-}
-
 interface CheckoutPreview {
   serviceName: string;
   amountHt: number;

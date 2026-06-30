@@ -94,7 +94,7 @@ public class QuotationService {
         quotation.setTotalAmount(com.lmp.shared.pricing.MoneyUtils.round(total));
 
         quotation = quotationRepository.save(quotation);
-        log.info("📝 Quotation {} created (DRAFT) for user {} — total={}",
+        log.info("Quotation {} created (DRAFT) for user {} — total={}",
                 quotation.getId(), user.getId(), quotation.getTotalAmount());
 
         return quotation;
@@ -118,7 +118,7 @@ public class QuotationService {
                 EventType.QUOTATION_SENT, "billing", quotation.getId(), Map.of()
         ));
 
-        log.info("📤 Quotation {} sent to client", quotation.getId());
+        log.info("Quotation {} sent to client", quotation.getId());
         return quotation;
     }
 
@@ -159,7 +159,7 @@ public class QuotationService {
                 Map.of("orderId", order.getId().toString())
         ));
 
-        log.info("✅ Quotation {} accepted → Order {} created", quotation.getId(), order.getId());
+        log.info("Quotation {} accepted -> Order {} created", quotation.getId(), order.getId());
         return order;
     }
 
@@ -181,7 +181,7 @@ public class QuotationService {
                 EventType.QUOTATION_REJECTED, "billing", quotation.getId(), Map.of()
         ));
 
-        log.info("❌ Quotation {} rejected", quotation.getId());
+        log.info("Quotation {} rejected", quotation.getId());
         return quotation;
     }
 
@@ -194,7 +194,7 @@ public class QuotationService {
         for (Quotation q : expired) {
             q.setStatus(QuotationStatus.EXPIRED);
             quotationRepository.save(q);
-            log.info("⏰ Quotation {} expired (validUntil={})", q.getId(), q.getValidUntil());
+            log.info("Quotation {} expired (validUntil={})", q.getId(), q.getValidUntil());
         }
         return expired.size();
     }

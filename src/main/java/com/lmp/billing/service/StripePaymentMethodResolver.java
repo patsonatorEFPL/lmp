@@ -105,7 +105,7 @@ public class StripePaymentMethodResolver {
             if (type == null) return null;
 
             String label = LABELS.getOrDefault(type, type);
-            logger.debug("Resolved Stripe PM {} → type='{}' → label='{}'", paymentMethodId, type, label);
+            logger.debug("Resolved Stripe PM {} -> type='{}' -> label='{}'", paymentMethodId, type, label);
             return label;
         } catch (Exception e) {
             logger.warn("Impossible de résoudre le moyen de paiement {} : {}", paymentMethodId, e.getMessage());

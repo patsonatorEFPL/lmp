@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
         "com.lmp.content.web.api",
         "com.lmp.crm.web.api",
         "com.lmp.notification.web.api",
+        "com.lmp.portal.admin",
         "com.lmp.portal.api",
         "com.lmp.shared.web.api"
 })
