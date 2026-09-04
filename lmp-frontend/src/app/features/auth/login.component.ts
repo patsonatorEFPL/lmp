@@ -308,7 +308,7 @@ export class LoginComponent {
                     ?? this.safeInternalReturnPath(redirectUrl ?? null);
           const target = (back ?? '/dashboard');
           if (typeof window !== 'undefined') {
-            window.location.href = this.siteConfig.baseUrl + target;
+            this.router.navigateByUrl(target);
           }
           this.submitting.set(false);
         },

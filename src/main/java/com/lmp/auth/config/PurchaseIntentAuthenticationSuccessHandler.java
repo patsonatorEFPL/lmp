@@ -65,7 +65,7 @@ public class PurchaseIntentAuthenticationSuccessHandler
 
     @PostConstruct
     void configureDefaultTarget() {
-        setDefaultTargetUrl(absoluteUrl("/dashboard"));
+        setDefaultTargetUrl("/dashboard");
     }
 
     private String absoluteUrl(String path) {
@@ -134,7 +134,7 @@ public class PurchaseIntentAuthenticationSuccessHandler
             // achat. Sinon un saved request orphelin reste en session/Redis.
             requestCache.removeRequest(request, response);
 
-            String redirectUrl = absoluteUrl("/dashboard?processPurchase=true");
+            String redirectUrl = "/dashboard?processPurchase=true";
             logger.info("Redirecting user {} to {} for purchase processing", userEmail, redirectUrl);
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
             return true;
