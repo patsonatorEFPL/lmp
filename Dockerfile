@@ -12,7 +12,7 @@ WORKDIR /app
 
 # Copier les fichiers de dépendances du frontend (mise en cache Docker)
 COPY lmp-frontend/package.json lmp-frontend/package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
 # Copier tout le code source du frontend
 COPY lmp-frontend/ .
